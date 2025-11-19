@@ -12,9 +12,25 @@ body {
     background: #1e1e1e;
     color: #fff;
     text-align: center;
+    overflow: hidden; /* Förhindra scroll */
 }
 
-h1 { margin-top: 50px; }
+/* Menyn */
+.menu {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: rgba(30,30,30,1); /* Menyn täcker spelet helt */
+    z-index: 1000;
+}
+
+h1 { margin-bottom: 40px; }
 
 .button {
     display: inline-block;
@@ -29,21 +45,18 @@ h1 { margin-top: 50px; }
 }
 .button:hover { background-color: #0056b3; transform: scale(1.1); }
 
-.menu, .game-fullscreen {
+/* Spel fullskärm */
+.game-fullscreen {
     width: 100%;
     height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.game-fullscreen {
-    display: none; /* döljs tills ett spel väljs */
+    display: none; /* döljs tills spel väljs */
     background-color: #000;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
+/* Return knapp */
 .return-button {
     position: absolute;
     top: 20px;
@@ -54,9 +67,14 @@ h1 { margin-top: 50px; }
     background-color: #ff0000;
     color: #fff;
     cursor: pointer;
-    z-index: 100;
+    z-index: 1001; /* ovanpå spelet */
 }
 .return-button:hover { background-color: #cc0000; }
+
+canvas {
+    display: block;
+    margin: auto;
+}
 </style>
 </head>
 <body>
@@ -69,7 +87,10 @@ h1 { margin-top: 50px; }
     <div class="button" onclick="openGame('spel3')">Spel 3</div>
 </div>
 
-<!DOCTYPE html>
+<!-- SPEL 1 -->
+<div id="spel1" class="game-fullscreen">
+    <div class="return-button" onclick="returnToMenu()">← Return to menu</div>
+    <!DOCTYPE html>
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
@@ -1166,23 +1187,3062 @@ loop();
 </script>
 </body>
 </html>
-<div id="spel1" class="game-fullscreen">
-    <div class="return-button" onclick="returnToMenu()">← Return to menu</div>
-    <!-- Din spelkod här -->
     <canvas id="canvas1" width="800" height="600"></canvas>
 </div>
 
 <!-- SPEL 2 -->
 <div id="spel2" class="game-fullscreen">
     <div class="return-button" onclick="returnToMenu()">← Return to menu</div>
-    <!-- Din spelkod här -->
+    <!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Monster Defense</title>
+    <!-- Importerar Tailwind CSS för snabb styling av UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Sätter en mörk bakgrundsfärg för hela sidan */
+        body {
+            background-color: #1a202c; /* mörkgrå */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 10vh;
+            overflow: hidden; /* Förhindrar scrollning */
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+        }
+        /* Stilar för själva spel-canvasen */
+        canvas {
+            background-color: #2d3748; /* lite ljusare grå */
+            display: block;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 4, 6, 0.05);
+            cursor: default; /* Standardpekare */
+        }
+        /* Styling för alla centrala menyer/modals */
+        .menu-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #1f2937; /* Lätt mörkare bakgrund */
+            border: 2px solid #60a5fa; /* Blå kant */
+            border-radius: 12px;
+            padding: 3rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            z-index: 20;
+            width: 90%;
+            max-width: 500px;
+            color: white; /* Säkerställ att texten är vit i modals */
+        }
+        /* Knappstyling för menyn */
+        .menu-button {
+            width: 100%;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: white;
+            border-radius: 8px;
+            transition: all 0.2s ease-in-out;
+            background-color: #3b82f6; /* Blå */
+        }
+        .menu-button:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        .menu-button:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.5);
+        }
+
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- Start Meny -->
+    <div id="startMenu" class="menu-modal">
+        <h1 class="text-6xl font-extrabold text-center mb-10 text-yellow-400 tracking-wider">
+            Ultimate Monster Defense
+        </h1>
+        <button id="startGameButton" class="menu-button bg-green-500 hover:bg-green-600">
+            START GAME
+        </button>
+        <button id="sandboxButton" class="menu-button bg-indigo-500 hover:bg-indigo-600">
+            SANDBOX
+        </button>
+        <button id="controlsButton" class="menu-button bg-gray-500 hover:bg-gray-600">
+            CONTROLS (KEYBINDS)
+        </button>
+        <button id="creditsButton" class="menu-button bg-gray-500 hover:bg-gray-600">
+            CREDITS
+        </button>
+    </div>
+
+    <!-- Controls Modal -->
+    <div id="controlsModal" class="menu-modal hidden">
+        <h2 class="text-3xl font-bold mb-4 text-center border-b border-gray-600 pb-2 text-blue-400">Controls (Keybinds)</h2>
+        <div class="space-y-3 text-lg">
+            <p><span class="font-bold text-yellow-300">E:</span> Öppna/Stäng Sälj/Upgrade Meny (Spelet Fortsätter)</p>
+            <p><span class="font-bold text-yellow-300">F:</span> Öppna/Stäng Bygg Meny (Spelet Fortsätter)</p>
+            <p><span class="font-bold text-yellow-300">L:</span> Pausa Spelet / Öppna Pausmeny</p>
+            <p><span class="font-bold text-yellow-300">Musklick:</span> Placera Byggnad</p>
+        </div>
+        <button id="closeControlsButton" class="menu-button bg-red-500 hover:bg-red-600 mt-6">
+            Tillbaka till Huvudmeny
+        </button>
+    </div>
+
+    <!-- Credits Modal -->
+    <div id="creditsModal" class="menu-modal hidden">
+        <h2 class="text-3xl font-bold mb-4 text-center border-b border-gray-600 pb-2 text-blue-400">Credits</h2>
+        <p class="text-4xl text-center font-extrabold text-yellow-300 py-4">Zayn Lilak</p>
+        <p class="text-center text-gray-400">Spelets design och idé.</p>
+        <button id="closeCreditsButton" class="menu-button bg-red-500 hover:bg-red-600 mt-6">
+            Tillbaka till Huvudmeny
+        </button>
+    </div>
+
+    <!-- Paus Meny -->
+    <div id="pauseMenu" class="menu-modal hidden">
+        <h2 class="text-5xl font-extrabold mb-8 text-center text-yellow-400">SPELET PAUSAT</h2>
+        <button id="resumeButton" class="menu-button bg-green-500 hover:bg-green-600">
+            ÅTERUPPTA SPEL
+        </button>
+        <button id="restartButton" class="menu-button bg-blue-500 hover:bg-blue-600">
+            STARTA OM
+        </button>
+        <button id="returnToMenuButton" class="menu-button bg-red-500 hover:bg-red-600">
+            ÅTERGÅ TILL HUVUDMENY
+        </button>
+    </div>
+
+    <!-- Spel-kontainer som håller både canvas och UI-element -->
+    <!-- Döljer hela spel-kontainern tills spelet startas -->
+    <div id="gameContainer" class="relative hidden">
+        <!-- Spelytan där allt ritas -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- UI-överlägg för statistik (Coins, Waste och nya resurser) -->
+        <div id="statsContainer" class="absolute top-4 right-4 bg-gray-900 bg-opacity-80 p-4 rounded-lg shadow-xl w-48">
+            <h3 class="text-lg font-bold border-b border-gray-600 pb-2 mb-2">Resurser</h3>
+            <div id="coinsDisplay" class="text-yellow-400 text-lg">Coins: 0</div>
+            <div id="wasteDisplay" class="text-green-400 text-lg">Waste: 0</div>
+            <!-- NYA RESURSER -->
+            <div id="foodDisplay" class="text-red-400 text-lg">Food: 0</div>
+            <div id="woodDisplay" class="text-orange-400 text-lg">Wood: 0</div>
+            <div id="metalDisplay" class="text-gray-400 text-lg">Metal: 0</div>
+            <div id="earthDisplay" class="text-yellow-600 text-lg">Earth: 0</div>
+            <div id="modeDisplay" class="mt-2 text-sm font-bold text-indigo-400">Mode: Standard</div>
+        </div>
+
+        <!-- Tornets nivå-display (längst nere till vänster, endast Lvl X) -->
+        <div id="towerLevelHUD" class="absolute bottom-8 left-12 bg-gray-900 bg-opacity-80 p-3 rounded-xl shadow-2xl border-2 border-yellow-500">
+            <p id="towerLevelDisplay" class="text-4xl font-extrabold text-yellow-400">Lvl 1</p>
+        </div>
+
+
+        <!-- Sälj- och Uppgraderingsmeny (aktiveras med 'E') -->
+        <div id="sellMenu" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 bg-opacity-95 p-6 rounded-lg shadow-xl w-80 hidden border-2 border-blue-500 z-10">
+            <h2 class="text-2xl font-bold mb-4 text-center border-b border-gray-700 pb-2">Kontrollpanel</h2>
+
+            <!-- Sälj Sektion -->
+            <div class="mb-6 pb-4 border-b border-gray-700">
+                <h3 class="text-xl font-semibold mb-2 text-green-400">Sälj Monster Waste</h3>
+                <p class="mb-3 text-gray-300">Du har <span id="wasteToSell" class="font-bold text-green-400">0</span> Monster Waste.</p>
+                <p class="mb-4 text-gray-400 text-sm">Värde: 2 Coins per Waste</p>
+                
+                <button id="sellButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    SÄLJ ALLT
+                </button>
+            </div>
+
+            <!-- Uppgraderings Sektion -->
+            <div>
+                <h3 class="text-xl font-semibold mb-2 text-blue-400">Huvudtorn Uppgradering</h3>
+                <p class="text-lg mb-1">Nuvarande nivå: <span id="currentLevelInMenu" class="font-bold text-yellow-400">Lvl 1</span></p>
+                <p id="upgradeCostDisplay" class="text-base text-gray-400 mb-3">Kostnad: 20 C</p>
+                <button id="upgradeButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    UPPGRADERA TORNET
+                </button>
+            </div>
+            
+            <p class="text-xs text-gray-500 mt-4 text-center">Tryck 'E' för att stänga. Tryck 'L' för paus.</p>
+        </div>
+        
+        <!-- Byggnadsmeny (aktiveras med 'F') -->
+        <div id="buildMenu" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 bg-opacity-95 p-6 rounded-lg shadow-xl w-80 hidden border-2 border-green-500 z-10">
+            <h2 class="text-2xl font-bold mb-4 text-center border-b border-gray-700 pb-2">Byggmeny</h2>
+
+            <!-- Farm Sektion -->
+            <div class="mb-4 pb-4 border-b border-gray-700">
+                <h3 class="text-xl font-semibold mb-2 text-lime-400">Farm</h3>
+                <p id="farmCostDisplay" class="text-base text-gray-400 mb-2">Kostnad: 20 Coins</p>
+                <p class="text-sm text-gray-500 mb-3">Genererar: Food och Wood</p>
+                <button id="selectFarmButton" data-building="FARM" class="w-full bg-lime-600 hover:bg-lime-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    VÄLJ FARM
+                </button>
+            </div>
+
+            <!-- Gruva Sektion -->
+            <div>
+                <h3 class="text-xl font-semibold mb-2 text-yellow-600">Gruva</h3>
+                <p id="mineCostDisplay" class="text-base text-gray-400 mb-2">Kostnad: 15 Wood</p>
+                <p class="text-sm text-gray-500 mb-3">Genererar: Metal, Coins och Earth</p>
+                <button id="selectMineButton" data-building="MINE" class="w-full bg-yellow-700 hover:bg-yellow-800 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    VÄLJ GRUVA
+                </button>
+            </div>
+            
+            <p class="text-xs text-gray-500 mt-4 text-center">Tryck 'F' för att stänga. Klicka på duken för att placera.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM-element ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('gameContainer');
+        
+        // Meny-element
+        const startMenu = document.getElementById('startMenu');
+        const startGameButton = document.getElementById('startGameButton');
+        const sandboxButton = document.getElementById('sandboxButton');
+        const controlsButton = document.getElementById('controlsButton');
+        const creditsButton = document.getElementById('creditsButton');
+        const controlsModal = document.getElementById('controlsModal');
+        const creditsModal = document.getElementById('creditsModal');
+        const closeControlsButton = document.getElementById('closeControlsButton');
+        const closeCreditsButton = document.getElementById('closeCreditsButton');
+        const pauseMenu = document.getElementById('pauseMenu'); 
+        const resumeButton = document.getElementById('resumeButton'); 
+        const restartButton = document.getElementById('restartButton'); 
+        const returnToMenuButton = document.getElementById('returnToMenuButton'); 
+        
+        // UI-paneler och displayer
+        const coinsDisplay = document.getElementById('coinsDisplay');
+        const wasteDisplay = document.getElementById('wasteDisplay');
+        const foodDisplay = document.getElementById('foodDisplay');
+        const woodDisplay = document.getElementById('woodDisplay');
+        const metalDisplay = document.getElementById('metalDisplay');
+        const earthDisplay = document.getElementById('earthDisplay');
+        const modeDisplay = document.getElementById('modeDisplay');
+        const sellMenu = document.getElementById('sellMenu');
+        const buildMenu = document.getElementById('buildMenu'); 
+        const wasteToSell = document.getElementById('wasteToSell');
+        const sellButton = document.getElementById('sellButton');
+        const upgradeButton = document.getElementById('upgradeButton'); 
+        const selectFarmButton = document.getElementById('selectFarmButton'); 
+        const selectMineButton = document.getElementById('selectMineButton'); 
+        
+        // Torn UI element
+        const towerLevelDisplay = document.getElementById('towerLevelDisplay'); 
+        const currentLevelInMenu = document.getElementById('currentLevelInMenu'); 
+        const upgradeCostDisplay = document.getElementById('upgradeCostDisplay'); 
+
+        // Sätter storleken på canvas
+        canvas.width = 1000;
+        canvas.height = 600;
+
+        // --- Spelvariabler ---
+        let gameState = 'MENU'; // Spel-tillstånd: 'MENU', 'PLAYING', 'PAUSED', 'GAME_OVER'
+        let coins = 0;
+        let monsterWaste = 0;
+        let food = 0; 
+        let wood = 0; 
+        let metal = 0; 
+        let earth = 0; 
+        
+        const WASTE_COIN_VALUE = 2; 
+        let gameRunning = false; 
+        let menuOpen = false; // Säljmeny/Uppgraderingsmeny öppen
+        let isBuildingMode = false; // Byggmeny öppen
+        let selectedBuildingType = null; // Typ av byggnad som ska placeras
+        let baseHealth = 100; 
+        let isSandboxMode = false; 
+
+        // Spel-arrayer
+        let monsters = [];
+        let projectiles = [];
+        let buildings = []; 
+        
+        // Uppgraderingskonstanter
+        const BASE_UPGRADE_COST = 20; 
+        const UPGRADE_COST_MULTIPLIER = 1.25; 
+        const DUAL_TURRET_LEVEL = 10; 
+        
+        // Monster Skalningskonstanter
+        const BASE_MONSTER_HP = 70;
+        const HP_SCALE_PER_LEVEL = 1.15; // Ökad skalning
+        const SPAWN_INTERVAL_SCALE_PER_LEVEL = 0.95; 
+        
+        // Torn-statistik (Gemensamma konstanter)
+        const BASE_TOWER_DAMAGE = 10; 
+        const DAMAGE_SCALE_PER_LEVEL = 10; 
+        const FIRE_RATE_DECREASE_MULTIPLIER = 0.95; 
+
+        // Initial boost konstanter
+        const INITIAL_DAMAGE_BOOST = 20; 
+        const INITIAL_FIRE_RATE_BOOST_MS = -200; // Från 1000ms till 800ms
+        const BOOST_MAX_LEVEL = 5;
+
+        // Byggnads-konstanter
+        const BUILDING_SIZE = 50; 
+        const FARM_COST_COINS = 20;
+        const MINE_COST_WOOD = 15;
+        const BUILD_ZONE_LIMIT = 150; 
+        const PRODUCTION_INTERVAL = 5000; 
+        const FARM_PRODUCTION = { food: 1, wood: 1 };
+        const MINE_PRODUCTION = { metal: 1, coins: 5, earth: 1 };
+        
+        // --- Monster-spawning ---
+        let baseSpawnInterval = 7000; 
+        let lastSpawn = 0;
+        
+        // --- Torn-instanser ---
+        let tower = null; // Huvudtornet
+        let tower2 = null; // Sekundärt torn (null tills nivå 10)
+
+        // --- Game Logic Functions ---
+
+        /**
+         * Visar huvudmenyn och döljer spelet.
+         */
+        function showMenu() {
+            gameState = 'MENU';
+            gameRunning = false;
+            gameContainer.classList.add('hidden');
+            startMenu.classList.remove('hidden');
+            pauseMenu.classList.add('hidden'); 
+            sellMenu.classList.add('hidden');
+            buildMenu.classList.add('hidden');
+        }
+        
+        /**
+         * Startar spelet och döljer menyn.
+         * @param {string} mode - 'standard' eller 'sandbox'
+         */
+        function startGame(mode) {
+            gameState = 'PLAYING';
+            gameRunning = true;
+            startMenu.classList.add('hidden');
+            pauseMenu.classList.add('hidden'); 
+            gameContainer.classList.remove('hidden');
+
+            isSandboxMode = (mode === 'sandbox'); 
+            modeDisplay.textContent = `Mode: ${isSandboxMode ? 'Sandbox (Oändligt)' : 'Standard'}`;
+
+            // Återställ alla tillstånd
+            monsters = [];
+            projectiles = [];
+            buildings = [];
+            baseHealth = 100; 
+            baseSpawnInterval = 7000;
+            
+            // Återställ resurser
+            coins = 0; 
+            monsterWaste = 0;
+            food = 0; 
+            wood = 0; 
+            metal = 0; 
+            earth = 0; 
+
+            // Skapa torn-instanserna
+            tower = new Tower(50, canvas.height / 2);
+            tower2 = null; 
+
+            // Ge resurser om Sandbox
+            if (isSandboxMode) {
+                coins = 5000;
+                wood = 5000;
+                food = 5000;
+                metal = 5000;
+                earth = 5000;
+            }
+
+            updateUI();
+        }
+
+        /**
+         * Beräknar uppgraderingskostnaden baserat på tornets nuvarande nivå.
+         */
+        function getUpgradeCost(currentLevel) {
+            let cost = BASE_UPGRADE_COST;
+            for (let i = 1; i < currentLevel; i++) {
+                cost *= UPGRADE_COST_MULTIPLIER;
+            }
+            return Math.ceil(cost); 
+        }
+
+        /**
+         * Växlar paus-läget ('L') och visar pausmenyn.
+         * Denna funktion är den ENDA som sätter gameRunning = false (för paus)
+         */
+        function togglePause() {
+            if (gameState === 'PLAYING') {
+                gameState = 'PAUSED';
+                gameRunning = false;
+                // Stäng alla andra menyer
+                if (menuOpen) toggleSellMenu(false); // Används för att stänga menyn UTAN att pausa/återuppta
+                if (isBuildingMode) toggleBuildMenu(false); 
+                pauseMenu.classList.remove('hidden');
+            } else if (gameState === 'PAUSED') {
+                gameState = 'PLAYING';
+                gameRunning = true;
+                pauseMenu.classList.add('hidden');
+            }
+        }
+        
+        /**
+         * Växlar sälj-menyn (öppna/stäng). PAUSAR INTE SPELET.
+         * @param {boolean} toggleDisplay - Om UI-displayen ska växlas (standard true).
+         */
+        function toggleSellMenu(toggleDisplay = true) {
+            if (gameState !== 'PLAYING' && gameState !== 'PAUSED') return;
+
+            // Stäng bygg-relaterade lägen om säljmenyn öppnas
+            if (isBuildingMode) {
+                isBuildingMode = false;
+                buildMenu.classList.add('hidden');
+                selectedBuildingType = null;
+            }
+            
+            if (toggleDisplay) {
+                menuOpen = !menuOpen;
+                sellMenu.classList.toggle('hidden');
+            } else {
+                menuOpen = false;
+                sellMenu.classList.add('hidden');
+            }
+            
+            // Spelet fortsätter köra även om menyn är öppen, om inte L är nedtryckt.
+            if (gameState === 'PLAYING') {
+                 gameRunning = true; 
+            }
+
+            updateUI(); 
+        }
+
+        /**
+         * Växlar bygg-menyn (öppna/stäng). SPELET FORTSÄTTER.
+         * @param {boolean} toggleDisplay - Om UI-displayen ska växlas (standard true).
+         */
+        function toggleBuildMenu(toggleDisplay = true) {
+            if (gameState !== 'PLAYING' && gameState !== 'PAUSED') return;
+
+            // Stäng säljmenyn om byggmenyn öppnas
+            if (menuOpen) {
+                menuOpen = false;
+                sellMenu.classList.add('hidden');
+            }
+            
+            if (toggleDisplay) {
+                isBuildingMode = !isBuildingMode;
+                buildMenu.classList.toggle('hidden');
+            } else {
+                isBuildingMode = false;
+                buildMenu.classList.add('hidden');
+            }
+
+            // Återställ vald byggnad när menyn stängs
+            if (!isBuildingMode) selectedBuildingType = null; 
+            
+            // Spelet fortsätter köra även om byggmenyn är öppen.
+            if (gameState === 'PLAYING') {
+                gameRunning = true; 
+            }
+            
+            updateUI(); 
+        }
+
+        /**
+         * Kontrollerar om en given position (x, y) överlappar med en befintlig byggnad.
+         */
+        function checkBuildingCollision(x, y) {
+            // Använder en standardstorlek för kollisionsdetektering, oavsett visuell form.
+            const size = BUILDING_SIZE; 
+
+            for (const b of buildings) {
+                // Kontrollera överlappning mellan rektanglar
+                if (x < b.x + b.width / 2 &&
+                    x + size / 2 > b.x - b.width / 2 && 
+                    y < b.y + b.height / 2 &&
+                    y + size / 2 > b.y - b.height / 2) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // --- Spelklasser ---
+
+        /**
+         * Klassen för byggnader (Farm och Gruva)
+         */
+        class Building {
+            constructor(x, y, type) {
+                this.x = x; 
+                this.y = y; 
+                this.type = type; 
+                this.productionInterval = PRODUCTION_INTERVAL;
+                this.lastProduction = performance.now();
+                
+                // Unika dimensioner baserat på typ
+                if (type === 'FARM') {
+                    this.width = 60;  // Bredare för Farm
+                    this.height = 30; // Lägre
+                    this.color = '#84cc16'; // Lime/grön
+                    this.label = 'FARM';
+                } else if (type === 'MINE') {
+                    this.width = 40;  // Smalare för Gruva
+                    this.height = 50; // Högre
+                    this.color = '#b8860b'; // Guld/brun
+                    this.label = 'GRUVA';
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                
+                // Rita olika former baserat på typ
+                if (this.type === 'FARM') {
+                    // Rektangel (Fält)
+                    ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                    
+                    // Lägg till några ränder för att symbolisera rader
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                    for(let i = 0; i < 3; i++) {
+                        ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2 + 5 + i * 10, this.width, 4);
+                    }
+                    
+                } else if (this.type === 'MINE') {
+                    // Gruva: Bas + Topp (Triangel)
+                    
+                    // 1. Gruvbas (rektangel)
+                    const baseHeight = this.height * 0.7;
+                    ctx.fillRect(this.x - this.width / 2, this.y + this.height / 2 - baseHeight, this.width, baseHeight);
+                    
+                    // 2. Gruvtopp (triangel/tak)
+                    ctx.beginPath();
+                    ctx.moveTo(this.x - this.width / 2 - 5, this.y + this.height / 2 - baseHeight); // Vänster bas
+                    ctx.lineTo(this.x + this.width / 2 + 5, this.y + this.height / 2 - baseHeight); // Höger bas
+                    ctx.lineTo(this.x, this.y - this.height / 2); // Toppunkt
+                    ctx.closePath();
+                    ctx.fillStyle = '#6e7783'; // Mörkare grå för taket
+                    ctx.fill();
+                    
+                    // Fönster/ingång på basen
+                    ctx.fillStyle = '#1e293b'; 
+                    ctx.fillRect(this.x - 10, this.y + this.height / 2 - baseHeight + 5, 20, baseHeight - 10);
+                }
+
+                // Etikett
+                ctx.fillStyle = 'white';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.label, this.x, this.y + this.height / 2 + 15);
+                
+                // Produktionsstapel (ritas oavsett form)
+                const progress = (performance.now() - this.lastProduction) / this.productionInterval;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                // Placeras ovanför byggnaden
+                ctx.fillRect(this.x - 20, this.y - this.height / 2 - 10, 40 * Math.min(progress, 1), 5);
+            }
+
+            update(currentTime) {
+                if (currentTime - this.lastProduction > this.productionInterval) {
+                    this.lastProduction = currentTime;
+                    
+                    if (this.type === 'FARM') {
+                        food += FARM_PRODUCTION.food;
+                        wood += FARM_PRODUCTION.wood;
+                        
+                    } else if (this.type === 'MINE') {
+                        metal += MINE_PRODUCTION.metal;
+                        coins += MINE_PRODUCTION.coins;
+                        earth += MINE_PRODUCTION.earth;
+                    }
+                    updateUI(); 
+                }
+            }
+        }
+        
+        /**
+         * Klassen för spelarens torn
+         */
+        class Tower {
+            constructor(startX, startY) {
+                this.width = 60;
+                this.height = 100;
+                this.x = startX;
+                this.y = startY - (this.height / 2); 
+                this.level = 1; 
+                this.baseRange = 550; 
+                
+                this.baseFireRate = 1000; 
+                this.baseDamage = BASE_TOWER_DAMAGE; 
+
+                // Beräknade stats
+                this.range = 0; 
+                this.fireRate = 0;
+                this.projectileDamage = 0;
+                
+                this.lastShot = 0; 
+                
+                // Rotationsvariabler
+                this.angle = 0; 
+                this.rotationSpeed = 0.05; 
+                this.pivotX = this.x + this.width / 4; 
+                this.pivotY = this.y + this.height / 2; 
+
+                // Recoil-effekt
+                this.recoilOffset = 0;
+                this.maxRecoil = 5;
+                this.recoilDecay = 0.9;
+                
+                this.upgrade(false); 
+            }
+            
+            /**
+             * Beräknar tornets stats med hänsyn till nivå och eventuell start-boost.
+             */
+            calculateStats() {
+                // Beräkna grundläggande nivå-stats
+                let calculatedDamage = this.baseDamage + (this.level - 1) * DAMAGE_SCALE_PER_LEVEL;
+                let calculatedFireRate = this.baseFireRate * Math.pow(FIRE_RATE_DECREASE_MULTIPLIER, this.level - 1);
+                
+                // Lägg till start-boost om nivån är lägre än eller lika med max boost-nivå
+                if (this.level < BOOST_MAX_LEVEL) {
+                    calculatedDamage += INITIAL_DAMAGE_BOOST;
+                    calculatedFireRate += INITIAL_FIRE_RATE_BOOST_MS; 
+                    // Se till att Fire Rate inte blir negativ
+                    calculatedFireRate = Math.max(100, calculatedFireRate);
+                }
+
+                // Tilldela de beräknade värdena
+                this.range = this.baseRange * (1 + (this.level * 0.1)); 
+                this.fireRate = calculatedFireRate;
+                this.projectileDamage = calculatedDamage;
+            }
+
+            /**
+             * Uppgraderar tornets statistik baserat på nivån.
+             */
+            upgrade(isRealUpgrade = true) {
+                if (isRealUpgrade) {
+                    this.level++;
+                }
+                this.calculateStats();
+            }
+
+            // Ritar ut tornet
+            draw() {
+                // Basen 
+                ctx.fillStyle = '#5a67d8'; 
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                // Uppdatera recoil
+                this.recoilOffset *= this.recoilDecay;
+
+                // Spara canvas-kontexten
+                ctx.save();
+                
+                // Flytta origo (0,0) till tornets pivot-punkt
+                ctx.translate(this.pivotX, this.pivotY);
+                
+                // Rotera hela canvasen runt den nya origo-punkten
+                ctx.rotate(this.angle);
+
+                // --- Machine Gun Design ---
+                ctx.fillStyle = '#4a5568'; 
+                ctx.fillRect(-20, -15, 40, 30); 
+                
+                const barrelLength = this.width + 10;
+                const barrelWidth = 8;
+                ctx.fillStyle = '#a0aec0'; 
+                ctx.fillRect(-20 - this.recoilOffset, -barrelWidth / 2, barrelLength + this.recoilOffset, barrelWidth); 
+
+                ctx.fillStyle = '#333333';
+                ctx.fillRect(barrelLength - 10 - this.recoilOffset, -barrelWidth / 2, 10, barrelWidth); 
+
+                ctx.fillStyle = 'cyan';
+                ctx.beginPath();
+                ctx.arc(barrelLength / 2 - this.recoilOffset, 0, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Återställ canvas-kontexten
+                ctx.restore();
+            }
+
+            // Uppdaterar tornet (roterar, hittar mål och skjuter)
+            update(currentTime) {
+                // Steg 1: Hitta ett mål
+                let target = null;
+                let closestDist = this.range;
+
+                for (const monster of monsters) {
+                    const dist = Math.hypot(monster.x - this.pivotX, monster.y - this.pivotY);
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        target = monster;
+                    }
+                }
+
+                let isAimed = false;
+
+                // Steg 2: Rotera mot målet
+                if (target) {
+                    const targetAngle = Math.atan2(target.y - this.pivotY, target.x - this.pivotX);
+                    let diff = targetAngle - this.angle;
+
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+
+                    if (Math.abs(diff) < this.rotationSpeed) {
+                        this.angle = targetAngle;
+                        isAimed = true;
+                    } else {
+                        this.angle += Math.sign(diff) * this.rotationSpeed;
+                    }
+                }
+
+                // Steg 3: Skjut
+                if (target && isAimed && currentTime - this.lastShot > this.fireRate) {
+                    this.shoot(target);
+                    this.lastShot = currentTime;
+                    this.recoilOffset = this.maxRecoil;
+                }
+            }
+
+            // Skapar en ny projektil
+            shoot(target) {
+                const startX = this.pivotX + Math.cos(this.angle) * (this.width - 10);
+                const startY = this.pivotY + Math.sin(this.angle) * (this.width - 10);
+                
+                projectiles.push(new Projectile(startX, startY, target, this.projectileDamage, this.angle));
+            }
+        }
+
+        /**
+         * Klassen för monster
+         */
+        class Monster {
+            constructor(x, y, maxHp, speed, color) {
+                this.maxHp = maxHp;
+                this.hp = this.maxHp;
+                
+                this.radius = 15;
+                this.x = x; 
+                this.y = y; 
+                this.speed = speed; 
+                this.color = color; 
+            }
+
+            draw() {
+                // Kropp
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Ögon
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(this.x - 5, this.y - 4, 3, 0, Math.PI * 2);
+                ctx.arc(this.x + 5, this.y - 4, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // HP-mätare (bakgrund)
+                ctx.fillStyle = 'red';
+                ctx.fillRect(this.x - this.radius, this.y - this.radius - 10, this.radius * 2, 5);
+                
+                // HP-mätare (nuvarande hälsa)
+                ctx.fillStyle = 'lime';
+                const hpWidth = (this.hp / this.maxHp) * (this.radius * 2);
+                ctx.fillRect(this.x - this.radius, this.y - this.radius - 10, hpWidth, 5);
+            }
+
+            update() {
+                this.x -= this.speed;
+            }
+
+            takeDamage(amount) {
+                this.hp -= amount;
+            }
+        }
+
+        /**
+         * Klassen för projektiler
+         */
+        class Projectile {
+            constructor(x, y, target, damage, angle) {
+                this.x = x;
+                this.y = y;
+                this.target = target;
+                this.damage = damage;
+                this.radius = 5;
+                this.speed = 5;
+                this.color = 'cyan';
+                
+                // Beräknar initial velocity baserat på tornets vinkel (för fast bana)
+                this.vx = Math.cos(angle) * this.speed;
+                this.vy = Math.sin(angle) * this.speed;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            update() {
+                // Homing-läge: Om målet fortfarande finns
+                if (this.target && this.target.hp > 0) {
+                    const dx = this.target.x - this.x;
+                    const dy = this.target.y - this.y;
+                    const dist = Math.hypot(dx, dy);
+
+                    if (dist > 0) {
+                        const dirX = dx / dist;
+                        const dirY = dy / dist;
+                        
+                        this.x += dirX * this.speed;
+                        this.y += dirY * this.speed;
+                        
+                        this.vx = dirX * this.speed;
+                        this.vy = dirY * this.speed;
+                    } else {
+                        // Nådde målets nuvarande position, nollställ target för att gå över till fast bana
+                        this.target = null;
+                    }
+                    
+                } else {
+                    // Fast bana-läge: Målet är dött/null.
+                    this.target = null;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                }
+            }
+        }
+
+        // --- Huvud-torn logik ---
+
+        /**
+         * Uppgraderar båda tornen och hanterar skapandet av tower2 vid nivå 10.
+         */
+        function upgradeTower() {
+            if (!tower) return;
+            const cost = getUpgradeCost(tower.level);
+            
+            if (isSandboxMode || coins >= cost) {
+                if (!isSandboxMode) {
+                    coins -= cost;
+                }
+                
+                // Steg 1: Uppgradera det primära tornet
+                tower.upgrade(true); 
+                
+                // Steg 2: Synkronisera stats till eventuella sekundära torn
+                if (tower2) {
+                    tower2.level = tower.level;
+                    tower2.upgrade(false); 
+                }
+                
+                // Steg 3: Skapa det andra tornet om vi når DUAL_TURRET_LEVEL
+                if (tower.level >= DUAL_TURRET_LEVEL && !tower2) {
+                    // Justera tower positioner för att centrera de dubbla tornen
+                    const offset = 30; // Avstånd från mittlinjen
+                    const center = canvas.height / 2;
+                    
+                    // Skapa det sekundära tornet (placeras nedanför)
+                    tower2 = new Tower(50, center + offset);
+                    tower2.level = tower.level;
+                    tower2.calculateStats(); // Behöver bara kalla calculateStats för att sätta stats
+                    
+                    // Justera primära tornet (placeras ovanför)
+                    tower.y = center - tower.height / 2 - offset;
+                    tower.pivotY = tower.y + tower.height / 2;
+                }
+                
+                updateUI();
+                console.log(`Torn uppgraderat till nivå ${tower.level}`);
+            }
+        }
+        
+        // --- Monster-spawning ---
+
+        function calculateSpawnInterval() {
+            let interval = baseSpawnInterval * Math.pow(SPAWN_INTERVAL_SCALE_PER_LEVEL, tower.level - 1);
+            return Math.max(interval, 500); 
+        }
+
+        function spawnMonster(currentTime) {
+            if (!tower) return;
+            const spawnInterval = calculateSpawnInterval(); 
+
+            if (currentTime - lastSpawn > spawnInterval) {
+                // Beräkna monster HP baserat på tornets nivå (monsterna blir tuffare ju högre nivå tornet har)
+                const monsterMaxHp = BASE_MONSTER_HP * Math.pow(HP_SCALE_PER_LEVEL, tower.level - 1);
+                const monsterSpeed = Math.random() * 0.7 + 0.3;
+                const monsterColor = `hsl(${Math.random() * 60 + 20}, 70%, 50%)`;
+                
+                const startX = canvas.width + 15;
+                const startY = Math.random() * (canvas.height - 30) + 15;
+                
+                monsters.push(new Monster(startX, startY, monsterMaxHp, monsterSpeed, monsterColor)); 
+                lastSpawn = currentTime;
+                
+                if (baseSpawnInterval > 1500) { 
+                    baseSpawnInterval *= 0.99;
+                }
+            }
+        }
+
+        // --- UI-funktioner ---
+        
+        function updateUI() {
+            coinsDisplay.textContent = `Coins: ${coins}`;
+            wasteDisplay.textContent = `Waste: ${monsterWaste}`;
+            foodDisplay.textContent = `Food: ${food}`;
+            woodDisplay.textContent = `Wood: ${wood}`;
+            metalDisplay.textContent = `Metal: ${metal}`;
+            earthDisplay.textContent = `Earth: ${earth}`;
+            
+            wasteToSell.textContent = monsterWaste; 
+            modeDisplay.textContent = `Mode: ${isSandboxMode ? 'Sandbox (Oändligt)' : 'Standard'}`;
+
+            // Uppdaterar torn-UI
+            const levelText = `Lvl ${tower ? tower.level : 1}`;
+            towerLevelDisplay.textContent = levelText; 
+            if (currentLevelInMenu) {
+                currentLevelInMenu.textContent = levelText; 
+            }
+
+            const nextCost = getUpgradeCost(tower ? tower.level : 1);
+            upgradeCostDisplay.textContent = `Kostnad: ${isSandboxMode ? 'Gratis' : `${nextCost} C`}`;
+            
+            upgradeButton.disabled = !isSandboxMode && coins < nextCost;
+            
+            selectFarmButton.disabled = !isSandboxMode && coins < FARM_COST_COINS;
+            selectMineButton.disabled = !isSandboxMode && wood < MINE_COST_WOOD;
+            
+            // Uppdatera muspekare i byggläge
+            if (selectedBuildingType && gameState === 'PLAYING') {
+                 canvas.style.cursor = 'crosshair';
+            } else {
+                 canvas.style.cursor = 'default';
+            }
+        }
+
+        // --- Händelselyssnare (Menyer & Spelkontroller) ---
+
+        // Start Game
+        startGameButton.addEventListener('click', () => startGame('standard'));
+        
+        // Sandbox
+        sandboxButton.addEventListener('click', () => startGame('sandbox')); 
+
+        // Pausmeny-knappar
+        resumeButton.addEventListener('click', () => togglePause());
+        restartButton.addEventListener('click', () => startGame('standard'));
+        returnToMenuButton.addEventListener('click', () => showMenu());
+
+        // Controls Modal
+        controlsButton.addEventListener('click', () => {
+            startMenu.classList.add('hidden');
+            controlsModal.classList.remove('hidden');
+        });
+        closeControlsButton.addEventListener('click', () => {
+            controlsModal.classList.add('hidden');
+            startMenu.classList.remove('hidden');
+        });
+
+        // Credits Modal
+        creditsButton.addEventListener('click', () => {
+            startMenu.classList.add('hidden');
+            creditsModal.classList.remove('hidden');
+        });
+        closeCreditsButton.addEventListener('click', () => {
+            creditsModal.classList.add('hidden');
+            startMenu.classList.remove('hidden');
+        });
+
+        // Lyssnar efter 'E', 'F' och 'L'
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (gameState === 'MENU' || gameState === 'GAME_OVER') return;
+
+            if (key === 'e') {
+                toggleSellMenu();
+            } else if (key === 'f') {
+                toggleBuildMenu();
+            } else if (key === 'l') {
+                // Pausknappen ska alltid fungera när spelet pågår eller är pausat
+                togglePause();
+            }
+        });
+
+        // Lyssnar efter klick på canvas för placering
+        canvas.addEventListener('mousedown', (e) => {
+            if (gameState !== 'PLAYING' || !selectedBuildingType) return;
+                
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 1. Förhindra byggnation i den blå skyddszonen (x < 150)
+            if (x < BUILD_ZONE_LIMIT) {
+                console.error("Kan inte bygga i skyddszonen.");
+                selectedBuildingType = null;
+                updateUI();
+                return; 
+            }
+
+            // 2. Förhindra byggnadskollision
+            if (checkBuildingCollision(x, y)) {
+                 console.error("Kan inte placera byggnad ovanpå en annan!");
+                 return;
+            }
+
+            let costMet = false;
+
+            // 3. Kolla kostnad och drag av resurser
+            if (isSandboxMode) {
+                costMet = true; 
+            } else if (selectedBuildingType === 'FARM' && coins >= FARM_COST_COINS) {
+                coins -= FARM_COST_COINS;
+                costMet = true;
+            } else if (selectedBuildingType === 'MINE' && wood >= MINE_COST_WOOD) {
+                wood -= MINE_COST_WOOD;
+                costMet = true;
+            }
+
+            if (costMet) {
+                // 4. Placera byggnad (x, y är centrerad klickposition)
+                buildings.push(new Building(x, y, selectedBuildingType));
+                
+                // Återställ byggläget 
+                isBuildingMode = false; 
+                selectedBuildingType = null;
+                buildMenu.classList.add('hidden');
+                
+            } else {
+                console.error(`Inte tillräckligt med resurser för att bygga ${selectedBuildingType}.`);
+                // Återställ byggläget om man klickar men inte har råd
+                isBuildingMode = false;
+                selectedBuildingType = null;
+                buildMenu.classList.add('hidden');
+            }
+            
+            updateUI();
+        });
+
+        // Lyssnar efter klick på sälj-knappen
+        sellButton.addEventListener('click', () => {
+            coins += monsterWaste * WASTE_COIN_VALUE; 
+            monsterWaste = 0; 
+            updateUI();
+        });
+
+        // Lyssnar efter klick på uppgraderingsknappen
+        upgradeButton.addEventListener('click', () => {
+            if (tower) {
+                upgradeTower();
+            }
+        });
+
+        // Lyssnare för byggknappar
+        selectFarmButton.addEventListener('click', () => {
+            if (isSandboxMode || coins >= FARM_COST_COINS) {
+                selectedBuildingType = 'FARM';
+                buildMenu.classList.add('hidden'); 
+            } else {
+                 console.error("För lite Coins för Farm!");
+            }
+            updateUI();
+        });
+
+        selectMineButton.addEventListener('click', () => {
+            if (isSandboxMode || wood >= MINE_COST_WOOD) {
+                selectedBuildingType = 'MINE';
+                buildMenu.classList.add('hidden'); 
+            } else {
+                console.error("För lite Wood för Gruva!");
+            }
+            updateUI();
+        });
+        
+        // --- Bakgrundsritning ---
+        function drawBackground() {
+            // Mörkgrå bakgrund
+            ctx.fillStyle = '#4a5568'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Basens "skyddszon"
+            ctx.fillStyle = 'rgba(90, 103, 216, 0.2)';
+            ctx.fillRect(0, 0, BUILD_ZONE_LIMIT, canvas.height); 
+            
+            // Linje för skyddszon
+            ctx.strokeStyle = 'rgba(90, 103, 216, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(BUILD_ZONE_LIMIT, 0, 2, canvas.height); 
+            
+            // Rita basens hälsa
+            if (tower) {
+                const healthBarWidth = tower.width * (tower2 ? 2 : 1);
+                const healthBarHeight = 15;
+                const x = tower.x;
+                // Rita hälsofältet under det nedre tornet (om dual) eller huvudtornet
+                const y = (tower2 ? tower2.y : tower.y) + tower.height + 10;
+                const hpRatio = baseHealth / 100;
+
+                // Grå bakgrund
+                ctx.fillStyle = '#ef4444'; // Röd bakgrund
+                ctx.fillRect(x, y, healthBarWidth, healthBarHeight);
+
+                // Grön hälsa
+                ctx.fillStyle = '#10b981'; // Smaragdgrön
+                ctx.fillRect(x, y, healthBarWidth * hpRatio, healthBarHeight);
+                
+                // Kant
+                ctx.strokeStyle = '#374151';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, y, healthBarWidth, healthBarHeight);
+            }
+        }
+
+        // --- Huvud-spellogik ---
+        
+        let lastFrameTime = 0;
+
+        // Hanterar all uppdatering och ritning
+        function gameLoop(currentTime) {
+            
+            const deltaTime = currentTime - lastFrameTime; 
+            lastFrameTime = currentTime;
+
+            // Rensa canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            
+            if (gameRunning && gameState === 'PLAYING' && tower) {
+                
+                // --- Uppdateringslogik ---
+                spawnMonster(currentTime);
+                
+                // Uppdatera torn(en)
+                tower.update(currentTime);
+                if (tower2) tower2.update(currentTime);
+
+                buildings.forEach(b => b.update(currentTime)); 
+
+                projectiles.forEach(p => p.update());
+
+                monsters.forEach(m => m.update());
+
+                // --- Kollisionshantering ---
+                
+                for (let i = projectiles.length - 1; i >= 0; i--) {
+                    const p = projectiles[i];
+                    let hit = false;
+
+                    // Kontrollera om projektilens mål har dött.
+                    if (p.target && p.target.hp <= 0) {
+                        p.target = null;
+                    }
+                    
+                    for (let j = monsters.length - 1; j >= 0; j--) {
+                        const m = monsters[j];
+                        
+                        const dist = Math.hypot(p.x - m.x, p.y - m.y);
+                        if (dist < p.radius + m.radius) {
+                            m.takeDamage(p.damage);
+                            hit = true;
+                            
+                            p.target = null; 
+
+                            if (m.hp <= 0) {
+                                monsters.splice(j, 1); 
+                                monsterWaste++; 
+                                updateUI();
+                            }
+                            break; 
+                        }
+                    }
+
+                    const outsideBounds = p.x < -100 || p.x > canvas.width + 100 || p.y < -100 || p.y > canvas.height + 100;
+
+                    if (hit || outsideBounds) {
+                        projectiles.splice(i, 1);
+                    }
+                }
+
+                // Kolla om monster nått basen
+                for (let i = monsters.length - 1; i >= 0; i--) {
+                    if (monsters[i].x - monsters[i].radius < tower.x + tower.width) {
+                        monsters.splice(i, 1); 
+                        baseHealth -= 10; 
+                        console.log(`Basen tog skada! Hälsa: ${baseHealth}`);
+                        if (baseHealth <= 0) {
+                            console.log("GAME OVER");
+                            gameState = 'GAME_OVER'; 
+                            gameRunning = false; 
+                        }
+                    }
+                }
+                
+                updateUI(); 
+
+            } // Slut på if (gameRunning && gameState === 'PLAYING')
+
+            // --- Ritningslogik (körs oavsett paus, men visas inte om GAME_OVER) ---
+            
+            if (tower) {
+                // Rita tornen
+                tower.draw();
+                if (tower2) tower2.draw();
+            }
+            
+            buildings.forEach(b => b.draw());
+
+            projectiles.forEach(p => p.draw());
+
+            monsters.forEach(m => m.draw());
+
+            // Hantera paus/game over overlay
+            if (gameState === 'PAUSED' || gameState === 'GAME_OVER') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '50px sans-serif';
+                ctx.textAlign = 'center';
+                
+                let overlayText = '';
+
+                if (gameState === 'PAUSED') {
+                    // Om Pausmeny är synlig, rita inte texten
+                    if (pauseMenu.classList.contains('hidden')) { 
+                        overlayText = 'PAUSAT (Tryck L)';
+                        ctx.fillText(overlayText, canvas.width / 2, canvas.height / 2);
+                    }
+                } else if (gameState === 'GAME_OVER') {
+                    overlayText = 'GAME OVER';
+                    ctx.font = '70px sans-serif';
+                    ctx.fillText(overlayText, canvas.width / 2, canvas.height / 2);
+                    
+                    // Om Game Over, visa pausmenyns knappar för omstart/återgång
+                    pauseMenu.classList.remove('hidden');
+                    document.getElementById('resumeButton').classList.add('hidden'); // Dölj "Återuppta"
+                }
+            } else {
+                 document.getElementById('resumeButton').classList.add('hidden'); 
+            }
+            
+            // Om vi är i placeringsläge, visa placeringsguide
+            if (selectedBuildingType && gameState === 'PLAYING') {
+                 ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                 ctx.font = '30px sans-serif';
+                 ctx.textAlign = 'center';
+                 ctx.fillText(`PLACERA ${selectedBuildingType}`, canvas.width / 2, 50);
+                 
+                 // Markör som rör sig med musen
+                 const rect = canvas.getBoundingClientRect();
+                 const mouseX = (window.mouseX - rect.left);
+                 const mouseY = (window.mouseY - rect.top);
+                 
+                 // Building size för markör (använder större storlek för att vara generisk)
+                 const markerSize = BUILDING_SIZE;
+                 const isCollision = checkBuildingCollision(mouseX, mouseY);
+                 const canPlace = mouseX >= BUILD_ZONE_LIMIT && !isCollision;
+                 
+                 ctx.strokeStyle = canPlace ? 'lime' : 'red';
+                 ctx.lineWidth = 4;
+                 
+                 // Rektangulär markör för enkel placering
+                 ctx.strokeRect(mouseX - markerSize/2, mouseY - markerSize/2, markerSize, markerSize);
+                 
+                 ctx.fillStyle = canPlace ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.3)';
+                 ctx.fillRect(mouseX - markerSize/2, mouseY - markerSize/2, markerSize, markerSize);
+            }
+
+            // Anropa nästa frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Uppdatera globala muspositioner för placeringsmarkören
+        window.addEventListener('mousemove', (e) => {
+            window.mouseX = e.clientX;
+            window.mouseY = e.clientY;
+        });
+
+        // --- Starta spelet (Initialisering) ---
+        // Sätt en initial tower instans 
+        tower = new Tower(50, canvas.height / 2); 
+        
+        updateUI(); 
+        requestAnimationFrame(gameLoop); 
+    </script>
+</body>
+</html>
     <canvas id="canvas2" width="800" height="600"></canvas>
 </div>
 
 <!-- SPEL 3 -->
 <div id="spel3" class="game-fullscreen">
     <div class="return-button" onclick="returnToMenu()">← Return to menu</div>
-    <!-- Din spelkod här -->
+    <!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last Defence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            overflow: hidden;
+            margin: 0;
+        }
+        
+        /* Dölj canvas initialt */
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            background-color: #388E3C; /* Mörkare gräs-bakgrund */
+            background-image: radial-gradient(#4CAF50 5%, transparent 5%), radial-gradient(#2E7D32 5%, transparent 5%); /* Textur */
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            display: none; /* NYTT: Dölj som standard */
+        }
+        
+        .ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+        }
+        
+        .ui-element {
+            pointer-events: auto;
+        }
+
+        .menu-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            z-index: 50; /* Ovanpå allt annat */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .menu-button {
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
+            background-color: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .menu-button:hover:not(:disabled) {
+            background-color: #2d3748;
+        }
+        .menu-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .menu-button:last-child {
+            margin-bottom: 0;
+        }
+
+        /* NYTT: Brevstil för introduktion */
+        .letter-style {
+            background-color: #fffaf0; /* Gräddvit */
+            color: #4a4a4a;
+            padding: 2.5rem;
+            border-radius: 4px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            font-family: serif;
+            line-height: 1.6;
+            text-align: left;
+            border: 1px solid #e0e0e0;
+        }
+
+        /* Resurs-UI (Två kolumner) */
+        .resource-board {
+            position: absolute;
+            top: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: monospace;
+            font-size: 1rem;
+            display: grid;
+            grid-template-columns: auto auto; /* Etikett, Värde */
+            gap: 0.5rem 1.5rem;
+        }
+
+        #material-board { left: 20px; }
+        #stats-board { right: 20px; }
+
+        .resource-board .label { color: #a0aec0; }
+        .resource-board .value { color: #ffffff; font-weight: 600; text-align: right; }
+
+        /* Crafting / Actions UI */
+        #actions-board {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .action-button {
+            display: block;
+            width: 100%;
+            padding: 0.5rem 1rem;
+            margin-top: 0.5rem;
+            background-color: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .action-button:hover { background-color: #2d3748; }
+
+        /* Byggmeny */
+        #build-menu {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.9);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem;
+            z-index: 40;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            width: 250px; 
+        }
+        
+        /* Truppvalmeny & Byggnadsmeny */
+        #troop-select-menu, #building-menu {
+            position: absolute; 
+            background-color: rgba(30, 41, 59, 0.95); 
+            padding: 0.75rem; 
+            border-radius: 8px; 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 40;
+            width: 250px;
+        }
+        #building-menu .menu-button {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Flyttade knappen till nedre högra hörnet */
+        #return-to-menu-btn {
+            position: absolute;
+            bottom: 20px; 
+            right: 20px; 
+            background-color: #c53030;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            pointer-events: auto;
+            z-index: 30;
+        }
+        #return-to-menu-btn:hover {
+            background-color: #9b2c2c;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <canvas id="game-canvas"></canvas>
+
+    
+
+<div class="ui-container">
+
+        
+
+<div id="start-menu" class="menu-screen ui-element">
+            <h1 class="text-3xl font-bold text-center mb-6 text-red-400">Last Defence</h1>
+            <button id="start-game-intro-btn" class="menu-button">Starta Spel</button>
+            <button id="sandbox-game-btn" class="menu-button">Sandbox</button>
+            <button id="controls-btn" class="menu-button">Kontroller</button>
+            <button id="credits-btn" class="menu-button bg-gray-600 hover:bg-gray-700">Credits</button>
+        </div>
+
+        
+
+<div id="intro-screen" class="menu-screen ui-element hidden">
+            <h1 class="text-2xl font-bold text-center mb-6 text-red-400">Meddelande från de Överlevande</h1>
+            <div class="letter-style text-sm mb-6">
+                <p>Kära ledare,</p>
+                <p class="mt-4 indent-4">Monster har tagit över nästan hela världen, flera länder har fallit. Du och några modiga själar har startat ett nytt samhälle, och det är ditt jobb att säkra mänskligheten från att utrotas.</p>
+                <p class="mt-4 text-right">Lycka till,</p>
+                <p class="text-right">Rådet.</p>
+            </div>
+            <button id="continue-game-btn" class="menu-button bg-green-600 hover:bg-green-700">Fortsätt till Spel</button>
+        </div>
+
+        
+
+<div id="credits-screen" class="menu-screen ui-element hidden">
+            <h1 class="text-2xl font-bold text-center mb-6">Credits</h1>
+            <p class="text-center mb-6 text-xl">Spelet skapat av:</p>
+            <p class="text-center text-4xl font-bold text-yellow-400">Zayn Lilak</p>
+            <button id="credits-back-btn" class="menu-button mt-6">Tillbaka</button>
+        </div>
+
+        
+
+<div id="controls-menu" class="menu-screen ui-element hidden">
+            <h1 class="text-2xl font-bold text-center mb-6">Kontroller</h1>
+            <ul class="list-disc list-inside space-y-2 mb-6">
+                <li><span class="font-bold">WASD / Pilar:</span> Panorera kameran</li>
+                <li><span class="font-bold">Scrollhjul:</span> Zooma in/ut</li>
+                <li><span class="font-bold">Musdrag:</span> Panorera kameran</li>
+                <li><span class="font-bold">Vänsterklick:</span> Välj ruta / Interagera</li>
+                <li><span class="font-bold">Högerklick (Övergett Hus):</span> Öppna truppval-meny</li>
+                <li><span class="font-bold">Högerklick (Byggnad):</span> Öppna Uppgraderings-/Rivningsmeny</li>
+                <li><span class="font-bold">M (Sandbox):</span> Spawna slumpmässig fiende</li>
+                <li><span class="font-bold">B (Sandbox):</span> Spawna Boss</li>
+                <li><span class="font-bold">Y:</span> Öppna/Stäng Åtgärdsmeny</li>
+            </ul>
+            <button id="controls-back-btn" class="menu-button">Tillbaka</button>
+        </div>
+
+        
+
+<div id="game-over-screen" class="menu-screen ui-element hidden">
+            <h1 class="text-3xl font-bold text-center mb-6 text-red-600">GAME OVER</h1>
+            <p class="text-center mb-6">Din bas har förstörts.</p>
+            <button id="game-over-back-btn" class="menu-button">Till Huvudmenyn</button>
+        </div>
+
+        
+
+<div id="game-ui" class="hidden">
+            
+            
+
+<button id="return-to-menu-btn" class="ui-element">Återgå till Huvudmeny</button>
+            
+            
+
+<div id="material-board" class="resource-board ui-element">
+                <span class="label">Metal:</span><span id="metal-value" class="value">0</span>
+                <span class="label">Wood:</span><span id="wood-value" class="value">0</span>
+                <span class="label">Earth:</span><span id="earth-value" class="value">0</span>
+                <span class="label">Reinf. Metal:</span><span id="reinforced-metal-value" class="value">0</span>
+            </div>
+
+            
+
+<div id="stats-board" class="resource-board ui-element">
+                <span class="label">Kills:</span><span id="kills-value" class="value">0</span>
+                <span class="label">Base HP:</span><span id="base-hp-value" class="value">100</span>
+                <span class="label">Bullets:</span><span id="bullets-value" class="value">0</span>
+                <span class="label">Food:</span><span id="food-value" class="value">0</span>
+                <span class="label">Inhabitants:</span><span id="inhabitants-value" class="value">0/0</span>
+                <span class="label">Troops:</span><span id="troops-value" class="value">0</span>
+            </div>
+
+            
+
+<div id="actions-board" class="ui-element hidden">
+                <h4 class="text-lg font-bold mb-2 text-center">Åtgärder & Crafting</h4>
+                <button id="train-troop-btn" class="action-button">Träna Trupp (1 Inb, 10 Mat)</button>
+                <button id="craft-bullets-btn" class="action-button">Skapa Skott (1 Metal -> 10 Skott)</button>
+                <button id="craft-reinforced-btn" class="action-button">Skapa F. Metal (2 Metal -> 1 F.Me)</button>
+            </div>
+
+            
+
+<div id="build-menu" class="ui-element hidden">
+                <h3 class="text-lg font-bold mb-4">Bygg</h3>
+                <button id="build-tower-btn" class="menu-button text-sm"></button>
+                <button id="build-wall-btn" class="menu-button text-sm"></button>
+                <button id="build-house-btn" class="menu-button text-sm"></button>
+                <button id="build-greenhouse-btn" class="menu-button text-sm"></button>
+                <button id="build-barracks-btn" class="menu-button text-sm"></button>
+                <button id="build-cancel-btn" class="menu-button text-sm bg-gray-600">Avbryt</button>
+            </div>
+            
+            
+
+<div id="troop-select-menu" class="ui-element hidden">
+                <h4 class="text-sm font-bold mb-3 text-yellow-400 text-center">Skicka Trupper</h4>
+                <p class="text-xs mb-3 text-gray-300">Välj antal trupper att skicka för att rädda invånaren (5 Mat kostnad):</p>
+                <button data-troops="1" class="menu-button text-xs py-1.5 px-3">1 Trupp (Liten belöning)</button>
+                <button data-troops="5" class="menu-button text-xs py-1.5 px-3">5 Trupper (Mellan belöning)</button>
+                <button data-troops="10" class="menu-button text-xs py-1.5 px-3">10 Trupper (Stor belöning)</button>
+                <button id="troop-select-cancel-btn" class="menu-button text-xs py-1.5 px-3 bg-gray-600 mt-2">Avbryt</button>
+            </div>
+
+            
+
+<div id="building-menu" class="ui-element hidden">
+                <h4 id="building-menu-title" class="text-lg font-bold mb-3 text-center text-blue-300"></h4>
+                <button id="upgrade-btn" class="menu-button text-sm bg-blue-600 hover:bg-blue-700"></button>
+                <button id="destroy-btn" class="menu-button text-sm bg-red-600 hover:bg-red-700"></button>
+                <button id="building-menu-cancel-btn" class="menu-button text-sm bg-gray-600 hover:bg-gray-700">Avbryt</button>
+            </div>
+        </div>
+        
+        <div id="sandbox-message" class="hidden ui-element absolute bottom-10 left-1/2 -translate-x-1/2 bg-yellow-600 text-black p-3 rounded-lg font-bold text-center">
+            Sandbox-läge: Tryck 'M' för slumpmässig fiende, 'B' för Boss. Tryck 'Y' för Åtgärdsmeny.
+        </div>
+
+    </div>
+
+    <script>
+        // DOM-element
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        const startMenu = document.getElementById('start-menu');
+        const introScreen = document.getElementById('intro-screen'); 
+        const creditsScreen = document.getElementById('credits-screen'); 
+        const controlsMenu = document.getElementById('controls-menu');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const gameUi = document.getElementById('game-ui');
+        const buildMenu = document.getElementById('build-menu');
+        const sandboxMessage = document.getElementById('sandbox-message');
+        const actionsBoard = document.getElementById('actions-board');
+        const troopSelectMenu = document.getElementById('troop-select-menu');
+        
+        // NYA Byggnadsmeny-element
+        const buildingMenu = document.getElementById('building-menu');
+        const buildingMenuTitle = document.getElementById('building-menu-title');
+        const upgradeBtn = document.getElementById('upgrade-btn');
+        const destroyBtn = document.getElementById('destroy-btn');
+        const buildingMenuCancelBtn = document.getElementById('building-menu-cancel-btn');
+
+
+        // Nya variabler för truppval
+        const troopSelectCancelBtn = document.getElementById('troop-select-cancel-btn');
+        const troopSelectButtons = troopSelectMenu.querySelectorAll('[data-troops]');
+
+        // Knappar
+        const startGameIntroBtn = document.getElementById('start-game-intro-btn'); 
+        const continueGameBtn = document.getElementById('continue-game-btn'); 
+        const sandboxGameBtn = document.getElementById('sandbox-game-btn');
+        const controlsBtn = document.getElementById('controls-btn');
+        const creditsBtn = document.getElementById('credits-btn'); 
+        const creditsBackBtn = document.getElementById('credits-back-btn'); 
+        const controlsBackBtn = document.getElementById('controls-back-btn');
+        const gameOverBackBtn = document.getElementById('game-over-back-btn');
+        const returnToMenuBtn = document.getElementById('return-to-menu-btn'); 
+        
+        // Byggknappar
+        const buildTowerBtn = document.getElementById('build-tower-btn');
+        const buildWallBtn = document.getElementById('build-wall-btn');
+        const buildHouseBtn = document.getElementById('build-house-btn');
+        const buildGreenhouseBtn = document.getElementById('build-greenhouse-btn');
+        const buildBarracksBtn = document.getElementById('build-barracks-btn');
+        const buildCancelBtn = document.getElementById('build-cancel-btn');
+        
+        // Åtgärds-knappar
+        const trainTroopBtn = document.getElementById('train-troop-btn');
+        const craftBulletsBtn = document.getElementById('craft-bullets-btn');
+        const craftReinforcedBtn = document.getElementById('craft-reinforced-btn');
+
+        // Resurs-UI (resten av UI-elementen är redan definierade)
+        const killsValue = document.getElementById('kills-value');
+        const baseHpValue = document.getElementById('base-hp-value');
+        const troopsValue = document.getElementById('troops-value');
+        const metalValue = document.getElementById('metal-value');
+        const bulletsValue = document.getElementById('bullets-value');
+        const woodValue = document.getElementById('wood-value');
+        const foodValue = document.getElementById('food-value');
+        const earthValue = document.getElementById('earth-value');
+        const reinforcedMetalValue = document.getElementById('reinforced-metal-value');
+        const inhabitantsValue = document.getElementById('inhabitants-value');
+
+
+        // Spelvariabler
+        let gameState = 'MENU';
+        let gameMode = 'NORMAL';
+        let lastTime = 0;
+        const TILE_SIZE = 50;
+
+        // Spelobjekt (listor)
+        let world = {}; 
+        let base;
+        let towers = [];
+        let walls = [];
+        let houses = [];
+        let greenhouses = [];
+        let barracks = [];
+        let abandonedHouses = [];
+        let monsters = [];
+        let projectiles = [];
+        let troops = []; 
+        
+        let selectedTile = null;
+        let targetAbandonedHouse = null; 
+        let focusedBuilding = null; // NYTT: Byggnad som högerklickades för uppgradering/rivning
+
+        let monsterSpawnTimer = 0;
+        let abandonedHouseSpawnTimer = 0;
+        let inhabitantGrowTimer = 0;
+        const MONSTER_SPAWN_RATE = 3000;
+        const ABANDONED_HOUSE_SPAWN_RATE = 20000;
+        const INHABITANT_GROW_RATE = 5000; // Tid för en ny invånare
+
+        // Resurser och kostnader
+        let resources = {};
+        
+        // Kostnader för nybyggnation
+        const COSTS = {
+            TOWER: { metal: 50, wood: 20 },
+            WALL: { wood: 10, reinforcedMetal: 1 },
+            HOUSE: { wood: 30, earth: 10 },
+            GREENHOUSE: { wood: 20, earth: 30 },
+            BARRACKS: { wood: 50, metal: 20 }
+        };
+
+        // NYTT: Kostnader för uppgradering (nivå 2 och 3)
+        const UPGRADE_COSTS = {
+            TOWER: { level2: { metal: 75, reinforcedMetal: 5 }, level3: { metal: 150, reinforcedMetal: 15 } },
+            WALL: { level2: { reinforcedMetal: 3 }, level3: { reinforcedMetal: 5 } },
+            HOUSE: { level2: { wood: 50, earth: 20 }, level3: { wood: 100, earth: 40 } },
+            GREENHOUSE: { level2: { earth: 50, reinforcedMetal: 3 }, level3: { earth: 100, reinforcedMetal: 6 } },
+            BARRACKS: { level2: { wood: 75, metal: 50 }, level3: { wood: 150, metal: 100 } }
+        };
+        
+        // Konstanter för räddningsuppdrag
+        const TROOP_RESCUE_FOOD_COST = 5; 
+        const BASE_RESCUE_REWARD = { metal: 5, wood: 5, earth: 5 }; 
+        
+        // Monster stats
+        const MONSTER_STATS = {
+            'NORMAL': { color: '#e53e3e', speed: 40, hp: 10, damage: 5, reward: { metal: 5, wood: 2, bullets: 1 } },
+            'MUTANT': { color: '#8b5cf6', speed: 25, hp: 50, damage: 15, reward: { metal: 10, wood: 5, bullets: 3 } }, 
+            'JUMPER': { color: '#f6ad55', speed: 100, hp: 5, damage: 10, reward: { metal: 3, wood: 1, bullets: 2 } }, 
+            'BOSS': { color: '#38b2ac', speed: 30, hp: 200, damage: 25, reward: { metal: 50, wood: 50, earth: 50 } } 
+        };
+
+        // Uppdatera knapptexter med kostnader
+        function updateBuildButtonLabels() {
+            buildTowerBtn.textContent = `Torn (${COSTS.TOWER.metal} Me, ${COSTS.TOWER.wood} Tr)`;
+            buildWallBtn.textContent = `Mur (${COSTS.WALL.wood} Tr, ${COSTS.WALL.reinforcedMetal} F.Me)`;
+            buildHouseBtn.textContent = `Hus (${COSTS.HOUSE.wood} Tr, ${COSTS.HOUSE.earth} Jo)`;
+            buildGreenhouseBtn.textContent = `Växthus (${COSTS.GREENHOUSE.earth} Jo, ${COSTS.GREENHOUSE.wood} Tr)`;
+            buildBarracksBtn.textContent = `Barack (${COSTS.BARRACKS.wood} Tr, ${COSTS.BARRACKS.metal} Me)`;
+        }
+
+        // --- Klass-definitioner (uppdaterad med nivå/kostnad) ---
+        
+        class Building {
+            constructor(x, y, type, initialCost, baseMaxHp = 50) {
+                this.x = x; this.y = y; this.type = type;
+                this.key = `${x},${y}`;
+                this.size = 1; 
+                this.level = 1;
+                this.maxLevel = 3; 
+                this.initialCosts = initialCost;
+                this.hp = baseMaxHp;
+                this.maxHp = baseMaxHp;
+            }
+            getPixelPos() { return { x: (this.x + 0.5) * TILE_SIZE, y: (this.y + 0.5) * TILE_SIZE }; }
+            update(deltaTime) {}
+            draw(ctx) {}
+        }
+        
+        class Base extends Building {
+            constructor(x, y) {
+                super(x, y, 'BASE', {}, 100);
+                this.size = 2; 
+                this.turret = new Turret(this, 3); // Bas-tornet startar med 3 skada
+                this.maxLevel = 1; // Basen kan inte uppgraderas
+            }
+            update(deltaTime) { this.turret.update(deltaTime); }
+            draw(ctx) {
+                // ... (oförändrad ritning) ...
+                const ts = TILE_SIZE;
+                const x = this.x * ts;
+                const y = this.y * ts;
+                const baseSize = this.size * ts;
+
+                const wallColor = '#8B4513'; 
+                const roofColor = '#A0522D';  
+
+                // Huvudbyggnad (tegel)
+                ctx.fillStyle = wallColor;
+                ctx.fillRect(x + 5, y + ts / 2, baseSize - 10, baseSize - ts / 2 - 5); 
+                
+                // Tak (stor triangel över 2x2 rutor)
+                ctx.fillStyle = roofColor;
+                ctx.beginPath();
+                ctx.moveTo(x + 5, y + ts / 2); 
+                ctx.lineTo(x + baseSize / 2, y + 5); 
+                ctx.lineTo(x + baseSize - 5, y + ts / 2); 
+                ctx.closePath();
+                ctx.fill();
+
+                // Mindre fönster
+                ctx.fillStyle = 'rgba(173, 216, 230, 0.7)'; 
+                ctx.fillRect(x + ts * 0.4, y + ts * 0.8, ts * 0.2, ts * 0.2);
+                ctx.fillRect(x + ts * 1.4, y + ts * 0.8, ts * 0.2, ts * 0.2);
+
+                // Tornet är nu integrerat i taket
+                this.turret.draw(ctx, { x: x + baseSize / 2, y: y + ts * 0.3 }); 
+                
+                // HP-bar
+                const barWidth = baseSize;
+                const barHeight = 8;
+                const barX = x;
+                const barY = y + baseSize + 5; 
+                
+                ctx.fillStyle = '#4a5568';
+                ctx.fillRect(barX, barY, barWidth, barHeight);
+                ctx.fillStyle = '#38a169';
+                ctx.fillRect(barX, barY, barWidth * (this.hp / this.maxHp), barHeight);
+            }
+            takeDamage(amount) {
+                this.hp -= amount;
+                if (this.hp <= 0) {
+                    this.hp = 0;
+                    gameOver();
+                }
+            }
+            // Måste åsidosätta getPixelPos för 2x2
+            getPixelPos() { return { x: (this.x + this.size / 2) * TILE_SIZE, y: (this.y + this.size / 2) * TILE_SIZE }; }
+        }
+        
+        class Tower extends Building {
+            constructor(x, y) { 
+                super(x, y, 'TOWER', COSTS.TOWER, 75);
+                this.turret = new Turret(this, 5); // Torn startar med 5 skada
+            }
+            update(deltaTime) { this.turret.update(deltaTime); }
+            draw(ctx) {
+                // ... (oförändrad ritning) ...
+                ctx.fillStyle = '#a0aec0'; 
+                ctx.strokeStyle = '#854d0e'; 
+                ctx.lineWidth = 3;
+                
+                ctx.beginPath();
+                ctx.rect(this.x * TILE_SIZE, this.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                ctx.fill();
+                ctx.stroke();
+                
+                this.turret.draw(ctx);
+            }
+        }
+
+        class Wall extends Building {
+            constructor(x, y) { 
+                super(x, y, 'WALL', COSTS.WALL, 100);
+            }
+            update(deltaTime) {} 
+            draw(ctx) {
+                // ... (oförändrad ritning) ...
+                ctx.fillStyle = '#718096'; 
+                const wallSize = TILE_SIZE / 3;
+                const offset = (TILE_SIZE - wallSize) / 2;
+                ctx.fillRect(
+                    this.x * TILE_SIZE + offset, 
+                    this.y * TILE_SIZE + offset, 
+                    wallSize, 
+                    wallSize
+                );
+            }
+        }
+
+        class House extends Building {
+            constructor(x, y) { 
+                super(x, y, 'HOUSE', COSTS.HOUSE, 50);
+                this.inhabitantCapacity = 5;
+            }
+            update(deltaTime) {}
+            draw(ctx) {
+                // ... (oförändrad ritning) ...
+                const ts = TILE_SIZE;
+                const x = this.x * ts;
+                const y = this.y * ts;
+                const houseColor = '#D2B48C'; 
+                const roofColor = '#A0522D';  
+                
+                ctx.fillStyle = houseColor;
+                ctx.fillRect(x + 5, y + ts / 3, ts - 10, ts * 2 / 3 - 5);
+                
+                ctx.fillStyle = roofColor;
+                ctx.beginPath();
+                ctx.moveTo(x + 5, y + ts / 3);
+                ctx.lineTo(x + ts / 2, y + 5);
+                ctx.lineTo(x + ts - 5, y + ts / 3);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.fillStyle = '#654321';
+                ctx.fillRect(x + ts / 2 - 4, y + ts * 2 / 3, 8, ts / 3 - 5);
+            }
+        }
+
+        class Greenhouse extends Building {
+            constructor(x, y) { 
+                super(x, y, 'GREENHOUSE', COSTS.GREENHOUSE, 40); 
+                this.produceTimer = 0; 
+                this.produceRate = 3000; // 3 sekunder
+            } 
+            update(deltaTime) {
+                this.produceTimer += deltaTime;
+                if (this.produceTimer >= this.produceRate) {
+                    this.produceTimer = 0;
+                    resources.food++;
+                }
+            }
+            draw(ctx) {
+                // ... (oförändrad ritning) ...
+                const ts = TILE_SIZE;
+                const x = this.x * ts;
+                const y = this.y * ts;
+                
+                ctx.fillStyle = '#6B8E23'; 
+                ctx.fillRect(x + 5, y + ts * 0.7, ts - 10, ts * 0.3 - 5);
+
+                ctx.fillStyle = 'rgba(173, 216, 230, 0.4)'; 
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; 
+                ctx.lineWidth = 2;
+                
+                ctx.beginPath();
+                ctx.arc(x + ts / 2, y + ts / 2 - 5, ts / 2 - 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath();
+                ctx.arc(x + ts * 0.7, y + ts * 0.3, ts * 0.15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Barracks extends Building {
+            constructor(x, y) { 
+                super(x, y, 'BARRACKS', COSTS.BARRACKS, 60);
+            }
+            update(deltaTime) {}
+            draw(ctx) {
+                // ... (oförändrad ritning) ...
+                const ts = TILE_SIZE;
+                const x = this.x * ts;
+                const y = this.y * ts;
+                const tentColor = '#8B4513'; 
+                const stripeColor = '#A0522D'; 
+
+                ctx.fillStyle = tentColor;
+                ctx.fillRect(x + 5, y + ts * 0.6, ts - 10, ts * 0.4 - 5);
+
+                ctx.beginPath();
+                ctx.moveTo(x + 5, y + ts * 0.6); 
+                ctx.lineTo(x + ts / 2, y + 5);      
+                ctx.lineTo(x + ts - 5, y + ts * 0.6); 
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.strokeStyle = stripeColor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x + ts / 2, y + 5);
+                ctx.lineTo(x + ts / 2, y + ts * 0.6); 
+
+                ctx.moveTo(x + 15, y + ts * 0.4); 
+                ctx.lineTo(x + 15, y + ts * 0.6); 
+
+                ctx.moveTo(x + ts - 15, y + ts * 0.4); 
+                ctx.lineTo(x + ts - 15, y + ts * 0.6); 
+                ctx.stroke();
+            }
+        }
+        
+        class AbandonedHouse {
+            constructor(x, y) { this.x = x; this.y = y; this.key = `${x},${y}`; }
+            update(deltaTime) {}
+            draw(ctx) {
+                // ... (oförändrad ritning) ...
+                const ts = TILE_SIZE;
+                const x = this.x * ts;
+                const y = this.y * ts;
+                const houseColor = '#5A5A5A'; 
+                const roofColor = '#3A3A3A';  
+                
+                ctx.fillStyle = houseColor;
+                ctx.fillRect(x + 5, y + ts / 3, ts - 10, ts * 2 / 3 - 5);
+                
+                ctx.fillStyle = roofColor;
+                ctx.beginPath();
+                ctx.moveTo(x + 5, y + ts / 3);
+                ctx.lineTo(x + ts / 2, y + 5);
+                ctx.lineTo(x + ts - 5, y + ts / 3);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.strokeStyle = '#c53030';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x + 5, y + 5);
+                ctx.lineTo(x + ts - 5, y + ts - 5);
+                ctx.moveTo(x + ts - 5, y + 5);
+                ctx.lineTo(x + 5, y + ts - 5);
+                ctx.stroke();
+            }
+
+            getPixelPos() { return { x: (this.x + 0.5) * TILE_SIZE, y: (this.y + 0.5) * TILE_SIZE }; }
+
+            rescueSuccess(troopsSent) {
+                let rewardMultiplier = 1;
+                if (troopsSent === 5) rewardMultiplier = 3;
+                if (troopsToSend === 10) rewardMultiplier = 5;
+                
+                resources.inhabitants++;
+                resources.metal += BASE_RESCUE_REWARD.metal * rewardMultiplier;
+                resources.wood += BASE_RESCUE_REWARD.wood * rewardMultiplier;
+                resources.earth += BASE_RESCUE_REWARD.earth * rewardMultiplier;
+                
+                delete world[this.key];
+                
+                console.log(`Räddningsuppdrag slutfört! Skickade ${troopsSent} trupper, fick +1 Invånare och belöningar.`);
+                return true;
+            }
+        }
+
+        class Turret {
+            constructor(parent, damage) {
+                this.parent = parent;
+                this.range = 250; this.cooldown = 0;
+                this.fireRate = 500; this.target = null; this.angle = 0;
+                this.damage = damage; 
+            }
+            update(deltaTime) {
+                if (this.cooldown > 0) this.cooldown -= deltaTime;
+                if (!this.target || this.target.hp <= 0 || getDistance(this.parent.getPixelPos(), this.target) > this.range) {
+                    this.target = this.findTarget();
+                }
+                if (this.target) {
+                    const pos = this.parent.getPixelPos();
+                    this.angle = Math.atan2(this.target.y - pos.y, this.target.x - pos.x);
+                    if (this.cooldown <= 0) this.shoot();
+                }
+            }
+            findTarget() {
+                let closestMonster = null;
+                let minDistance = this.range;
+                const pos = this.parent.getPixelPos();
+                for (const monster of monsters) {
+                    const distance = getDistance(pos, monster);
+                    if (distance < minDistance) { minDistance = distance; closestMonster = monster; }
+                }
+                return closestMonster;
+            }
+            shoot() {
+                if (gameMode !== 'SANDBOX' && resources.bullets <= 0) return;
+                this.cooldown = this.fireRate;
+                if (gameMode !== 'SANDBOX') resources.bullets--;
+                const pos = this.parent.getPixelPos();
+                projectiles.push(new Projectile(pos.x, pos.y, this.target, this.damage));
+            }
+            draw(ctx, offset = null) {
+                const pos = offset || this.parent.getPixelPos();
+                ctx.save();
+                ctx.translate(pos.x, pos.y);
+                ctx.rotate(this.angle);
+                ctx.fillStyle = '#2d3748';
+                ctx.fillRect(0, -3, 25, 6);
+                ctx.restore();
+            }
+        }
+
+        class Projectile {
+            constructor(x, y, target, damage) {
+                this.x = x; this.y = y; this.target = target;
+                this.speed = 400; this.damage = damage; this.hp = 1; 
+            }
+            // ... (oförändrad Projectile.update och Projectile.draw) ...
+            update(deltaTime) {
+                if (!this.target || this.target.hp <= 0) { this.hp = 0; return; }
+                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                this.x += Math.cos(angle) * this.speed * (deltaTime / 1000);
+                this.y += Math.sin(angle) * this.speed * (deltaTime / 1000);
+                if (getDistance(this, this.target) < this.target.size / 2) {
+                    this.target.takeDamage(this.damage);
+                    this.hp = 0;
+                }
+            }
+            draw(ctx) {
+                ctx.fillStyle = '#f6e05e';
+                ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        
+        class Monster {
+            // ... (oförändrad Monster-klass) ...
+            constructor(x, y, type = 'NORMAL') {
+                this.x = x; this.y = y;
+                this.type = type;
+                const stats = MONSTER_STATS[type];
+                
+                this.size = 20; 
+                this.speed = stats.speed;
+                this.color = stats.color;
+                this.hp = stats.hp; 
+                this.maxHp = stats.hp;
+                this.reward = stats.reward;
+                this.attackRange = 40; 
+                this.damage = stats.damage;
+                this.attackCooldown = 1000; 
+                this.attackTimer = 0;
+            }
+            
+            update(deltaTime) {
+                const basePos = base.getPixelPos();
+                const distanceToBase = getDistance(this, basePos);
+                const delta = deltaTime / 1000;
+                
+                if (distanceToBase <= this.attackRange) {
+                    this.attackTimer += deltaTime;
+                    if (this.attackTimer >= this.attackCooldown) {
+                        this.attackTimer = 0;
+                        base.takeDamage(this.damage);
+                    }
+                } else {
+                    const angle = Math.atan2(basePos.y - this.y, basePos.x - this.x);
+                    const dx = Math.cos(angle) * this.speed * delta;
+                    const dy = Math.sin(angle) * this.speed * delta;
+                    
+                    if (!checkWallCollision(this.x + dx, this.y, this.size)) {
+                        this.x += dx;
+                    } else if (Math.abs(dy) > 0.1) {
+                         if (!checkWallCollision(this.x, this.y + dy, this.size)) {
+                            this.y += dy;
+                         }
+                    }
+
+                    if (!checkWallCollision(this.x, this.y + dy, this.size)) {
+                        this.y += dy;
+                    } else if (Math.abs(dx) > 0.1) {
+                        if (!checkWallCollision(this.x + dx, this.y, this.size)) {
+                            this.x += dx;
+                        }
+                    }
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.fillStyle = this.color;
+                const r = this.size / 2;
+                
+                if (this.type === 'NORMAL') {
+                    ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath(); ctx.arc(this.x - r/3, this.y - r/4, r/5, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(this.x + r/3, this.y - r/4, r/5, 0, Math.PI * 2); ctx.fill();
+
+                } else if (this.type === 'MUTANT') {
+                    const mutantR = this.size * 0.7; 
+                    ctx.beginPath();
+                    for (let i = 0; i < 8; i++) {
+                        const angle = i * (Math.PI / 4);
+                        const x = this.x + mutantR * Math.cos(angle);
+                        const y = this.y + mutantR * Math.sin(angle);
+                        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+
+                } else if (this.type === 'JUMPER') {
+                    const jumperR = r * 0.8;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y - jumperR); 
+                    ctx.lineTo(this.x - jumperR * 0.866, this.y + jumperR * 0.5); 
+                    ctx.lineTo(this.x + jumperR * 0.866, this.y + jumperR * 0.5); 
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                } else if (this.type === 'BOSS') {
+                    const s = this.size * 1.5;
+                    ctx.fillRect(this.x - s/2, this.y - s/2, s, s);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.beginPath(); ctx.arc(this.x, this.y, s/3, 0, Math.PI * 2); ctx.fill();
+                }
+                
+                ctx.restore();
+                
+                ctx.fillStyle = 'white';
+                ctx.font = '8px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.type, this.x, this.y + 4); 
+
+                if (this.hp < this.maxHp) {
+                    const barWidth = this.size; const barHeight = 4;
+                    ctx.fillStyle = '#4a5568';
+                    ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 5, barWidth, barHeight);
+                    ctx.fillStyle = '#38a169';
+                    ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 5, barWidth * (this.hp / this.maxHp), barHeight);
+                }
+            }
+            
+            takeDamage(amount) {
+                this.hp -= amount;
+                if (this.hp <= 0) this.die();
+            }
+            
+            die() {
+                resources.kills++;
+                resources.metal += (this.reward.metal || 0);
+                resources.wood += (this.reward.wood || 0);
+                resources.bullets += (this.reward.bullets || 0);
+                resources.earth += (this.reward.earth || 0); 
+            }
+        }
+        
+        class Troop {
+            // ... (oförändrad Troop-klass) ...
+            constructor(startX, startY, targetHouse, troopCount) {
+                this.x = startX;
+                this.y = startY;
+                this.targetHouse = targetHouse; 
+                this.troopCount = troopCount;
+                this.speed = 80; 
+                this.size = 10;
+                this.hp = 1; 
+            }
+
+            update(deltaTime) {
+                if (this.hp <= 0) return;
+
+                if (!this.targetHouse.key || !world[this.targetHouse.key]) {
+                    this.hp = 0; 
+                    return;
+                }
+
+                const targetPos = this.targetHouse.getPixelPos();
+                const distanceToTarget = getDistance(this, targetPos);
+
+                if (distanceToTarget < 10) {
+                    this.targetHouse.rescueSuccess(this.troopCount);
+                    this.hp = 0; 
+                } else {
+                    const angle = Math.atan2(targetPos.y - this.y, targetPos.x - this.x);
+                    this.x += Math.cos(angle) * this.speed * (deltaTime / 1000);
+                    this.y += Math.sin(angle) * this.speed * (deltaTime / 1000);
+                }
+            }
+
+            draw(ctx) {
+                if (this.hp <= 0) return;
+                ctx.fillStyle = '#48bb78'; 
+                ctx.beginPath(); 
+                ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2); 
+                ctx.fill();
+
+                ctx.fillStyle = 'white';
+                ctx.font = '8px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.troopCount, this.x, this.y + 3);
+            }
+        }
+
+
+        // --- Hjälpfunktioner ---
+        
+        function checkWallCollision(x, y, radius) {
+            // ... (oförändrad) ...
+            const checkPoints = [
+                { x: x - radius / 2, y: y - radius / 2 },
+                { x: x + radius / 2, y: y - radius / 2 },
+                { x: x - radius / 2, y: y + radius / 2 },
+                { x: x + radius / 2, y: y + radius / 2 }
+            ];
+
+            for (const point of checkPoints) {
+                const { tileX, tileY } = worldToGrid(point.x, point.y);
+                const obj = world[`${tileX},${tileY}`];
+                if (obj instanceof Wall) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function getDistance(obj1, obj2) {
+            const dx = obj1.x - obj2.x;
+            const dy = obj1.y - obj2.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        function isTileOccupied(tileX, tileY) {
+            return !!world[`${tileX},${tileY}`];
+        }
+        
+        function getObjectAtTile(tileX, tileY) {
+            return world[`${tileX},${tileY}`] || null;
+        }
+
+        function occupyTile(tileX, tileY, size, object) {
+            for(let x = 0; x < size; x++) {
+                for(let y = 0; y < size; y++) {
+                    world[`${tileX + x},${tileY + y}`] = object;
+                }
+            }
+        }
+
+        function screenToWorld(x, y) {
+            return {
+                x: (x - canvas.width / 2) / camera.zoom + camera.x,
+                y: (y - canvas.height / 2) / camera.zoom + camera.y
+            };
+        }
+        
+        function worldToGrid(worldX, worldY) {
+            return {
+                tileX: Math.floor(worldX / TILE_SIZE),
+                tileY: Math.floor(worldY / TILE_SIZE)
+            };
+        }
+        
+        function getRandomMonsterType() {
+            const rand = Math.random() * 100;
+            if (rand < 70) return 'NORMAL';
+            if (rand < 85) return 'MUTANT';
+            return 'JUMPER';
+        }
+
+        function spawnMonster(type = getRandomMonsterType()) {
+            const basePos = base.getPixelPos();
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.max(canvas.width, canvas.height) / camera.zoom + 100;
+            const x = basePos.x + Math.cos(angle) * distance;
+            const y = basePos.y + Math.sin(angle) * distance;
+            monsters.push(new Monster(x, y, type));
+        }
+
+        function spawnAbandonedHouse() {
+            const basePos = base.getPixelPos();
+            const angle = Math.random() * Math.PI * 2;
+            const distance = (Math.random() * 1000) + 500; 
+            
+            const worldX = basePos.x + Math.cos(angle) * distance;
+            const worldY = basePos.y + Math.sin(angle) * distance;
+            
+            const { tileX, tileY } = worldToGrid(worldX, worldY);
+
+            if (Math.abs(tileX - base.x) < 5 && Math.abs(tileY - base.y) < 5) return;
+
+            if (!isTileOccupied(tileX, tileY)) {
+                const newHouse = new AbandonedHouse(tileX, tileY);
+                abandonedHouses.push(newHouse);
+                occupyTile(tileX, tileY, 1, newHouse);
+            }
+        }
+        
+        function updateUI() {
+            const inf = '∞';
+            const isSandbox = gameMode === 'SANDBOX';
+
+            metalValue.textContent = isSandbox ? inf : resources.metal;
+            woodValue.textContent = isSandbox ? inf : resources.wood;
+            earthValue.textContent = isSandbox ? inf : resources.earth;
+            reinforcedMetalValue.textContent = isSandbox ? inf : resources.reinforcedMetal;
+
+            killsValue.textContent = resources.kills;
+            baseHpValue.textContent = `${base.hp} / ${base.maxHp}`;
+            baseHpValue.style.color = (base.hp / base.maxHp < 0.3) ? '#e53e3e' : '#ffffff';
+            bulletsValue.textContent = isSandbox ? inf : resources.bullets;
+            foodValue.textContent = isSandbox ? inf : resources.food;
+            inhabitantsValue.textContent = `${resources.inhabitants} / ${resources.maxInhabitants}`;
+            troopsValue.textContent = isSandbox ? inf : resources.troops;
+        }
+
+        function hideAllScreens() {
+            startMenu.classList.add('hidden');
+            controlsMenu.classList.add('hidden');
+            creditsScreen.classList.add('hidden');
+            introScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            gameUi.classList.add('hidden');
+            sandboxMessage.classList.add('hidden');
+            buildMenu.classList.add('hidden');
+            actionsBoard.classList.add('hidden'); 
+            troopSelectMenu.classList.add('hidden');
+            buildingMenu.classList.add('hidden'); // NYTT: Göm byggnadsmenyn
+            canvas.style.display = 'none'; 
+        }
+
+        function returnToMenu() {
+            gameState = 'MENU';
+            hideAllScreens();
+            startMenu.classList.remove('hidden');
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            hideAllScreens();
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        function positionMenu(menuElement, clientX, clientY) {
+            menuElement.style.position = 'fixed'; 
+            menuElement.classList.remove('hidden');
+
+            const menuWidth = menuElement.offsetWidth;
+            const menuHeight = menuElement.offsetHeight; 
+
+            let x = clientX + 10;
+            let y = clientY + 10;
+
+            if (x + menuWidth > window.innerWidth - 10) {
+                x = clientX - menuWidth - 10;
+                if (x < 10) x = window.innerWidth - menuWidth - 10; 
+            }
+            
+            if (y + menuHeight > window.innerHeight - 10) {
+                y = clientY - menuHeight - 10;
+                if (y < 10) y = window.innerHeight - menuHeight - 10;
+            }
+            
+            if (x < 10) x = 10;
+            if (y < 10) y = 10;
+
+
+            menuElement.style.left = `${x}px`;
+            menuElement.style.top = `${y}px`;
+        }
+
+        // --- Resurs och Kostnadshantering ---
+
+        function checkCost(cost) {
+            if (gameMode === 'SANDBOX' || !cost) return true;
+            for (const [resource, amount] of Object.entries(cost)) {
+                if (resources[resource] < amount) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        function payCost(cost) {
+            if (gameMode === 'SANDBOX' || !cost) return;
+            for (const [resource, amount] of Object.entries(cost)) {
+                resources[resource] -= amount;
+            }
+        }
+
+        function getUpgradeCost(building) {
+            if (building.level >= building.maxLevel) return null;
+            const nextLevelKey = `level${building.level + 1}`;
+            return UPGRADE_COSTS[building.type][nextLevelKey] || null;
+        }
+
+        function upgradeBuilding() {
+            if (!focusedBuilding || focusedBuilding.level >= focusedBuilding.maxLevel) return;
+
+            const cost = getUpgradeCost(focusedBuilding);
+            if (!cost) { 
+                console.log("Maxnivå nådd eller kostnad saknas."); 
+                return; 
+            }
+
+            if (!checkCost(cost)) { 
+                console.log("Inte tillräckligt med resurser för uppgradering.");
+                return; 
+            }
+            
+            payCost(cost);
+            
+            focusedBuilding.level++;
+            focusedBuilding.maxHp *= 1.5; 
+            focusedBuilding.hp = focusedBuilding.maxHp; 
+            
+            // Byggnadsspecifika uppgraderingar
+            if (focusedBuilding instanceof Tower) {
+                focusedBuilding.turret.damage *= 1.5;
+                focusedBuilding.turret.fireRate *= 0.9; // Snabbare skott
+                console.log(`Torn uppgraderat till Nivå ${focusedBuilding.level}. Skada ökad, snabbare skott.`);
+            } else if (focusedBuilding instanceof Greenhouse) {
+                focusedBuilding.produceRate /= 1.5; // Snabbare produktion
+                console.log(`Växthus uppgraderat till Nivå ${focusedBuilding.level}. Snabbare matproduktion.`);
+            } else if (focusedBuilding instanceof House) {
+                resources.maxInhabitants += 5; 
+                focusedBuilding.inhabitantCapacity += 5;
+                console.log(`Hus uppgraderat till Nivå ${focusedBuilding.level}. +5 Max Invånare.`);
+            } else {
+                console.log(`${focusedBuilding.type} uppgraderat till Nivå ${focusedBuilding.level}. HP ökat.`);
+            }
+
+            // Stäng meny och återställ
+            buildingMenu.classList.add('hidden');
+            focusedBuilding = null;
+        }
+
+        function destroyBuilding() {
+            if (!focusedBuilding || focusedBuilding instanceof Base) {
+                console.log("Kan inte förstöra basen.");
+                return;
+            }
+
+            const building = focusedBuilding;
+            const refundPercentage = 0.75;
+            
+            // 1. Beräkna och ge tillbaka initial kostnad
+            for (const [resource, amount] of Object.entries(building.initialCosts)) {
+                const refund = Math.round(amount * refundPercentage);
+                if (gameMode !== 'SANDBOX') {
+                    resources[resource] += refund;
+                }
+            }
+
+            // 2. Hantera uppgraderingskostnader (enkelt: ge tillbaka en del)
+            for (let i = 1; i < building.level; i++) {
+                const levelKey = `level${i + 1}`;
+                const upgradeCost = UPGRADE_COSTS[building.type][levelKey];
+                if (upgradeCost) {
+                    for (const [resource, amount] of Object.entries(upgradeCost)) {
+                        const refund = Math.round(amount * refundPercentage);
+                        if (gameMode !== 'SANDBOX') {
+                            resources[resource] += refund;
+                        }
+                    }
+                }
+            }
+            
+            // 3. Ta bort från resurser/statistik
+            if (building instanceof House) {
+                resources.maxInhabitants -= building.inhabitantCapacity;
+                resources.inhabitants = Math.min(resources.inhabitants, resources.maxInhabitants);
+            }
+            
+            // 4. Ta bort från värld och arrayer
+            delete world[building.key];
+            
+            const arrayMap = {
+                'TOWER': towers, 'WALL': walls, 'HOUSE': houses, 
+                'GREENHOUSE': greenhouses, 'BARRACKS': barracks
+            };
+            const array = arrayMap[building.type];
+            if (array) {
+                const index = array.indexOf(building);
+                if (index > -1) array.splice(index, 1);
+            }
+            
+            console.log(`Byggnad ${building.type} förstörd. 75% av materialet återbetalat.`);
+
+            // Stäng meny och återställ
+            buildingMenu.classList.add('hidden');
+            focusedBuilding = null;
+        }
+
+
+        // --- Spel-logik (Uppdatering) ---
+
+        function update(deltaTime) {
+            // ... (oförändrad update loop) ...
+            const cameraSpeed = 500 / camera.zoom;
+            if (keysPressed['w'] || keysPressed['ArrowUp']) camera.y -= cameraSpeed * (deltaTime / 1000);
+            if (keysPressed['s'] || keysPressed['ArrowDown']) camera.y += cameraSpeed * (deltaTime / 1000);
+            if (keysPressed['a'] || keysPressed['ArrowLeft']) camera.x -= cameraSpeed * (deltaTime / 1000);
+            if (keysPressed['d'] || keysPressed['ArrowRight']) camera.x += cameraSpeed * (deltaTime / 1000);
+
+            if (gameMode === 'NORMAL') {
+                monsterSpawnTimer += deltaTime;
+                const bossRate = 300000;
+                if (monsterSpawnTimer >= bossRate) {
+                     spawnMonster('BOSS');
+                     monsterSpawnTimer = 0; 
+                } else if (monsterSpawnTimer % 3000 < deltaTime) { 
+                    spawnMonster();
+                }
+            }
+            
+            abandonedHouseSpawnTimer += deltaTime;
+            if (abandonedHouseSpawnTimer >= ABANDONED_HOUSE_SPAWN_RATE) {
+                abandonedHouseSpawnTimer = 0;
+                spawnAbandonedHouse();
+            }
+            
+            inhabitantGrowTimer += deltaTime;
+            if (inhabitantGrowTimer >= INHABITANT_GROW_RATE && resources.inhabitants < resources.maxInhabitants) {
+                inhabitantGrowTimer = 0;
+                resources.inhabitants++;
+            }
+            
+            greenhouses.forEach(g => g.update(deltaTime));
+
+            base.update(deltaTime);
+            towers.forEach(tower => tower.update(deltaTime));
+            monsters.forEach(monster => monster.update(deltaTime));
+            projectiles.forEach(proj => proj.update(deltaTime));
+            troops.forEach(t => t.update(deltaTime)); 
+
+            monsters = monsters.filter(m => m.hp > 0);
+            projectiles = projectiles.filter(p => p.hp > 0);
+            troops = troops.filter(t => t.hp > 0); 
+            
+            abandonedHouses = abandonedHouses.filter(ah => world[ah.key]);
+
+            updateUI();
+        }
+
+        // --- Spel-logik (Rendering) ---
+
+        function render() {
+            // ... (oförändrad rendering) ...
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(camera.zoom, camera.zoom);
+            ctx.translate(-camera.x, -camera.y);
+
+            // Rita rutnät
+            ctx.strokeStyle = '#4a5568';
+            ctx.lineWidth = 1 / camera.zoom;
+            ctx.beginPath();
+            const { x: startWorldX, y: startWorldY } = screenToWorld(0, 0);
+            const { x: endWorldX, y: endWorldY } = screenToWorld(canvas.width, canvas.height);
+            const startX = Math.floor(startWorldX / TILE_SIZE) * TILE_SIZE;
+            const startY = Math.floor(startWorldY / TILE_SIZE) * TILE_SIZE;
+            const endX = Math.ceil(endWorldX / TILE_SIZE) * TILE_SIZE;
+            const endY = Math.ceil(endWorldY / TILE_SIZE) * TILE_SIZE;
+            for (let x = startX; x <= endX; x += TILE_SIZE) { ctx.moveTo(x, startY); ctx.lineTo(x, endY); }
+            for (let y = startY; y <= endY; y += TILE_SIZE) { ctx.moveTo(startX, y); ctx.lineTo(endX, y); }
+            ctx.stroke();
+
+            // Rita byggnader
+            base.draw(ctx);
+            towers.forEach(tower => tower.draw(ctx));
+            walls.forEach(wall => wall.draw(ctx));
+            houses.forEach(house => house.draw(ctx));
+            greenhouses.forEach(gh => gh.draw(ctx));
+            barracks.forEach(b => b.draw(ctx));
+            abandonedHouses.forEach(ah => ah.draw(ctx));
+            
+            monsters.forEach(monster => monster.draw(ctx));
+            projectiles.forEach(proj => proj.draw(ctx));
+            troops.forEach(troop => troop.draw(ctx)); 
+            
+            if (selectedTile) {
+                ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+                ctx.fillRect(selectedTile.tileX * TILE_SIZE, selectedTile.tileY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            }
+
+            ctx.restore();
+        }
+
+        function gameLoop(timestamp) {
+            if (gameState === 'GAME' || gameState === 'SANDBOX') {
+                const deltaTime = timestamp - lastTime;
+                lastTime = timestamp;
+                update(deltaTime);
+                render();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function initGame(mode) {
+            // ... (oförändrad initGame-funktion) ...
+            gameMode = mode;
+            gameState = (mode === 'SANDBOX') ? 'SANDBOX' : 'GAME';
+            
+            hideAllScreens();
+            gameUi.classList.remove('hidden');
+            canvas.style.display = 'block'; 
+            
+            if (gameMode === 'SANDBOX') {
+                sandboxMessage.classList.remove('hidden');
+            }
+            
+            targetAbandonedHouse = null;
+            focusedBuilding = null; // Återställ
+            selectedTile = null;
+
+            // Nollställ
+            world = {};
+            towers = []; walls = []; houses = []; greenhouses = []; barracks = []; abandonedHouses = [];
+            monsters = []; projectiles = []; troops = []; 
+            monsterSpawnTimer = 0;
+            abandonedHouseSpawnTimer = 0;
+            inhabitantGrowTimer = 0;
+            
+            base = new Base(-1, -1);
+            occupyTile(-1, -1, base.size, base);
+
+            // Nollställ resurser
+            resources = {
+                kills: 0,
+                troops: 10,
+                metal: 100,
+                wood: 100,
+                earth: 100,
+                bullets: 500,
+                food: 50,
+                reinforcedMetal: 0,
+                inhabitants: 5,
+                maxInhabitants: 5
+            };
+            
+            camera.x = 0; camera.y = 0; camera.zoom = 1;
+
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // --- Bygg-logik (oförändrad) ---
+        
+        function tryBuild(type) {
+            if (!selectedTile) return;
+            const { tileX, tileY } = selectedTile;
+            if (isTileOccupied(tileX, tileY)) return;
+
+            let newBuilding;
+            let cost;
+
+            if (type === 'TOWER') {
+                cost = COSTS.TOWER;
+                if (!checkCost(cost)) return;
+                newBuilding = new Tower(tileX, tileY);
+                towers.push(newBuilding);
+            } else if (type === 'WALL') {
+                cost = COSTS.WALL;
+                if (!checkCost(cost)) return;
+                newBuilding = new Wall(tileX, tileY);
+                walls.push(newBuilding);
+            } else if (type === 'HOUSE') {
+                cost = COSTS.HOUSE;
+                if (!checkCost(cost)) return;
+                newBuilding = new House(tileX, tileY);
+                houses.push(newBuilding);
+                resources.maxInhabitants += newBuilding.inhabitantCapacity; 
+            } else if (type === 'GREENHOUSE') {
+                cost = COSTS.GREENHOUSE;
+                if (!checkCost(cost)) return;
+                newBuilding = new Greenhouse(tileX, tileY);
+                greenhouses.push(newBuilding);
+            } else if (type === 'BARRACKS') {
+                cost = COSTS.BARRACKS;
+                if (!checkCost(cost)) return;
+                newBuilding = new Barracks(tileX, tileY);
+                barracks.push(newBuilding);
+            } else {
+                return;
+            }
+            
+            payCost(cost);
+            occupyTile(tileX, tileY, 1, newBuilding);
+            console.log(`Byggde ${type} vid ${tileX}, ${tileY}`);
+
+            buildMenu.classList.add('hidden');
+            selectedTile = null;
+        }
+
+        // --- Event Listeners ---
+
+        // NYTT: Handlers för Building Menu
+        upgradeBtn.addEventListener('click', upgradeBuilding);
+        destroyBtn.addEventListener('click', destroyBuilding);
+        buildingMenuCancelBtn.addEventListener('click', () => {
+            buildingMenu.classList.add('hidden');
+            focusedBuilding = null;
+        });
+
+
+        // Canvas Input (uppdaterad contextmenu)
+        const camera = { x: 0, y: 0, zoom: 1, isDragging: false, lastMouse: { x: 0, y: 0 } };
+        const keysPressed = {};
+
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); 
+            if (gameState !== 'GAME' && gameState !== 'SANDBOX') return;
+
+            const worldPos = screenToWorld(e.clientX, e.clientY);
+            const gridPos = worldToGrid(worldPos.x, worldPos.y);
+            const targetObject = getObjectAtTile(gridPos.tileX, gridPos.tileY);
+            
+            // Göm alla menyer
+            buildMenu.classList.add('hidden');
+            troopSelectMenu.classList.add('hidden');
+            buildingMenu.classList.add('hidden');
+            selectedTile = null;
+            targetAbandonedHouse = null;
+            focusedBuilding = null;
+
+            if (targetObject instanceof AbandonedHouse) {
+                // Högerklick på Övergivet Hus
+                targetAbandonedHouse = targetObject; 
+                positionMenu(troopSelectMenu, e.clientX, e.clientY);
+
+            } else if (targetObject instanceof Building) {
+                // Högerklick på egen byggnad (inklusive basen, men basen har ingen meny)
+                if (targetObject instanceof Base) { return; } // Basen har ingen specialmeny just nu
+                
+                focusedBuilding = targetObject;
+                
+                // 1. Hämta kostnad och status
+                const cost = getUpgradeCost(focusedBuilding);
+                const maxLevelReached = focusedBuilding.level >= focusedBuilding.maxLevel;
+                const costString = cost ? 
+                    `(${Object.entries(cost).map(([res, amt]) => `${amt} ${res.substring(0, 2)}`).join(', ')})` : '';
+
+                // 2. Uppdatera menyn
+                buildingMenuTitle.textContent = `${focusedBuilding.type} (Nivå ${focusedBuilding.level})`;
+                
+                if (!maxLevelReached) {
+                    upgradeBtn.textContent = `Uppgradera till N ${focusedBuilding.level + 1} ${costString}`;
+                    upgradeBtn.classList.remove('hidden');
+                    const canAfford = checkCost(cost);
+                    upgradeBtn.disabled = !canAfford;
+                } else {
+                    upgradeBtn.textContent = `Max Nivå (${focusedBuilding.maxLevel})`;
+                    upgradeBtn.disabled = true;
+                }
+
+                destroyBtn.textContent = `Förstöra (75% Återbetalning)`;
+                
+                // 3. Visa menyn
+                positionMenu(buildingMenu, e.clientX, e.clientY);
+
+            } else {
+                // Ingen giltig högerklicksinteraktion
+                troopSelectMenu.classList.add('hidden');
+                buildingMenu.classList.add('hidden');
+            }
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (gameState !== 'GAME' && gameState !== 'SANDBOX') return;
+            
+            if (e.button === 0) {
+                
+                if (!troopSelectMenu.classList.contains('hidden') || !buildingMenu.classList.contains('hidden')) {
+                    troopSelectMenu.classList.add('hidden');
+                    buildingMenu.classList.add('hidden');
+                    targetAbandonedHouse = null;
+                    focusedBuilding = null;
+                }
+                
+                if (!buildMenu.classList.contains('hidden')) { 
+                    buildMenu.classList.add('hidden');
+                    selectedTile = null;
+                    return; 
+                }
+
+                const worldPos = screenToWorld(e.clientX, e.clientY);
+                const gridPos = worldToGrid(worldPos.x, worldPos.y);
+                
+                if (!isTileOccupied(gridPos.tileX, gridPos.tileY)) {
+                    selectedTile = gridPos;
+                    positionMenu(buildMenu, e.clientX, e.clientY);
+                    
+                } else {
+                    camera.isDragging = true;
+                    camera.lastMouse = { x: e.clientX, y: e.clientY };
+                }
+            } else if (e.button === 1) { 
+                camera.isDragging = true;
+                camera.lastMouse = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        // --- Resterande Events (oförändrade) ---
+        
+        startGameIntroBtn.addEventListener('click', () => {
+            hideAllScreens();
+            introScreen.classList.remove('hidden');
+            gameState = 'INTRO';
+        });
+
+        continueGameBtn.addEventListener('click', () => {
+            initGame('NORMAL');
+        });
+
+        creditsBtn.addEventListener('click', () => {
+            hideAllScreens();
+            creditsScreen.classList.remove('hidden');
+            gameState = 'CREDITS';
+        });
+        creditsBackBtn.addEventListener('click', returnToMenu);
+
+
+        sandboxGameBtn.addEventListener('click', () => initGame('SANDBOX'));
+        returnToMenuBtn.addEventListener('click', returnToMenu); 
+        
+        controlsBtn.addEventListener('click', () => {
+            hideAllScreens(); controlsMenu.classList.remove('hidden'); gameState = 'CONTROLS';
+        });
+        controlsBackBtn.addEventListener('click', returnToMenu); 
+        gameOverBackBtn.addEventListener('click', returnToMenu); 
+
+        // Bygg-knappar (använder tryBuild)
+        buildTowerBtn.addEventListener('click', () => tryBuild('TOWER'));
+        buildWallBtn.addEventListener('click', () => tryBuild('WALL'));
+        buildHouseBtn.addEventListener('click', () => tryBuild('HOUSE'));
+        buildGreenhouseBtn.addEventListener('click', () => tryBuild('GREENHOUSE'));
+        buildBarracksBtn.addEventListener('click', () => tryBuild('BARRACKS')); 
+        buildCancelBtn.addEventListener('click', () => {
+            buildMenu.classList.add('hidden'); selectedTile = null;
+        });
+
+        // Åtgärds-knappar (oförändrade)
+        trainTroopBtn.addEventListener('click', () => {
+            if (gameMode !== 'SANDBOX' && barracks.length === 0) { console.log("Du måste bygga en barack först!"); return; }
+            if (gameMode !== 'SANDBOX' && resources.inhabitants >= resources.maxInhabitants) { console.log("Max antal invånare nått!"); return; }
+            if (gameMode !== 'SANDBOX' && resources.food < 10) { console.log("Inte tillräckligt med mat för att träna!"); return; }
+            
+            if (gameMode !== 'SANDBOX') {
+                resources.inhabitants--; 
+                resources.food -= 10;
+            }
+            resources.troops++;
+        });
+
+        craftBulletsBtn.addEventListener('click', () => {
+            if (gameMode !== 'SANDBOX' && resources.metal < 1) { console.log("Inte tillräckligt med metal!"); return; }
+            if (gameMode !== 'SANDBOX') resources.metal--;
+            resources.bullets += 10;
+        });
+
+        craftReinforcedBtn.addEventListener('click', () => {
+            if (gameMode !== 'SANDBOX' && resources.metal < 2) { console.log("Inte tillräckligt med metal!"); return; }
+            if (gameMode !== 'SANDBOX') resources.metal -= 2;
+            resources.reinforcedMetal++;
+        });
+        
+        // Truppvalsknappar (oförändrade)
+        troopSelectButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (targetAbandonedHouse) {
+                    const troopsToSend = parseInt(e.currentTarget.getAttribute('data-troops'));
+                    const neededFood = TROOP_RESCUE_FOOD_COST;
+
+                    if (gameMode !== 'SANDBOX') {
+                        if (resources.troops < troopsToSend) {
+                            console.log(`Kunde inte skicka ${troopsToSend} trupper. Behöver ${troopsToSend} trupper.`);
+                            return;
+                        }
+                        if (resources.food < neededFood) {
+                            console.log(`Kunde inte skicka ${troopsToSend} trupper. Behöver ${neededFood} mat.`);
+                            return;
+                        }
+                    }
+
+                    if (gameMode !== 'SANDBOX') {
+                        resources.troops -= troopsToSend; 
+                        resources.food -= neededFood;
+                    }
+
+                    const startPos = base.getPixelPos();
+                    const newTroop = new Troop(startPos.x, startPos.y, targetAbandonedHouse, troopsToSend);
+                    troops.push(newTroop);
+
+                    troopSelectMenu.classList.add('hidden');
+                    targetAbandonedHouse = null;
+                }
+            });
+        });
+        
+        troopSelectCancelBtn.addEventListener('click', () => {
+            troopSelectMenu.classList.add('hidden');
+            targetAbandonedHouse = null;
+        });
+
+
+        window.addEventListener('mousemove', (e) => {
+            if (camera.isDragging) {
+                const dx = e.clientX - camera.lastMouse.x;
+                const dy = e.clientY - camera.lastMouse.y;
+                camera.x -= dx / camera.zoom;
+                camera.y -= dy / camera.zoom;
+                camera.lastMouse = { x: e.clientX, y: e.clientY };
+                if (selectedTile) { selectedTile = null; buildMenu.classList.add('hidden'); }
+                if (targetAbandonedHouse) { targetAbandonedHouse = null; troopSelectMenu.classList.add('hidden'); } 
+                if (focusedBuilding) { focusedBuilding = null; buildingMenu.classList.add('hidden'); } 
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            camera.isDragging = false;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const scroll = e.deltaY < 0 ? 1 : -1;
+            camera.zoom = Math.max(0.1, Math.min(camera.zoom * (1 + scroll * 0.1), 3.0));
+        });
+
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            keysPressed[key] = true;
+            
+            if (gameState === 'SANDBOX' && key === 'm') {
+                spawnMonster(); 
+            }
+            if (gameState === 'SANDBOX' && key === 'b') {
+                spawnMonster('BOSS'); 
+            }
+
+            if ((gameState === 'GAME' || gameState === 'SANDBOX') && key === 'y') {
+                actionsBoard.classList.toggle('hidden');
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keysPressed[e.key.toLowerCase()] = false;
+        });
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if(gameState === 'GAME' || gameState === 'SANDBOX') render();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        
+        resizeCanvas();
+        updateBuildButtonLabels(); 
+        hideAllScreens(); 
+        startMenu.classList.remove('hidden'); 
+
+    </script>
+</body>
+</html>
     <canvas id="canvas3" width="800" height="600"></canvas>
 </div>
 
@@ -1192,7 +4252,7 @@ function openGame(id) {
     document.getElementById('menu').style.display = 'none';
 
     // Visa valt spel
-    document.getElementById(id).style.display = 'flex';
+    document.getElementById(id).style.display = 'block';
 }
 
 function returnToMenu() {
@@ -1203,6 +4263,13 @@ function returnToMenu() {
     // Visa menyn igen
     document.getElementById('menu').style.display = 'flex';
 }
+
+// ESC-tangent för att återgå
+document.addEventListener('keydown', function(event) {
+    if(event.key === "Escape") {
+        returnToMenu();
+    }
+});
 </script>
 
 </body>
