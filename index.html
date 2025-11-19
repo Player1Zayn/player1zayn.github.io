@@ -3,16 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spelmeny</title>
+<title>Spelmeny Fullscreen</title>
 <style>
 body {
     font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
     background: #1e1e1e;
     color: #fff;
     text-align: center;
-    padding: 50px;
 }
-h1 { margin-bottom: 40px; }
+
+h1 { margin-top: 50px; }
+
 .button {
     display: inline-block;
     padding: 15px 30px;
@@ -25,31 +28,48 @@ h1 { margin-bottom: 40px; }
     transition: 0.2s;
 }
 .button:hover { background-color: #0056b3; transform: scale(1.1); }
-.game {
-    display: none;
-    margin-top: 30px;
-    padding: 20px;
-    border: 2px solid #fff;
-    border-radius: 10px;
-    width: 90%;      
-    height: 600px;   
-    overflow: auto;  
-    background-color: #000; 
+
+.menu, .game-fullscreen {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-fullscreen {
+    display: none; /* döljs tills ett spel väljs */
+    background-color: #000;
+    position: relative;
+}
+
+.return-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    background-color: #ff0000;
+    color: #fff;
+    cursor: pointer;
+    z-index: 100;
+}
+.return-button:hover { background-color: #cc0000; }
 </style>
 </head>
 <body>
 
-<h1>Välj ett spel</h1>
-
-<div>
-    <div class="button" onclick="showGame('spel1')">Spel 1</div>
-    <div class="button" onclick="showGame('spel2')">Spel 2</div>
-    <div class="button" onclick="showGame('spel3')">Spel 3</div>
+<!-- STARTMENY -->
+<div id="menu" class="menu">
+    <h1>Välj ett spel</h1>
+    <div class="button" onclick="openGame('spel1')">Spel 1</div>
+    <div class="button" onclick="openGame('spel2')">Spel 2</div>
+    <div class="button" onclick="openGame('spel3')">Spel 3</div>
 </div>
 
-<div id="spel1" class="game">
-    <h2>Spel 1</h2>
-    <p><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
@@ -1145,28 +1165,43 @@ loop();
 
 </script>
 </body>
-</html></p>
+</html>
+<div id="spel1" class="game-fullscreen">
+    <div class="return-button" onclick="returnToMenu()">← Return to menu</div>
+    <!-- Din spelkod här -->
+    <canvas id="canvas1" width="800" height="600"></canvas>
 </div>
 
-<div id="spel2" class="game">
-    <h2>Spel 2</h2>
-    <p>ny Drake</p>
+<!-- SPEL 2 -->
+<div id="spel2" class="game-fullscreen">
+    <div class="return-button" onclick="returnToMenu()">← Return to menu</div>
+    <!-- Din spelkod här -->
+    <canvas id="canvas2" width="800" height="600"></canvas>
 </div>
 
-<div id="spel3" class="game">
-    <h2>Spel 3</h2>
-    <p>Gorilla</p>
+<!-- SPEL 3 -->
+<div id="spel3" class="game-fullscreen">
+    <div class="return-button" onclick="returnToMenu()">← Return to menu</div>
+    <!-- Din spelkod här -->
+    <canvas id="canvas3" width="800" height="600"></canvas>
 </div>
 
 <script>
-function showGame(id) {
-    // Dölj alla spel först
-    const games = document.querySelectorAll('.game');
-    games.forEach(g => g.style.display = 'none');
-    
+function openGame(id) {
+    // Dölj menyn
+    document.getElementById('menu').style.display = 'none';
+
     // Visa valt spel
-    const selected = document.getElementById(id);
-    selected.style.display = 'block';
+    document.getElementById(id).style.display = 'flex';
+}
+
+function returnToMenu() {
+    // Dölj alla spel
+    const games = document.querySelectorAll('.game-fullscreen');
+    games.forEach(g => g.style.display = 'none');
+
+    // Visa menyn igen
+    document.getElementById('menu').style.display = 'flex';
 }
 </script>
 
