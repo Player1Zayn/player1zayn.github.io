@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spel 1</title>
+
+<style>
+    body {
+        margin: 0;
+        background: black;
+        overflow: hidden;
+    }
+
+    #game-container {
+        width: 100vw;
+        height: 100vh;
+        background: black;
+    }
+
+    .back {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(0,0,0,0.5);
+        padding: 10px 16px;
+        border-radius: 8px;
+        color: white;
+        text-decoration: none;
+        border: 2px solid #666;
+        z-index: 9999;
+        font-size: 18px;
+    }
+
+    .back:hover {
+        background: rgba(40,40,40,0.6);
+    }
+</style>
+</head>
+<body>
+
+<a class="back" href="index.html" target="_blank">✖ Stäng</a>
+
+<div id="game-container">
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Target Shooter Survival</title>
+    
+    <script type="text/tailwindcss">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Custom styles for the game */
+        body {
+            background-color: #1a1a2e; 
+            color: #ffffff;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            transition: filter 0.1s; 
+        }
+
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Styling for the crosshair */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin-top: -8px;
+            margin-left: -8px;
+            border: 2px solid #ff416c; /* Neon pink */
+            border-radius: 50%;
+            pointer-events: none; 
+            z-index: 100;
+            box-shadow: 0 0 10px #ff416c;
+        }
+
+        /* HUD (Score, Health, etc.) */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1rem;
+            display: none; 
+            z-index: 50;
+        }
+
+        /* Start Screen/Game Over Styling */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        #play-button, #restart-button, #resume-button, #menu-button {
+            background-color: #ff416c;
+            color: white;
+            padding: 0.75rem 2rem;
+            font-size: 1.25rem;
+            font-weight: bold;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.5);
+            margin-top: 1rem;
+        }
+
+        #play-button:hover, #restart-button:hover, #resume-button:hover, #menu-button:hover {
+            background-color: #ff5277;
+            transform: translateY(-2px);
+            box-shadow: 6px 20px rgba(255, 65, 108, 0.7);
+        }
+        
+        /* Ensure pulse class is defined or use Tailwind's utility class */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Three.js will inject the canvas here -->
+    </div>
+
+    <!-- Crosshair -->
+    <div id="crosshair" style="display: none;"></div>
+
+    <!-- Countdown Timer -->
+    <div id="countdown" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-8xl font-black drop-shadow-lg transition-colors duration-200" style="display: none; z-index: 1000;"></div>
+
+    <!-- HUD (Updated to include health and a pause button) -->
+    <div id="hud" class="flex justify-between items-center text-2xl font-bold">
+        <!-- Left Side: Score -->
+        <div>Score: <span id="score">0</span></div>
+        
+        <!-- Center: Wave Info & Pause -->
+        <div class="flex flex-col items-center">
+             <!-- Added Wave Counter to HUD -->
+             <div class="text-yellow-400 text-xl mb-1">WAVE <span id="wave-display">1</span></div>
+             <div class="text-lg text-gray-400 hidden sm:block font-normal">Aim with Mouse & Click to Shoot!</div>
+             <button id="pause-button" class="bg-blue-600 hover:bg-blue-700 text-white text-base py-1 px-3 rounded-md shadow-lg transition-colors mt-1">
+                PAUSE
+            </button>
+        </div>
+       
+        <!-- Right Side: Health -->
+        <div>Health: <span id="health-value" class="text-red-400">100</span></div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1 class="text-5xl font-extrabold mb-6 tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-red-500">
+            3D TARGET SHOOTER SURVIVAL
+        </h1>
+        <p class="text-xl mb-8 text-gray-300">Find your hiding spot! Movement is enabled during the 10-second countdown.</p>
+        <button id="play-button">
+            START GAME (Click to Lock Aim)
+        </button>
+        <p class="mt-4 text-sm text-gray-500">Movement: **W/A/S/D**. Aim with Mouse & Click to Shoot! Press ESC or PAUSE to pause.</p>
+    </div>
+
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // Global constants for the game
+        // Removed fixed targetCount
+        const targetRange = 50; // Max arena radius
+        const sensitivity = 0.004; 
+        const attackInterval = 750; // Bots attack faster (0.75 seconds)
+        const initialSpawnDelay = 10; // 10 seconds countdown
+        const playerCollisionRadius = 0.2; // How close the player can get to walls
+        const targetSearchRadius = 3; // How close a bot must get to its destination to pick a new one
+        const minBotApproachDistance = 2.5; // Minimum distance bots must maintain from the player
+
+        // NEW AI CONSTANTS: Variable hunting range based on LOS
+        const baseHuntingRange = 35; // Short range (used when player is blocked by a wall)
+        const longHuntingRange = 60; // Long range (used when player is clearly visible)
+        const botAttackRange = 25; // NEW: Bots will attack if they have LOS and are within this range, even while moving.
+
+        // Player Movement Constants
+        const playerSpeed = 10.0; // Units per second - The speed the bots will now match
+        const playerHeight = 1.7; // Player eye level
+        const targetGroundY = 1.5; // Target Y position (locked to ground plane)
+        
+        // Global variables for the game state and Three.js components
+        let camera, scene, renderer, gunMesh; // Added gunMesh
+        let score = 0;
+        let health = 100; 
+        let currentWave = 1; // Track current wave
+        let targets = [];
+        let healthPotions = []; // NEW: Array to store potion objects
+        let wallMeshes = []; 
+        let rotationX = 0;
+        let rotationY = 0;
+        let isGameActive = false;
+        let isTimerActive = false;
+        let spawnTimer = initialSpawnDelay;
+        let lastAttackTime = 0; 
+        let previousTime = performance.now(); 
+        let gunRecoil = 0; // For gun animation
+
+        // Player Movement State
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+        
+        // Raycaster for shooting and vector for raycasting origin (center of screen)
+        const raycaster = new THREE.Raycaster();
+        const centerVector = new THREE.Vector2(0, 0); 
+        
+        // References to DOM elements
+        const scoreElement = document.getElementById('score');
+        const healthValueElement = document.getElementById('health-value');
+        const waveDisplayElement = document.getElementById('wave-display'); // New Ref
+        const startScreen = document.getElementById('start-screen');
+        const hud = document.getElementById('hud');
+        const gameContainer = document.getElementById('game-container');
+        const playButton = document.getElementById('play-button');
+        const countdownElement = document.getElementById('countdown');
+        const pauseButton = document.getElementById('pause-button'); 
+
+        // --- Core Game Initialization ---
+
+        window.onload = function() {
+            init();
+        }
+
+        function init() {
+            // 1. Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111122); 
+            scene.fog = new THREE.FogExp2(0x111122, 0.015); // Added fog for atmosphere
+
+            // 2. Camera Setup
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 1000);
+            camera.position.set(0, playerHeight, 0); 
+            
+            // --- Add Gun Model to Camera ---
+            const gunGeometry = new THREE.BoxGeometry(0.15, 0.2, 0.6);
+            const gunMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            gunMesh = new THREE.Mesh(gunGeometry, gunMaterial);
+            // Position gun relative to camera (bottom right)
+            gunMesh.position.set(0.2, -0.15, -0.4);
+            camera.add(gunMesh); // Add gun to camera so it moves with view
+            scene.add(camera);   // Add camera to scene
+
+            // 3. Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            gameContainer.appendChild(renderer.domElement);
+
+            // 4. Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 5); 
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+            directionalLight.position.set(10, 10, 5);
+            scene.add(directionalLight);
+
+            // 5. Create Environment
+            createEnvironment();
+
+            // 6. Event Listeners
+            playButton.addEventListener('click', lockPointerAndStart);
+            pauseButton.addEventListener('click', onPauseButtonClick);
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('mousemove', onMouseMove, false);
+            document.addEventListener('click', onMouseClick, false);
+            document.addEventListener('pointerlockchange', onPointerLockChange, false);
+            document.addEventListener('keydown', onKeyDown, false);
+            document.addEventListener('keyup', onKeyUp, false);
+            
+            // 7. Start the animation loop
+            animate();
+        }
+
+        function createEnvironment() {
+            // Ground (Large plane)
+            const groundGeometry = new THREE.PlaneGeometry(targetRange * 2, targetRange * 2);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x1a1a24 }); // Darker ground
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2; // Rotate to lay flat
+            ground.position.y = 0;
+            scene.add(ground);
+            
+            // Grid helper for "Cyber" look
+            const gridHelper = new THREE.GridHelper(targetRange * 2, 40, 0xff416c, 0x2a2a35);
+            scene.add(gridHelper);
+            
+            // --- Battlefield Walls ---
+            const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x2a2a35 }); // Darker walls
+            // Restoring missing variables
+            const wallHeight = 5;
+            const wallDepth = 2;
+
+            const createWall = (width, height, depth, x, y, z, rotationY = 0) => {
+                const geometry = new THREE.BoxGeometry(width, height, depth);
+                const wall = new THREE.Mesh(geometry, wallMaterial);
+                wall.position.set(x, y + height/2, z);
+                wall.rotation.y = rotationY;
+                scene.add(wall);
+                wallMeshes.push(wall); // Store wall for line-of-sight checks
+            };
+
+            // Main Arena Walls (Boundary markers)
+            createWall(targetRange * 2, wallHeight, wallDepth, 0, 0, targetRange); 
+            createWall(targetRange * 2, wallHeight, wallDepth, 0, 0, -targetRange); 
+            createWall(wallDepth, wallHeight, targetRange * 2, targetRange, 0, 0); 
+            createWall(wallDepth, wallHeight, targetRange * 2, -targetRange, 0, 0); 
+            
+            // Interior Cover Walls (Adjusted for 100x100 map)
+            
+            // Long Center Barrier (Horizontal)
+            createWall(40, 7, wallDepth, 0, 0, 15); 
+            
+            // Two large blocks on the West side
+            createWall(10, 8, 10, -35, 0, -20);
+            createWall(10, 8, 10, -25, 0, 30);
+            
+            // Diagonal Cover on the East side
+            createWall(20, 5, wallDepth, 30, 0, -10, Math.PI / 6);
+            
+            // Low cover near the original spawn
+            createWall(10, 3, wallDepth, 10, 0, -35, -Math.PI / 4);
+            
+            // Additional central block
+            createWall(5, 10, 5, 20, 0, 40); 
+            
+            // --- NEW WALLS FOR HIDE-AND-SEEK ---
+            
+            // Long corridor walls
+            createWall(20, 6, wallDepth, -15, 0, 40); // North West
+            createWall(20, 6, wallDepth, 15, 0, -40); // South East
+
+            // Pillars near center
+            createWall(2, 6, 2, -10, 0, -5);
+            createWall(2, 6, 2, 10, 0, -5);
+            createWall(2, 6, 2, -10, 0, 25);
+            createWall(2, 6, 2, 10, 0, 25);
+            
+            // Large central block
+            createWall(10, 8, 10, 0, 0, 0); 
+            
+            // Maze structure on the far west
+            createWall(15, 5, wallDepth, -45, 0, 10, Math.PI / 2);
+            createWall(15, 5, wallDepth, -45, 0, -10, Math.PI / 2);
+            createWall(15, 5, wallDepth, -30, 0, 0); 
+            
+            // Cover on far east
+            createWall(10, 4, wallDepth, 45, 0, 40);
+            createWall(10, 4, wallDepth, 45, 0, -40);
+
+        }
+
+        // Sets a new, random point within the arena for the target to walk to.
+        function setNewWanderDestination(target) {
+            const minRange = -targetRange + 5;
+            const maxRange = targetRange - 5;
+
+            // Pick a random point within the arena bounds
+            const newX = minRange + Math.random() * (maxRange - minRange);
+            const newZ = minRange + Math.random() * (maxRange - minRange);
+
+            target.destination = new THREE.Vector3(newX, targetGroundY, newZ);
+        }
+
+        function createTarget(spawnPoint) {
+            // Target Geometry (Simple red box)
+            const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+            // Dynamic color based on wave?
+            const material = new THREE.MeshLambertMaterial({ color: 0xff416c }); 
+
+            const mesh = new THREE.Mesh(geometry, material);
+
+            // Use the provided spawn point for initial position
+            mesh.position.set(spawnPoint.x, targetGroundY, spawnPoint.z);
+            
+            // Scale health with wave: Base 100 + 10 per extra wave
+            const waveHealthBonus = (currentWave - 1) * 10;
+            
+            const targetObject = { 
+                mesh: mesh, 
+                rotationSpeed: Math.random() * 0.02 + 0.005,
+                // The base movement speed is now tied to playerSpeed for consistency.
+                moveSpeed: playerSpeed * (0.8 + Math.random() * 0.4), // 80% to 120% of player speed
+                health: 100 + waveHealthBonus, // Scaled Health
+                destination: null, 
+                lastKnownPosition: null, // Memory of where the player was last seen
+            };
+
+            // Immediately set a destination so they start moving when spawned
+            setNewWanderDestination(targetObject);
+
+            scene.add(mesh);
+            targets.push(targetObject);
+        }
+
+        // --- Event Handlers for Movement ---
+
+        function onKeyDown(event) {
+            // Check if game is active OR if the timer is running (allows movement during countdown)
+            if (!isGameActive && !isTimerActive) return; 
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
+            }
+        }
+
+        function onKeyUp(event) {
+            // Check if game is active OR if the timer is running (allows movement during countdown)
+            if (!isGameActive && !isTimerActive) return;
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                // FIX: The bug was here. moveRight should be set to false when D is released.
+                case 'KeyD': moveRight = false; break; 
+            }
+        }
+
+        // Handler for the new Pause button
+        function onPauseButtonClick() {
+             if (document.pointerLockElement === gameContainer) {
+                document.exitPointerLock(); // This triggers onPointerLockChange and pauses the game
+            }
+        }
+
+        // --- Game Flow Logic ---
+
+        function returnToMainMenu() {
+            // This function resets the game state completely and returns to the initial start screen
+            isGameActive = false;
+            isTimerActive = false;
+            
+            // Clear all targets and potions from the scene
+            targets.forEach(t => scene.remove(t.mesh));
+            targets = [];
+            
+            healthPotions.forEach(p => scene.remove(p.mesh));
+            healthPotions = [];
+            
+            // Reset state variables
+            score = 0;
+            health = 100;
+            currentWave = 1; // Reset wave
+            spawnTimer = initialSpawnDelay;
+            
+            scoreElement.textContent = score;
+            healthValueElement.textContent = health;
+            waveDisplayElement.textContent = currentWave;
+            
+            camera.position.set(0, playerHeight, 0); // Reset player position
+            
+            // Reset the start screen content to the initial state
+            startScreen.innerHTML = `
+                <h1 class="text-5xl font-extrabold mb-6 tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-red-500">
+                    3D TARGET SHOOTER SURVIVAL
+                </h1>
+                <p class="text-xl mb-8 text-gray-300">Survive infinite waves. Enemies get stronger.</p>
+                <button id="play-button">
+                    START GAME (Click to Lock Aim)
+                </button>
+                <p class="mt-4 text-sm text-gray-500">Movement: **W/A/S/D**. Aim with Mouse & Click to Shoot! Press ESC or PAUSE to pause.</p>
+            `;
+            document.getElementById('play-button').addEventListener('click', lockPointerAndStart);
+            
+            // Show start screen and hide HUD
+            startScreen.style.display = 'flex';
+            hud.style.display = 'none';
+        }
+
+        function takeDamage(damage) {
+            if (!isGameActive) return;
+
+            health = Math.max(0, health - damage);
+            healthValueElement.textContent = health;
+            
+            // Visual cue for damage (screen red tint/flash)
+            document.body.style.filter = 'brightness(0.5) hue-rotate(340deg)';
+            setTimeout(() => {
+                document.body.style.filter = 'none';
+            }, 150);
+
+            if (health <= 0) {
+                gameOver();
+            }
+        }
+
+        // NEW: Function to spawn a health potion
+        function spawnHealthPotion(position = null) {
+            // Geometry for potion (Green Crystal)
+            const geometry = new THREE.DodecahedronGeometry(0.5);
+            const material = new THREE.MeshLambertMaterial({ 
+                color: 0x00ff00,
+                emissive: 0x004400,
+                emissiveIntensity: 0.5
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            let spawnPos;
+            if (position) {
+                spawnPos = position;
+            } else {
+                // Random position if none provided
+                const minSpawn = -targetRange + 5;
+                const maxSpawn = targetRange - 5;
+                spawnPos = new THREE.Vector3(
+                    minSpawn + Math.random() * (maxSpawn - minSpawn),
+                    1.0, // Float slightly above ground
+                    minSpawn + Math.random() * (maxSpawn - minSpawn)
+                );
+            }
+
+            mesh.position.copy(spawnPos);
+            mesh.position.y = 1.0; // Ensure height is correct
+
+            scene.add(mesh);
+            
+            healthPotions.push({
+                mesh: mesh,
+                baseY: 1.0,
+                floatOffset: Math.random() * Math.PI * 2 // Randomize float phase
+            });
+        }
+        
+        function startNextWave() {
+            isGameActive = false;
+            isTimerActive = true;
+            spawnTimer = 10; // 10 second break
+            
+            // Heal Player slightly naturally
+            health = Math.min(100, health + 10);
+            healthValueElement.textContent = health;
+            
+            // Spawn 2 guaranteed health potions for the new wave
+            spawnHealthPotion();
+            spawnHealthPotion();
+            
+            // Increment Wave
+            currentWave++;
+            waveDisplayElement.textContent = currentWave;
+
+            // Show Countdown
+            countdownElement.style.display = 'block';
+            // We don't exit pointer lock here, we keep the player immersed during the break
+        }
+
+        function gameOver() {
+            isGameActive = false;
+            document.exitPointerLock();
+
+            startScreen.innerHTML = `
+                <h1 class="text-6xl font-extrabold mb-4 text-red-600">GAME OVER!</h1>
+                <p class="text-3xl mb-2 text-gray-300">Waves Survived: <span class="text-white">${currentWave - 1}</span></p>
+                <p class="text-xl mb-8 text-gray-400">Final Score: ${score}</p>
+                <button id="restart-button" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg font-bold">
+                    RESTART GAME
+                </button>
+            `;
+            
+            document.getElementById('restart-button').addEventListener('click', restartGame);
+            startScreen.style.display = 'flex';
+        }
+        
+        function restartGame() {
+            // Clear old targets and reset state
+            targets.forEach(t => scene.remove(t.mesh));
+            targets = [];
+            
+            // Clear potions
+            healthPotions.forEach(p => scene.remove(p.mesh));
+            healthPotions = [];
+            
+            score = 0;
+            health = 100;
+            currentWave = 1; // Reset wave
+            spawnTimer = initialSpawnDelay;
+            
+            scoreElement.textContent = score;
+            healthValueElement.textContent = health;
+            waveDisplayElement.textContent = currentWave;
+            
+            camera.position.set(0, playerHeight, 0); // Reset player position
+
+            // Reset countdown styling
+            countdownElement.classList.add('text-yellow-400');
+            countdownElement.classList.remove('text-red-600', 'animate-pulse');
+
+            // Reset start screen content for next play
+            startScreen.innerHTML = `
+                <h1 class="text-5xl font-extrabold mb-6 tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-red-500">
+                    3D TARGET SHOOTER SURVIVAL
+                </h1>
+                <p class="text-xl mb-8 text-gray-300">Survive infinite waves. Enemies get stronger.</p>
+                <button id="play-button">
+                    START GAME (Click to Lock Aim)
+                </button>
+                <p class="mt-4 text-sm text-gray-500">Movement: **W/A/S/D**. Aim with Mouse & Click to Shoot! Press ESC or PAUSE to pause.</p>
+            `;
+            document.getElementById('play-button').addEventListener('click', lockPointerAndStart);
+            
+            // Start the countdown immediately after a full restart
+            lockPointerAndStart();
+        }
+
+        // --- Core Three.js Event Handlers ---
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onPointerLockChange() {
+            if (document.pointerLockElement === gameContainer) {
+                // Game is now active or resuming
+                if (!isTimerActive && targets.length > 0) {
+                    isGameActive = true;
+                    hud.style.display = 'flex';
+                } else if (targets.length === 0) {
+                    // Start the countdown if game is truly new
+                    isTimerActive = true;
+                    spawnTimer = initialSpawnDelay;
+                    countdownElement.textContent = spawnTimer;
+                    countdownElement.style.display = 'block';
+                    startScreen.style.display = 'none';
+                    hud.style.display = 'flex'; // Show HUD during countdown
+                }
+                
+                document.getElementById('crosshair').style.display = 'block';
+                previousTime = performance.now(); // Reset time for accurate delta calculation
+            } else {
+                // Game is paused or ended
+                isGameActive = false;
+                
+                // Only show the pause menu if the game hasn't already concluded (Win/Lose)
+                if (targets.length > 0 && health > 0) {
+                    startScreen.style.display = 'flex';
+                    
+                    // NEW: Update innerHTML to include both Resume and Menu buttons
+                    startScreen.innerHTML = `
+                        <h1 class="text-6xl font-extrabold mb-4 text-yellow-400">GAME PAUSED</h1>
+                        <p class="text-2xl mb-8 text-gray-400">Press RESUME GAME to continue.</p>
+                        <div class="flex flex-col space-y-4">
+                            <button id="resume-button" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg font-bold">
+                                RESUME GAME (Click to Lock Aim)
+                            </button>
+                            <button id="menu-button" class="bg-gray-500 hover:bg-gray-600 text-white p-3 rounded-lg font-bold">
+                                RETURN TO MAIN MENU
+                            </button>
+                        </div>
+                    `;
+                    document.getElementById('resume-button').addEventListener('click', lockPointerAndStart);
+                    document.getElementById('menu-button').addEventListener('click', returnToMainMenu);
+                }
+                
+                hud.style.display = 'none';
+                countdownElement.style.display = 'none';
+                document.getElementById('crosshair').style.display = 'none';
+                
+                // Reset movement keys on pause
+                moveForward = moveBackward = moveLeft = moveRight = false;
+            }
+        }
+
+        function lockPointerAndStart() {
+            gameContainer.requestPointerLock();
+        }
+
+        function onMouseMove(event) {
+            if (document.pointerLockElement === gameContainer) {
+                // Read mouse movement (delta)
+                rotationY -= event.movementX * sensitivity; // Yaw (left/right)
+                rotationX -= event.movementY * sensitivity; // Pitch (up/down)
+
+                // Clamp pitch rotation (max 90 degrees up/down)
+                rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotationX));
+
+                // Apply rotation to the camera
+                camera.rotation.set(rotationX, rotationY, 0, 'YXZ'); // YXZ order
+            }
+        }
+
+        function onMouseClick() {
+            if (isGameActive) {
+                shoot();
+            }
+        }
+
+        function shoot() {
+            // Recoil animation trigger
+            gunRecoil = 0.1;
+            gunMesh.position.z = -0.3; // Kick back
+
+            // Set the raycaster to shoot from the camera position in the center of the screen
+            raycaster.setFromCamera(centerVector, camera); 
+
+            // Check for intersection with targets' meshes
+            const targetMeshes = targets.map(t => t.mesh);
+            // Include walls in the raycast to prevent shooting through walls
+            const allIntersects = raycaster.intersectObjects([...targetMeshes, ...wallMeshes]);
+
+            // Visual feedback: brief white screen flash (muzzle flash)
+            gameContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+            setTimeout(() => {
+                gameContainer.style.backgroundColor = '';
+            }, 50);
+
+            if (allIntersects.length > 0) {
+                const hitMesh = allIntersects[0].object;
+                
+                // Check if the closest object hit is a target
+                if (targetMeshes.includes(hitMesh)) {
+                    handleHit(hitMesh);
+                } 
+                // If the closest hit is a wall, the bullet stops there, doing nothing to targets behind it.
+            }
+        }
+
+        function handleHit(mesh) {
+            const targetIndex = targets.findIndex(t => t.mesh === mesh);
+
+            if (targetIndex > -1) {
+                const target = targets[targetIndex];
+                const damage = 20; // Set bullet damage to 20 (requires 5 shots to kill 100 health target)
+
+                target.health -= damage;
+                
+                // Visual feedback (flash cyan on hit)
+                mesh.material.color.set(0x00ffff); 
+
+                if (target.health <= 0) {
+                    // Target destroyed
+                    score += 10;
+                    scoreElement.textContent = score;
+                    
+                    // NEW: Small chance (15%) to drop a potion on death
+                    if (Math.random() < 0.15) {
+                        spawnHealthPotion(target.mesh.position.clone());
+                    }
+
+                    setTimeout(() => {
+                        scene.remove(mesh);
+                        targets.splice(targetIndex, 1);
+                        
+                        if (targets.length === 0) {
+                            // Wave Cleared!
+                            startNextWave();
+                        }
+                    }, 100);
+                } else {
+                    // Target damaged but survived
+                    // Reset color after a brief flash to indicate hit but not destroyed
+                    setTimeout(() => {
+                        mesh.material.color.set(0xff416c); 
+                    }, 100);
+                }
+            }
+        }
+        
+        // Helper function for performing a single movement step with collision check
+        const checkMovementCollision = (direction, distance) => {
+            const tempRaycaster = new THREE.Raycaster();
+            
+            // Start raycast from player position
+            tempRaycaster.set(camera.position, direction);
+            
+            // Only check up to the movement distance plus a small buffer
+            const collisionLookAhead = distance + playerCollisionRadius;
+            tempRaycaster.far = collisionLookAhead; 
+            
+            // Check intersections with walls
+            const intersections = tempRaycaster.intersectObjects(wallMeshes, false);
+            
+            if (intersections.length > 0) {
+                // If a wall is hit closer than the player's collision radius, block movement
+                if (intersections[0].distance < playerCollisionRadius) { 
+                    return true;
+                }
+            }
+            return false;
+        };
+
+
+        // --- Game Loop ---
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = (time - previousTime) / 1000; // Time step in seconds
+            const currentTimeSeconds = time / 1000;
+            previousTime = time;
+            
+            // Gun Recoil Recovery
+            if (gunMesh) {
+                if (gunMesh.position.z < -0.4) {
+                    gunMesh.position.z += delta * 0.5; // Return to rest
+                    if (gunMesh.position.z > -0.4) gunMesh.position.z = -0.4;
+                }
+            }
+
+            // --- 0. Initial Countdown Timer ---
+            if (isTimerActive) {
+                spawnTimer -= delta;
+                const remaining = Math.ceil(Math.max(0, spawnTimer));
+                
+                // Update text based on context (First start vs Next Wave)
+                if (currentWave > 1) {
+                     countdownElement.innerHTML = `<div class="text-4xl text-white mb-2">WAVE ${currentWave} STARTS IN</div>${remaining}`;
+                } else {
+                     countdownElement.textContent = remaining;
+                }
+
+                // Change color and add pulse for the last 3 seconds
+                if (remaining <= 3 && remaining > 0) {
+                    countdownElement.classList.add('text-red-600', 'animate-pulse');
+                    countdownElement.classList.remove('text-yellow-400');
+                } else {
+                    countdownElement.classList.add('text-yellow-400');
+                    countdownElement.classList.remove('text-red-600', 'animate-pulse');
+                }
+                
+                if (spawnTimer <= 0) {
+                    isTimerActive = false;
+                    isGameActive = true;
+                    countdownElement.style.display = 'none';
+                    
+                    // SCALED SPAWNING:
+                    // Wave 1: 6 bots
+                    // Wave 2: 8 bots...
+                    const waveBotCount = 4 + (currentWave * 2);
+                    
+                    // Spawn targets individually at random positions to ensure they hunt independently
+                    const minSpawn = -targetRange + 15;
+                    const maxSpawn = targetRange - 15;
+                    
+                    for (let i = 0; i < waveBotCount; i++) {
+                        // Calculate a random spawn point for each bot
+                        let spawnX, spawnZ;
+                        do {
+                            spawnX = minSpawn + Math.random() * (maxSpawn - minSpawn);
+                            spawnZ = minSpawn + Math.random() * (maxSpawn - minSpawn);
+                        // Ensure spawn point is not too close to the player's initial position (0, 0)
+                        } while (Math.abs(spawnX) < 10 && Math.abs(spawnZ) < 10);
+                        
+                        const individualSpawnPoint = new THREE.Vector3(spawnX, targetGroundY, spawnZ);
+                        createTarget(individualSpawnPoint);
+                    }
+                }
+            }
+
+
+            if (isGameActive || isTimerActive) {
+                // --- Player Movement Update (with Collision Check) ---
+                const actualSpeed = playerSpeed * delta;
+                
+                // Direction vectors based on camera rotation (locked to horizontal movement)
+                const forwardVector = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, rotationY, 0, 'YXZ')).normalize();
+                const rightVector = new THREE.Vector3(1, 0, 0).applyEuler(new THREE.Euler(0, rotationY, 0, 'YXZ')).normalize();
+
+                if (moveForward) {
+                    if (!checkMovementCollision(forwardVector, actualSpeed)) {
+                        camera.position.addScaledVector(forwardVector, actualSpeed);
+                    }
+                }
+                if (moveBackward) {
+                    if (!checkMovementCollision(forwardVector.clone().negate(), actualSpeed)) {
+                        camera.position.addScaledVector(forwardVector, -actualSpeed);
+                    }
+                }
+
+                if (moveLeft) {
+                    if (!checkMovementCollision(rightVector.clone().negate(), actualSpeed)) {
+                         camera.position.addScaledVector(rightVector, -actualSpeed);
+                    }
+                }
+                if (moveRight) {
+                    if (!checkMovementCollision(rightVector, actualSpeed)) {
+                        camera.position.addScaledVector(rightVector, actualSpeed);
+                    }
+                }
+                
+                // Enforce player height and arena boundaries (using the new targetRange 50)
+                camera.position.y = playerHeight;
+                camera.position.x = Math.max(-targetRange + 1, Math.min(targetRange - 1, camera.position.x));
+                camera.position.z = Math.max(-targetRange + 1, Math.min(targetRange - 1, camera.position.z));
+                
+                // --- NEW: Update Health Potions (Animation & Pickup) ---
+                // Run this even during the break timer so you can run around collecting potions
+                for (let i = healthPotions.length - 1; i >= 0; i--) {
+                    const potion = healthPotions[i];
+                    
+                    // Animation: Rotate and Bob
+                    potion.mesh.rotation.y += delta;
+                    potion.mesh.rotation.z += delta * 0.5;
+                    potion.mesh.position.y = potion.baseY + Math.sin(currentTimeSeconds * 2 + potion.floatOffset) * 0.3;
+                    
+                    // Collision Check (Pickup)
+                    if (camera.position.distanceTo(potion.mesh.position) < 2.0) {
+                        // Pickup Effect
+                        if (health < 100) {
+                            health = Math.min(100, health + 25);
+                            healthValueElement.textContent = health;
+                            
+                            // Visual Flash Green
+                            document.body.style.filter = 'sepia(1) hue-rotate(100deg) saturate(5)';
+                            setTimeout(() => {
+                                document.body.style.filter = 'none';
+                            }, 150);
+                            
+                            // Remove potion
+                            scene.remove(potion.mesh);
+                            healthPotions.splice(i, 1);
+                        }
+                    }
+                }
+
+                // Only run AI logic if the game is active (i.e., timer is finished)
+                if (isGameActive) {
+                    // --- 1. Target AI Logic (Hunting, Investigating, or Searching) ---
+                    const attackNow = Date.now();
+                    
+                    let totalDamage = 0;
+                    let attackingTargets = [];
+
+                    targets.forEach(target => {
+                        // Rotation
+                        target.mesh.rotation.x += target.rotationSpeed;
+                        target.mesh.rotation.y += target.rotationSpeed / 2;
+
+                        const targetPos = target.mesh.position;
+                        const playerPos = camera.position;
+                        
+                        const distanceToPlayer = targetPos.distanceTo(playerPos);
+                        
+                        // Calculate direction toward the player (3D direction, aiming at player's eye level)
+                        const directionToPlayer = playerPos.clone().sub(targetPos).normalize();
+                        
+                        // --- LOS Check ---
+                        raycaster.set(targetPos, directionToPlayer);
+                        const blockingIntersects = raycaster.intersectObjects(wallMeshes, false); 
+                        
+                        let blocked = false;
+                        for (const intersect of blockingIntersects) {
+                            // Check if the intersection is closer than the player
+                            if (intersect.distance < distanceToPlayer) {
+                                blocked = true;
+                                break;
+                            }
+                        }
+                        
+                        // Set the current hunting range based on LOS
+                        const currentHuntingRange = blocked ? baseHuntingRange : longHuntingRange; 
+
+                        // --- Determine Movement Target (Hunting or Searching/Investigating) ---
+                        // Use the dynamic range for detection
+                        const isHunting = !blocked && distanceToPlayer < currentHuntingRange; 
+                        let moveTargetPosition;
+                        let targetMovementSpeed;
+                        
+                        // Bot speed is now based on its own calculated moveSpeed (which is near playerSpeed)
+                        const baseBotSpeed = target.moveSpeed; 
+
+                        if (isHunting) {
+                            // STATE: HUNTING (Player is seen)
+                            moveTargetPosition = playerPos.clone();
+                            target.lastKnownPosition = playerPos.clone(); // Update LKP
+                            targetMovementSpeed = baseBotSpeed; // Full speed when chasing
+                            
+                            // NEW LOGIC: Stop if too close to the player
+                            if (distanceToPlayer < minBotApproachDistance) {
+                                targetMovementSpeed = 0; // Stop moving to maintain separation
+                            }
+
+                        } else if (target.lastKnownPosition) {
+                            // STATE: INVESTIGATING (Player is lost, moving to LKP)
+                            moveTargetPosition = target.lastKnownPosition;
+                            targetMovementSpeed = baseBotSpeed * 0.8; // Cautious investigating speed
+
+                            // Check if LKP is reached
+                            if (targetPos.distanceTo(target.lastKnownPosition) < targetSearchRadius) {
+                                target.lastKnownPosition = null; // Clear LKP, revert to wandering next frame
+                                // Fall through to wandering state for this frame if LKP reached
+                            }
+                        }
+                        
+                        // If LKP is null or was just cleared, revert to wandering
+                        if (!isHunting && !target.lastKnownPosition) {
+                            // STATE: WANDERING (No threat detected, no LKP to check)
+                            
+                            // If destination is null or reached, set a new one
+                            if (!target.destination || targetPos.distanceTo(target.destination) < targetSearchRadius) {
+                                setNewWanderDestination(target);
+                            }
+                            moveTargetPosition = target.destination;
+                            targetMovementSpeed = baseBotSpeed * 0.7; // Slower when searching
+                        }
+                        
+                        // --- Apply Movement ---
+                        
+                        // Calculate movement direction (3D direction, but only using XZ plane for horizontal movement)
+                        const movementDirection = moveTargetPosition.clone().sub(targetPos);
+                        movementDirection.y = 0; // Stick to the ground plane
+                        movementDirection.normalize();
+
+                        const botActualSpeed = targetMovementSpeed * delta;
+                        // Move targets toward the target position (player or destination)
+                        target.mesh.position.add(movementDirection.multiplyScalar(botActualSpeed)); 
+                        
+                        target.mesh.position.y = targetGroundY; 
+                        
+                        // Make targets look at their current movement target (which will be the player if hunting)
+                        target.mesh.lookAt(moveTargetPosition.x, targetGroundY, moveTargetPosition.z);
+                        
+                        // --- 2. Target Attack Logic ---
+                        
+                        // NEW: Attack if hunting (LOS confirmed) AND within the specific botAttackRange,
+                        // allowing them to shoot while approaching.
+                        if (isHunting && distanceToPlayer < botAttackRange && attackNow - lastAttackTime > attackInterval) {
+                            totalDamage += 5; // Base damage per target increased to 5
+                            attackingTargets.push(target);
+                        }
+                    });
+                    
+                    // Apply damage and visual feedback only once per attack interval
+                    if (attackNow - lastAttackTime > attackInterval) {
+                        lastAttackTime = attackNow;
+
+                        if (totalDamage > 0) {
+                            takeDamage(totalDamage);
+                        }
+                        
+                        // Flash only the targets that successfully attacked (had LOS)
+                        attackingTargets.forEach(target => {
+                            target.mesh.material.color.set(0xff0000); 
+                            setTimeout(() => {
+                                target.mesh.material.color.set(0xff416c); 
+                            }, 200);
+                        });
+                    }
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+    </script>
+</body>
+</html>
+</div>
+
+</body>
+</html>
