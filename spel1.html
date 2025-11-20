@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tank Survival</title>
+<title>Spel 1</title>
 
 <style>
     body {
@@ -50,1096 +50,1559 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tank Survival</title>
+    <title>Last Defence - Survival</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
             overflow: hidden;
-            background-color: #222;
-            font-family: 'Courier New', Courier, monospace;
-            user-select: none;
+            margin: 0;
         }
-        canvas {
+        
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            background-color: #388E3C;
+            background-image: radial-gradient(#4CAF50 5%, transparent 5%), radial-gradient(#2E7D32 5%, transparent 5%);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            display: none;
+        }
+        
+        .ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+        }
+        
+        .ui-element {
+            pointer-events: auto;
+        }
+
+        .menu-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            z-index: 50;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .menu-button {
             display: block;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
+            background-color: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .menu-button:hover:not(:disabled) {
+            background-color: #2d3748;
+        }
+        .menu-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .menu-button:last-child {
+            margin-bottom: 0;
+        }
+
+        .letter-style {
+            background-color: #fffaf0;
+            color: #4a4a4a;
+            padding: 2.5rem;
+            border-radius: 4px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            font-family: serif;
+            line-height: 1.6;
+            text-align: left;
+            border: 1px solid #e0e0e0;
+        }
+
+        /* Uppdaterad grid för fler resurser */
+        .resource-board {
+            position: absolute;
+            top: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: monospace;
+            font-size: 0.9rem;
+            display: grid;
+            grid-template-columns: auto auto; 
+            gap: 0.3rem 1rem;
+        }
+
+        #material-board { left: 20px; }
+        #stats-board { right: 20px; }
+
+        .resource-board .label { color: #a0aec0; }
+        .resource-board .value { color: #ffffff; font-weight: 600; text-align: right; }
+
+        #actions-board {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .action-button {
+            display: block;
+            width: 100%;
+            padding: 0.5rem 1rem;
+            margin-top: 0.5rem;
+            background-color: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .action-button:hover { background-color: #2d3748; }
+
+        #build-menu {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.9);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem;
+            z-index: 40;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            width: 250px; 
+        }
+        
+        #troop-select-menu, #building-menu {
+            position: absolute; 
+            background-color: rgba(30, 41, 59, 0.95); 
+            padding: 0.75rem; 
+            border-radius: 8px; 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 40;
+            width: 250px;
+        }
+        #building-menu .menu-button {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-900 text-white">
 
-<canvas id="gameCanvas"></canvas>
+    <canvas id="game-canvas"></canvas>
 
-<script>
-/**
- * TANK SURVIVAL
- * Uppdatering:
- * - CHEATCODE: Skriv "lol" ingame för auto-aim och auto-fire.
- */
-
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
-// --- SPELSTATUS ---
-const STATE = {
-    MENU: 0,
-    PLAYING: 1, // Single player
-    MULTIPLAYER: 6, // New mode
-    CREDITS: 2,
-    GAMEOVER: 3,
-    WIN: 4,
-    PRACTICE: 5
-};
-
-let currentState = STATE.MENU;
-let score = 0;
-const TARGET_SCORE = 1000;
-const TILE_SIZE = 100;
-
-// Practice Mode Variabler
-let practiceActive = false;
-let practiceDifficulty = 1;
-
-// Cheat Variabler
-let cheatString = ""; // För att spara knapptryckningar
-
-// --- LJUDSYSTEM (Web Audio API) ---
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let soundEnabled = false;
-
-let engineOsc = null;
-let engineGain = null;
-
-function initAudio() {
-    if (soundEnabled) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
     
-    engineOsc = audioCtx.createOscillator();
-    engineGain = audioCtx.createGain();
-    engineOsc.type = 'sawtooth'; 
-    engineOsc.frequency.value = 40; 
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 400;
-    engineOsc.connect(filter);
-    filter.connect(engineGain);
-    engineGain.connect(audioCtx.destination);
-    engineGain.gain.value = 0;
-    engineOsc.start();
 
-    soundEnabled = true;
-}
+<div class="ui-container">
 
-const Sound = {
-    shoot: () => {
-        if (!soundEnabled) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.2);
-    },
-    explosion: () => {
-        if (!soundEnabled) return;
-        const bufferSize = audioCtx.sampleRate * 0.5;
-        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = buffer;
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 1000;
-        const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-        noise.start();
-    },
-    wallHit: () => {
-        if (!soundEnabled) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.05);
-    },
-    updateEngine: (isMoving) => {
-        if (!engineGain) return;
-        const targetGain = isMoving ? 0.1 : 0.0; 
-        const targetFreq = isMoving ? 60 : 40;
-        engineGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.1);
-        engineOsc.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.1);
-    }
-};
-
-// --- INPUT HANTERING ---
-const activeKeys = {};
-
-window.addEventListener('keydown', (e) => {
-    activeKeys[e.key.toLowerCase()] = true;
-    activeKeys[e.code] = true;
-    
-    // Practice Mode
-    if (currentState === STATE.PRACTICE) {
-        if (e.key === "Enter") practiceActive = !practiceActive;
-        if (e.key >= '1' && e.key <= '9') practiceDifficulty = parseInt(e.key);
-    }
-
-    // --- CHEAT DETECTION ---
-    if (currentState === STATE.PLAYING || currentState === STATE.MULTIPLAYER || currentState === STATE.PRACTICE) {
-        cheatString += e.key.toLowerCase();
-        // Håll bufferten kort
-        if (cheatString.length > 10) cheatString = cheatString.slice(-10);
         
-        if (cheatString.endsWith("lol")) {
-            // Aktivera fusk på alla levande spelare
-            players.forEach(p => {
-                if (!p.dead) {
-                    p.cheatMode = true;
-                    // Visuell feedback (partikel eller liknande kan läggas här om man vill)
-                }
-            });
-            // Rensa strängen så man inte aktiverar det igen direkt av misstag
-            cheatString = "";
-        }
-    }
-});
 
-window.addEventListener('keyup', (e) => {
-    activeKeys[e.key.toLowerCase()] = false;
-    activeKeys[e.code] = false;
-});
+<div id="start-menu" class="menu-screen ui-element">
+            <h1 class="text-3xl font-bold text-center mb-6 text-red-400">Last Defence</h1>
+            <button id="start-game-intro-btn" class="menu-button">Starta Spel</button>
+            <button id="sandbox-game-btn" class="menu-button">Sandbox</button>
+            <button id="controls-btn" class="menu-button">Kontroller</button>
+            <button id="credits-btn" class="menu-button bg-gray-600 hover:bg-gray-700">Credits</button>
+        </div>
 
-const mouse = { x: 0, y: 0, clicked: false };
-window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
-window.addEventListener('mousedown', () => { mouse.clicked = true; });
-window.addEventListener('mouseup', () => { mouse.clicked = false; });
-
-// --- OBJEKT & KAMERA ---
-
-let players = [];
-let camera = { x: 0, y: 0 };
-
-function updateCamera() {
-    if (players.length === 0) return;
-
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    let activePlayers = 0;
-
-    players.forEach(p => {
-        if (!p.dead) {
-            if (p.worldX < minX) minX = p.worldX;
-            if (p.worldX > maxX) maxX = p.worldX;
-            if (p.worldY < minY) minY = p.worldY;
-            if (p.worldY > maxY) maxY = p.worldY;
-            activePlayers++;
-        }
-    });
-
-    if (activePlayers === 0) return;
-
-    const targetX = (minX + maxX) / 2;
-    const targetY = (minY + maxY) / 2;
-
-    camera.x += (targetX - camera.x) * 0.1;
-    camera.y += (targetY - camera.y) * 0.1;
-}
-
-function worldToScreen(wx, wy) {
-    return {
-        x: wx - camera.x + canvas.width / 2,
-        y: wy - camera.y + canvas.height / 2
-    };
-}
-
-// Listor
-let bullets = [];
-let enemies = [];
-let particles = [];
-let mines = [];
-let tracks = [];
-
-// --- KLASSER ---
-
-class PlayerTank {
-    constructor(id, x, y, color, controls) {
-        this.id = id;
-        this.worldX = x;
-        this.worldY = y;
-        this.speed = 5;
-        this.angle = -Math.PI / 2;
-        this.turretAngle = -Math.PI / 2;
-        this.radius = 20;
-        this.lastShot = 0;
-        this.cooldown = 300;
-        this.color = color;
-        this.controls = controls;
-        this.distanceSinceLastTrack = 0;
-        this.dead = false;
-        this.cheatMode = false; // Default avstängt
-    }
-
-    update() {
-        if (this.dead) return false;
-
-        let moveX = 0;
-        let moveY = 0;
         
-        if (activeKeys[this.controls.up]) moveY = -1;
-        if (activeKeys[this.controls.down]) moveY = 1;
-        if (activeKeys[this.controls.left]) moveX = -1;
-        if (activeKeys[this.controls.right]) moveX = 1;
 
-        let isMoving = false;
-        if (moveX !== 0 || moveY !== 0) {
-            isMoving = true;
-            const len = Math.sqrt(moveX*moveX + moveY*moveY);
-            moveX /= len;
-            moveY /= len;
+<div id="intro-screen" class="menu-screen ui-element hidden">
+            <h1 class="text-2xl font-bold text-center mb-6 text-red-400">Meddelande från de Överlevande</h1>
+            <div class="letter-style text-sm mb-6">
+                <p>Kära ledare,</p>
+                <p class="mt-4 indent-4">Monster har tagit över nästan hela världen, flera länder har fallit. Du och några modiga själar har startat ett nytt samhälle, och det är ditt jobb att säkra mänskligheten från att utrotas.</p>
+                <p class="mt-4 text-right">Lycka till,</p>
+                <p class="text-right">Rådet.</p>
+            </div>
+            <button id="continue-game-btn" class="menu-button bg-green-600 hover:bg-green-700">Fortsätt till Spel</button>
+        </div>
+
+        
+
+<div id="credits-screen" class="menu-screen ui-element hidden">
+            <h1 class="text-2xl font-bold text-center mb-6">Credits</h1>
+            <p class="text-center mb-6 text-xl">Spelet skapat av:</p>
+            <p class="text-center text-4xl font-bold text-yellow-400">Zayn Lilak</p>
+            <button id="credits-back-btn" class="menu-button mt-6">Tillbaka</button>
+        </div>
+
+        
+
+<div id="controls-menu" class="menu-screen ui-element hidden">
+            <h1 class="text-2xl font-bold text-center mb-6">Kontroller</h1>
+            <ul class="list-disc list-inside space-y-2 mb-6">
+                <li><span class="font-bold">WASD / Pilar:</span> Panorera kameran</li>
+                <li><span class="font-bold">Scrollhjul:</span> Zooma in/ut</li>
+                <li><span class="font-bold">Musdrag:</span> Panorera kameran</li>
+                <li><span class="font-bold">Vänsterklick:</span> Välj ruta / Interagera</li>
+                <li><span class="font-bold">Högerklick (Övergett Hus):</span> Öppna truppval-meny</li>
+                <li><span class="font-bold">Högerklick (Byggnad/Bas):</span> Meny för Uppgradering/Reparation</li>
+                <li><span class="font-bold">M (Sandbox):</span> Spawna slumpmässig fiende</li>
+                <li><span class="font-bold">B (Sandbox):</span> Spawna Boss</li>
+                <li><span class="font-bold">Y:</span> Öppna/Stäng Åtgärdsmeny</li>
+                <li><span class="font-bold text-yellow-400">L:</span> Pausa Spel</li>
+            </ul>
+            <button id="controls-back-btn" class="menu-button">Tillbaka</button>
+        </div>
+        
+        
+
+<div id="pause-menu" class="menu-screen ui-element hidden">
+            <h1 class="text-2xl font-bold text-center mb-6 text-blue-300">Pausad</h1>
+            <button id="pause-continue-btn" class="menu-button bg-green-600 hover:bg-green-700">Fortsätt</button>
+            <button id="pause-controls-btn" class="menu-button">Kontroller</button>
+            <button id="pause-home-btn" class="menu-button bg-red-600 hover:bg-red-700">Hemmeny</button>
+        </div>
+
+        
+
+<div id="game-over-screen" class="menu-screen ui-element hidden">
+            <h1 class="text-3xl font-bold text-center mb-6 text-red-600">GAME OVER</h1>
+            <p class="text-center mb-6">Din bas har förstörts.</p>
+            <button id="game-over-back-btn" class="menu-button">Till Huvudmenyn</button>
+        </div>
+
+        
+
+<div id="game-ui" class="hidden">
             
-            const nextX = this.worldX + moveX * this.speed;
-            const nextY = this.worldY + moveY * this.speed;
-
-            if (!checkWallCollision(nextX, this.worldY, this.radius)) this.worldX = nextX;
-            if (!checkWallCollision(this.worldX, nextY, this.radius)) this.worldY = nextY;
             
-            this.angle = Math.atan2(moveY, moveX);
+
+<div id="material-board" class="resource-board ui-element">
+                <span class="label">Metal:</span><span id="metal-value" class="value">0</span>
+                <span class="label">Wood:</span><span id="wood-value" class="value">0</span>
+                <span class="label">Earth:</span><span id="earth-value" class="value">0</span>
+                <span class="label">Reinf. Metal:</span><span id="reinforced-metal-value" class="value">0</span>
+                <!-- NYA RESURSER -->
+                <span class="label text-purple-400">M.Waste:</span><span id="monster-waste-value" class="value text-purple-400">0</span>
+                <span class="label text-yellow-200">Bonemeal:</span><span id="bonemeal-value" class="value text-yellow-200">0</span>
+            </div>
+
             
-            this.distanceSinceLastTrack += this.speed;
-            if (this.distanceSinceLastTrack > 15) {
-                tracks.push(new TrackMark(this.worldX, this.worldY, this.angle));
-                this.distanceSinceLastTrack = 0;
-            }
-        }
 
-        // --- FUSK LOGIK (Auto-aim + Auto-fire) ---
-        if (this.cheatMode) {
-            // Hitta närmaste fiende
-            let closest = null;
-            let minDist = Infinity;
-            enemies.forEach(e => {
-                const d = Math.sqrt((e.worldX - this.worldX)**2 + (e.worldY - this.worldY)**2);
-                if (d < minDist) {
-                    minDist = d;
-                    closest = e;
-                }
-            });
+<div id="stats-board" class="resource-board ui-element">
+                <span class="label">Kills:</span><span id="kills-value" class="value">0</span>
+                <span class="label">Base HP:</span><span id="base-hp-value" class="value">100</span>
+                <span class="label">Bullets:</span><span id="bullets-value" class="value">0</span>
+                <span class="label">Food:</span><span id="food-value" class="value">0</span>
+                <span class="label">Inhabitants:</span><span id="inhabitants-value" class="value">0/0</span>
+                <span class="label">Troops:</span><span id="troops-value" class="value">0</span>
+            </div>
 
-            if (closest) {
-                const dx = closest.worldX - this.worldX;
-                const dy = closest.worldY - this.worldY;
-                // Sikta direkt mot fienden
-                this.turretAngle = Math.atan2(dy, dx);
+            
+
+<div id="actions-board" class="ui-element hidden">
+                <h4 class="text-lg font-bold mb-2 text-center">Åtgärder & Crafting</h4>
+                <button id="train-troop-btn" class="action-button">Träna Trupp (1 Inb, 10 Mat)</button>
+                <button id="craft-bullets-btn" class="action-button">Skapa Skott (1 Metal -> 10 Skott)</button>
+                <button id="craft-reinforced-btn" class="action-button">Skapa F. Metal (2 Metal -> 1 F.Me)</button>
+                <!-- NY CRAFTING -->
+                <button id="craft-bonemeal-btn" class="action-button text-yellow-300">Krossa Ben (1 Waste -> 5 Bone)</button>
+            </div>
+
+            
+
+<div id="build-menu" class="ui-element hidden">
+                <h3 class="text-lg font-bold mb-4">Bygg</h3>
+                <button id="build-tower-btn" class="menu-button text-sm"></button>
+                <button id="build-wall-btn" class="menu-button text-sm"></button>
+                <button id="build-house-btn" class="menu-button text-sm"></button>
+                <button id="build-greenhouse-btn" class="menu-button text-sm"></button>
+                <button id="build-barracks-btn" class="menu-button text-sm"></button>
+                <!-- NYA BYGGNADER -->
+                <button id="build-farm-btn" class="menu-button text-sm text-yellow-200"></button>
+                <button id="build-mine-btn" class="menu-button text-sm text-gray-300"></button>
                 
-                // Auto skjut (kollar cooldown)
-                this.tryShoot();
-            } else {
-                // Inga fiender? Manuell kontroll på tornet
-                const turnSpeed = 0.15;
-                if (activeKeys[this.controls.turretLeft]) this.turretAngle -= turnSpeed;
-                if (activeKeys[this.controls.turretRight]) this.turretAngle += turnSpeed;
-            }
-
-        } else {
-            // VANLIG KONTROLL
-            const turnSpeed = 0.15;
-            if (activeKeys[this.controls.turretLeft]) this.turretAngle -= turnSpeed;
-            if (activeKeys[this.controls.turretRight]) this.turretAngle += turnSpeed;
+                <button id="build-cancel-btn" class="menu-button text-sm bg-gray-600">Avbryt</button>
+            </div>
             
-            if (activeKeys[this.controls.shoot]) {
-                this.tryShoot();
-            }
+            
+
+<div id="troop-select-menu" class="ui-element hidden">
+                <h4 class="text-sm font-bold mb-3 text-yellow-400 text-center">Skicka Trupper</h4>
+                <p class="text-xs mb-3 text-gray-300">Välj antal trupper att skicka för att rädda invånaren (5 Mat kostnad):</p>
+                <button data-troops="1" class="menu-button text-xs py-1.5 px-3">1 Trupp (Liten belöning)</button>
+                <button data-troops="5" class="menu-button text-xs py-1.5 px-3">5 Trupper (Mellan belöning)</button>
+                <button data-troops="10" class="menu-button text-xs py-1.5 px-3">10 Trupper (Stor belöning)</button>
+                <button id="troop-select-cancel-btn" class="menu-button text-xs py-1.5 px-3 bg-gray-600 mt-2">Avbryt</button>
+            </div>
+
+            
+
+<div id="building-menu" class="ui-element hidden">
+                <h4 id="building-menu-title" class="text-lg font-bold mb-3 text-center text-blue-300"></h4>
+                <button id="repair-btn" class="menu-button text-sm bg-green-600 hover:bg-green-700 hidden">Reparera (1 F.Metal)</button>
+                <button id="upgrade-btn" class="menu-button text-sm bg-blue-600 hover:bg-blue-700"></button>
+                <button id="destroy-btn" class="menu-button text-sm bg-red-600 hover:bg-red-700"></button>
+                <button id="building-menu-cancel-btn" class="menu-button text-sm bg-gray-600 hover:bg-gray-700">Avbryt</button>
+            </div>
+        </div>
+        
+        <div id="sandbox-message" class="hidden ui-element absolute bottom-10 left-1/2 -translate-x-1/2 bg-yellow-600 text-black p-3 rounded-lg font-bold text-center">
+            Sandbox-läge: Tryck 'M' för slumpmässig fiende, 'B' för Boss. Tryck 'Y' för Åtgärdsmeny.
+        </div>
+
+    </div>
+
+    <script>
+        // DOM-element
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        const startMenu = document.getElementById('start-menu');
+        const introScreen = document.getElementById('intro-screen'); 
+        const creditsScreen = document.getElementById('credits-screen'); 
+        const controlsMenu = document.getElementById('controls-menu');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const gameUi = document.getElementById('game-ui');
+        const buildMenu = document.getElementById('build-menu');
+        const sandboxMessage = document.getElementById('sandbox-message');
+        const actionsBoard = document.getElementById('actions-board');
+        const troopSelectMenu = document.getElementById('troop-select-menu');
+        
+        // Pausmeny
+        const pauseMenu = document.getElementById('pause-menu');
+        const pauseContinueBtn = document.getElementById('pause-continue-btn');
+        const pauseControlsBtn = document.getElementById('pause-controls-btn');
+        const pauseHomeBtn = document.getElementById('pause-home-btn');
+
+        // Byggnadsmeny-element
+        const buildingMenu = document.getElementById('building-menu');
+        const buildingMenuTitle = document.getElementById('building-menu-title');
+        const upgradeBtn = document.getElementById('upgrade-btn');
+        const destroyBtn = document.getElementById('destroy-btn');
+        const repairBtn = document.getElementById('repair-btn');
+        const buildingMenuCancelBtn = document.getElementById('building-menu-cancel-btn');
+
+        // Truppval
+        const troopSelectCancelBtn = document.getElementById('troop-select-cancel-btn');
+        const troopSelectButtons = troopSelectMenu.querySelectorAll('[data-troops]');
+
+        // Knappar
+        const startGameIntroBtn = document.getElementById('start-game-intro-btn'); 
+        const continueGameBtn = document.getElementById('continue-game-btn'); 
+        const sandboxGameBtn = document.getElementById('sandbox-game-btn');
+        const controlsBtn = document.getElementById('controls-btn');
+        const creditsBtn = document.getElementById('credits-btn'); 
+        const creditsBackBtn = document.getElementById('credits-back-btn'); 
+        const controlsBackBtn = document.getElementById('controls-back-btn');
+        const gameOverBackBtn = document.getElementById('game-over-back-btn');
+        
+        // Byggknappar
+        const buildTowerBtn = document.getElementById('build-tower-btn');
+        const buildWallBtn = document.getElementById('build-wall-btn');
+        const buildHouseBtn = document.getElementById('build-house-btn');
+        const buildGreenhouseBtn = document.getElementById('build-greenhouse-btn');
+        const buildBarracksBtn = document.getElementById('build-barracks-btn');
+        const buildFarmBtn = document.getElementById('build-farm-btn'); // NY
+        const buildMineBtn = document.getElementById('build-mine-btn'); // NY
+        const buildCancelBtn = document.getElementById('build-cancel-btn');
+        
+        // Åtgärds-knappar
+        const trainTroopBtn = document.getElementById('train-troop-btn');
+        const craftBulletsBtn = document.getElementById('craft-bullets-btn');
+        const craftReinforcedBtn = document.getElementById('craft-reinforced-btn');
+        const craftBonemealBtn = document.getElementById('craft-bonemeal-btn'); // NY
+
+        // Resurs-UI
+        const killsValue = document.getElementById('kills-value');
+        const baseHpValue = document.getElementById('base-hp-value');
+        const troopsValue = document.getElementById('troops-value');
+        const metalValue = document.getElementById('metal-value');
+        const bulletsValue = document.getElementById('bullets-value');
+        const woodValue = document.getElementById('wood-value');
+        const foodValue = document.getElementById('food-value');
+        const earthValue = document.getElementById('earth-value');
+        const reinforcedMetalValue = document.getElementById('reinforced-metal-value');
+        const inhabitantsValue = document.getElementById('inhabitants-value');
+        const monsterWasteValue = document.getElementById('monster-waste-value'); // NY
+        const bonemealValue = document.getElementById('bonemeal-value'); // NY
+
+
+        // Spelvariabler
+        let gameState = 'MENU';
+        let gameMode = 'NORMAL';
+        let savedGameState = null; // För att komma ihåg om vi var i GAME eller SANDBOX innan paus
+        let lastTime = 0;
+        const TILE_SIZE = 50;
+
+        // Spelobjekt (listor)
+        let world = {}; 
+        let base;
+        let towers = [];
+        let walls = [];
+        let houses = [];
+        let greenhouses = [];
+        let barracks = [];
+        let farms = []; // NY
+        let mines = []; // NY
+        let abandonedHouses = [];
+        let monsters = [];
+        let projectiles = [];
+        let troops = []; 
+        
+        let selectedTile = null;
+        let targetAbandonedHouse = null; 
+        let focusedBuilding = null;
+
+        let monsterSpawnTimer = 0;
+        let abandonedHouseSpawnTimer = 0;
+        let inhabitantGrowTimer = 0;
+        const MONSTER_SPAWN_RATE = 3000;
+        const ABANDONED_HOUSE_SPAWN_RATE = 20000;
+        const INHABITANT_GROW_RATE = 5000; 
+
+        // Resurser
+        let resources = {};
+        
+        // Kostnader (UPPDATERAD)
+        const COSTS = {
+            TOWER: { metal: 50, wood: 20 },
+            WALL: { wood: 10, reinforcedMetal: 1 },
+            HOUSE: { wood: 30, earth: 10 },
+            GREENHOUSE: { wood: 20, earth: 30 },
+            BARRACKS: { wood: 50, metal: 20 },
+            FARM: { earth: 20, boneMeal: 10 }, // NY (Rättad från prompt: 20 earth, 10 bonemeal)
+            MINE: { wood: 40 } // NY (Rättad från prompt: 40 wood)
+        };
+
+        // Uppgraderingskostnader (UPPDATERAD med nya byggnader)
+        const UPGRADE_COSTS = {
+            TOWER: { level2: { metal: 75, reinforcedMetal: 5 }, level3: { metal: 150, reinforcedMetal: 15 } },
+            WALL: { level2: { reinforcedMetal: 3 }, level3: { reinforcedMetal: 5 } },
+            HOUSE: { level2: { wood: 50, earth: 20 }, level3: { wood: 100, earth: 40 } },
+            GREENHOUSE: { level2: { earth: 50, reinforcedMetal: 3 }, level3: { earth: 100, reinforcedMetal: 6 } },
+            BARRACKS: { level2: { wood: 75, metal: 50 }, level3: { wood: 150, metal: 100 } },
+            FARM: { level2: { earth: 50, boneMeal: 40 }, level3: { earth: 100, boneMeal: 80 } }, // NY
+            MINE: { level2: { wood: 100, reinforcedMetal: 5 }, level3: { wood: 200, reinforcedMetal: 10 } } // NY
+        };
+        
+        const TROOP_RESCUE_FOOD_COST = 5; 
+        const BASE_RESCUE_REWARD = { metal: 5, wood: 5, earth: 5 }; 
+        
+        const MONSTER_STATS = {
+            'NORMAL': { color: '#e53e3e', speed: 40, hp: 10, damage: 5 },
+            'MUTANT': { color: '#8b5cf6', speed: 25, hp: 50, damage: 15 }, 
+            'JUMPER': { color: '#f6ad55', speed: 100, hp: 5, damage: 10 }, 
+            'BOSS': { color: '#38b2ac', speed: 30, hp: 200, damage: 25 } 
+        };
+
+        // Uppdatera knapptexter
+        function updateBuildButtonLabels() {
+            buildTowerBtn.textContent = `Torn (${COSTS.TOWER.metal} Me, ${COSTS.TOWER.wood} Tr)`;
+            buildWallBtn.textContent = `Mur (${COSTS.WALL.wood} Tr, ${COSTS.WALL.reinforcedMetal} F.Me)`;
+            buildHouseBtn.textContent = `Hus (${COSTS.HOUSE.wood} Tr, ${COSTS.HOUSE.earth} Jo)`;
+            buildGreenhouseBtn.textContent = `Växthus (${COSTS.GREENHOUSE.earth} Jo, ${COSTS.GREENHOUSE.wood} Tr)`;
+            buildBarracksBtn.textContent = `Barack (${COSTS.BARRACKS.wood} Tr, ${COSTS.BARRACKS.metal} Me)`;
+            buildFarmBtn.textContent = `Farm (${COSTS.FARM.earth} Jo, ${COSTS.FARM.boneMeal} Ben)`;
+            buildMineBtn.textContent = `Gruva (${COSTS.MINE.wood} Tr)`;
         }
 
-        return isMoving;
-    }
-
-    tryShoot() {
-        const now = Date.now();
-        // Om fuskläge är på, skjut lite snabbare (halverad cooldown) eller normalt?
-        // Användaren sa bara "autofire", vi kör normal cooldown så det inte buggar ur helt.
-        if (now - this.lastShot > this.cooldown) {
-            const barrelLen = 40;
-            const bx = this.worldX + Math.cos(this.turretAngle) * barrelLen;
-            const by = this.worldY + Math.sin(this.turretAngle) * barrelLen;
+        // --- Klass-definitioner ---
+        
+        class Building {
+            constructor(x, y, type, initialCost, baseMaxHp = 50) {
+                this.x = x; this.y = y; this.type = type;
+                this.key = `${x},${y}`;
+                this.size = 1; 
+                this.level = 1;
+                this.maxLevel = 3; 
+                this.initialCosts = initialCost;
+                this.hp = baseMaxHp;
+                this.maxHp = baseMaxHp;
+            }
+            getPixelPos() { return { x: (this.x + 0.5) * TILE_SIZE, y: (this.y + 0.5) * TILE_SIZE }; }
+            update(deltaTime) {}
+            draw(ctx) {}
             
-            if (!checkWallCollision(bx, by, 5)) {
-                bullets.push(new Bullet(bx, by, this.turretAngle, false));
-                Sound.shoot();
-                this.lastShot = now;
+            takeDamage(amount) {
+                this.hp -= amount;
+                if (this.hp <= 0) {
+                    this.hp = 0;
+                    this.destroy();
+                }
+            }
+
+            destroy() {
+                delete world[this.key];
+                // Ta bort från specifika arrayer
+                const lists = [towers, walls, houses, greenhouses, barracks, farms, mines];
+                lists.forEach(list => {
+                    const idx = list.indexOf(this);
+                    if(idx > -1) list.splice(idx, 1);
+                });
+                if (this instanceof House) {
+                    resources.maxInhabitants -= this.inhabitantCapacity;
+                    resources.inhabitants = Math.min(resources.inhabitants, resources.maxInhabitants);
+                }
+            }
+        }
+        
+        class Base extends Building {
+            constructor(x, y) {
+                super(x, y, 'BASE', {}, 100);
+                this.size = 2; 
+                this.turret = new Turret(this, 3); 
+                this.maxLevel = Infinity; 
+            }
+            update(deltaTime) { this.turret.update(deltaTime); }
+            draw(ctx) {
+                const ts = TILE_SIZE;
+                const x = this.x * ts;
+                const y = this.y * ts;
+                const baseSize = this.size * ts;
+
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(x + 5, y + ts / 2, baseSize - 10, baseSize - ts / 2 - 5); 
                 
-                const recoilX = this.worldX - Math.cos(this.turretAngle) * 2;
-                const recoilY = this.worldY - Math.sin(this.turretAngle) * 2;
-                if (!checkWallCollision(recoilX, recoilY, this.radius)) {
-                    this.worldX = recoilX;
-                    this.worldY = recoilY;
+                ctx.fillStyle = '#A0522D';
+                ctx.beginPath();
+                ctx.moveTo(x + 5, y + ts / 2); 
+                ctx.lineTo(x + baseSize / 2, y + 5); 
+                ctx.lineTo(x + baseSize - 5, y + ts / 2); 
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(173, 216, 230, 0.7)'; 
+                ctx.fillRect(x + ts * 0.4, y + ts * 0.8, ts * 0.2, ts * 0.2);
+                ctx.fillRect(x + ts * 1.4, y + ts * 0.8, ts * 0.2, ts * 0.2);
+
+                this.turret.draw(ctx, { x: x + baseSize / 2, y: y + ts * 0.3 }); 
+                
+                const barWidth = baseSize; const barHeight = 8; const barX = x; const barY = y + baseSize + 5; 
+                ctx.fillStyle = '#4a5568'; ctx.fillRect(barX, barY, barWidth, barHeight);
+                ctx.fillStyle = '#38a169'; ctx.fillRect(barX, barY, barWidth * (this.hp / this.maxHp), barHeight);
+            }
+            takeDamage(amount) {
+                this.hp -= amount;
+                if (this.hp <= 0) { this.hp = 0; gameOver(); }
+            }
+            getPixelPos() { return { x: (this.x + this.size / 2) * TILE_SIZE, y: (this.y + this.size / 2) * TILE_SIZE }; }
+        }
+        
+        class Tower extends Building {
+            constructor(x, y) { 
+                super(x, y, 'TOWER', COSTS.TOWER, 75);
+                this.turret = new Turret(this, 5); 
+            }
+            update(deltaTime) { this.turret.update(deltaTime); }
+            draw(ctx) {
+                ctx.fillStyle = '#a0aec0'; ctx.strokeStyle = '#854d0e'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.rect(this.x * TILE_SIZE, this.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                ctx.fill(); ctx.stroke();
+                this.turret.draw(ctx);
+                this.drawHp(ctx);
+            }
+            drawHp(ctx) {
+                if(this.hp < this.maxHp) {
+                    ctx.fillStyle = '#f00'; ctx.fillRect(this.x * TILE_SIZE, this.y * TILE_SIZE + TILE_SIZE - 5, TILE_SIZE, 5);
+                    ctx.fillStyle = '#0f0'; ctx.fillRect(this.x * TILE_SIZE, this.y * TILE_SIZE + TILE_SIZE - 5, TILE_SIZE * (this.hp/this.maxHp), 5);
                 }
             }
         }
-    }
 
-    draw() {
-        if (this.dead) return;
-        const pos = worldToScreen(this.worldX, this.worldY);
-        ctx.save();
-        ctx.translate(pos.x, pos.y);
-        
-        ctx.fillStyle = 'white';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`P${this.id}`, 0, -35);
-        
-        // Fusk-indikator
-        if (this.cheatMode) {
-            ctx.fillStyle = '#FFD700';
-            ctx.font = '10px Arial';
-            ctx.fillText(`(CHEAT)`, 0, -48);
-        }
-
-        ctx.save();
-        ctx.rotate(this.angle);
-        ctx.fillStyle = '#111';
-        ctx.fillRect(-22, -24, 44, 10);
-        ctx.fillRect(-22, 14, 44, 10);
-        ctx.fillStyle = this.color;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(-20, -18, 40, 36);
-        ctx.shadowBlur = 0;
-        ctx.restore();
-
-        ctx.rotate(this.turretAngle);
-        ctx.fillStyle = '#2E7D32';
-        ctx.fillRect(0, -6, 40, 12);
-        ctx.strokeStyle = '#1B5E20';
-        ctx.strokeRect(0, -6, 40, 12);
-        ctx.fillStyle = '#1B5E20'; 
-        ctx.beginPath();
-        ctx.arc(0, 0, 14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
-    }
-}
-
-class TrackMark {
-    constructor(x, y, angle) {
-        this.worldX = x;
-        this.worldY = y;
-        this.angle = angle;
-        this.life = 300;
-        this.maxLife = 300;
-    }
-    update() { this.life--; }
-    draw() {
-        const pos = worldToScreen(this.worldX, this.worldY);
-        if (pos.x < -20 || pos.x > canvas.width + 20 || pos.y < -20 || pos.y > canvas.height + 20) return;
-        ctx.save();
-        ctx.translate(pos.x, pos.y);
-        ctx.rotate(this.angle);
-        ctx.globalAlpha = (this.life / this.maxLife) * 0.3;
-        ctx.fillStyle = '#000';
-        ctx.fillRect(-20, -5, 10, 10);
-        ctx.fillRect(10, -5, 10, 10);
-        ctx.restore();
-        ctx.globalAlpha = 1.0;
-    }
-}
-
-class Bullet {
-    constructor(x, y, angle, isEnemy = false) {
-        this.worldX = x;
-        this.worldY = y;
-        this.dx = Math.cos(angle) * 15;
-        this.dy = Math.sin(angle) * 15;
-        this.life = 100;
-        this.isEnemy = isEnemy;
-    }
-    update() {
-        this.worldX += this.dx;
-        this.worldY += this.dy;
-        this.life--;
-    }
-    draw() {
-        const pos = worldToScreen(this.worldX, this.worldY);
-        ctx.fillStyle = this.isEnemy ? '#FF0000' : '#FFD700';
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
-        ctx.fill();
-    }
-}
-
-class Mine {
-    constructor() {
-        let valid = false;
-        let attempts = 0;
-        while(!valid && attempts < 10) {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = Math.max(canvas.width, canvas.height) / 1.2 + Math.random() * 500;
-            this.worldX = camera.x + Math.cos(angle) * distance;
-            this.worldY = camera.y + Math.sin(angle) * distance;
-            this.radius = 12;
-            if(!checkWallCollision(this.worldX, this.worldY, this.radius + 5)) valid = true;
-            attempts++;
-        }
-        this.blinkTimer = 0;
-    }
-    update() { this.blinkTimer++; }
-    draw() {
-        const pos = worldToScreen(this.worldX, this.worldY);
-        if (pos.x < -50 || pos.x > canvas.width + 50 || pos.y < -50 || pos.y > canvas.height + 50) return;
-        ctx.fillStyle = '#222';
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, this.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#555';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        if (Math.floor(this.blinkTimer / 30) % 2 === 0) {
-            ctx.fillStyle = 'red';
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-}
-
-class Enemy {
-    constructor(isPractice = false, px = 0, py = 0) {
-        this.isPractice = isPractice;
-        if (isPractice) {
-            this.worldX = px;
-            this.worldY = py;
-            this.speed = 0;
-            this.hp = 1000; 
-            this.lastShot = Date.now() - Math.random() * 5000;
-        } else {
-            let valid = false;
-            let attempts = 0;
-            while(!valid && attempts < 10) {
-                const angle = Math.random() * Math.PI * 2;
-                const distance = Math.max(canvas.width, canvas.height) / 1.5 + 100;
-                this.worldX = camera.x + Math.cos(angle) * distance;
-                this.worldY = camera.y + Math.sin(angle) * distance;
-                this.radius = 20;
-                if (!checkWallCollision(this.worldX, this.worldY, this.radius + 10)) valid = true;
-                attempts++;
+        class Wall extends Building {
+            constructor(x, y) { 
+                super(x, y, 'WALL', COSTS.WALL, 200); // Lite mer HP än förut
             }
-            const diff = Math.floor(score / 10);
-            const speedBonus = Math.min(diff * 0.2, 3);
-            this.speed = 1 + Math.random() * 1.5 + speedBonus; 
-            this.hp = 3;
-            this.lastShot = Date.now();
-            const coolRed = Math.min(diff * 100, 1500);
-            this.cooldown = (2500 + Math.random() * 2000) - coolRed;
-        }
-        this.radius = 20;
-        this.color = isPractice ? '#5555AA' : '#D32F2F'; 
-    }
-
-    update() {
-        let target = null;
-        let minDist = Infinity;
-
-        players.forEach(p => {
-            if (!p.dead) {
-                const d = Math.sqrt((p.worldX - this.worldX)**2 + (p.worldY - this.worldY)**2);
-                if (d < minDist) {
-                    minDist = d;
-                    target = p;
+            update(deltaTime) {} 
+            draw(ctx) {
+                ctx.fillStyle = '#718096'; 
+                const wallSize = TILE_SIZE / 3;
+                const offset = (TILE_SIZE - wallSize) / 2;
+                ctx.fillRect(this.x * TILE_SIZE + offset, this.y * TILE_SIZE + offset, wallSize, wallSize);
+                
+                // NYTT: Rita HP om skadad
+                if (this.hp < this.maxHp) {
+                    const hpW = TILE_SIZE * 0.8;
+                    const hpX = this.x * TILE_SIZE + (TILE_SIZE - hpW)/2;
+                    const hpY = this.y * TILE_SIZE + TILE_SIZE - 5;
+                    ctx.fillStyle = 'red'; ctx.fillRect(hpX, hpY, hpW, 4);
+                    ctx.fillStyle = '#0f0'; ctx.fillRect(hpX, hpY, hpW * (this.hp / this.maxHp), 4);
                 }
             }
-        });
+        }
 
-        if (!target) return; 
+        class House extends Building {
+            constructor(x, y) { super(x, y, 'HOUSE', COSTS.HOUSE, 50); this.inhabitantCapacity = 5; }
+            draw(ctx) {
+                const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
+                ctx.fillStyle = '#D2B48C'; ctx.fillRect(x + 5, y + ts / 3, ts - 10, ts * 2 / 3 - 5);
+                ctx.fillStyle = '#A0522D'; ctx.beginPath(); ctx.moveTo(x + 5, y + ts / 3); ctx.lineTo(x + ts / 2, y + 5); ctx.lineTo(x + ts - 5, y + ts / 3); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#654321'; ctx.fillRect(x + ts / 2 - 4, y + ts * 2 / 3, 8, ts / 3 - 5);
+            }
+        }
 
-        const dx = target.worldX - this.worldX;
-        const dy = target.worldY - this.worldY;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        this.angle = Math.atan2(dy, dx);
+        class Greenhouse extends Building {
+            constructor(x, y) { super(x, y, 'GREENHOUSE', COSTS.GREENHOUSE, 40); this.produceTimer = 0; this.produceRate = 3000; } 
+            update(deltaTime) {
+                this.produceTimer += deltaTime;
+                if (this.produceTimer >= this.produceRate) { this.produceTimer = 0; resources.food++; }
+            }
+            draw(ctx) {
+                const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
+                ctx.fillStyle = '#6B8E23'; ctx.fillRect(x + 5, y + ts * 0.7, ts - 10, ts * 0.3 - 5);
+                ctx.fillStyle = 'rgba(173, 216, 230, 0.4)'; ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(x + ts / 2, y + ts / 2 - 5, ts / 2 - 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'; ctx.beginPath(); ctx.arc(x + ts * 0.7, y + ts * 0.3, ts * 0.15, 0, Math.PI * 2); ctx.fill();
+            }
+        }
 
-        if (!this.isPractice && dist > 0) {
-            let nextX = this.worldX + (dx / dist) * this.speed;
-            let nextY = this.worldY + (dy / dist) * this.speed;
-            if (checkWallCollision(nextX, this.worldY, this.radius)) nextX = this.worldX; 
-            if (checkWallCollision(nextX, nextY, this.radius)) nextY = this.worldY;
+        // NY CLASS: Farm
+        class Farm extends Building {
+            constructor(x, y) { 
+                super(x, y, 'FARM', COSTS.FARM, 60); 
+                this.produceTimer = 0; 
+                this.produceRate = 2000; // 2 sekunder
+            } 
+            update(deltaTime) {
+                this.produceTimer += deltaTime;
+                if (this.produceTimer >= this.produceRate) { 
+                    this.produceTimer = 0; 
+                    resources.wood += 1; 
+                }
+            }
+            draw(ctx) {
+                const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
+                // Gulaktig åker
+                ctx.fillStyle = '#DAA520'; 
+                ctx.fillRect(x + 2, y + 2, ts - 4, ts - 4);
+                // Vete strån
+                ctx.strokeStyle = '#F4A460';
+                ctx.lineWidth = 2;
+                for(let i=10; i<40; i+=10) {
+                    ctx.beginPath(); ctx.moveTo(x+i, y+10); ctx.lineTo(x+i, y+40); ctx.stroke();
+                }
+                // Progress bar för produktion
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x, y+ts-5, ts, 5);
+                ctx.fillStyle = '#32CD32'; ctx.fillRect(x, y+ts-5, ts * (this.produceTimer/this.produceRate), 5);
+            }
+        }
+
+        // NY CLASS: Mine (Gruva)
+        class Mine extends Building {
+            constructor(x, y) { 
+                super(x, y, 'MINE', COSTS.MINE, 100); 
+                this.produceTimer = 0; 
+                this.produceRate = 20000; // 20 sekunder
+            } 
+            update(deltaTime) {
+                this.produceTimer += deltaTime;
+                if (this.produceTimer >= this.produceRate) { 
+                    this.produceTimer = 0; 
+                    resources.earth += 10; 
+                    resources.metal += 20;
+                }
+            }
+            draw(ctx) {
+                const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
+                // Grå stenhög
+                ctx.fillStyle = '#2F4F4F'; 
+                ctx.beginPath(); ctx.arc(x + ts/2, y + ts/2, ts/2 - 2, 0, Math.PI*2); ctx.fill();
+                // Mörk ingång
+                ctx.fillStyle = '#000'; 
+                ctx.beginPath(); ctx.arc(x + ts/2, y + ts/2, ts/4, 0, Math.PI, true); ctx.fill();
+                // Progress bar
+                ctx.fillStyle = '#000'; ctx.fillRect(x, y+ts-5, ts, 5);
+                ctx.fillStyle = '#aaa'; ctx.fillRect(x, y+ts-5, ts * (this.produceTimer/this.produceRate), 5);
+            }
+        }
+
+        class Barracks extends Building {
+            constructor(x, y) { super(x, y, 'BARRACKS', COSTS.BARRACKS, 60); }
+            draw(ctx) {
+                const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(x + 5, y + ts * 0.6, ts - 10, ts * 0.4 - 5);
+                ctx.beginPath(); ctx.moveTo(x + 5, y + ts * 0.6); ctx.lineTo(x + ts / 2, y + 5); ctx.lineTo(x + ts - 5, y + ts * 0.6); ctx.closePath(); ctx.fill();
+                ctx.strokeStyle = '#A0522D'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(x + ts / 2, y + 5); ctx.lineTo(x + ts / 2, y + ts * 0.6); 
+                ctx.stroke();
+            }
+        }
+        
+        class AbandonedHouse {
+            constructor(x, y) { this.x = x; this.y = y; this.key = `${x},${y}`; }
+            draw(ctx) {
+                const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
+                ctx.fillStyle = '#5A5A5A'; ctx.fillRect(x + 5, y + ts / 3, ts - 10, ts * 2 / 3 - 5);
+                ctx.fillStyle = '#3A3A3A'; ctx.beginPath(); ctx.moveTo(x + 5, y + ts / 3); ctx.lineTo(x + ts / 2, y + 5); ctx.lineTo(x + ts - 5, y + ts / 3); ctx.closePath(); ctx.fill();
+                ctx.strokeStyle = '#c53030'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 5, y + 5); ctx.lineTo(x + ts - 5, y + ts - 5); ctx.moveTo(x + ts - 5, y + 5); ctx.lineTo(x + 5, y + ts - 5); ctx.stroke();
+            }
+            getPixelPos() { return { x: (this.x + 0.5) * TILE_SIZE, y: (this.y + 0.5) * TILE_SIZE }; }
+            rescueSuccess(troopsSent) {
+                let rewardMultiplier = 1;
+                if (troopsSent === 5) rewardMultiplier = 3;
+                if (troopsSent === 10) rewardMultiplier = 5;
+                resources.inhabitants++;
+                resources.metal += BASE_RESCUE_REWARD.metal * rewardMultiplier;
+                resources.wood += BASE_RESCUE_REWARD.wood * rewardMultiplier;
+                resources.earth += BASE_RESCUE_REWARD.earth * rewardMultiplier;
+                delete world[this.key];
+                return true;
+            }
+        }
+
+        class Turret {
+            constructor(parent, damage) {
+                this.parent = parent; this.range = 250; this.cooldown = 0; this.fireRate = 500; this.target = null; this.angle = 0; this.damage = damage; 
+            }
+            update(deltaTime) {
+                if (this.cooldown > 0) this.cooldown -= deltaTime;
+                if (!this.target || this.target.hp <= 0 || getDistance(this.parent.getPixelPos(), this.target) > this.range) {
+                    this.target = this.findTarget();
+                }
+                if (this.target) {
+                    const pos = this.parent.getPixelPos();
+                    this.angle = Math.atan2(this.target.y - pos.y, this.target.x - pos.x);
+                    if (this.cooldown <= 0) this.shoot();
+                }
+            }
+            findTarget() {
+                let closestMonster = null; let minDistance = this.range; const pos = this.parent.getPixelPos();
+                for (const monster of monsters) {
+                    const distance = getDistance(pos, monster);
+                    if (distance < minDistance) { minDistance = distance; closestMonster = monster; }
+                }
+                return closestMonster;
+            }
+            shoot() {
+                if (gameMode !== 'SANDBOX' && resources.bullets <= 0) return;
+                this.cooldown = this.fireRate;
+                if (gameMode !== 'SANDBOX') resources.bullets--;
+                const pos = this.parent.getPixelPos();
+                projectiles.push(new Projectile(pos.x, pos.y, this.target, this.damage));
+            }
+            draw(ctx, offset = null) {
+                const pos = offset || this.parent.getPixelPos();
+                ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(this.angle);
+                ctx.fillStyle = '#2d3748'; ctx.fillRect(0, -3, 25, 6);
+                ctx.restore();
+            }
+        }
+
+        class Projectile {
+            constructor(x, y, target, damage) { this.x = x; this.y = y; this.target = target; this.speed = 400; this.damage = damage; this.hp = 1; }
+            update(deltaTime) {
+                if (!this.target || this.target.hp <= 0) { this.hp = 0; return; }
+                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                this.x += Math.cos(angle) * this.speed * (deltaTime / 1000);
+                this.y += Math.sin(angle) * this.speed * (deltaTime / 1000);
+                if (getDistance(this, this.target) < this.target.size / 2) { this.target.takeDamage(this.damage); this.hp = 0; }
+            }
+            draw(ctx) { ctx.fillStyle = '#f6e05e'; ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI * 2); ctx.fill(); }
+        }
+        
+        class Monster {
+            constructor(x, y, type = 'NORMAL') {
+                this.x = x; this.y = y;
+                this.type = type;
+                const stats = MONSTER_STATS[type];
+                
+                // NYTT: Skalning baserat på basnivå
+                const scaling = 1 + (base.level - 1) * 0.2; // 20% starkare per nivå
+
+                this.size = 20; 
+                this.speed = stats.speed;
+                this.color = stats.color;
+                this.maxHp = stats.hp * scaling;
+                this.hp = this.maxHp; 
+                this.damage = stats.damage * scaling;
+                
+                this.attackRange = 40; 
+                this.attackCooldown = 1000; 
+                this.attackTimer = 0;
+                
+                this.wallAttackCooldown = 1000;
+                this.wallAttackTimer = 0;
+            }
             
-            if (nextX === this.worldX && nextY === this.worldY) {
-                 let tryX = this.worldX + (dx / dist) * this.speed;
-                 if (!checkWallCollision(tryX, this.worldY, this.radius)) this.worldX = tryX;
-                 else {
-                     let tryY = this.worldY + (dy / dist) * this.speed;
-                     if (!checkWallCollision(this.worldX, tryY, this.radius)) this.worldY = tryY;
-                 }
-            } else {
-                this.worldX = nextX;
-                this.worldY = nextY;
-            }
-        }
-        
-        const now = Date.now();
-        const pos = worldToScreen(this.worldX, this.worldY);
-        const isOnScreen = pos.x > 0 && pos.x < canvas.width && pos.y > 0 && pos.y < canvas.height;
-
-        if (this.isPractice) {
-            const practiceCooldown = 3300 - (practiceDifficulty * 300); 
-            if (practiceActive && now - this.lastShot > practiceCooldown) {
-                 const targetAngle = Math.atan2(dy, dx);
-                 bullets.push(new Bullet(this.worldX, this.worldY, targetAngle, true));
-                 this.lastShot = now;
-            }
-        } else {
-            if (isOnScreen && dist < 800 && now - this.lastShot > this.cooldown) {
-                const targetAngle = Math.atan2(dy, dx);
-                bullets.push(new Bullet(this.worldX, this.worldY, targetAngle, true));
-                Sound.shoot();
-                this.lastShot = now;
-            }
-        }
-    }
-
-    draw() {
-        const pos = worldToScreen(this.worldX, this.worldY);
-        if (pos.x < -50 || pos.x > canvas.width + 50 || pos.y < -50 || pos.y > canvas.height + 50) return;
-
-        ctx.save();
-        ctx.translate(pos.x, pos.y);
-        ctx.rotate(this.angle);
-        ctx.fillStyle = this.color;
-        ctx.fillRect(-20, -18, 40, 36);
-        ctx.fillStyle = '#333';
-        ctx.fillRect(-20, -22, 40, 6);
-        ctx.fillRect(-20, 16, 40, 6);
-        ctx.fillStyle = this.isPractice ? '#444499' : '#8e0000';
-        ctx.beginPath();
-        ctx.arc(0, 0, 12, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillRect(0, -4, 30, 8);
-        ctx.restore();
-    }
-}
-
-class Particle {
-    constructor(x, y, color) {
-        this.worldX = x;
-        this.worldY = y;
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 5;
-        this.dx = Math.cos(angle) * speed;
-        this.dy = Math.sin(angle) * speed;
-        this.life = 30 + Math.random() * 20;
-        this.startLife = this.life;
-        this.color = color;
-        this.size = Math.random() * 8 + 2;
-    }
-    update() {
-        this.worldX += this.dx;
-        this.worldY += this.dy;
-        this.life--;
-        this.size *= 0.95;
-    }
-    draw() {
-        const pos = worldToScreen(this.worldX, this.worldY);
-        ctx.fillStyle = this.color;
-        ctx.globalAlpha = this.life / this.startLife;
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1.0;
-    }
-}
-
-// --- VÄRLD ---
-function isWallTile(c, r) {
-    if (currentState === STATE.PRACTICE) {
-        if (Math.abs(c) < 10 && Math.abs(r) < 10) return false;
-    }
-    if (Math.abs(c) < 2 && Math.abs(r) < 2) return false;
-    const val = Math.sin(c * 12.9898 + r * 78.233) * 43758.5453;
-    const random = val - Math.floor(val);
-    return random < 0.04; 
-}
-
-function getTileType(x, y) {
-    const val = Math.sin(x * 0.1) * Math.cos(y * 0.1) * 100;
-    if (val > 50) return 'sand';
-    if (val > 0) return 'darkgrass';
-    return 'grass';
-}
-
-function checkWallCollision(x, y, radius) {
-    const startCol = Math.floor((x - radius) / TILE_SIZE);
-    const endCol = Math.floor((x + radius) / TILE_SIZE);
-    const startRow = Math.floor((y - radius) / TILE_SIZE);
-    const endRow = Math.floor((y + radius) / TILE_SIZE);
-    for (let c = startCol; c <= endCol; c++) {
-        for (let r = startRow; r <= endRow; r++) {
-            if (isWallTile(c, r)) {
-                const wallX = c * TILE_SIZE;
-                const wallY = r * TILE_SIZE;
-                const closestX = Math.max(wallX, Math.min(x, wallX + TILE_SIZE));
-                const closestY = Math.max(wallY, Math.min(y, wallY + TILE_SIZE));
-                const dx = x - closestX;
-                const dy = y - closestY;
-                if ((dx * dx + dy * dy) < (radius * radius)) return true;
-            }
-        }
-    }
-    return false;
-}
-
-function drawBackground() {
-    const startCol = Math.floor((camera.x - canvas.width/2) / TILE_SIZE);
-    const endCol = startCol + (canvas.width / TILE_SIZE) + 2;
-    const startRow = Math.floor((camera.y - canvas.height/2) / TILE_SIZE);
-    const endRow = startRow + (canvas.height / TILE_SIZE) + 2;
-
-    for (let c = startCol; c < endCol; c++) {
-        for (let r = startRow; r < endRow; r++) {
-            const screenX = (c * TILE_SIZE) - camera.x + canvas.width / 2;
-            const screenY = (r * TILE_SIZE) - camera.y + canvas.height / 2;
-
-            if (isWallTile(c, r)) {
-                ctx.fillStyle = '#555'; 
-                ctx.fillRect(Math.floor(screenX), Math.floor(screenY), TILE_SIZE + 1, TILE_SIZE + 1);
-                ctx.fillStyle = '#777';
-                ctx.fillRect(Math.floor(screenX) + 5, Math.floor(screenY) + 5, TILE_SIZE - 10, TILE_SIZE - 10);
-            } else {
-                const type = getTileType(c, r);
-                if (type === 'sand') ctx.fillStyle = '#e6c288';
-                else if (type === 'darkgrass') ctx.fillStyle = '#2e7d32';
-                else ctx.fillStyle = '#4caf50';
-
-                ctx.fillRect(Math.floor(screenX), Math.floor(screenY), TILE_SIZE + 1, TILE_SIZE + 1);
-            }
-        }
-    }
-}
-
-function spawnEnemy() {
-    if (currentState !== STATE.PLAYING && currentState !== STATE.MULTIPLAYER) return;
-    
-    let baseChance = 0.003;
-    if (currentState === STATE.MULTIPLAYER) baseChance = 0.005; 
-
-    const difficultyIncrease = Math.floor(score / 10) * 0.0005;
-
-    if (Math.random() < baseChance + difficultyIncrease) {
-        enemies.push(new Enemy(false));
-    }
-}
-
-function spawnMine() {
-    if (currentState !== STATE.PLAYING && currentState !== STATE.MULTIPLAYER) return;
-    if (Math.random() < 0.005) mines.push(new Mine());
-}
-
-function createExplosion(x, y, color = '#FF5722') {
-    Sound.explosion(); 
-    for(let i=0; i<15; i++) {
-        particles.push(new Particle(x, y, color));
-    }
-}
-
-function resetGame(mode) {
-    score = 0;
-    camera.x = 0;
-    camera.y = 0;
-    players = [];
-    bullets = [];
-    enemies = [];
-    mines = [];
-    particles = [];
-    tracks = []; 
-
-    if (mode === STATE.PLAYING) {
-        // Single Player
-        players.push(new PlayerTank(1, 0, 0, '#4CAF50', {
-            up: 'w', down: 's', left: 'a', right: 'd',
-            turretLeft: 'arrowleft', turretRight: 'arrowright', shoot: ' '
-        }));
-    } else if (mode === STATE.MULTIPLAYER) {
-        // 2 Players
-        players.push(new PlayerTank(1, -100, 0, '#4CAF50', {
-            up: 'w', down: 's', left: 'a', right: 'd',
-            turretLeft: 'q', turretRight: 'e', shoot: ' '
-        }));
-        players.push(new PlayerTank(2, 100, 0, '#2196F3', {
-            up: 'arrowup', down: 'arrowdown', left: 'arrowleft', right: 'arrowright',
-            turretLeft: '.', turretRight: ',', shoot: 'enter'
-        }));
-    } else if (mode === STATE.PRACTICE) {
-        players.push(new PlayerTank(1, 0, 0, '#4CAF50', {
-            up: 'w', down: 's', left: 'a', right: 'd',
-            turretLeft: 'arrowleft', turretRight: 'arrowright', shoot: ' '
-        }));
-
-        const count = 8;
-        const rad = 400;
-        for(let i=0; i<count; i++) {
-            const angle = (Math.PI * 2 / count) * i;
-            const ex = Math.cos(angle) * rad;
-            const ey = Math.sin(angle) * rad;
-            enemies.push(new Enemy(true, ex, ey));
-        }
-        practiceActive = false;
-        practiceDifficulty = 1;
-    }
-}
-
-function update() {
-    if (currentState !== STATE.PLAYING && currentState !== STATE.PRACTICE && currentState !== STATE.MULTIPLAYER) {
-        Sound.updateEngine(false); 
-        return;
-    }
-
-    let anyoneMoving = false;
-    let allDead = true;
-    let anyCheatActive = false; // För UI
-    
-    players.forEach(p => {
-        if (!p.dead) {
-            allDead = false;
-            if (p.update()) anyoneMoving = true;
-            if (p.cheatMode) anyCheatActive = true;
-        }
-    });
-    
-    if (allDead) {
-        currentState = STATE.GAMEOVER;
-        return;
-    }
-
-    updateCamera();
-    Sound.updateEngine(anyoneMoving); 
-
-    enemies.forEach((e) => e.update());
-    mines.forEach((m) => m.update());
-    for (let i = tracks.length - 1; i >= 0; i--) {
-        tracks[i].update();
-        if (tracks[i].life <= 0) tracks.splice(i, 1);
-    }
-    for (let i = bullets.length - 1; i >= 0; i--) {
-        const b = bullets[i];
-        b.update();
-        if (checkWallCollision(b.worldX, b.worldY, 5)) {
-            createExplosion(b.worldX, b.worldY, '#888'); 
-            Sound.wallHit(); 
-            bullets.splice(i, 1);
-            continue;
-        }
-        if (b.life <= 0) bullets.splice(i, 1);
-    }
-    particles.forEach((p, index) => {
-        p.update();
-        if (p.life <= 0) particles.splice(index, 1);
-    });
-
-    // Kollisioner
-    for (let i = mines.length - 1; i >= 0; i--) {
-        const m = mines[i];
-        let exploded = false;
-        players.forEach(p => {
-            if (!p.dead) {
-                const dist = Math.sqrt((p.worldX - m.worldX)**2 + (p.worldY - m.worldY)**2);
-                if (dist < p.radius + m.radius) {
-                    createExplosion(m.worldX, m.worldY, '#ff0000');
-                    p.dead = true;
-                    createExplosion(p.worldX, p.worldY, p.color);
-                    exploded = true;
-                }
-            }
-        });
-        if (exploded) { mines.splice(i, 1); continue; }
-        if (currentState !== STATE.PRACTICE) {
-            for (let j = enemies.length - 1; j >= 0; j--) {
-                const e = enemies[j];
-                const dist = Math.sqrt((e.worldX - m.worldX)**2 + (e.worldY - m.worldY)**2);
-                if (dist < e.radius + m.radius) {
-                    createExplosion(m.worldX, m.worldY, '#ff0000');
-                    enemies.splice(j, 1);
-                    mines.splice(i, 1);
-                    break;
-                }
-            }
-        }
-    }
-
-    for (let i = bullets.length - 1; i >= 0; i--) {
-        const b = bullets[i];
-        if (b.isEnemy) {
-            players.forEach(p => {
-                if (!p.dead) {
-                    const dist = Math.sqrt((b.worldX - p.worldX)**2 + (b.worldY - p.worldY)**2);
-                    if (dist < p.radius + 5) {
-                        createExplosion(p.worldX, p.worldY, p.color);
-                        p.dead = true;
-                        bullets.splice(i, 1);
+            update(deltaTime) {
+                const basePos = base.getPixelPos();
+                const distanceToBase = getDistance(this, basePos);
+                const delta = deltaTime / 1000;
+                
+                // Attackera basen om nära
+                if (distanceToBase <= this.attackRange) {
+                    this.attackTimer += deltaTime;
+                    if (this.attackTimer >= this.attackCooldown) {
+                        this.attackTimer = 0;
+                        base.takeDamage(this.damage);
                     }
+                    return; // Stå still om vi attackerar basen
                 }
-            });
-        }
-    }
 
-    enemies.forEach((e) => {
-        players.forEach(p => {
-            if (!p.dead) {
-                const dist = Math.sqrt((p.worldX - e.worldX)**2 + (p.worldY - e.worldY)**2);
-                if (dist < p.radius + e.radius) {
-                    createExplosion(p.worldX, p.worldY, p.color);
-                    p.dead = true;
+                // Rörelselogik
+                const angle = Math.atan2(basePos.y - this.y, basePos.x - this.x);
+                const dx = Math.cos(angle) * this.speed * delta;
+                const dy = Math.sin(angle) * this.speed * delta;
+                
+                let nextX = this.x + dx;
+                let nextY = this.y + dy;
+
+                // NYTT: Väggkollision med attack
+                // Kolla X-led
+                let wallHitX = getWallAt(nextX, this.y, this.size);
+                if (wallHitX) {
+                    this.attackWall(wallHitX, deltaTime);
+                    nextX = this.x; // Stoppa rörelse
                 }
+                
+                // Kolla Y-led
+                let wallHitY = getWallAt(nextX, nextY, this.size); // Använd nextX här om vi rört oss, annars gamla X
+                if (wallHitY) {
+                    this.attackWall(wallHitY, deltaTime);
+                    nextY = this.y; // Stoppa rörelse
+                }
+
+                this.x = nextX;
+                this.y = nextY;
+            }
+
+            attackWall(wall, deltaTime) {
+                this.wallAttackTimer += deltaTime;
+                if (this.wallAttackTimer >= this.wallAttackCooldown) {
+                    this.wallAttackTimer = 0;
+                    wall.takeDamage(this.damage);
+                }
+            }
+
+            draw(ctx) {
+                ctx.save(); ctx.fillStyle = this.color; const r = this.size / 2;
+                if (this.type === 'NORMAL') {
+                    ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(this.x - r/3, this.y - r/4, r/5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x + r/3, this.y - r/4, r/5, 0, Math.PI * 2); ctx.fill();
+                } else if (this.type === 'MUTANT') {
+                    const mutantR = this.size * 0.7; ctx.beginPath(); for (let i = 0; i < 8; i++) { const angle = i * (Math.PI / 4); const x = this.x + mutantR * Math.cos(angle); const y = this.y + mutantR * Math.sin(angle); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } ctx.closePath(); ctx.fill();
+                } else if (this.type === 'JUMPER') {
+                    const jumperR = r * 0.8; ctx.beginPath(); ctx.moveTo(this.x, this.y - jumperR); ctx.lineTo(this.x - jumperR * 0.866, this.y + jumperR * 0.5); ctx.lineTo(this.x + jumperR * 0.866, this.y + jumperR * 0.5); ctx.closePath(); ctx.fill();
+                } else if (this.type === 'BOSS') {
+                    const s = this.size * 1.5; ctx.fillRect(this.x - s/2, this.y - s/2, s, s); ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; ctx.beginPath(); ctx.arc(this.x, this.y, s/3, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.restore();
+                ctx.fillStyle = 'white'; ctx.font = '8px Arial'; ctx.textAlign = 'center'; ctx.fillText(this.type, this.x, this.y + 4); 
+                if (this.hp < this.maxHp) {
+                    const barWidth = this.size; const barHeight = 4;
+                    ctx.fillStyle = '#4a5568'; ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 5, barWidth, barHeight);
+                    ctx.fillStyle = '#38a169'; ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 5, barWidth * (this.hp / this.maxHp), barHeight);
+                }
+            }
+            
+            takeDamage(amount) {
+                this.hp -= amount;
+                if (this.hp <= 0) this.die();
+            }
+            
+            die() {
+                resources.kills++;
+                // NYTT: Droppa Monster Waste istället för resurser
+                resources.monsterWaste++;
+                
+                // Kanske en liten chans för extra waste för Bossar/Mutanter
+                if (this.type === 'BOSS') resources.monsterWaste += 9;
+                if (this.type === 'MUTANT') resources.monsterWaste += 2;
+            }
+        }
+        
+        class Troop {
+            constructor(startX, startY, targetHouse, troopCount) { this.x = startX; this.y = startY; this.targetHouse = targetHouse; this.troopCount = troopCount; this.speed = 80; this.size = 10; this.hp = 1; }
+            update(deltaTime) {
+                if (this.hp <= 0) return;
+                if (!this.targetHouse.key || !world[this.targetHouse.key]) { this.hp = 0; return; }
+                const targetPos = this.targetHouse.getPixelPos();
+                const distanceToTarget = getDistance(this, targetPos);
+                if (distanceToTarget < 10) { this.targetHouse.rescueSuccess(this.troopCount); this.hp = 0; } else {
+                    const angle = Math.atan2(targetPos.y - this.y, targetPos.x - this.x);
+                    this.x += Math.cos(angle) * this.speed * (deltaTime / 1000);
+                    this.y += Math.sin(angle) * this.speed * (deltaTime / 1000);
+                }
+            }
+            draw(ctx) {
+                if (this.hp <= 0) return;
+                ctx.fillStyle = '#48bb78'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = 'white'; ctx.font = '8px Arial'; ctx.textAlign = 'center'; ctx.fillText(this.troopCount, this.x, this.y + 3);
+            }
+        }
+
+
+        // --- Hjälpfunktioner ---
+        
+        // NYTT: Returnera objektet (Väggen) vid kollision
+        function getWallAt(x, y, radius) {
+            const checkPoints = [
+                { x: x - radius / 2, y: y - radius / 2 },
+                { x: x + radius / 2, y: y - radius / 2 },
+                { x: x - radius / 2, y: y + radius / 2 },
+                { x: x + radius / 2, y: y + radius / 2 }
+            ];
+            for (const point of checkPoints) {
+                const { tileX, tileY } = worldToGrid(point.x, point.y);
+                if (tileX === undefined || tileY === undefined) continue; 
+                const obj = world[`${tileX},${tileY}`];
+                if (obj instanceof Wall) return obj;
+            }
+            return null;
+        }
+
+        function checkWallCollision(x, y, radius) {
+            return getWallAt(x, y, radius) !== null;
+        }
+
+        function getDistance(obj1, obj2) {
+            const dx = obj1.x - obj2.x;
+            const dy = obj1.y - obj2.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        function isTileOccupied(tileX, tileY) { return !!world[`${tileX},${tileY}`]; }
+        function getObjectAtTile(tileX, tileY) { return world[`${tileX},${tileY}`] || null; }
+
+        function occupyTile(tileX, tileY, size, object) {
+            for(let x = 0; x < size; x++) {
+                for(let y = 0; y < size; y++) {
+                    world[`${tileX + x},${tileY + y}`] = object;
+                }
+            }
+        }
+
+        function screenToWorld(x, y) {
+            return { x: (x - canvas.width / 2) / camera.zoom + camera.x, y: (y - canvas.height / 2) / camera.zoom + camera.y };
+        }
+        
+        function worldToGrid(worldX, worldY) {
+            return { tileX: Math.floor(worldX / TILE_SIZE), tileY: Math.floor(worldY / TILE_SIZE) };
+        }
+        
+        function getRandomMonsterType() {
+            const rand = Math.random() * 100;
+            if (rand < 70) return 'NORMAL';
+            if (rand < 85) return 'MUTANT';
+            return 'JUMPER';
+        }
+
+        function spawnMonster(type = getRandomMonsterType()) {
+            const basePos = base.getPixelPos();
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.max(canvas.width, canvas.height) / camera.zoom + 100;
+            const x = basePos.x + Math.cos(angle) * distance;
+            const y = basePos.y + Math.sin(angle) * distance;
+            monsters.push(new Monster(x, y, type));
+        }
+
+        function spawnAbandonedHouse() {
+            const basePos = base.getPixelPos();
+            const angle = Math.random() * Math.PI * 2;
+            const distance = (Math.random() * 1000) + 500; 
+            const worldX = basePos.x + Math.cos(angle) * distance;
+            const worldY = basePos.y + Math.sin(angle) * distance;
+            const { tileX, tileY } = worldToGrid(worldX, worldY);
+            if (Math.abs(tileX - base.x) < 5 && Math.abs(tileY - base.y) < 5) return;
+            if (!isTileOccupied(tileX, tileY)) {
+                const newHouse = new AbandonedHouse(tileX, tileY);
+                abandonedHouses.push(newHouse);
+                occupyTile(tileX, tileY, 1, newHouse);
+            }
+        }
+        
+        function updateUI() {
+            const inf = '∞';
+            const isSandbox = gameMode === 'SANDBOX';
+
+            metalValue.textContent = isSandbox ? inf : resources.metal;
+            woodValue.textContent = isSandbox ? inf : resources.wood;
+            earthValue.textContent = isSandbox ? inf : resources.earth;
+            reinforcedMetalValue.textContent = isSandbox ? inf : resources.reinforcedMetal;
+            
+            // NYA RESURSER
+            monsterWasteValue.textContent = isSandbox ? inf : resources.monsterWaste;
+            bonemealValue.textContent = isSandbox ? inf : resources.boneMeal;
+
+            killsValue.textContent = resources.kills;
+            baseHpValue.textContent = `${Math.ceil(base.hp)} / ${Math.ceil(base.maxHp)}`;
+            baseHpValue.style.color = (base.hp / base.maxHp < 0.3) ? '#e53e3e' : '#ffffff';
+            bulletsValue.textContent = isSandbox ? inf : resources.bullets;
+            foodValue.textContent = isSandbox ? inf : resources.food;
+            inhabitantsValue.textContent = `${resources.inhabitants} / ${resources.maxInhabitants}`;
+            troopsValue.textContent = isSandbox ? inf : resources.troops;
+        }
+
+        function hideAllScreens() {
+            startMenu.classList.add('hidden');
+            controlsMenu.classList.add('hidden');
+            creditsScreen.classList.add('hidden');
+            introScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            gameUi.classList.add('hidden');
+            sandboxMessage.classList.add('hidden');
+            buildMenu.classList.add('hidden');
+            actionsBoard.classList.add('hidden'); 
+            troopSelectMenu.classList.add('hidden');
+            buildingMenu.classList.add('hidden'); 
+            pauseMenu.classList.add('hidden'); // NYTT
+            canvas.style.display = 'none'; 
+        }
+
+        function returnToMenu() {
+            gameState = 'MENU';
+            hideAllScreens();
+            startMenu.classList.remove('hidden');
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            hideAllScreens();
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        function positionMenu(menuElement, clientX, clientY) {
+            menuElement.style.position = 'fixed'; 
+            menuElement.classList.remove('hidden');
+            const menuWidth = menuElement.offsetWidth;
+            const menuHeight = menuElement.offsetHeight; 
+            let x = clientX + 10; let y = clientY + 10;
+            if (x + menuWidth > window.innerWidth - 10) { x = clientX - menuWidth - 10; if (x < 10) x = window.innerWidth - menuWidth - 10; }
+            if (y + menuHeight > window.innerHeight - 10) { y = clientY - menuHeight - 10; if (y < 10) y = window.innerHeight - menuHeight - 10; }
+            if (x < 10) x = 10; if (y < 10) y = 10;
+            menuElement.style.left = `${x}px`; menuElement.style.top = `${y}px`;
+        }
+
+        // --- Resurs och Kostnadshantering ---
+
+        function checkCost(cost) {
+            if (gameMode === 'SANDBOX' || !cost) return true;
+            for (const [resource, amount] of Object.entries(cost)) {
+                if ((resources[resource] || 0) < amount) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        function payCost(cost) {
+            if (gameMode === 'SANDBOX' || !cost) return;
+            for (const [resource, amount] of Object.entries(cost)) {
+                resources[resource] -= amount;
+            }
+        }
+
+        function getUpgradeCost(building) {
+            if (building instanceof Base) {
+                const level = building.level;
+                return {
+                    metal: Math.floor(100 * Math.pow(1.5, level - 1)),
+                    wood: Math.floor(100 * Math.pow(1.5, level - 1)),
+                    reinforcedMetal: Math.floor(10 * Math.pow(1.2, level - 1))
+                };
+            }
+
+            if (building.level >= building.maxLevel) return null;
+            const nextLevelKey = `level${building.level + 1}`;
+            return UPGRADE_COSTS[building.type][nextLevelKey] || null;
+        }
+
+        function upgradeBuilding() {
+            if (!focusedBuilding) return;
+            if (!(focusedBuilding instanceof Base) && focusedBuilding.level >= focusedBuilding.maxLevel) return;
+
+            const cost = getUpgradeCost(focusedBuilding);
+            if (!cost || !checkCost(cost)) { console.log("Kan inte uppgradera."); return; }
+            
+            payCost(cost);
+            
+            focusedBuilding.level++;
+            focusedBuilding.maxHp *= 1.5; 
+            focusedBuilding.hp = focusedBuilding.maxHp; 
+            
+            if (focusedBuilding instanceof Base) {
+                focusedBuilding.maxHp += 50;
+                focusedBuilding.hp = focusedBuilding.maxHp; 
+                focusedBuilding.turret.fireRate *= 0.9;
+            } else if (focusedBuilding instanceof Tower) {
+                focusedBuilding.turret.damage *= 1.5;
+                focusedBuilding.turret.fireRate *= 0.9;
+            } else if (focusedBuilding instanceof Greenhouse) {
+                focusedBuilding.produceRate /= 1.5; 
+            } else if (focusedBuilding instanceof Farm) { // NY
+                focusedBuilding.produceRate /= 1.5; 
+            } else if (focusedBuilding instanceof Mine) { // NY
+                focusedBuilding.produceRate /= 1.5; 
+            } else if (focusedBuilding instanceof House) {
+                resources.maxInhabitants += 5; focusedBuilding.inhabitantCapacity += 5;
+            }
+
+            buildingMenu.classList.add('hidden');
+            focusedBuilding = null;
+        }
+        
+        // NYTT: Reparationsfunktion
+        function repairWall() {
+            if (!focusedBuilding || !(focusedBuilding instanceof Wall)) return;
+            if (focusedBuilding.hp >= focusedBuilding.maxHp) return;
+            
+            const repairCost = { reinforcedMetal: 1 };
+            if (!checkCost(repairCost)) { console.log("Saknar resurser för reparation"); return; }
+            
+            payCost(repairCost);
+            focusedBuilding.hp = focusedBuilding.maxHp;
+            console.log("Vägg reparerad!");
+            buildingMenu.classList.add('hidden');
+            focusedBuilding = null;
+        }
+
+        function destroyBuilding() {
+            if (!focusedBuilding || focusedBuilding instanceof Base) return;
+
+            const building = focusedBuilding;
+            const refundPercentage = 0.75;
+            
+            for (const [resource, amount] of Object.entries(building.initialCosts)) {
+                const refund = Math.round(amount * refundPercentage);
+                if (gameMode !== 'SANDBOX') resources[resource] = (resources[resource] || 0) + refund;
+            }
+            
+            // Hantera uppgraderingskostnader återbetalning... (förenklad för utrymmets skull)
+            
+            building.destroy();
+            
+            console.log(`Byggnad ${building.type} förstörd. 75% av materialet återbetalat.`);
+            buildingMenu.classList.add('hidden');
+            focusedBuilding = null;
+        }
+
+
+        // --- Spel-logik (Uppdatering) ---
+
+        function update(deltaTime) {
+            const cameraSpeed = 500 / camera.zoom;
+            if (keysPressed['w'] || keysPressed['ArrowUp']) camera.y -= cameraSpeed * (deltaTime / 1000);
+            if (keysPressed['s'] || keysPressed['ArrowDown']) camera.y += cameraSpeed * (deltaTime / 1000);
+            if (keysPressed['a'] || keysPressed['ArrowLeft']) camera.x -= cameraSpeed * (deltaTime / 1000);
+            if (keysPressed['d'] || keysPressed['ArrowRight']) camera.x += cameraSpeed * (deltaTime / 1000);
+
+            if (gameMode === 'NORMAL') {
+                monsterSpawnTimer += deltaTime;
+                const bossRate = 300000;
+                if (monsterSpawnTimer >= bossRate) { spawnMonster('BOSS'); monsterSpawnTimer = 0; } 
+                else if (monsterSpawnTimer % 3000 < deltaTime) { spawnMonster(); }
+            }
+            
+            abandonedHouseSpawnTimer += deltaTime;
+            if (abandonedHouseSpawnTimer >= ABANDONED_HOUSE_SPAWN_RATE) { abandonedHouseSpawnTimer = 0; spawnAbandonedHouse(); }
+            
+            inhabitantGrowTimer += deltaTime;
+            if (inhabitantGrowTimer >= INHABITANT_GROW_RATE && resources.inhabitants < resources.maxInhabitants) { inhabitantGrowTimer = 0; resources.inhabitants++; }
+            
+            greenhouses.forEach(g => g.update(deltaTime));
+            farms.forEach(f => f.update(deltaTime)); // NY
+            mines.forEach(m => m.update(deltaTime)); // NY
+
+            base.update(deltaTime);
+            towers.forEach(tower => tower.update(deltaTime));
+            monsters.forEach(monster => monster.update(deltaTime));
+            projectiles.forEach(proj => proj.update(deltaTime));
+            troops.forEach(t => t.update(deltaTime)); 
+
+            monsters = monsters.filter(m => m.hp > 0);
+            projectiles = projectiles.filter(p => p.hp > 0);
+            troops = troops.filter(t => t.hp > 0); 
+            
+            abandonedHouses = abandonedHouses.filter(ah => world[ah.key]);
+            walls = walls.filter(w => w.hp > 0); // Rensa förstörda väggar
+
+            updateUI();
+        }
+
+        // --- Spel-logik (Rendering) ---
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(camera.zoom, camera.zoom);
+            ctx.translate(-camera.x, -camera.y);
+
+            // Rita rutnät
+            ctx.strokeStyle = '#4a5568';
+            ctx.lineWidth = 1 / camera.zoom;
+            ctx.beginPath();
+            const { x: startWorldX, y: startWorldY } = screenToWorld(0, 0);
+            const { x: endWorldX, y: endWorldY } = screenToWorld(canvas.width, canvas.height);
+            const startX = Math.floor(startWorldX / TILE_SIZE) * TILE_SIZE;
+            const startY = Math.floor(startWorldY / TILE_SIZE) * TILE_SIZE;
+            const endX = Math.ceil(endWorldX / TILE_SIZE) * TILE_SIZE;
+            const endY = Math.ceil(endWorldY / TILE_SIZE) * TILE_SIZE;
+            for (let x = startX; x <= endX; x += TILE_SIZE) { ctx.moveTo(x, startY); ctx.lineTo(x, endY); }
+            for (let y = startY; y <= endY; y += TILE_SIZE) { ctx.moveTo(startX, y); ctx.lineTo(endX, y); }
+            ctx.stroke();
+
+            // Rita byggnader
+            base.draw(ctx);
+            towers.forEach(tower => tower.draw(ctx));
+            walls.forEach(wall => wall.draw(ctx));
+            houses.forEach(house => house.draw(ctx));
+            greenhouses.forEach(gh => gh.draw(ctx));
+            barracks.forEach(b => b.draw(ctx));
+            farms.forEach(f => f.draw(ctx)); // NY
+            mines.forEach(m => m.draw(ctx)); // NY
+            abandonedHouses.forEach(ah => ah.draw(ctx));
+            
+            monsters.forEach(monster => monster.draw(ctx));
+            projectiles.forEach(proj => proj.draw(ctx));
+            troops.forEach(troop => troop.draw(ctx)); 
+            
+            if (selectedTile) {
+                ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+                ctx.fillRect(selectedTile.tileX * TILE_SIZE, selectedTile.tileY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            }
+
+            ctx.restore();
+        }
+
+        function gameLoop(timestamp) {
+            if (gameState === 'GAME' || gameState === 'SANDBOX') {
+                let deltaTime = timestamp - lastTime;
+                if (deltaTime > 100) deltaTime = 100; 
+                lastTime = timestamp;
+                update(deltaTime);
+                render();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function initGame(mode) {
+            gameMode = mode;
+            gameState = (mode === 'SANDBOX') ? 'SANDBOX' : 'GAME';
+            
+            hideAllScreens();
+            gameUi.classList.remove('hidden');
+            canvas.style.display = 'block'; 
+            if (gameMode === 'SANDBOX') sandboxMessage.classList.remove('hidden');
+            
+            targetAbandonedHouse = null;
+            focusedBuilding = null; 
+            selectedTile = null;
+
+            // Nollställ
+            world = {};
+            towers = []; walls = []; houses = []; greenhouses = []; barracks = []; farms = []; mines = []; abandonedHouses = [];
+            monsters = []; projectiles = []; troops = []; 
+            monsterSpawnTimer = 0;
+            abandonedHouseSpawnTimer = 0;
+            inhabitantGrowTimer = 0;
+            
+            base = new Base(-1, -1);
+            occupyTile(-1, -1, base.size, base);
+
+            // Nollställ resurser
+            resources = {
+                kills: 0,
+                troops: 10,
+                metal: 100,
+                wood: 100,
+                earth: 100,
+                bullets: 500,
+                food: 50,
+                reinforcedMetal: 0,
+                monsterWaste: 0, // NY
+                boneMeal: 0, // NY
+                inhabitants: 5,
+                maxInhabitants: 5
+            };
+            
+            camera.x = 0; camera.y = 0; camera.zoom = 1;
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // --- Bygg-logik ---
+        
+        function tryBuild(type) {
+            if (!selectedTile) return;
+            const { tileX, tileY } = selectedTile;
+            if (isTileOccupied(tileX, tileY)) return;
+
+            let newBuilding;
+            let cost;
+
+            if (type === 'TOWER') { cost = COSTS.TOWER; if (!checkCost(cost)) return; newBuilding = new Tower(tileX, tileY); towers.push(newBuilding); } 
+            else if (type === 'WALL') { cost = COSTS.WALL; if (!checkCost(cost)) return; newBuilding = new Wall(tileX, tileY); walls.push(newBuilding); } 
+            else if (type === 'HOUSE') { cost = COSTS.HOUSE; if (!checkCost(cost)) return; newBuilding = new House(tileX, tileY); houses.push(newBuilding); resources.maxInhabitants += newBuilding.inhabitantCapacity; } 
+            else if (type === 'GREENHOUSE') { cost = COSTS.GREENHOUSE; if (!checkCost(cost)) return; newBuilding = new Greenhouse(tileX, tileY); greenhouses.push(newBuilding); } 
+            else if (type === 'BARRACKS') { cost = COSTS.BARRACKS; if (!checkCost(cost)) return; newBuilding = new Barracks(tileX, tileY); barracks.push(newBuilding); } 
+            else if (type === 'FARM') { cost = COSTS.FARM; if (!checkCost(cost)) return; newBuilding = new Farm(tileX, tileY); farms.push(newBuilding); } // NY
+            else if (type === 'MINE') { cost = COSTS.MINE; if (!checkCost(cost)) return; newBuilding = new Mine(tileX, tileY); mines.push(newBuilding); } // NY
+            else { return; }
+            
+            payCost(cost);
+            occupyTile(tileX, tileY, 1, newBuilding);
+            buildMenu.classList.add('hidden');
+            selectedTile = null;
+        }
+
+        // --- Event Listeners ---
+
+        upgradeBtn.addEventListener('click', upgradeBuilding);
+        destroyBtn.addEventListener('click', destroyBuilding);
+        repairBtn.addEventListener('click', repairWall); // NY
+        buildingMenuCancelBtn.addEventListener('click', () => {
+            buildingMenu.classList.add('hidden');
+            focusedBuilding = null;
+        });
+
+        const camera = { x: 0, y: 0, zoom: 1, isDragging: false, lastMouse: { x: 0, y: 0 } };
+        const keysPressed = {};
+
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); 
+            if (gameState !== 'GAME' && gameState !== 'SANDBOX') return;
+
+            const worldPos = screenToWorld(e.clientX, e.clientY);
+            const gridPos = worldToGrid(worldPos.x, worldPos.y);
+            const targetObject = getObjectAtTile(gridPos.tileX, gridPos.tileY);
+            
+            buildMenu.classList.add('hidden');
+            troopSelectMenu.classList.add('hidden');
+            buildingMenu.classList.add('hidden');
+            repairBtn.classList.add('hidden'); // Dölj repair som default
+            selectedTile = null;
+            targetAbandonedHouse = null;
+            focusedBuilding = null;
+
+            if (targetObject instanceof AbandonedHouse) {
+                targetAbandonedHouse = targetObject; 
+                positionMenu(troopSelectMenu, e.clientX, e.clientY);
+
+            } else if (targetObject instanceof Building) {
+                focusedBuilding = targetObject;
+                
+                // Visa repair om det är en skadad vägg
+                if (focusedBuilding instanceof Wall && focusedBuilding.hp < focusedBuilding.maxHp) {
+                    repairBtn.classList.remove('hidden');
+                    repairBtn.disabled = !checkCost({reinforcedMetal: 1});
+                } else {
+                    repairBtn.classList.add('hidden');
+                }
+
+                const cost = getUpgradeCost(focusedBuilding);
+                const maxLevelReached = !(focusedBuilding instanceof Base) && focusedBuilding.level >= focusedBuilding.maxLevel;
+                const costString = cost ? `(${Object.entries(cost).map(([res, amt]) => `${amt} ${res.substring(0, 2)}`).join(', ')})` : '';
+
+                buildingMenuTitle.textContent = `${focusedBuilding.type} (Nivå ${focusedBuilding.level})`;
+                
+                if (!maxLevelReached) {
+                    upgradeBtn.textContent = `Uppgradera till N ${focusedBuilding.level + 1} ${costString}`;
+                    upgradeBtn.classList.remove('hidden');
+                    upgradeBtn.disabled = !checkCost(cost);
+                } else {
+                    upgradeBtn.textContent = `Max Nivå (${focusedBuilding.maxLevel})`;
+                    upgradeBtn.disabled = true;
+                }
+
+                if (focusedBuilding instanceof Base) {
+                    destroyBtn.classList.add('hidden');
+                } else {
+                    destroyBtn.classList.remove('hidden');
+                    destroyBtn.textContent = `Förstöra (75% Återbetalning)`;
+                }
+                positionMenu(buildingMenu, e.clientX, e.clientY);
             }
         });
-    });
 
-    for (let i = bullets.length - 1; i >= 0; i--) {
-        const b = bullets[i];
-        if (b.isEnemy) continue; 
-        for (let j = enemies.length - 1; j >= 0; j--) {
-            const e = enemies[j];
-            const dist = Math.sqrt((b.worldX - e.worldX)**2 + (b.worldY - e.worldY)**2);
-            if (dist < e.radius + 5) {
-                createExplosion(e.worldX, e.worldY);
-                bullets.splice(i, 1);
-                if (currentState === STATE.PRACTICE) {
-                    enemies[j] = new Enemy(true, e.worldX, e.worldY);
-                } else {
-                    enemies.splice(j, 1);
-                    score += 1;
-                    if (score >= TARGET_SCORE) currentState = STATE.WIN;
+        canvas.addEventListener('mousedown', (e) => {
+            if (gameState !== 'GAME' && gameState !== 'SANDBOX') return;
+            if (e.button === 0) {
+                if (!troopSelectMenu.classList.contains('hidden') || !buildingMenu.classList.contains('hidden')) {
+                    troopSelectMenu.classList.add('hidden'); buildingMenu.classList.add('hidden'); targetAbandonedHouse = null; focusedBuilding = null;
                 }
-                i = bullets.length; 
-                break; 
+                if (!buildMenu.classList.contains('hidden')) { buildMenu.classList.add('hidden'); selectedTile = null; return; }
+                const worldPos = screenToWorld(e.clientX, e.clientY);
+                const gridPos = worldToGrid(worldPos.x, worldPos.y);
+                if (!isTileOccupied(gridPos.tileX, gridPos.tileY)) { selectedTile = gridPos; positionMenu(buildMenu, e.clientX, e.clientY); } 
+                else { camera.isDragging = true; camera.lastMouse = { x: e.clientX, y: e.clientY }; }
+            } else if (e.button === 1) { camera.isDragging = true; camera.lastMouse = { x: e.clientX, y: e.clientY }; }
+        });
+
+        // Standardknappar
+        startGameIntroBtn.addEventListener('click', () => { hideAllScreens(); introScreen.classList.remove('hidden'); gameState = 'INTRO'; });
+        continueGameBtn.addEventListener('click', () => { initGame('NORMAL'); });
+        creditsBtn.addEventListener('click', () => { hideAllScreens(); creditsScreen.classList.remove('hidden'); gameState = 'CREDITS'; });
+        creditsBackBtn.addEventListener('click', returnToMenu);
+        sandboxGameBtn.addEventListener('click', () => initGame('SANDBOX'));
+        // returnToMenuBtn är borttagen från HTML så denna behövs inte längre
+        // returnToMenuBtn.addEventListener('click', returnToMenu); 
+        
+        controlsBtn.addEventListener('click', () => { hideAllScreens(); controlsMenu.classList.remove('hidden'); gameState = 'CONTROLS'; });
+        controlsBackBtn.addEventListener('click', () => {
+            // NYTT: Kontrollera om vi kom från pausmenyn
+            if (gameState === 'CONTROLS_PAUSED') {
+                hideAllScreens();
+                pauseMenu.classList.remove('hidden');
+                gameState = 'PAUSED';
+            } else {
+                returnToMenu();
+            }
+        }); 
+        gameOverBackBtn.addEventListener('click', returnToMenu); 
+        
+        // PAUS LOGIK
+        function togglePause() {
+            if (gameState === 'GAME' || gameState === 'SANDBOX') {
+                savedGameState = gameState;
+                gameState = 'PAUSED';
+                pauseMenu.classList.remove('hidden');
+            } else if (gameState === 'PAUSED') {
+                gameState = savedGameState;
+                pauseMenu.classList.add('hidden');
+                
+                // FIX: Återställ UI och Canvas ifall vi kom från en annan meny (t.ex. Kontroller)
+                gameUi.classList.remove('hidden');
+                canvas.style.display = 'block';
+                if (gameMode === 'SANDBOX') sandboxMessage.classList.remove('hidden');
+
+                lastTime = performance.now();
+                requestAnimationFrame(gameLoop);
             }
         }
-    }
 
-    spawnEnemy();
-    spawnMine();
-}
+        pauseContinueBtn.addEventListener('click', togglePause);
+        pauseHomeBtn.addEventListener('click', returnToMenu);
+        pauseControlsBtn.addEventListener('click', () => {
+            hideAllScreens();
+            controlsMenu.classList.remove('hidden');
+            gameState = 'CONTROLS_PAUSED';
+        });
 
-// --- RITA ---
 
-function drawUI() {
-    ctx.fillStyle = 'white';
-    ctx.font = '24px "Courier New"';
-    ctx.textAlign = 'left';
-    
-    if (currentState === STATE.PRACTICE) {
-        ctx.fillText(`PRACTICE MODE`, 20, 40);
-        ctx.font = '18px "Courier New"';
-        ctx.fillStyle = practiceActive ? '#FF4444' : '#44FF44';
-        ctx.fillText(`Skjutande: ${practiceActive ? "PÅ" : "AV"} (Enter)`, 20, 70);
-        ctx.fillStyle = '#FFD700';
-        ctx.fillText(`Svårighet: ${practiceDifficulty} (1-9)`, 20, 100);
-    } else {
-        const level = Math.floor(score / 10) + 1;
-        ctx.fillText(`Poäng: ${score} / ${TARGET_SCORE}`, 20, 40);
-        ctx.font = '18px "Courier New"';
-        ctx.fillStyle = '#FFD700';
-        ctx.fillText(`Hotnivå: ${level}`, 20, 70);
-    }
-    
-    // Global cheat text
-    players.forEach(p => {
-         if (p.cheatMode && !p.dead) {
-             ctx.save();
-             ctx.fillStyle = '#FFD700';
-             ctx.font = 'bold 20px Arial';
-             ctx.textAlign = 'center';
-             ctx.fillText("CHEAT ACTIVATED", canvas.width/2, 100);
-             ctx.restore();
-         }
-    });
+        // Bygg-knappar
+        buildTowerBtn.addEventListener('click', () => tryBuild('TOWER'));
+        buildWallBtn.addEventListener('click', () => tryBuild('WALL'));
+        buildHouseBtn.addEventListener('click', () => tryBuild('HOUSE'));
+        buildGreenhouseBtn.addEventListener('click', () => tryBuild('GREENHOUSE'));
+        buildBarracksBtn.addEventListener('click', () => tryBuild('BARRACKS')); 
+        buildFarmBtn.addEventListener('click', () => tryBuild('FARM')); 
+        buildMineBtn.addEventListener('click', () => tryBuild('MINE')); 
+        buildCancelBtn.addEventListener('click', () => { buildMenu.classList.add('hidden'); selectedTile = null; });
 
-    ctx.font = '14px "Courier New"';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.textAlign = 'left';
-    if (currentState === STATE.MULTIPLAYER) {
-        ctx.fillText("P1: WASD | Q/E Torn | SPACE Skjut", 20, canvas.height - 40);
-        ctx.fillText("P2: PILAR | . , Torn | ENTER Skjut", 20, canvas.height - 20);
-    } else {
-        ctx.fillText("WASD: Kör | PILAR: Sikta | SPACE: Skjut", 20, canvas.height - 20);
-    }
-}
+        // Åtgärder
+        trainTroopBtn.addEventListener('click', () => {
+            if (gameMode !== 'SANDBOX' && barracks.length === 0) { console.log("Du måste bygga en barack först!"); return; }
+            if (gameMode !== 'SANDBOX' && resources.inhabitants >= resources.maxInhabitants) { console.log("Max antal invånare nått!"); return; }
+            if (gameMode !== 'SANDBOX' && resources.food < 10) { console.log("Inte tillräckligt med mat för att träna!"); return; }
+            if (gameMode !== 'SANDBOX') { resources.inhabitants--; resources.food -= 10; }
+            resources.troops++;
+        });
 
-function drawButton(text, x, y, width, height, isHover) {
-    ctx.fillStyle = isHover ? '#66bb6a' : '#333';
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeRect(x, y, width, height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '30px "Courier New"';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, x + width / 2, y + height / 2);
-}
+        craftBulletsBtn.addEventListener('click', () => {
+            if (gameMode !== 'SANDBOX' && resources.metal < 1) return;
+            if (gameMode !== 'SANDBOX') resources.metal--;
+            resources.bullets += 10;
+        });
 
-function isMouseInside(rect) {
-    return mouse.x > rect.x && mouse.x < rect.x + rect.w &&
-           mouse.y > rect.y && mouse.y < rect.y + rect.h;
-}
+        craftReinforcedBtn.addEventListener('click', () => {
+            if (gameMode !== 'SANDBOX' && resources.metal < 2) return;
+            if (gameMode !== 'SANDBOX') resources.metal -= 2;
+            resources.reinforcedMetal++;
+        });
 
-function drawMenu() {
-    ctx.fillStyle = 'rgba(0,0,0,0.85)';
-    ctx.fillRect(0,0, canvas.width, canvas.height);
-    ctx.fillStyle = '#4CAF50';
-    ctx.font = 'bold 60px "Courier New"';
-    ctx.textAlign = 'center';
-    ctx.fillText("TANK SURVIVAL", canvas.width / 2, canvas.height / 2 - 160);
-    
-    const btnW = 260;
-    const btnH = 50;
-    const startRect = { x: canvas.width/2 - btnW/2, y: canvas.height/2 - 70, w: btnW, h: btnH };
-    const multiRect = { x: canvas.width/2 - btnW/2, y: canvas.height/2, w: btnW, h: btnH };
-    const practiceRect = { x: canvas.width/2 - btnW/2, y: canvas.height/2 + 70, w: btnW, h: btnH };
-    const creditRect = { x: canvas.width/2 - btnW/2, y: canvas.height/2 + 140, w: btnW, h: btnH };
-    
-    drawButton("1 PLAYER", startRect.x, startRect.y, startRect.w, startRect.h, isMouseInside(startRect));
-    drawButton("2 PLAYERS", multiRect.x, multiRect.y, multiRect.w, multiRect.h, isMouseInside(multiRect));
-    drawButton("PRACTICE", practiceRect.x, practiceRect.y, practiceRect.w, practiceRect.h, isMouseInside(practiceRect));
-    drawButton("CREDITS", creditRect.x, creditRect.y, creditRect.w, creditRect.h, isMouseInside(creditRect));
+        // NYTT: Crafting för Benmjöl
+        craftBonemealBtn.addEventListener('click', () => {
+            if (gameMode !== 'SANDBOX' && resources.monsterWaste < 1) return;
+            if (gameMode !== 'SANDBOX') resources.monsterWaste--;
+            resources.boneMeal += 5;
+        });
+        
+        // Truppval
+        troopSelectButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (targetAbandonedHouse) {
+                    const troopsToSend = parseInt(e.currentTarget.getAttribute('data-troops'));
+                    const neededFood = TROOP_RESCUE_FOOD_COST;
+                    if (gameMode !== 'SANDBOX') {
+                        if (resources.troops < troopsToSend || resources.food < neededFood) return;
+                    }
+                    if (gameMode !== 'SANDBOX') { resources.troops -= troopsToSend; resources.food -= neededFood; }
+                    const startPos = base.getPixelPos();
+                    const newTroop = new Troop(startPos.x, startPos.y, targetAbandonedHouse, troopsToSend);
+                    troops.push(newTroop);
+                    troopSelectMenu.classList.add('hidden'); targetAbandonedHouse = null;
+                }
+            });
+        });
+        
+        troopSelectCancelBtn.addEventListener('click', () => { troopSelectMenu.classList.add('hidden'); targetAbandonedHouse = null; });
 
-    if (mouse.clicked) {
-        initAudio();
-        if (isMouseInside(startRect)) {
-            resetGame(STATE.PLAYING);
-            currentState = STATE.PLAYING;
-            mouse.clicked = false;
-        } else if (isMouseInside(multiRect)) {
-            resetGame(STATE.MULTIPLAYER);
-            currentState = STATE.MULTIPLAYER;
-            mouse.clicked = false;
-        } else if (isMouseInside(practiceRect)) {
-            resetGame(STATE.PRACTICE);
-            currentState = STATE.PRACTICE;
-            mouse.clicked = false;
-        } else if (isMouseInside(creditRect)) {
-            currentState = STATE.CREDITS;
-            mouse.clicked = false;
-        }
-    }
-}
+        window.addEventListener('mousemove', (e) => {
+            if (camera.isDragging) {
+                const dx = e.clientX - camera.lastMouse.x; const dy = e.clientY - camera.lastMouse.y;
+                camera.x -= dx / camera.zoom; camera.y -= dy / camera.zoom;
+                camera.lastMouse = { x: e.clientX, y: e.clientY };
+                if (selectedTile) { selectedTile = null; buildMenu.classList.add('hidden'); }
+                if (targetAbandonedHouse) { targetAbandonedHouse = null; troopSelectMenu.classList.add('hidden'); } 
+                if (focusedBuilding) { focusedBuilding = null; buildingMenu.classList.add('hidden'); } 
+            }
+        });
 
-function drawCredits() {
-    ctx.fillStyle = 'rgba(0,0,0,0.9)';
-    ctx.fillRect(0,0, canvas.width, canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '40px "Courier New"';
-    ctx.textAlign = 'center';
-    ctx.fillText("CREDITS", canvas.width / 2, canvas.height / 2 - 50);
-    ctx.fillStyle = '#4CAF50';
-    ctx.font = 'bold 30px "Courier New"';
-    ctx.fillText("Zayn Lilak", canvas.width / 2, canvas.height / 2 + 20);
-    
-    const btnW = 200;
-    const btnH = 50;
-    const backRect = { x: canvas.width/2 - btnW/2, y: canvas.height/2 + 100, w: btnW, h: btnH };
-    drawButton("Tillbaka", backRect.x, backRect.y, backRect.w, backRect.h, isMouseInside(backRect));
-    
-    if (mouse.clicked && isMouseInside(backRect)) {
-        currentState = STATE.MENU;
-        mouse.clicked = false;
-    }
-}
+        window.addEventListener('mouseup', (e) => { camera.isDragging = false; });
 
-function drawGameOver(win) {
-    Sound.updateEngine(false);
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    ctx.fillRect(0,0, canvas.width, canvas.height);
-    ctx.textAlign = 'center';
-    if (win) {
-        ctx.fillStyle = '#FFD700';
-        ctx.font = 'bold 60px "Courier New"';
-        ctx.fillText("UPPDRAG SLUTFÖRT!", canvas.width / 2, canvas.height / 2 - 50);
-        ctx.font = '30px "Courier New"';
-        ctx.fillStyle = '#fff';
-        ctx.fillText("Ni nådde 1000 poäng!", canvas.width / 2, canvas.height / 2 + 10);
-    } else {
-        ctx.fillStyle = '#D32F2F';
-        ctx.font = 'bold 60px "Courier New"';
-        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 50);
-        ctx.font = '30px "Courier New"';
-        ctx.fillStyle = '#fff';
-        ctx.fillText(`Poäng: ${score}`, canvas.width / 2, canvas.height / 2 + 10);
-    }
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const scroll = e.deltaY < 0 ? 1 : -1;
+            camera.zoom = Math.max(0.1, Math.min(camera.zoom * (1 + scroll * 0.1), 3.0));
+        });
 
-    const btnW = 250;
-    const btnH = 60;
-    const menuRect = { x: canvas.width/2 - btnW/2, y: canvas.height/2 + 80, w: btnW, h: btnH };
-    drawButton("Huvudmeny", menuRect.x, menuRect.y, menuRect.w, menuRect.h, isMouseInside(menuRect));
-    
-    if (mouse.clicked && isMouseInside(menuRect)) {
-        currentState = STATE.MENU;
-        mouse.clicked = false;
-    }
-}
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase(); keysPressed[key] = true;
+            
+            // NYTT: L för paus
+            if ((gameState === 'GAME' || gameState === 'SANDBOX' || gameState === 'PAUSED') && key === 'l') {
+                togglePause();
+            }
 
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (gameState === 'SANDBOX' && key === 'm') spawnMonster(); 
+            if (gameState === 'SANDBOX' && key === 'b') spawnMonster('BOSS'); 
+            if ((gameState === 'GAME' || gameState === 'SANDBOX') && key === 'y') actionsBoard.classList.toggle('hidden');
+        });
 
-    if (currentState === STATE.PLAYING || currentState === STATE.PRACTICE || currentState === STATE.MULTIPLAYER) {
-        update();
-        drawBackground();
-        tracks.forEach(t => t.draw());
-        particles.forEach(p => p.draw());
-        mines.forEach(m => m.draw());
-        enemies.forEach(e => e.draw());
-        bullets.forEach(b => b.draw());
-        players.forEach(p => p.draw());
-        drawUI();
-    } 
-    else if (currentState === STATE.MENU) {
-        drawBackground();
-        if(players.length === 0) resetGame(STATE.PLAYING);
-        players.forEach(p => p.draw());
-        drawMenu();
-    }
-    else if (currentState === STATE.CREDITS) drawCredits();
-    else if (currentState === STATE.GAMEOVER) {
-        drawBackground();
-        mines.forEach(m => m.draw());
-        enemies.forEach(e => e.draw());
-        particles.forEach(p => p.draw());
-        drawGameOver(false);
-    }
-    else if (currentState === STATE.WIN) {
-        drawBackground();
-        players.forEach(p => p.draw());
-        drawGameOver(true);
-    }
-    requestAnimationFrame(loop);
-}
-
-resetGame(STATE.PLAYING);
-currentState = STATE.MENU;
-
-loop();
-
-</script>
+        window.addEventListener('keyup', (e) => { keysPressed[e.key.toLowerCase()] = false; });
+        
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; if(gameState === 'GAME' || gameState === 'SANDBOX') render(); }
+        window.addEventListener('resize', resizeCanvas);
+        
+        resizeCanvas();
+        updateBuildButtonLabels(); 
+        hideAllScreens(); 
+        startMenu.classList.remove('hidden'); 
+    </script>
 </body>
 </html>
 </div>
