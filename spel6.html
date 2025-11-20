@@ -18,10 +18,11 @@
         background: black;
     }
 
+    /* Flyttad till höger nedre hörn */
     .back {
         position: fixed;
-        top: 20px;
-        left: 20px;
+        bottom: 20px;
+        right: 20px;
         background: rgba(0,0,0,0.5);
         padding: 10px 16px;
         border-radius: 8px;
@@ -30,6 +31,7 @@
         border: 2px solid #666;
         z-index: 9999;
         font-size: 18px;
+        cursor: pointer;
     }
 
     .back:hover {
@@ -39,7 +41,8 @@
 </head>
 <body>
 
-<a class="back" href="index.html" target="_blank">✖ Stäng</a>
+<!-- Stäng-knapp som stänger fliken -->
+<button class="back" onclick="window.close()">✖ Stäng</button>
 
 <div id="game-container">
     <!doctype html>
@@ -305,9 +308,7 @@
     // Starta spelet första gången
     init();
 
-    // Anpassa canvas när fönstret ändras (skalar inte rutnätet, men centrerar)
-    window.addEventListener('resize', () => {
-      // ingen dynamisk skalning i denna enkla version
+    
     });
 
   </script>
