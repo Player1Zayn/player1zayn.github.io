@@ -4,60 +4,117 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Zayn's Spel</title>
-
 <style>
-    body {
-        margin: 0;
-        background: #0d0d0d;
-        font-family: Arial, sans-serif;
-        color: white;
-        text-align: center;
-    }
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    background: #5c94fc; /* blå himmel */
+    position: relative;
+}
 
-    .header {
-        background: #1e1e1e;
-        padding: 20px;
-        font-size: 32px;
-        font-weight: bold;
-        border-bottom: 3px solid #444;
-    }
+/* Svarta fluffiga moln */
+.cloud {
+    position: absolute;
+    background: #000000;  /* SVART */
+    border-radius: 50%;
+    z-index: 2;
+    animation: float linear infinite;
+}
 
-    .menu-container {
-        max-width: 600px;
-        margin: 60px auto;
-    }
+/* Olika storlekar */
+.cloud:nth-child(1) { width: 100px; height: 60px; top: 60px; left: -150px; animation-duration: 20s; }
+.cloud:nth-child(2) { width: 130px; height: 75px; top: 120px; left: -200px; animation-duration: 26s; }
+.cloud:nth-child(3) { width: 90px; height: 50px; top: 90px; left: -180px; animation-duration: 18s; }
+.cloud:nth-child(4) { width: 110px; height: 65px; top: 40px; left: -160px; animation-duration: 24s; }
 
-    .game-btn {
-        display: block;
-        width: 100%;
-        padding: 18px;
-        margin: 15px 0;
-        background: linear-gradient(#2a2a2a, #1a1a1a);
-        border: 2px solid #4b4b4b;
-        color: white;
-        text-decoration: none;
-        font-size: 22px;
-        border-radius: 12px;
-        transition: 0.25s;
-        box-shadow: 0 0 12px rgba(0,0,0,0.6);
-    }
+/* Fluff-delar – också SVARTA */
+.cloud::before, .cloud::after {
+    content: '';
+    position: absolute;
+    background: #000000; /* SVART */
+    border-radius: 50%;
+}
+.cloud::before { width: 60%; height: 60%; top: -30%; left: 10%; }
+.cloud::after  { width: 50%; height: 50%; top: 20%; left: 55%; }
 
-    .game-btn:hover {
-        background: linear-gradient(#3a3a3a, #1f1f1f);
-        border-color: #888;
-        transform: scale(1.03);
-    }
+/* Rörelse */
+@keyframes float {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(120vw); }
+}
+
+/* Gräs */
+.ground {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 35%;
+    background: #2ecc71;
+    z-index: 0;
+}
+
+/* Meny */
+#menu {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+    z-index: 10;
+}
+
+.menu-button {
+    width: 140px;
+    height: 50px;
+    background: linear-gradient(145deg, #ffec99, #ffd32a);
+    border-radius: 12px;
+    border: 2px solid #f1c40f;
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 10px rgba(0,0,0,0.4);
+    transition: 0.3s;
+}
+.menu-button:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+}
 </style>
 </head>
 <body>
 
-<div class="header">Alla Spel</div>
+<!-- Svarta moln -->
+<div class="cloud"></div>
+<div class="cloud"></div>
+<div class="cloud"></div>
+<div class="cloud"></div>
 
-<div class="menu-container">
-    <a class="game-btn" href="spel1.html" target="_blank">▶ Tank Survival</a>
-    <a class="game-btn" href="spel2.html" target="_blank">▶ Last Defence</a>
-    <a class="game-btn" href="spel3.html" target="_blank">▶ U.M.D</a>
-    <a class="game-btn" href="spel4.html" target="_blank">▶ Racing beta</a>
+<!-- Gräs -->
+<div class="ground"></div>
+
+<!-- Meny -->
+<div id="menu">
+    <a href="spel1.html" class="menu-button" target="_blank">Tank Survival</a>
+    <a href="spel2.html" class="menu-button" target="_blank">Last Defence</a>
+    <a href="spel3.html" class="menu-button" target="_blank">U.M.D Beta</a>
+    <a href="spel4.html" class="menu-button" target="_blank">PRO Racing Beta </a>
+    <a href="spel5.html" class="menu-button" target="_blank">Kommer snart</a>
+    <a href="spel6.html" class="menu-button" target="_blank">Kommer snart</a>
+    <a href="spel7.html" class="menu-button" target="_blank">Kommer snart</a>
+    <a href="spel8.html" class="menu-button" target="_blank">Kommer snart</a>
+    <a href="spel9.html" class="menu-button" target="_blank">Kommer snart</a>
+    <a href="spel10.html" class="menu-button" target="_blank">Kommer snart</a>
 </div>
 
 </body>
