@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zayn's Spel</title>
+    <title>Zayn</title>
     <style>
         /* --- CSS STYLING --- */
         :root {
@@ -103,7 +103,7 @@
     <!-- STARTMENY -->
     <div id="start-menu">
         <h1>Alla Spel</h1>
-        <p class="subtitle">Välj ett spel</p>
+        <p class="subtitle">Välj spel</p>
         
         <div class="game-grid">
             <div class="game-card" onclick="gameManager.launch(1)">
@@ -132,15 +132,13 @@
     </div>
 
     <!-- SPEL 2 -->
-    <div id="game2-container" class="game-container"> 
+    <div id="game2-container" class="game-container">
         <div class="escape-hint">[ESC] Tillbaka till meny</div>
     </div>
 
     <!-- SPEL 3 -->
     <div id="game3-container" class="game-container">
-        <!-- Canvas för spelet -->
-<div class="escape-hint">[ESC] Tillbaka till meny</div>
-
+        <div class="escape-hint">[ESC] Tillbaka till meny</div>
     </div>
 
     <!-- SPEL 4 -->
@@ -877,10 +875,9 @@
             },
 
             // ================= SPEL 2 =================
-            game2: { game2: {
-                start: function() { console.log("Spel 3 startar..."); },
-                stop: function() { console.log("Spel 3 stoppar..."); }
-    
+            game2: {
+                start: function() { console.log("Spel 2 startar..."); },
+                stop: function() { console.log("Spel 2 stoppar..."); }
             },
             // ================= SPEL 3 =================
             game3: {
