@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Min Spelportal</title>
+    <title>Zayn's Spel</title>
     <style>
         /* --- CSS STYLING --- */
         :root {
@@ -102,7 +102,7 @@
 
     <!-- STARTMENY -->
     <div id="start-menu">
-        <h1>Mina Spel</h1>
+        <h1>Alla Spel</h1>
         <p class="subtitle">Välj ett spel</p>
         
         <div class="game-grid">
@@ -111,8 +111,8 @@
                 <p>Action / Multiplayer</p>
             </div>
             <div class="game-card" onclick="gameManager.launch(2)">
-                <h2>Spel 2</h2>
-                <p>Kommer snart</p>
+                <h2>Last Defence</h2>
+                <p>Beta version</p>
             </div>
             <div class="game-card" onclick="gameManager.launch(3)">
                 <h2>Spel 3</h2>
@@ -132,13 +132,126 @@
     </div>
 
     <!-- SPEL 2 -->
-    <div id="game2-container" class="game-container">
+    <div id="game2-container" class="game-container"> 
         <div class="escape-hint">[ESC] Tillbaka till meny</div>
     </div>
 
     <!-- SPEL 3 -->
     <div id="game3-container" class="game-container">
-        <div class="escape-hint">[ESC] Tillbaka till meny</div>
+        <!-- Canvas för spelet -->
+<div class="escape-hint">[ESC] Tillbaka till meny</div>
+<canvas id="ld-game-canvas" style="display:block; width:100%; height:100%; background-color:#388E3C;"></canvas>
+
+<!-- UI Container (ligger ovanpå canvas) -->
+<div id="ld-ui-container" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; color:white; font-family:sans-serif;">
+    
+    <!-- CSS Styles specifikt för detta spel (inbäddat för enkelhetens skull) -->
+    <style>
+        .ld-menu-screen {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9); border: 1px solid #555; border-radius: 12px;
+            padding: 2rem; width: 90%; max-width: 400px; pointer-events: auto; text-align: center;
+        }
+        .ld-btn {
+            display: block; width: 100%; padding: 10px; margin-bottom: 10px;
+            background-color: #4a5568; color: white; border: none; border-radius: 8px; cursor: pointer;
+        }
+        .ld-btn:hover { background-color: #2d3748; }
+        .ld-board {
+            position: absolute; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; pointer-events: none;
+        }
+        .ld-popup-menu {
+            position: absolute; background: rgba(0,0,0,0.9); padding: 10px; border-radius: 8px;
+            border: 1px solid #777; width: 200px; pointer-events: auto; display: flex; flex-direction: column; gap: 5px;
+        }
+    </style>
+
+    <!-- Startmeny -->
+    <div id="ld-start-menu" class="ld-menu-screen">
+        <h1 style="font-size: 2rem; color: #e94560; margin-bottom: 20px;">Last Defence</h1>
+        <button id="ld-btn-start" class="ld-btn">Starta Spel</button>
+        <button id="ld-btn-sandbox" class="ld-btn">Sandbox Mode</button>
+        <button id="ld-btn-controls" class="ld-btn">Kontroller</button>
+    </div>
+
+    <!-- Kontroller -->
+    <div id="ld-controls-menu" class="ld-menu-screen hidden" style="display:none;">
+        <h2 style="margin-bottom:15px;">Kontroller</h2>
+        <ul style="text-align:left; margin-bottom:20px; line-height:1.5;">
+            <li><b>WASD:</b> Flytta kamera</li>
+            <li><b>Scroll:</b> Zooma</li>
+            <li><b>Vänsterklick:</b> Välj / Bygg</li>
+            <li><b>Högerklick:</b> Uppgradera / Trupper</li>
+            <li><b>Y:</b> Öppna Action-meny</li>
+        </ul>
+        <button id="ld-btn-back-controls" class="ld-btn">Tillbaka</button>
+    </div>
+
+    <!-- Game Over -->
+    <div id="ld-gameover-screen" class="ld-menu-screen hidden" style="display:none;">
+        <h1 style="color:red; margin-bottom:10px;">GAME OVER</h1>
+        <p>Din bas har fallit.</p>
+        <button id="ld-btn-restart" class="ld-btn" style="margin-top:20px;">Till Menyn</button>
+    </div>
+
+    <!-- HUD (Syns när man spelar) -->
+    <div id="ld-game-ui" style="display:none;">
+        
+        <!-- Resurser (Uppe till vänster) -->
+        <div id="ld-material-board" class="ld-board" style="top: 20px; left: 20px;">
+            <div>Metal: <span id="ld-val-metal" style="font-weight:bold; color:#a0aec0;">0</span></div>
+            <div>Wood: <span id="ld-val-wood" style="font-weight:bold; color:#a0aec0;">0</span></div>
+            <div>Earth: <span id="ld-val-earth" style="font-weight:bold; color:#a0aec0;">0</span></div>
+        </div>
+
+        <!-- Stats (Uppe till höger) -->
+        <div id="ld-stats-board" class="ld-board" style="top: 20px; right: 20px;">
+            <div>HP: <span id="ld-val-hp" style="font-weight:bold; color:#48bb78;">100</span></div>
+            <div>Pop: <span id="ld-val-pop" style="font-weight:bold;">0/0</span></div>
+            <div>Troops: <span id="ld-val-troops" style="font-weight:bold;">0</span></div>
+            <div>Food: <span id="ld-val-food" style="font-weight:bold;">0</span></div>
+        </div>
+
+        <!-- Action Meny (Nere till vänster) -->
+        <div id="ld-actions-board" class="ld-board" style="bottom: 20px; left: 20px; pointer-events: auto; display:none;">
+            <h4 style="margin:0 0 10px 0; text-align:center;">Verkstad</h4>
+            <button id="ld-act-train" class="ld-btn" style="font-size:0.8rem;">Träna Trupp (1 Pop, 10 Mat)</button>
+            <button id="ld-act-bullets" class="ld-btn" style="font-size:0.8rem;">Skapa Skott (1 Metal)</button>
+        </div>
+
+        <!-- Byggmeny (Popup) -->
+        <div id="ld-build-menu" class="ld-popup-menu" style="display:none;">
+            <h3 style="margin:0; text-align:center;">Bygg</h3>
+            <button id="ld-bld-tower" class="ld-btn" style="font-size:0.8rem;">Torn (50 Me)</button>
+            <button id="ld-bld-wall" class="ld-btn" style="font-size:0.8rem;">Mur (10 Tr)</button>
+            <button id="ld-bld-house" class="ld-btn" style="font-size:0.8rem;">Hus (30 Tr)</button>
+            <button id="ld-bld-greenhouse" class="ld-btn" style="font-size:0.8rem;">Växthus (20 Tr)</button>
+            <button id="ld-bld-barracks" class="ld-btn" style="font-size:0.8rem;">Barack (50 Tr)</button>
+            <button id="ld-bld-cancel" class="ld-btn" style="background-color:#c53030;">Avbryt</button>
+        </div>
+
+        <!-- Uppgraderingsmeny (Popup) -->
+        <div id="ld-building-menu" class="ld-popup-menu" style="display:none;">
+            <h4 id="ld-b-title" style="margin:0; text-align:center; color:#63b3ed;">Byggnad</h4>
+            <button id="ld-btn-upgrade" class="ld-btn" style="background-color:#3182ce;">Uppgradera</button>
+            <button id="ld-btn-destroy" class="ld-btn" style="background-color:#c53030;">Riv (75%)</button>
+            <button id="ld-btn-close-b" class="ld-btn" style="background-color:#718096;">Stäng</button>
+        </div>
+
+        <!-- Truppval (Popup) -->
+        <div id="ld-troop-menu" class="ld-popup-menu" style="display:none;">
+            <h4 style="margin:0; text-align:center; color:#f6e05e;">Skicka Trupper</h4>
+            <button data-amt="1" class="ld-troop-btn ld-btn" style="font-size:0.8rem;">1 Trupp</button>
+            <button data-amt="5" class="ld-troop-btn ld-btn" style="font-size:0.8rem;">5 Trupper</button>
+            <button id="ld-troop-cancel" class="ld-btn" style="background-color:#718096;">Avbryt</button>
+        </div>
+        
+        <!-- Sandbox Meddelande -->
+        <div id="ld-sandbox-msg" style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:orange; color:black; padding:5px 10px; border-radius:5px; font-weight:bold; display:none;">
+            Sandbox: 'M'=Fiende, 'B'=Boss, 'Y'=Verkstad
+        </div>
+    </div>
+</div>
     </div>
 
     <!-- SPEL 4 -->
@@ -875,9 +988,393 @@
             },
 
             // ================= SPEL 2 =================
-            game2: {
-                start: function() { console.log("Spel 2 startar..."); },
-                stop: function() { console.log("Spel 2 stoppar..."); }
+            game2: { game2: {
+    cleanup: null,
+
+    start: function() {
+        console.log("Startar Last Defence...");
+        const canvas = document.getElementById('ld-game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Funktioner för att visa/dölja element
+        const hide = (id) => { const el = document.getElementById(id); if(el) el.style.display='none'; };
+        const show = (id) => { const el = document.getElementById(id); if(el) el.style.display='block'; };
+        const showFlex = (id) => { const el = document.getElementById(id); if(el) el.style.display='flex'; };
+
+        // Anpassa storlek
+        const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+        window.addEventListener('resize', resize); resize();
+
+        // --- VARIABLER ---
+        const TILE = 50;
+        let state = 'MENU'; // MENU, GAME, SANDBOX
+        let animationId;
+        let lastTime = 0;
+
+        let world={}, base;
+        let towers=[], walls=[], houses=[], barracks=[], greenhouses=[], enemies=[], bullets=[], troops=[], abHouses=[];
+        let res = { metal:100, wood:100, earth:100, food:50, pop:5, maxPop:5, troops:5, hp:100, maxHp:100, bullets:500 };
+        let cam = { x:0, y:0, zoom:1, drag:false, lastMouse:{x:0,y:0} };
+        let keys = {};
+        let selTile=null, targetAH=null, focusedB=null;
+        
+        let monsterTimer=0, houseTimer=0;
+
+        const COSTS = { TOWER:{metal:50}, WALL:{wood:10}, HOUSE:{wood:30}, GREEN:{wood:20}, BARRACKS:{wood:50} };
+
+        // --- INITIERING ---
+        function init(mode) {
+            state = mode;
+            // Reset UI
+            hide('ld-start-menu'); hide('ld-controls-menu'); hide('ld-gameover-screen');
+            show('ld-game-ui');
+            if(mode==='SANDBOX') show('ld-sandbox-msg'); else hide('ld-sandbox-msg');
+
+            // Reset World
+            world={}; 
+            base = {x:0, y:0, hp:100, maxHp:100, size:2}; 
+            world[`0,0`] = base; world[`-1,0`] = base; world[`0,-1`] = base; world[`-1,-1`] = base;
+            
+            towers=[]; walls=[]; houses=[]; greenhouses=[]; barracks=[]; enemies=[]; bullets=[]; troops=[]; abHouses=[];
+            
+            // Reset Resurser
+            res = { metal:100, wood:100, earth:100, food:50, pop:5, maxPop:5, troops:5, bullets:500, hp:100 };
+            cam = {x:0, y:0, zoom:1, drag:false, lastMouse:{x:0,y:0}};
+            lastTime = performance.now();
+            
+            loop(lastTime);
+        }
+
+        // --- UPPDATERING ---
+        function update(dt) {
+            // Kamera
+            const s = 500/cam.zoom * (dt/1000);
+            if(keys['w']||keys['arrowup']) cam.y -= s;
+            if(keys['s']||keys['arrowdown']) cam.y += s;
+            if(keys['a']||keys['arrowleft']) cam.x -= s;
+            if(keys['d']||keys['arrowright']) cam.x += s;
+
+            // Spawns (Normalt läge)
+            if(state==='GAME') {
+                monsterTimer += dt;
+                if(monsterTimer > 3000) {
+                    monsterTimer = 0;
+                    spawnEnemy();
+                }
+            }
+            houseTimer += dt;
+            if(houseTimer > 15000) { houseTimer=0; spawnHouse(); }
+
+            // Uppdatera fiender
+            for(let i=enemies.length-1; i>=0; i--) {
+                let e = enemies[i];
+                const ang = Math.atan2(-e.y, -e.x); // Mot basen (0,0)
+                e.x += Math.cos(ang) * 40 * (dt/1000);
+                e.y += Math.sin(ang) * 40 * (dt/1000);
+                
+                if(Math.sqrt(e.x**2 + e.y**2) < 50) {
+                    base.hp -= 5;
+                    enemies.splice(i, 1);
+                    if(base.hp <= 0) gameOver();
+                }
+            }
+
+            // Uppdatera torn (Skjuta)
+            towers.forEach(t => {
+                t.cooldown -= dt;
+                if(t.cooldown <= 0) {
+                    // Hitta närmaste fiende
+                    let target = null, minDist = 300;
+                    enemies.forEach(e => {
+                        const d = Math.sqrt((t.x*TILE - e.x)**2 + (t.y*TILE - e.y)**2);
+                        if(d < minDist) { minDist = d; target = e; }
+                    });
+                    
+                    if(target) {
+                        if(state==='SANDBOX' || res.bullets > 0) {
+                            if(state!=='SANDBOX') res.bullets--;
+                            bullets.push({x:t.x*TILE+25, y:t.y*TILE+25, tx:target.x, ty:target.y, hp:1});
+                            t.cooldown = 500;
+                        }
+                    }
+                }
+            });
+
+            // Uppdatera skott
+            for(let i=bullets.length-1; i>=0; i--) {
+                let b = bullets[i];
+                const ang = Math.atan2(b.ty - b.y, b.tx - b.x);
+                b.x += Math.cos(ang) * 400 * (dt/1000);
+                b.y += Math.sin(ang) * 400 * (dt/1000);
+                
+                // Träff
+                if(Math.sqrt((b.x-b.tx)**2 + (b.y-b.ty)**2) < 10) {
+                    bullets.splice(i, 1);
+                    // Hitta fiende nära målet för enkelhet
+                    let hit = enemies.find(e => Math.sqrt((e.x-b.x)**2 + (e.y-b.y)**2) < 20);
+                    if(hit) {
+                        hit.hp -= 5;
+                        if(hit.hp <= 0) {
+                            enemies.splice(enemies.indexOf(hit), 1);
+                            res.metal += 5;
+                        }
+                    }
+                }
+            }
+
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('ld-val-metal').innerText = res.metal;
+            document.getElementById('ld-val-wood').innerText = res.wood;
+            document.getElementById('ld-val-earth').innerText = res.earth;
+            document.getElementById('ld-val-hp').innerText = Math.floor(base.hp);
+            document.getElementById('ld-val-pop').innerText = `${res.pop}/${res.maxPop}`;
+            document.getElementById('ld-val-troops').innerText = res.troops;
+            document.getElementById('ld-val-food').innerText = res.food;
+        }
+
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width/2, canvas.height/2);
+            ctx.scale(cam.zoom, cam.zoom);
+            ctx.translate(-cam.x, -cam.y);
+
+            // Grid
+            ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1; ctx.beginPath();
+            const startX = Math.floor((cam.x - canvas.width/cam.zoom)/TILE)*TILE;
+            const endX = Math.ceil((cam.x + canvas.width/cam.zoom)/TILE)*TILE;
+            const startY = Math.floor((cam.y - canvas.height/cam.zoom)/TILE)*TILE;
+            const endY = Math.ceil((cam.y + canvas.height/cam.zoom)/TILE)*TILE;
+            for(let x=startX; x<endX; x+=TILE) { ctx.moveTo(x,startY); ctx.lineTo(x,endY); }
+            for(let y=startY; y<endY; y+=TILE) { ctx.moveTo(startX,y); ctx.lineTo(endX,y); }
+            ctx.stroke();
+
+            // Bas
+            ctx.fillStyle='#8B4513'; ctx.fillRect(base.x*TILE+5, base.y*TILE+5, TILE*2-10, TILE*2-10);
+
+            // Byggnader
+            const drawB = (list, color) => list.forEach(b => { ctx.fillStyle=color; ctx.fillRect(b.x*TILE+2, b.y*TILE+2, TILE-4, TILE-4); });
+            drawB(towers, '#a0aec0');
+            drawB(walls, '#555');
+            drawB(houses, '#D2B48C');
+            drawB(greenhouses, '#6B8E23');
+            drawB(barracks, '#8B4513');
+            
+            // Övergivna hus
+            abHouses.forEach(h => {
+                ctx.fillStyle='#555'; ctx.fillRect(h.x*TILE+5, h.y*TILE+5, TILE-10, TILE-10);
+                ctx.strokeStyle='red'; ctx.strokeRect(h.x*TILE+5, h.y*TILE+5, TILE-10, TILE-10);
+            });
+
+            // Fiender
+            ctx.fillStyle='red';
+            enemies.forEach(e => { ctx.beginPath(); ctx.arc(e.x,e.y,10,0,6.28); ctx.fill(); });
+
+            // Skott
+            ctx.fillStyle='yellow';
+            bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x,b.y,3,0,6.28); ctx.fill(); });
+
+            // Markör
+            if(selTile) {
+                ctx.fillStyle='rgba(255,255,0,0.3)';
+                ctx.fillRect(selTile.x*TILE, selTile.y*TILE, TILE, TILE);
+            }
+
+            ctx.restore();
+        }
+
+        function loop(ts) {
+            const dt = ts - lastTime; lastTime = ts;
+            if(state === 'GAME' || state === 'SANDBOX') { update(dt); draw(); }
+            animationId = requestAnimationFrame(loop);
+        }
+
+        // --- HJÄLPFUNKTIONER ---
+        function spawnEnemy() {
+            const a = Math.random()*6.28; const d = 800;
+            enemies.push({x:Math.cos(a)*d, y:Math.sin(a)*d, hp:10});
+        }
+        function spawnHouse() {
+            const a = Math.random()*6.28; const d = 600;
+            const tx = Math.floor(Math.cos(a)*d/TILE), ty = Math.floor(Math.sin(a)*d/TILE);
+            if(!world[`${tx},${ty}`]) {
+                const h = {x:tx, y:ty, key:`${tx},${ty}`};
+                abHouses.push(h); world[h.key]=h;
+            }
+        }
+        function gameOver() {
+            state='OVER'; hide('ld-game-ui'); show('ld-gameover-screen');
+        }
+        function worldToGrid(cx, cy) {
+            const wx = (cx - canvas.width/2)/cam.zoom + cam.x;
+            const wy = (cy - canvas.height/2)/cam.zoom + cam.y;
+            return {x:Math.floor(wx/TILE), y:Math.floor(wy/TILE)};
+        }
+        function positionMenu(id, cx, cy) {
+            const el = document.getElementById(id);
+            showFlex(id);
+            el.style.left = cx + 'px'; el.style.top = cy + 'px';
+        }
+
+        // --- EVENT HANTERARE ---
+        const hKey = e => {
+            keys[e.key.toLowerCase()] = e.type==='keydown';
+            if(e.type==='keydown') {
+                if(e.key==='m' && state==='SANDBOX') spawnEnemy();
+                if(e.key==='y') { 
+                    const el=document.getElementById('ld-actions-board'); 
+                    el.style.display = el.style.display==='none'?'block':'none'; 
+                }
+            }
+        };
+        
+        const hWheel = e => {
+            e.preventDefault();
+            const dir = e.deltaY < 0 ? 1 : -1;
+            cam.zoom = Math.max(0.1, Math.min(cam.zoom * (1 + dir * 0.1), 3.0));
+        };
+
+        const hMouse = e => {
+            if(state!=='GAME' && state!=='SANDBOX') return;
+            
+            if(e.type === 'mousedown') {
+                if(e.button===0) { // Vänster
+                    const g = worldToGrid(e.clientX, e.clientY);
+                    // Göm alla popups
+                    hide('ld-build-menu'); hide('ld-building-menu'); hide('ld-troop-menu');
+                    selTile = null;
+
+                    if(!world[`${g.x},${g.y}`]) {
+                        selTile = g;
+                        positionMenu('ld-build-menu', e.clientX, e.clientY);
+                    } else {
+                        cam.drag = true; cam.lastMouse = {x:e.clientX, y:e.clientY};
+                    }
+                } else if(e.button===2) { // Höger (Uppgradera/Riv)
+                    e.preventDefault();
+                    const g = worldToGrid(e.clientX, e.clientY);
+                    const obj = world[`${g.x},${g.y}`];
+                    if(obj && obj !== base) {
+                         if(abHouses.includes(obj)) {
+                            targetAH = obj;
+                            positionMenu('ld-troop-menu', e.clientX, e.clientY);
+                         } else {
+                            focusedB = obj;
+                            positionMenu('ld-building-menu', e.clientX, e.clientY);
+                         }
+                    }
+                }
+            } else if(e.type === 'mousemove' && cam.drag) {
+                const dx = e.clientX - cam.lastMouse.x;
+                const dy = e.clientY - cam.lastMouse.y;
+                cam.x -= dx/cam.zoom; cam.y -= dy/cam.zoom;
+                cam.lastMouse = {x:e.clientX, y:e.clientY};
+            } else if(e.type === 'mouseup') {
+                cam.drag = false;
+            }
+        };
+
+        // --- UI KNAPPAR ---
+        document.getElementById('ld-btn-start').onclick = () => init('GAME');
+        document.getElementById('ld-btn-sandbox').onclick = () => init('SANDBOX');
+        document.getElementById('ld-btn-controls').onclick = () => { hide('ld-start-menu'); show('ld-controls-menu'); };
+        document.getElementById('ld-btn-back-controls').onclick = () => { hide('ld-controls-menu'); show('ld-start-menu'); };
+        document.getElementById('ld-btn-restart').onclick = () => { hide('ld-gameover-screen'); show('ld-start-menu'); };
+
+        // Byggknappar
+        const tryBuild = (type) => {
+            if(selTile && (state==='SANDBOX' || checkCost(COSTS[type]))) {
+                if(state!=='SANDBOX') payCost(COSTS[type]);
+                let obj = {x:selTile.x, y:selTile.y, type:type, cooldown:0}; // Enkel objektstruktur
+                if(type==='TOWER') towers.push(obj);
+                else if(type==='WALL') walls.push(obj);
+                else if(type==='HOUSE') { houses.push(obj); res.maxPop+=5; }
+                else if(type==='GREEN') greenhouses.push(obj);
+                else if(type==='BARRACKS') barracks.push(obj);
+                
+                world[`${selTile.x},${selTile.y}`] = obj;
+                hide('ld-build-menu'); selTile=null;
+            }
+        };
+        document.getElementById('ld-bld-tower').onclick = () => tryBuild('TOWER');
+        document.getElementById('ld-bld-wall').onclick = () => tryBuild('WALL');
+        document.getElementById('ld-bld-house').onclick = () => tryBuild('HOUSE');
+        document.getElementById('ld-bld-greenhouse').onclick = () => tryBuild('GREEN');
+        document.getElementById('ld-bld-barracks').onclick = () => tryBuild('BARRACKS');
+        document.getElementById('ld-bld-cancel').onclick = () => hide('ld-build-menu');
+
+        // Actions
+        document.getElementById('ld-act-train').onclick = () => {
+            if(state==='SANDBOX' || (res.pop>0 && res.food>=10)) {
+                if(state!=='SANDBOX') { res.pop--; res.food-=10; }
+                res.troops++;
+            }
+        };
+        document.getElementById('ld-act-bullets').onclick = () => {
+            if(state==='SANDBOX' || res.metal>=1) { if(state!=='SANDBOX') res.metal--; res.bullets+=10; }
+        };
+
+        // Byggnadshantering (Riv)
+        document.getElementById('ld-btn-destroy').onclick = () => {
+            if(focusedB) {
+                delete world[`${focusedB.x},${focusedB.y}`];
+                // Ta bort från listor (förenklat)
+                const lists = [towers, walls, houses, greenhouses, barracks];
+                lists.forEach(l => { const i=l.indexOf(focusedB); if(i>-1)l.splice(i,1); });
+                if(focusedB.type==='HOUSE') res.maxPop-=5;
+                hide('ld-building-menu'); focusedB=null;
+            }
+        };
+        document.getElementById('ld-btn-close-b').onclick = () => hide('ld-building-menu');
+
+        // Trupper
+        const sendTroop = (amt) => {
+            if(targetAH && (state==='SANDBOX' || res.troops>=amt)) {
+                if(state!=='SANDBOX') res.troops-=amt;
+                // Direkt belöning för enkelhet
+                res.metal+=10*amt; res.wood+=10*amt; res.pop++;
+                delete world[targetAH.key];
+                abHouses.splice(abHouses.indexOf(targetAH), 1);
+                hide('ld-troop-menu'); targetAH=null;
+            }
+        };
+        document.querySelectorAll('.ld-troop-btn').forEach(b => b.onclick=()=>sendTroop(parseInt(b.getAttribute('data-amt'))));
+        document.getElementById('ld-troop-cancel').onclick = () => hide('ld-troop-menu');
+
+        // Kostnadskoll
+        function checkCost(c) { for(let k in c) if(res[k]<c[k]) return false; return true; }
+        function payCost(c) { for(let k in c) res[k]-=c[k]; }
+
+
+        // --- START ---
+        // Visa startmeny
+        hide('ld-game-ui'); show('ld-start-menu');
+
+        // Koppla lyssnare
+        window.addEventListener('keydown', hKey); window.addEventListener('keyup', hKey);
+        canvas.addEventListener('mousedown', hMouse); canvas.addEventListener('mousemove', hMouse);
+        canvas.addEventListener('mouseup', hMouse); canvas.addEventListener('contextmenu', e=>e.preventDefault());
+        canvas.addEventListener('wheel', hWheel);
+
+        // --- CLEANUP ---
+        this.cleanup = () => {
+            cancelAnimationFrame(animationId);
+            window.removeEventListener('resize', resize);
+            window.removeEventListener('keydown', hKey); window.removeEventListener('keyup', hKey);
+            canvas.removeEventListener('mousedown', hMouse); canvas.removeEventListener('mousemove', hMouse);
+            canvas.removeEventListener('mouseup', hMouse); canvas.removeEventListener('contextmenu', e=>e.preventDefault());
+            canvas.removeEventListener('wheel', hWheel);
+            // Dölj allt
+            hide('ld-start-menu'); hide('ld-game-ui'); hide('ld-gameover-screen');
+        };
+    },
+
+    stop: function() {
+        if (this.cleanup) this.cleanup();
+    }
             },
             // ================= SPEL 3 =================
             game3: {
