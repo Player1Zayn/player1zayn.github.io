@@ -47,47 +47,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Racing Game</title>
-
+<title>Racing Game Pro</title>
 <style>
     body {
         margin: 0;
-        background: #222;
         overflow: hidden;
         user-select: none;
+        background: #111;
+        font-family: Arial, sans-serif;
     }
-
     canvas {
-        background: #3b3b3b;
         display: block;
         margin: 0 auto;
+        background: #555;
     }
-
     #ui {
         position: fixed;
         top: 20px;
         right: 20px;
         color: white;
         font-size: 22px;
-        font-family: Arial, sans-serif;
         text-align: right;
+        z-index: 10;
     }
-
     #ui div {
         margin-bottom: 10px;
     }
 </style>
 </head>
 <body>
-
 <canvas id="game" width="500" height="800"></canvas>
 
 <div id="ui">
     <div id="score">Poäng: 0</div>
     <div id="lives">❤️❤️❤️</div>
+    <div id="nitro">Nitro: 0%</div>
 </div>
 
 <script>
+// === CANVAS SETUP ===
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
@@ -95,7 +93,29 @@ let keys = {};
 document.addEventListener("keydown", e => keys[e.code] = true);
 document.addEventListener("keyup", e => keys[e.code] = false);
 
-// === GAME CONFIG ===
+// === LOAD SPRITES ===
+const carImg = new Image();
+carImg.src = "https://i.imgur.com/oP6EyFf.png"; // placeholder bil
+const obstacleImg = new Image();
+obstacleImg.src = "https://i.imgur.com/3c2yq7r.png"; // placeholder röd ruta
+const houseImg = new Image();
+houseImg.src = "https://i.imgur.com/F2E6GzY.png"; // placeholder hus
+const personImg = new Image();
+personImg.src = "https://i.imgur.com/5KkUn6v.png"; // placeholder person
+const nitroImg = new Image();
+nitroImg.src = "https://i.imgur.com/y0TnKQp.png"; // placeholder nitro
+
+// === SOUND FX ===
+const motorSound = new Audio("https://www.soundjay.com/vehicle/car-engine-idle-01.mp3");
+motorSound.loop = true;
+motorSound.volume = 0.2;
+motorSound.play();
+
+const boostSound = new Audio("https://www.soundjay.com/button/beep-07.mp3");
+const crashSound = new Audio("https://www.soundjay.com/button/beep-10.mp3");
+const pickupSound = new Audio("https://www.soundjay.com/button/button-3.mp3");
+
+// === GAME VARIABLES ===
 let roadX = 150;
 let roadWidth = 200;
 let speed = 4;
@@ -103,28 +123,29 @@ let score = 0;
 let lives = 3;
 let lastScoreTime = Date.now();
 let lastSpeedIncrease = Date.now();
+let nitro = 0;
+let nitroActive = false;
 
-// Player car
+// === PLAYER ===
 let car = {
-    x: canvas.width / 2 - 25,
+    x: canvas.width/2 - 25,
     y: canvas.height - 150,
     width: 50,
     height: 100,
     speedX: 5
 };
 
-// Obstacles
+// === OBSTACLES ===
 let obstacles = [];
 function spawnObstacle() {
-    const w = 50;
-    const h = 100;
-    const x = roadX + Math.random() * (roadWidth - w);
+    const w = 50, h = 100;
+    const x = roadX + Math.random()*(roadWidth - w);
     const y = -h;
-    obstacles.push({ x, y, width: w, height: h });
+    obstacles.push({x, y, width: w, height: h});
 }
 setInterval(spawnObstacle, 1200);
 
-// Scenery
+// === SCENERY ===
 let scenery = [];
 function spawnScenery() {
     scenery.push({
@@ -135,96 +156,123 @@ function spawnScenery() {
 }
 setInterval(spawnScenery, 800);
 
+// === NITRO PICKUP ===
+let nitros = [];
+function spawnNitro() {
+    const size = 30;
+    const x = roadX + Math.random()*(roadWidth - size);
+    const y = -size;
+    nitros.push({x, y, width: size, height: size});
+}
+setInterval(spawnNitro, 5000);
+
 // === GAME LOOP ===
 function update() {
-    // === CAR CONTROLS ===
-    if (keys["KeyA"]) car.x -= car.speedX;
-    if (keys["KeyD"]) car.x += car.speedX;
+    // CONTROLS
+    if(keys["KeyA"]) car.x -= car.speedX;
+    if(keys["KeyD"]) car.x += car.speedX;
 
     // BOOST
-    let currentSpeed = keys["Space"] ? speed * 1.8 : speed;
+    let currentSpeed = speed;
+    if(keys["Space"] && nitro > 0) {
+        currentSpeed *= 2;
+        nitroActive = true;
+        nitro -= 0.5;
+        boostSound.play();
+    } else {
+        nitroActive = false;
+    }
+    if(nitro < 0) nitro = 0;
 
-    // Car stays on road
-    if (car.x < roadX) car.x = roadX;
-    if (car.x + car.width > roadX + roadWidth)
-        car.x = roadX + roadWidth - car.width;
+    // Stay on road
+    if(car.x < roadX) car.x = roadX;
+    if(car.x + car.width > roadX + roadWidth) car.x = roadX + roadWidth - car.width;
 
     // Move obstacles
     obstacles.forEach(o => o.y += currentSpeed);
+    obstacles = obstacles.filter(o => o.y < canvas.height + 200);
 
     // Move scenery
     scenery.forEach(s => s.y += currentSpeed * 0.8);
-
-    // Remove off-screen
-    obstacles = obstacles.filter(o => o.y < canvas.height + 200);
     scenery = scenery.filter(s => s.y < canvas.height + 100);
 
-    // Collision detection
+    // Move nitro
+    nitros.forEach(n => n.y += currentSpeed);
+    nitros = nitros.filter(n => n.y < canvas.height + 50);
+
+    // Collisions obstacles
     obstacles.forEach(o => {
-        if (car.x < o.x + o.width &&
-            car.x + car.width > o.x &&
-            car.y < o.y + o.height &&
-            car.y + car.height > o.y) {
-            
+        if(car.x < o.x+o.width && car.x+car.width > o.x &&
+           car.y < o.y+o.height && car.y+car.height > o.y) {
             lives--;
-            obstacles.splice(obstacles.indexOf(o), 1);
-
-            document.getElementById("lives").innerText =
-                "❤️".repeat(lives);
-
-            if (lives <= 0) gameOver();
+            crashSound.play();
+            obstacles.splice(obstacles.indexOf(o),1);
+            document.getElementById("lives").innerText = "❤️".repeat(lives);
+            if(lives <= 0) gameOver();
         }
     });
 
-    // Score every 2 seconds
-    if (Date.now() - lastScoreTime > 2000) {
+    // Collisions nitro
+    nitros.forEach(n => {
+        if(car.x < n.x+n.width && car.x+car.width > n.x &&
+           car.y < n.y+n.height && car.y+car.height > n.y) {
+            nitro += 50;
+            if(nitro > 100) nitro = 100;
+            pickupSound.play();
+            nitros.splice(nitros.indexOf(n),1);
+        }
+    });
+
+    // Score
+    if(Date.now() - lastScoreTime > 2000) {
         score++;
         lastScoreTime = Date.now();
-        document.getElementById("score").innerText = "Poäng: " + score;
+        document.getElementById("score").innerText = "Poäng: "+score;
     }
 
-    // Speed increase every minute
-    if (Date.now() - lastSpeedIncrease > 60000) {
+    // Increase speed
+    if(Date.now() - lastSpeedIncrease > 60000) {
         speed += 0.5;
         lastSpeedIncrease = Date.now();
     }
+
+    // Update nitro UI
+    document.getElementById("nitro").innerText = "Nitro: " + Math.floor(nitro) + "%";
 }
 
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // Background
-    ctx.fillStyle = "#2f2f2f";
-    ctx.fillRect(roadX, 0, roadWidth, canvas.height);
+    // Road
+    ctx.fillStyle="#555";
+    ctx.fillRect(roadX,0,roadWidth,canvas.height);
 
     // Road lines
-    ctx.fillStyle = "white";
-    for (let i = 0; i < canvas.height; i += 40) {
-        ctx.fillRect(canvas.width/2 - 5, i, 10, 25);
+    ctx.fillStyle="white";
+    for(let i=0;i<canvas.height;i+=40) {
+        ctx.fillRect(canvas.width/2 -5,i,10,25);
     }
 
     // Scenery
     scenery.forEach(s => {
-        if (s.type === "house") {
-            ctx.fillStyle = "#4444ff";
-            ctx.fillRect(s.x, s.y, 60, 40);
-        } else {
-            ctx.fillStyle = "#ff4444";
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, 10, 0, Math.PI*2);
-            ctx.fill();
-        }
+        if(s.type==="house") ctx.drawImage(houseImg,s.x,s.y,60,40);
+        else ctx.drawImage(personImg,s.x,s.y,20,20);
     });
 
     // Obstacles
-    ctx.fillStyle = "#ff0000";
-    obstacles.forEach(o => {
-        ctx.fillRect(o.x, o.y, o.width, o.height);
-    });
+    obstacles.forEach(o => ctx.drawImage(obstacleImg,o.x,o.y,o.width,o.height));
+
+    // Nitro
+    nitros.forEach(n => ctx.drawImage(nitroImg,n.x,n.y,n.width,n.height));
 
     // Car
-    ctx.fillStyle = "#00ccff";
-    ctx.fillRect(car.x, car.y, car.width, car.height);
+    ctx.drawImage(carImg,car.x,car.y,car.width,car.height);
+
+    // Boost effect
+    if(nitroActive) {
+        ctx.fillStyle = "rgba(255,255,0,0.3)";
+        ctx.fillRect(car.x,car.y,car.width,car.height);
+    }
 }
 
 function loop() {
@@ -240,7 +288,6 @@ function gameOver() {
 
 loop();
 </script>
-
 </body>
 </html>
 
