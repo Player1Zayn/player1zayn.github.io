@@ -3,33 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> U.M.D beta</title>
-
+<title>Fullscreen Spel</title>
 <style>
-    body {
+    html, body {
         margin: 0;
-        background: black;
+        padding: 0;
         overflow: hidden;
+        background: black;
+        height: 100%;
+        width: 100%;
     }
 
     #game-container {
+        position: relative;
         width: 100vw;
         height: 100vh;
-        background: black;
+    }
+
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: #000; /* Bakgrundsfärg canvas */
     }
 
     .back {
-        position: fixed;
-        top: 20px;
-        left: 20px;
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
         background: rgba(0,0,0,0.5);
-        padding: 10px 16px;
-        border-radius: 8px;
+        padding: 6px 10px;
+        border-radius: 6px;
         color: white;
         text-decoration: none;
         border: 2px solid #666;
-        z-index: 9999;
-        font-size: 18px;
+        z-index: 10;
+        font-size: 14px;
+        cursor: pointer;
     }
 
     .back:hover {
@@ -39,10 +49,24 @@
 </head>
 <body>
 
-<a class="back" href="index.html" target="_blank">✖ Stäng</a>
-
 <div id="game-container">
-   <!DOCTYPE html>
+    <canvas id="game"></canvas>
+    <a class="back" href="index.html" target="_blank">✖ Stäng</a>
+</div>
+
+<script>
+// Hämta canvas
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// Gör canvas fullscreen och anpassar vid resize
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+<!DOCTYPE html>
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
@@ -1337,7 +1361,9 @@
     </script>
 </body>
 </html>
-</div>
+}
+
+</script>
 
 </body>
 </html>
