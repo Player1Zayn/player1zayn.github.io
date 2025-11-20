@@ -450,10 +450,162 @@
         const bonemealValue = document.getElementById('bonemeal-value'); // NY
 
 
+        // --- NYTT: SoundSystem ---
+        const SoundSystem = {
+            ctx: null,
+            musicOscillators: [],
+            isMuted: false,
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+
+            playShoot() { // Turret ljud
+                if (!this.ctx || this.isMuted) return;
+                const t = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, t);
+                osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+                
+                gain.gain.setValueAtTime(0.05, t); // Låg volym för att inte störa
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
+                osc.start(t);
+                osc.stop(t + 0.1);
+            },
+
+            playMine() { // Gruva hacka ljud (Pickaxe clink)
+                if (!this.ctx || this.isMuted) return;
+                const t = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1200, t); // Hög ton
+                osc.frequency.exponentialRampToValueAtTime(800, t + 0.05);
+
+                gain.gain.setValueAtTime(0.15, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
+                osc.start(t);
+                osc.stop(t + 0.1);
+            },
+
+            playFarm() { // Farm prassel (Filtrerat brus)
+                if (!this.ctx || this.isMuted) return;
+                const t = this.ctx.currentTime;
+                const bufferSize = this.ctx.sampleRate * 0.5; // 0.5 sek
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 800;
+                const gain = this.ctx.createGain();
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                gain.gain.setValueAtTime(0.0, t);
+                gain.gain.linearRampToValueAtTime(0.1, t + 0.1);
+                gain.gain.linearRampToValueAtTime(0.0, t + 0.4);
+
+                noise.start(t);
+            },
+
+            playMonsterGroan() { // Monster stön (Låg frekvens)
+                if (!this.ctx || this.isMuted) return;
+                const t = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, t);
+                osc.frequency.linearRampToValueAtTime(90, t + 0.3);
+                osc.frequency.linearRampToValueAtTime(60, t + 0.6);
+
+                gain.gain.setValueAtTime(0.0, t);
+                gain.gain.linearRampToValueAtTime(0.1, t + 0.1);
+                gain.gain.linearRampToValueAtTime(0.0, t + 0.6);
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 400;
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(t);
+                osc.stop(t + 0.6);
+            },
+
+            startMusic() {
+                if (!this.ctx) this.init();
+                if (this.musicOscillators.length > 0) return; // Musik spelar redan
+
+                // Skapa en mörk drönare (Ambient Drone)
+                const createDrone = (freq) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    gain.gain.value = 0.03; // Väldigt låg volym bakgrund
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    return { osc, gain };
+                };
+
+                // Ackord A moll (ish) lågt register
+                this.musicOscillators.push(createDrone(55));  // A1
+                this.musicOscillators.push(createDrone(110)); // A2
+                this.musicOscillators.push(createDrone(130.81)); // C3
+                
+                // Lägg till en LFO (Lågfrekvensoscillator) för att ge liv åt ljudet
+                const lfo = this.ctx.createOscillator();
+                lfo.frequency.value = 0.15; // Långsam puls
+                const lfoGain = this.ctx.createGain();
+                lfoGain.gain.value = 10; // Vibrato djup
+                lfo.connect(lfoGain);
+                // Koppla LFO till en av tonerna
+                lfoGain.connect(this.musicOscillators[1].osc.frequency);
+                lfo.start();
+                this.musicOscillators.push({osc: lfo, gain: lfoGain});
+            },
+
+            stopMusic() {
+                this.musicOscillators.forEach(o => {
+                    try { o.osc.stop(); } catch(e){}
+                    o.gain.disconnect();
+                });
+                this.musicOscillators = [];
+            }
+        };
+
+
         // Spelvariabler
         let gameState = 'MENU';
         let gameMode = 'NORMAL';
-        let savedGameState = null; // För att komma ihåg om vi var i GAME eller SANDBOX innan paus
+        let savedGameState = null; 
         let lastTime = 0;
         const TILE_SIZE = 50;
 
@@ -465,8 +617,8 @@
         let houses = [];
         let greenhouses = [];
         let barracks = [];
-        let farms = []; // NY
-        let mines = []; // NY
+        let farms = []; 
+        let mines = []; 
         let abandonedHouses = [];
         let monsters = [];
         let projectiles = [];
@@ -493,19 +645,19 @@
             HOUSE: { wood: 30, earth: 10 },
             GREENHOUSE: { wood: 20, earth: 30 },
             BARRACKS: { wood: 50, metal: 20 },
-            FARM: { earth: 20, boneMeal: 10 }, // NY (Rättad från prompt: 20 earth, 10 bonemeal)
-            MINE: { wood: 40 } // NY (Rättad från prompt: 40 wood)
+            FARM: { earth: 20, boneMeal: 10 }, 
+            MINE: { wood: 40 } 
         };
 
-        // Uppgraderingskostnader (UPPDATERAD med nya byggnader)
+        // Uppgraderingskostnader 
         const UPGRADE_COSTS = {
             TOWER: { level2: { metal: 75, reinforcedMetal: 5 }, level3: { metal: 150, reinforcedMetal: 15 } },
             WALL: { level2: { reinforcedMetal: 3 }, level3: { reinforcedMetal: 5 } },
             HOUSE: { level2: { wood: 50, earth: 20 }, level3: { wood: 100, earth: 40 } },
             GREENHOUSE: { level2: { earth: 50, reinforcedMetal: 3 }, level3: { earth: 100, reinforcedMetal: 6 } },
             BARRACKS: { level2: { wood: 75, metal: 50 }, level3: { wood: 150, metal: 100 } },
-            FARM: { level2: { earth: 50, boneMeal: 40 }, level3: { earth: 100, boneMeal: 80 } }, // NY
-            MINE: { level2: { wood: 100, reinforcedMetal: 5 }, level3: { wood: 200, reinforcedMetal: 10 } } // NY
+            FARM: { level2: { earth: 50, boneMeal: 40 }, level3: { earth: 100, boneMeal: 80 } }, 
+            MINE: { level2: { wood: 100, reinforcedMetal: 5 }, level3: { wood: 200, reinforcedMetal: 10 } } 
         };
         
         const TROOP_RESCUE_FOOD_COST = 5; 
@@ -556,7 +708,6 @@
 
             destroy() {
                 delete world[this.key];
-                // Ta bort från specifika arrayer
                 const lists = [towers, walls, houses, greenhouses, barracks, farms, mines];
                 lists.forEach(list => {
                     const idx = list.indexOf(this);
@@ -634,7 +785,7 @@
 
         class Wall extends Building {
             constructor(x, y) { 
-                super(x, y, 'WALL', COSTS.WALL, 200); // Lite mer HP än förut
+                super(x, y, 'WALL', COSTS.WALL, 200); 
             }
             update(deltaTime) {} 
             draw(ctx) {
@@ -643,7 +794,6 @@
                 const offset = (TILE_SIZE - wallSize) / 2;
                 ctx.fillRect(this.x * TILE_SIZE + offset, this.y * TILE_SIZE + offset, wallSize, wallSize);
                 
-                // NYTT: Rita HP om skadad
                 if (this.hp < this.maxHp) {
                     const hpW = TILE_SIZE * 0.8;
                     const hpX = this.x * TILE_SIZE + (TILE_SIZE - hpW)/2;
@@ -691,20 +841,18 @@
                 if (this.produceTimer >= this.produceRate) { 
                     this.produceTimer = 0; 
                     resources.wood += 1; 
+                    SoundSystem.playFarm(); // Ljud
                 }
             }
             draw(ctx) {
                 const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
-                // Gulaktig åker
                 ctx.fillStyle = '#DAA520'; 
                 ctx.fillRect(x + 2, y + 2, ts - 4, ts - 4);
-                // Vete strån
                 ctx.strokeStyle = '#F4A460';
                 ctx.lineWidth = 2;
                 for(let i=10; i<40; i+=10) {
                     ctx.beginPath(); ctx.moveTo(x+i, y+10); ctx.lineTo(x+i, y+40); ctx.stroke();
                 }
-                // Progress bar för produktion
                 ctx.fillStyle = '#8B4513'; ctx.fillRect(x, y+ts-5, ts, 5);
                 ctx.fillStyle = '#32CD32'; ctx.fillRect(x, y+ts-5, ts * (this.produceTimer/this.produceRate), 5);
             }
@@ -723,17 +871,15 @@
                     this.produceTimer = 0; 
                     resources.earth += 10; 
                     resources.metal += 20;
+                    SoundSystem.playMine(); // Ljud
                 }
             }
             draw(ctx) {
                 const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
-                // Grå stenhög
                 ctx.fillStyle = '#2F4F4F'; 
                 ctx.beginPath(); ctx.arc(x + ts/2, y + ts/2, ts/2 - 2, 0, Math.PI*2); ctx.fill();
-                // Mörk ingång
                 ctx.fillStyle = '#000'; 
                 ctx.beginPath(); ctx.arc(x + ts/2, y + ts/2, ts/4, 0, Math.PI, true); ctx.fill();
-                // Progress bar
                 ctx.fillStyle = '#000'; ctx.fillRect(x, y+ts-5, ts, 5);
                 ctx.fillStyle = '#aaa'; ctx.fillRect(x, y+ts-5, ts * (this.produceTimer/this.produceRate), 5);
             }
@@ -802,6 +948,7 @@
                 if (gameMode !== 'SANDBOX') resources.bullets--;
                 const pos = this.parent.getPixelPos();
                 projectiles.push(new Projectile(pos.x, pos.y, this.target, this.damage));
+                SoundSystem.playShoot(); // Ljud
             }
             draw(ctx, offset = null) {
                 const pos = offset || this.parent.getPixelPos();
@@ -829,8 +976,7 @@
                 this.type = type;
                 const stats = MONSTER_STATS[type];
                 
-                // NYTT: Skalning baserat på basnivå
-                const scaling = 1 + (base.level - 1) * 0.2; // 20% starkare per nivå
+                const scaling = 1 + (base.level - 1) * 0.2; 
 
                 this.size = 20; 
                 this.speed = stats.speed;
@@ -848,21 +994,24 @@
             }
             
             update(deltaTime) {
+                // Slumpmässigt ljud från monster
+                if (Math.random() < 0.001) { // Liten chans varje frame
+                    SoundSystem.playMonsterGroan();
+                }
+
                 const basePos = base.getPixelPos();
                 const distanceToBase = getDistance(this, basePos);
                 const delta = deltaTime / 1000;
                 
-                // Attackera basen om nära
                 if (distanceToBase <= this.attackRange) {
                     this.attackTimer += deltaTime;
                     if (this.attackTimer >= this.attackCooldown) {
                         this.attackTimer = 0;
                         base.takeDamage(this.damage);
                     }
-                    return; // Stå still om vi attackerar basen
+                    return; 
                 }
 
-                // Rörelselogik
                 const angle = Math.atan2(basePos.y - this.y, basePos.x - this.x);
                 const dx = Math.cos(angle) * this.speed * delta;
                 const dy = Math.sin(angle) * this.speed * delta;
@@ -870,19 +1019,16 @@
                 let nextX = this.x + dx;
                 let nextY = this.y + dy;
 
-                // NYTT: Väggkollision med attack
-                // Kolla X-led
                 let wallHitX = getWallAt(nextX, this.y, this.size);
                 if (wallHitX) {
                     this.attackWall(wallHitX, deltaTime);
-                    nextX = this.x; // Stoppa rörelse
+                    nextX = this.x; 
                 }
                 
-                // Kolla Y-led
-                let wallHitY = getWallAt(nextX, nextY, this.size); // Använd nextX här om vi rört oss, annars gamla X
+                let wallHitY = getWallAt(nextX, nextY, this.size); 
                 if (wallHitY) {
                     this.attackWall(wallHitY, deltaTime);
-                    nextY = this.y; // Stoppa rörelse
+                    nextY = this.y; 
                 }
 
                 this.x = nextX;
@@ -925,10 +1071,7 @@
             
             die() {
                 resources.kills++;
-                // NYTT: Droppa Monster Waste istället för resurser
                 resources.monsterWaste++;
-                
-                // Kanske en liten chans för extra waste för Bossar/Mutanter
                 if (this.type === 'BOSS') resources.monsterWaste += 9;
                 if (this.type === 'MUTANT') resources.monsterWaste += 2;
             }
@@ -957,7 +1100,6 @@
 
         // --- Hjälpfunktioner ---
         
-        // NYTT: Returnera objektet (Väggen) vid kollision
         function getWallAt(x, y, radius) {
             const checkPoints = [
                 { x: x - radius / 2, y: y - radius / 2 },
@@ -1043,7 +1185,6 @@
             earthValue.textContent = isSandbox ? inf : resources.earth;
             reinforcedMetalValue.textContent = isSandbox ? inf : resources.reinforcedMetal;
             
-            // NYA RESURSER
             monsterWasteValue.textContent = isSandbox ? inf : resources.monsterWaste;
             bonemealValue.textContent = isSandbox ? inf : resources.boneMeal;
 
@@ -1068,7 +1209,7 @@
             actionsBoard.classList.add('hidden'); 
             troopSelectMenu.classList.add('hidden');
             buildingMenu.classList.add('hidden'); 
-            pauseMenu.classList.add('hidden'); // NYTT
+            pauseMenu.classList.add('hidden'); 
             canvas.style.display = 'none'; 
         }
 
@@ -1076,6 +1217,7 @@
             gameState = 'MENU';
             hideAllScreens();
             startMenu.classList.remove('hidden');
+            SoundSystem.stopMusic(); // Stoppa musik vid meny
         }
 
         function gameOver() {
@@ -1152,9 +1294,9 @@
                 focusedBuilding.turret.fireRate *= 0.9;
             } else if (focusedBuilding instanceof Greenhouse) {
                 focusedBuilding.produceRate /= 1.5; 
-            } else if (focusedBuilding instanceof Farm) { // NY
+            } else if (focusedBuilding instanceof Farm) { 
                 focusedBuilding.produceRate /= 1.5; 
-            } else if (focusedBuilding instanceof Mine) { // NY
+            } else if (focusedBuilding instanceof Mine) { 
                 focusedBuilding.produceRate /= 1.5; 
             } else if (focusedBuilding instanceof House) {
                 resources.maxInhabitants += 5; focusedBuilding.inhabitantCapacity += 5;
@@ -1190,8 +1332,6 @@
                 if (gameMode !== 'SANDBOX') resources[resource] = (resources[resource] || 0) + refund;
             }
             
-            // Hantera uppgraderingskostnader återbetalning... (förenklad för utrymmets skull)
-            
             building.destroy();
             
             console.log(`Byggnad ${building.type} förstörd. 75% av materialet återbetalat.`);
@@ -1223,8 +1363,8 @@
             if (inhabitantGrowTimer >= INHABITANT_GROW_RATE && resources.inhabitants < resources.maxInhabitants) { inhabitantGrowTimer = 0; resources.inhabitants++; }
             
             greenhouses.forEach(g => g.update(deltaTime));
-            farms.forEach(f => f.update(deltaTime)); // NY
-            mines.forEach(m => m.update(deltaTime)); // NY
+            farms.forEach(f => f.update(deltaTime)); 
+            mines.forEach(m => m.update(deltaTime)); 
 
             base.update(deltaTime);
             towers.forEach(tower => tower.update(deltaTime));
@@ -1237,7 +1377,7 @@
             troops = troops.filter(t => t.hp > 0); 
             
             abandonedHouses = abandonedHouses.filter(ah => world[ah.key]);
-            walls = walls.filter(w => w.hp > 0); // Rensa förstörda väggar
+            walls = walls.filter(w => w.hp > 0); 
 
             updateUI();
         }
@@ -1272,8 +1412,8 @@
             houses.forEach(house => house.draw(ctx));
             greenhouses.forEach(gh => gh.draw(ctx));
             barracks.forEach(b => b.draw(ctx));
-            farms.forEach(f => f.draw(ctx)); // NY
-            mines.forEach(m => m.draw(ctx)); // NY
+            farms.forEach(f => f.draw(ctx)); 
+            mines.forEach(m => m.draw(ctx)); 
             abandonedHouses.forEach(ah => ah.draw(ctx));
             
             monsters.forEach(monster => monster.draw(ctx));
@@ -1300,6 +1440,9 @@
         }
 
         function initGame(mode) {
+            SoundSystem.init(); 
+            SoundSystem.startMusic();
+
             gameMode = mode;
             gameState = (mode === 'SANDBOX') ? 'SANDBOX' : 'GAME';
             
@@ -1333,8 +1476,8 @@
                 bullets: 500,
                 food: 50,
                 reinforcedMetal: 0,
-                monsterWaste: 0, // NY
-                boneMeal: 0, // NY
+                monsterWaste: 0, 
+                boneMeal: 0, 
                 inhabitants: 5,
                 maxInhabitants: 5
             };
@@ -1359,8 +1502,8 @@
             else if (type === 'HOUSE') { cost = COSTS.HOUSE; if (!checkCost(cost)) return; newBuilding = new House(tileX, tileY); houses.push(newBuilding); resources.maxInhabitants += newBuilding.inhabitantCapacity; } 
             else if (type === 'GREENHOUSE') { cost = COSTS.GREENHOUSE; if (!checkCost(cost)) return; newBuilding = new Greenhouse(tileX, tileY); greenhouses.push(newBuilding); } 
             else if (type === 'BARRACKS') { cost = COSTS.BARRACKS; if (!checkCost(cost)) return; newBuilding = new Barracks(tileX, tileY); barracks.push(newBuilding); } 
-            else if (type === 'FARM') { cost = COSTS.FARM; if (!checkCost(cost)) return; newBuilding = new Farm(tileX, tileY); farms.push(newBuilding); } // NY
-            else if (type === 'MINE') { cost = COSTS.MINE; if (!checkCost(cost)) return; newBuilding = new Mine(tileX, tileY); mines.push(newBuilding); } // NY
+            else if (type === 'FARM') { cost = COSTS.FARM; if (!checkCost(cost)) return; newBuilding = new Farm(tileX, tileY); farms.push(newBuilding); } 
+            else if (type === 'MINE') { cost = COSTS.MINE; if (!checkCost(cost)) return; newBuilding = new Mine(tileX, tileY); mines.push(newBuilding); } 
             else { return; }
             
             payCost(cost);
@@ -1373,7 +1516,7 @@
 
         upgradeBtn.addEventListener('click', upgradeBuilding);
         destroyBtn.addEventListener('click', destroyBuilding);
-        repairBtn.addEventListener('click', repairWall); // NY
+        repairBtn.addEventListener('click', repairWall); 
         buildingMenuCancelBtn.addEventListener('click', () => {
             buildingMenu.classList.add('hidden');
             focusedBuilding = null;
@@ -1393,7 +1536,7 @@
             buildMenu.classList.add('hidden');
             troopSelectMenu.classList.add('hidden');
             buildingMenu.classList.add('hidden');
-            repairBtn.classList.add('hidden'); // Dölj repair som default
+            repairBtn.classList.add('hidden'); 
             selectedTile = null;
             targetAbandonedHouse = null;
             focusedBuilding = null;
@@ -1405,7 +1548,6 @@
             } else if (targetObject instanceof Building) {
                 focusedBuilding = targetObject;
                 
-                // Visa repair om det är en skadad vägg
                 if (focusedBuilding instanceof Wall && focusedBuilding.hp < focusedBuilding.maxHp) {
                     repairBtn.classList.remove('hidden');
                     repairBtn.disabled = !checkCost({reinforcedMetal: 1});
@@ -1453,17 +1595,18 @@
         });
 
         // Standardknappar
-        startGameIntroBtn.addEventListener('click', () => { hideAllScreens(); introScreen.classList.remove('hidden'); gameState = 'INTRO'; });
+        // Initierar ljudmotorn vid klick eftersom webbläsare blockerar ljud annars
+        startGameIntroBtn.addEventListener('click', () => { 
+            SoundSystem.init();
+            hideAllScreens(); introScreen.classList.remove('hidden'); gameState = 'INTRO'; 
+        });
         continueGameBtn.addEventListener('click', () => { initGame('NORMAL'); });
         creditsBtn.addEventListener('click', () => { hideAllScreens(); creditsScreen.classList.remove('hidden'); gameState = 'CREDITS'; });
         creditsBackBtn.addEventListener('click', returnToMenu);
         sandboxGameBtn.addEventListener('click', () => initGame('SANDBOX'));
-        // returnToMenuBtn är borttagen från HTML så denna behövs inte längre
-        // returnToMenuBtn.addEventListener('click', returnToMenu); 
         
         controlsBtn.addEventListener('click', () => { hideAllScreens(); controlsMenu.classList.remove('hidden'); gameState = 'CONTROLS'; });
         controlsBackBtn.addEventListener('click', () => {
-            // NYTT: Kontrollera om vi kom från pausmenyn
             if (gameState === 'CONTROLS_PAUSED') {
                 hideAllScreens();
                 pauseMenu.classList.remove('hidden');
@@ -1484,7 +1627,6 @@
                 gameState = savedGameState;
                 pauseMenu.classList.add('hidden');
                 
-                // FIX: Återställ UI och Canvas ifall vi kom från en annan meny (t.ex. Kontroller)
                 gameUi.classList.remove('hidden');
                 canvas.style.display = 'block';
                 if (gameMode === 'SANDBOX') sandboxMessage.classList.remove('hidden');
@@ -1534,7 +1676,6 @@
             resources.reinforcedMetal++;
         });
 
-        // NYTT: Crafting för Benmjöl
         craftBonemealBtn.addEventListener('click', () => {
             if (gameMode !== 'SANDBOX' && resources.monsterWaste < 1) return;
             if (gameMode !== 'SANDBOX') resources.monsterWaste--;
@@ -1583,7 +1724,6 @@
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase(); keysPressed[key] = true;
             
-            // NYTT: L för paus
             if ((gameState === 'GAME' || gameState === 'SANDBOX' || gameState === 'PAUSED') && key === 'l') {
                 togglePause();
             }
