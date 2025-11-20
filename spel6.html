@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spel 1</title>
+
+<style>
+    body {
+        margin: 0;
+        background: black;
+        overflow: hidden;
+    }
+
+    #game-container {
+        width: 100vw;
+        height: 100vh;
+        background: black;
+    }
+
+    .back {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(0,0,0,0.5);
+        padding: 10px 16px;
+        border-radius: 8px;
+        color: white;
+        text-decoration: none;
+        border: 2px solid #666;
+        z-index: 9999;
+        font-size: 18px;
+    }
+
+    .back:hover {
+        background: rgba(40,40,40,0.6);
+    }
+</style>
+</head>
+<body>
+
+<a class="back" href="index.html" target="_blank">✖ Stäng</a>
+
+<div id="game-container">
+    <!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <title>Snake — Enkel spelkod</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100vh;
+      margin:0;
+      background:linear-gradient(180deg,#0b1220,#071428);
+      color:#e6f0ff;
+      font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    }
+    #game {
+      background:#0f1724;
+      border:6px solid rgba(255,255,255,0.06);
+      box-shadow:0 8px 30px rgba(2,6,23,0.7);
+      border-radius:12px;
+    }
+    .hud {
+      text-align:center;
+      margin-bottom:10px;
+      font-size:14px;
+      opacity:.9;
+    }
+    button {
+      background:#1e293b;
+      color:#e6f0ff;
+      border:1px solid rgba(255,255,255,0.03);
+      padding:8px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      margin-left:6px;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="hud">
+      <strong>Snake</strong> — använd piltangenter eller WASD. Poäng: <span id="score">0</span>
+      <button id="restartBtn">Starta om</button>
+    </div>
+    <canvas id="game" width="480" height="480"></canvas>
+    <div style="text-align:center;margin-top:10px;font-size:13px;opacity:.85;">
+      Målet: ät maten (röda fyrkanter) och väx — undvik kollision med väggar eller svansen.
+    </div>
+  </div>
+
+  <script>
+    // Inställningar
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const restartBtn = document.getElementById('restartBtn');
+
+    const size = 20;                 // antal rutor per rad/kolumn (20x20)
+    const tile = canvas.width / size; // pixelstorlek per ruta
+    const fps = 10;                  // uppdateringar per sekund (spelets hastighet)
+
+    // Spelstatus
+    let snake; // array av {x,y}
+    let dir;   // rörelsevektor {x,y}
+    let nextDir; // för att undvika 180-graders vändningar direkt
+    let food;  // {x,y}
+    let score;
+    let running = false;
+    let loopTimer;
+
+    // Initiera spelet
+    function init() {
+      // Startposition: mitt i fältet, längd 3
+      const startX = Math.floor(size/2);
+      const startY = Math.floor(size/2);
+      snake = [
+        {x: startX, y: startY},
+        {x: startX-1, y: startY},
+        {x: startX-2, y: startY}
+      ];
+      dir = {x: 1, y: 0}; // börjar gå åt höger
+      nextDir = {...dir};
+      placeFood();
+      score = 0;
+      scoreEl.textContent = score;
+      running = true;
+      // start game loop
+      clearInterval(loopTimer);
+      loopTimer = setInterval(gameLoop, 1000 / fps);
+    }
+
+    // Placera maten på en ledig ruta
+    function placeFood() {
+      while (true) {
+        const fx = Math.floor(Math.random() * size);
+        const fy = Math.floor(Math.random() * size);
+        if (!snake.some(s => s.x === fx && s.y === fy)) {
+          food = {x: fx, y: fy};
+          return;
+        }
+      }
+    }
+
+    // Huvudloopen: uppdatera + rita
+    function gameLoop() {
+      update();
+      draw();
+    }
+
+    // Uppdateringslogik (rörelser, kollisioner)
+    function update() {
+      if (!running) return;
+      // tillåt ändring av riktningen (nästa frame)
+      dir = {...nextDir};
+
+      const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+      // kollision med väggar
+      if (head.x < 0 || head.x >= size || head.y < 0 || head.y >= size) {
+        gameOver();
+        return;
+      }
+      // kollision med egen svans
+      if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+        gameOver();
+        return;
+      }
+
+      // infoga nytt huvud
+      snake.unshift(head);
+
+      // äter maten?
+      if (head.x === food.x && head.y === food.y) {
+        score += 1;
+        scoreEl.textContent = score;
+        placeFood();
+      } else {
+        // annars ta bort sista segment (rör sig framåt)
+        snake.pop();
+      }
+    }
+
+    // Rita spelplanen
+    function draw() {
+      // bakgrund
+      ctx.fillStyle = '#071428';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      // rutnät (subtilt)
+      ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+      ctx.lineWidth = 1;
+      for (let i=0;i<=size;i++){
+        ctx.beginPath();
+        ctx.moveTo(i*tile,0);
+        ctx.lineTo(i*tile,canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0,i*tile);
+        ctx.lineTo(canvas.width,i*tile);
+        ctx.stroke();
+      }
+
+      // maten
+      drawRect(food.x, food.y, '#e11d48'); // röd
+
+      // ormen — huvudet mörkare, kroppen något ljusare
+      for (let i=0;i<snake.length;i++){
+        const s = snake[i];
+        if (i === 0) {
+          drawRect(s.x, s.y, '#10b981'); // huvud
+        } else {
+          // gradient-effekt beroende på index
+          const t = Math.min(1, i / 12);
+          // enkel interpolation mellan två färger (grön nyans)
+          const color = interpolateColor('#047857', '#065f46', t);
+          drawRect(s.x, s.y, color);
+        }
+      }
+    }
+
+    // rita en ruta i spelrutnätet
+    function drawRect(gridX, gridY, color) {
+      const px = gridX * tile;
+      const py = gridY * tile;
+      const pad = Math.floor(tile * 0.09);
+      ctx.fillStyle = color;
+      roundRect(ctx, px + pad, py + pad, tile - pad*2, tile - pad*2, Math.max(2, tile*0.12), true, false);
+    }
+
+    // enkel rounded rect helper
+    function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+      if (typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
+      ctx.beginPath();
+      ctx.moveTo(x + r.tl, y);
+      ctx.lineTo(x + w - r.tr, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+      ctx.lineTo(x + w, y + h - r.br);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+      ctx.lineTo(x + r.bl, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+      ctx.lineTo(x, y + r.tl);
+      ctx.quadraticCurveTo(x, y, x + r.tl, y);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    // färginterpolering (hex)
+    function interpolateColor(a, b, t) {
+      const ah = hexToRgb(a);
+      const bh = hexToRgb(b);
+      const r = Math.round(ah.r + (bh.r - ah.r) * t);
+      const g = Math.round(ah.g + (bh.g - ah.g) * t);
+      const bl = Math.round(ah.b + (bh.b - ah.b) * t);
+      return `rgb(${r},${g},${bl})`;
+    }
+    function hexToRgb(hex) {
+      hex = hex.replace('#','');
+      if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+      const num = parseInt(hex,16);
+      return {r:(num>>16)&255, g:(num>>8)&255, b:num&255};
+    }
+
+    // game over
+    function gameOver() {
+      running = false;
+      clearInterval(loopTimer);
+      // visa meddelande
+      ctx.fillStyle = 'rgba(2,6,23,0.6)';
+      ctx.fillRect(0, canvas.height/2 - 40, canvas.width, 90);
+      ctx.fillStyle = '#fff';
+      ctx.font = '20px system-ui,Segoe UI';
+      ctx.textAlign = 'center';
+      ctx.fillText('Game Over — tryck Starta om eller R för att spela igen', canvas.width/2, canvas.height/2 + 5);
+    }
+
+    // inputhantering
+    window.addEventListener('keydown', (e) => {
+      const key = e.key;
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D'].includes(key)) {
+        e.preventDefault();
+      }
+      if (key === 'ArrowUp' || key === 'w' || key === 'W') {
+        if (!(dir.x === 0 && dir.y === 1)) nextDir = {x:0,y:-1};
+      } else if (key === 'ArrowDown' || key === 's' || key === 'S') {
+        if (!(dir.x === 0 && dir.y === -1)) nextDir = {x:0,y:1};
+      } else if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+        if (!(dir.x === 1 && dir.y === 0)) nextDir = {x:-1,y:0};
+      } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+        if (!(dir.x === -1 && dir.y === 0)) nextDir = {x:1,y:0};
+      } else if (key === 'r' || key === 'R') {
+        init();
+      }
+    });
+
+    // Restart-knapp
+    restartBtn.addEventListener('click', () => init());
+
+    // Starta spelet första gången
+    init();
+
+    // Anpassa canvas när fönstret ändras (skalar inte rutnätet, men centrerar)
+    window.addEventListener('resize', () => {
+      // ingen dynamisk skalning i denna enkla version
+    });
+
+  </script>
+</body>
+</html>
+
+</div>
+
+</body>
+</html>
