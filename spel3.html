@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>U.M.D beta</title>
+<title>U.M.D</title>
 
 <style>
     body {
@@ -57,20 +57,15 @@
         /* Sätter en mörk bakgrundsfärg för hela sidan */
         body {
             background-color: #1a202c; /* mörkgrå */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 10vh;
+            margin: 0;
+            height: 100vh;
             overflow: hidden; /* Förhindrar scrollning */
             font-family: 'Inter', sans-serif;
-            padding: 20px;
         }
         /* Stilar för själva spel-canvasen */
         canvas {
             background-color: #2d3748; /* lite ljusare grå */
             display: block;
-            border-radius: 8px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 4, 6, 0.05);
             cursor: default; /* Standardpekare */
         }
         /* Styling för alla centrala menyer/modals */
@@ -295,9 +290,13 @@
         const currentLevelInMenu = document.getElementById('currentLevelInMenu'); 
         const upgradeCostDisplay = document.getElementById('upgradeCostDisplay'); 
 
-        // Sätter storleken på canvas
-        canvas.width = 1000;
-        canvas.height = 600;
+        // Sätter storleken på canvas till fullskärm
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
         // --- Spelvariabler ---
         let gameState = 'MENU'; // Spel-tillstånd: 'MENU', 'PLAYING', 'PAUSED', 'GAME_OVER'
