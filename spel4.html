@@ -42,42 +42,23 @@
 <a class="back" href="index.html" target="_blank">✖ Stäng</a>
 
 <div id="game-container">
-    <!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Racing Game Pro</title>
+<title>Racing Game – Top Down</title>
 <style>
-    body {
-        margin: 0;
-        overflow: hidden;
-        user-select: none;
-        background: #111;
-        font-family: Arial, sans-serif;
-    }
-    canvas {
-        display: block;
-        margin: 0 auto;
-        background: #555;
-    }
+    body { margin:0; overflow:hidden; background:#111; font-family:Arial,sans-serif; }
+    canvas { display:block; margin:0 auto; background:#87ceeb; } /* blå himmel */
     #ui {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        color: white;
-        font-size: 22px;
-        text-align: right;
-        z-index: 10;
+        position:fixed; top:20px; right:20px; color:white; font-size:22px; text-align:right; z-index:10;
     }
-    #ui div {
-        margin-bottom: 10px;
-    }
+    #ui div { margin-bottom:10px; }
 </style>
 </head>
 <body>
 <canvas id="game" width="500" height="800"></canvas>
-
 <div id="ui">
     <div id="score">Poäng: 0</div>
     <div id="lives">❤️❤️❤️</div>
@@ -85,35 +66,12 @@
 </div>
 
 <script>
-// === CANVAS SETUP ===
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 let keys = {};
 document.addEventListener("keydown", e => keys[e.code] = true);
 document.addEventListener("keyup", e => keys[e.code] = false);
-
-// === LOAD SPRITES ===
-const carImg = new Image();
-carImg.src = "https://i.imgur.com/oP6EyFf.png"; // placeholder bil
-const obstacleImg = new Image();
-obstacleImg.src = "https://i.imgur.com/3c2yq7r.png"; // placeholder röd ruta
-const houseImg = new Image();
-houseImg.src = "https://i.imgur.com/F2E6GzY.png"; // placeholder hus
-const personImg = new Image();
-personImg.src = "https://i.imgur.com/5KkUn6v.png"; // placeholder person
-const nitroImg = new Image();
-nitroImg.src = "https://i.imgur.com/y0TnKQp.png"; // placeholder nitro
-
-// === SOUND FX ===
-const motorSound = new Audio("https://www.soundjay.com/vehicle/car-engine-idle-01.mp3");
-motorSound.loop = true;
-motorSound.volume = 0.2;
-motorSound.play();
-
-const boostSound = new Audio("https://www.soundjay.com/button/beep-07.mp3");
-const crashSound = new Audio("https://www.soundjay.com/button/beep-10.mp3");
-const pickupSound = new Audio("https://www.soundjay.com/button/button-3.mp3");
 
 // === GAME VARIABLES ===
 let roadX = 150;
@@ -126,118 +84,95 @@ let lastSpeedIncrease = Date.now();
 let nitro = 0;
 let nitroActive = false;
 
-// === PLAYER ===
-let car = {
-    x: canvas.width/2 - 25,
-    y: canvas.height - 150,
-    width: 50,
-    height: 100,
-    speedX: 5
-};
+// Player car
+let car = { x: canvas.width/2 -25, y: canvas.height-150, width:50, height:100, speedX:5 };
 
-// === OBSTACLES ===
+// Obstacles = other cars
 let obstacles = [];
 function spawnObstacle() {
+    const carColors = ["#ff0000","#00ff00","#ffff00","#ff00ff"];
     const w = 50, h = 100;
     const x = roadX + Math.random()*(roadWidth - w);
     const y = -h;
-    obstacles.push({x, y, width: w, height: h});
+    const color = carColors[Math.floor(Math.random()*carColors.length)];
+    obstacles.push({x,y,width:w,height:h,color});
 }
-setInterval(spawnObstacle, 1200);
+setInterval(spawnObstacle,1200);
 
-// === SCENERY ===
+// Scenery = houses and stickmen
 let scenery = [];
 function spawnScenery() {
-    scenery.push({
-        x: Math.random() < 0.5 ? 40 : canvas.width - 80,
-        y: -50,
-        type: Math.random() < 0.5 ? "house" : "person"
-    });
+    // left or right
+    let side = Math.random()<0.5 ? "left" : "right";
+    let type = Math.random()<0.5 ? "house" : "stick";
+    scenery.push({side,type,y:-50});
 }
-setInterval(spawnScenery, 800);
+setInterval(spawnScenery,800);
 
-// === NITRO PICKUP ===
+// Nitro pickups
 let nitros = [];
 function spawnNitro() {
     const size = 30;
-    const x = roadX + Math.random()*(roadWidth - size);
+    const x = roadX + Math.random()*(roadWidth-size);
     const y = -size;
-    nitros.push({x, y, width: size, height: size});
+    nitros.push({x,y,width:size,height:size});
 }
-setInterval(spawnNitro, 5000);
+setInterval(spawnNitro,7000);
 
 // === GAME LOOP ===
 function update() {
-    // CONTROLS
+    // Controls
     if(keys["KeyA"]) car.x -= car.speedX;
     if(keys["KeyD"]) car.x += car.speedX;
 
-    // BOOST
+    // Boost
     let currentSpeed = speed;
-    if(keys["Space"] && nitro > 0) {
-        currentSpeed *= 2;
-        nitroActive = true;
-        nitro -= 0.5;
-        boostSound.play();
-    } else {
-        nitroActive = false;
-    }
-    if(nitro < 0) nitro = 0;
+    if(keys["Space"] && nitro>0) { currentSpeed*=2; nitroActive=true; nitro-=0.5; }
+    else nitroActive=false;
+    if(nitro<0) nitro=0;
 
     // Stay on road
-    if(car.x < roadX) car.x = roadX;
-    if(car.x + car.width > roadX + roadWidth) car.x = roadX + roadWidth - car.width;
+    if(car.x<roadX) car.x=roadX;
+    if(car.x+car.width>roadX+roadWidth) car.x=roadX+roadWidth-car.width;
 
     // Move obstacles
-    obstacles.forEach(o => o.y += currentSpeed);
-    obstacles = obstacles.filter(o => o.y < canvas.height + 200);
+    obstacles.forEach(o=>o.y+=currentSpeed);
+    obstacles = obstacles.filter(o=>o.y<canvas.height+200);
 
     // Move scenery
-    scenery.forEach(s => s.y += currentSpeed * 0.8);
-    scenery = scenery.filter(s => s.y < canvas.height + 100);
+    scenery.forEach(s=>s.y+=currentSpeed*0.8);
+    scenery = scenery.filter(s=>s.y<canvas.height+100);
 
     // Move nitro
-    nitros.forEach(n => n.y += currentSpeed);
-    nitros = nitros.filter(n => n.y < canvas.height + 50);
+    nitros.forEach(n=>n.y+=currentSpeed);
+    nitros = nitros.filter(n=>n.y<canvas.height+50);
 
-    // Collisions obstacles
-    obstacles.forEach(o => {
-        if(car.x < o.x+o.width && car.x+car.width > o.x &&
-           car.y < o.y+o.height && car.y+car.height > o.y) {
+    // Collision obstacles
+    obstacles.forEach(o=>{
+        if(car.x<o.x+o.width && car.x+car.width>o.x &&
+           car.y<o.y+o.height && car.y+car.height>o.y) {
             lives--;
-            crashSound.play();
             obstacles.splice(obstacles.indexOf(o),1);
-            document.getElementById("lives").innerText = "❤️".repeat(lives);
-            if(lives <= 0) gameOver();
+            document.getElementById("lives").innerText="❤️".repeat(lives);
+            if(lives<=0) gameOver();
         }
     });
 
-    // Collisions nitro
-    nitros.forEach(n => {
-        if(car.x < n.x+n.width && car.x+car.width > n.x &&
-           car.y < n.y+n.height && car.y+car.height > n.y) {
-            nitro += 50;
-            if(nitro > 100) nitro = 100;
-            pickupSound.play();
+    // Collision nitro
+    nitros.forEach(n=>{
+        if(car.x<n.x+n.width && car.x+car.width>n.x &&
+           car.y<n.y+n.height && car.y+car.height>n.y) {
+            nitro+=50; if(nitro>100) nitro=100;
             nitros.splice(nitros.indexOf(n),1);
         }
     });
 
     // Score
-    if(Date.now() - lastScoreTime > 2000) {
-        score++;
-        lastScoreTime = Date.now();
-        document.getElementById("score").innerText = "Poäng: "+score;
-    }
-
-    // Increase speed
-    if(Date.now() - lastSpeedIncrease > 60000) {
-        speed += 0.5;
-        lastSpeedIncrease = Date.now();
-    }
-
+    if(Date.now()-lastScoreTime>2000){score++; lastScoreTime=Date.now(); document.getElementById("score").innerText="Poäng: "+score;}
+    // Speed increase
+    if(Date.now()-lastSpeedIncrease>60000){speed+=0.5; lastSpeedIncrease=Date.now();}
     // Update nitro UI
-    document.getElementById("nitro").innerText = "Nitro: " + Math.floor(nitro) + "%";
+    document.getElementById("nitro").innerText="Nitro: "+Math.floor(nitro)+"%";
 }
 
 function draw() {
@@ -246,46 +181,45 @@ function draw() {
     // Road
     ctx.fillStyle="#555";
     ctx.fillRect(roadX,0,roadWidth,canvas.height);
-
     // Road lines
     ctx.fillStyle="white";
-    for(let i=0;i<canvas.height;i+=40) {
-        ctx.fillRect(canvas.width/2 -5,i,10,25);
-    }
+    for(let i=0;i<canvas.height;i+=40){ctx.fillRect(canvas.width/2-5,i,10,25);}
+    // Side fences
+    ctx.fillStyle="#222";
+    ctx.fillRect(roadX-10,0,10,canvas.height);
+    ctx.fillRect(roadX+roadWidth,0,10,canvas.height);
 
     // Scenery
-    scenery.forEach(s => {
-        if(s.type==="house") ctx.drawImage(houseImg,s.x,s.y,60,40);
-        else ctx.drawImage(personImg,s.x,s.y,20,20);
+    scenery.forEach(s=>{
+        if(s.type==="house"){
+            if(s.side==="left") ctx.fillStyle="#8B4513",ctx.fillRect(roadX-60,s.y,50,50);
+            else ctx.fillStyle="#A52A2A",ctx.fillRect(roadX+roadWidth+10,s.y,50,50);
+        } else {
+            ctx.fillStyle="#ffff00";
+            if(s.side==="left") ctx.fillRect(roadX-20,s.y,10,20);
+            else ctx.fillRect(roadX+roadWidth+10,s.y,10,20);
+        }
     });
 
     // Obstacles
-    obstacles.forEach(o => ctx.drawImage(obstacleImg,o.x,o.y,o.width,o.height));
+    obstacles.forEach(o=>{ctx.fillStyle=o.color; ctx.fillRect(o.x,o.y,o.width,o.height);});
 
-    // Nitro
-    nitros.forEach(n => ctx.drawImage(nitroImg,n.x,n.y,n.width,n.height));
+    // Nitros
+    nitros.forEach(n=>{ctx.fillStyle="#00f"; ctx.fillRect(n.x,n.y,n.width,n.height);});
 
-    // Car
-    ctx.drawImage(carImg,car.x,car.y,car.width,car.height);
+    // Player car
+    ctx.fillStyle="#00ccff";
+    ctx.fillRect(car.x,car.y,car.width,car.height);
 
     // Boost effect
-    if(nitroActive) {
-        ctx.fillStyle = "rgba(255,255,0,0.3)";
+    if(nitroActive){
+        ctx.fillStyle="rgba(255,255,0,0.3)";
         ctx.fillRect(car.x,car.y,car.width,car.height);
     }
 }
 
-function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
-}
-
-function gameOver() {
-    alert("Game Over!\nPoäng: " + score);
-    document.location.reload();
-}
-
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
+function gameOver(){ alert("Game Over!\nPoäng: "+score); document.location.reload();}
 loop();
 </script>
 </body>
