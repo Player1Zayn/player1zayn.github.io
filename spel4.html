@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Racing Game</title>
+
+<style>
+    body {
+        margin: 0;
+        background: black;
+        overflow: hidden;
+    }
+
+    #game-container {
+        width: 100vw;
+        height: 100vh;
+        background: black;
+    }
+
+    .back {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(0,0,0,0.5);
+        padding: 10px 16px;
+        border-radius: 8px;
+        color: white;
+        text-decoration: none;
+        border: 2px solid #666;
+        z-index: 9999;
+        font-size: 18px;
+    }
+
+    .back:hover {
+        background: rgba(40,40,40,0.6);
+    }
+</style>
+</head>
+<body>
+
+<a class="back" href="index.html" target="_blank">✖ Stäng</a>
+
+<div id="game-container">
+    <!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Racing Game</title>
+
+<style>
+    body {
+        margin: 0;
+        background: #222;
+        overflow: hidden;
+        user-select: none;
+    }
+
+    canvas {
+        background: #3b3b3b;
+        display: block;
+        margin: 0 auto;
+    }
+
+    #ui {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        color: white;
+        font-size: 22px;
+        font-family: Arial, sans-serif;
+        text-align: right;
+    }
+
+    #ui div {
+        margin-bottom: 10px;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="game" width="500" height="800"></canvas>
+
+<div id="ui">
+    <div id="score">Poäng: 0</div>
+    <div id="lives">❤️❤️❤️</div>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let keys = {};
+document.addEventListener("keydown", e => keys[e.code] = true);
+document.addEventListener("keyup", e => keys[e.code] = false);
+
+// === GAME CONFIG ===
+let roadX = 150;
+let roadWidth = 200;
+let speed = 4;
+let score = 0;
+let lives = 3;
+let lastScoreTime = Date.now();
+let lastSpeedIncrease = Date.now();
+
+// Player car
+let car = {
+    x: canvas.width / 2 - 25,
+    y: canvas.height - 150,
+    width: 50,
+    height: 100,
+    speedX: 5
+};
+
+// Obstacles
+let obstacles = [];
+function spawnObstacle() {
+    const w = 50;
+    const h = 100;
+    const x = roadX + Math.random() * (roadWidth - w);
+    const y = -h;
+    obstacles.push({ x, y, width: w, height: h });
+}
+setInterval(spawnObstacle, 1200);
+
+// Scenery
+let scenery = [];
+function spawnScenery() {
+    scenery.push({
+        x: Math.random() < 0.5 ? 40 : canvas.width - 80,
+        y: -50,
+        type: Math.random() < 0.5 ? "house" : "person"
+    });
+}
+setInterval(spawnScenery, 800);
+
+// === GAME LOOP ===
+function update() {
+    // === CAR CONTROLS ===
+    if (keys["KeyA"]) car.x -= car.speedX;
+    if (keys["KeyD"]) car.x += car.speedX;
+
+    // BOOST
+    let currentSpeed = keys["Space"] ? speed * 1.8 : speed;
+
+    // Car stays on road
+    if (car.x < roadX) car.x = roadX;
+    if (car.x + car.width > roadX + roadWidth)
+        car.x = roadX + roadWidth - car.width;
+
+    // Move obstacles
+    obstacles.forEach(o => o.y += currentSpeed);
+
+    // Move scenery
+    scenery.forEach(s => s.y += currentSpeed * 0.8);
+
+    // Remove off-screen
+    obstacles = obstacles.filter(o => o.y < canvas.height + 200);
+    scenery = scenery.filter(s => s.y < canvas.height + 100);
+
+    // Collision detection
+    obstacles.forEach(o => {
+        if (car.x < o.x + o.width &&
+            car.x + car.width > o.x &&
+            car.y < o.y + o.height &&
+            car.y + car.height > o.y) {
+            
+            lives--;
+            obstacles.splice(obstacles.indexOf(o), 1);
+
+            document.getElementById("lives").innerText =
+                "❤️".repeat(lives);
+
+            if (lives <= 0) gameOver();
+        }
+    });
+
+    // Score every 2 seconds
+    if (Date.now() - lastScoreTime > 2000) {
+        score++;
+        lastScoreTime = Date.now();
+        document.getElementById("score").innerText = "Poäng: " + score;
+    }
+
+    // Speed increase every minute
+    if (Date.now() - lastSpeedIncrease > 60000) {
+        speed += 0.5;
+        lastSpeedIncrease = Date.now();
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Background
+    ctx.fillStyle = "#2f2f2f";
+    ctx.fillRect(roadX, 0, roadWidth, canvas.height);
+
+    // Road lines
+    ctx.fillStyle = "white";
+    for (let i = 0; i < canvas.height; i += 40) {
+        ctx.fillRect(canvas.width/2 - 5, i, 10, 25);
+    }
+
+    // Scenery
+    scenery.forEach(s => {
+        if (s.type === "house") {
+            ctx.fillStyle = "#4444ff";
+            ctx.fillRect(s.x, s.y, 60, 40);
+        } else {
+            ctx.fillStyle = "#ff4444";
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, 10, 0, Math.PI*2);
+            ctx.fill();
+        }
+    });
+
+    // Obstacles
+    ctx.fillStyle = "#ff0000";
+    obstacles.forEach(o => {
+        ctx.fillRect(o.x, o.y, o.width, o.height);
+    });
+
+    // Car
+    ctx.fillStyle = "#00ccff";
+    ctx.fillRect(car.x, car.y, car.width, car.height);
+}
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+function gameOver() {
+    alert("Game Over!\nPoäng: " + score);
+    document.location.reload();
+}
+
+loop();
+</script>
+
+</body>
+</html>
+
+</div>
+
+</body>
+</html>
