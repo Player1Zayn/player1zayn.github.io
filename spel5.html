@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spel 1</title>
+<title>FPS Game beta</title>
 
 <style>
     body {
@@ -227,6 +227,10 @@
         const playerHeight = 1.7; // Player eye level
         const targetGroundY = 1.5; // Target Y position (locked to ground plane)
         
+        // Jump Physics Constants
+        const gravity = 30.0;
+        const jumpStrength = 12.0;
+
         // Global variables for the game state and Three.js components
         let camera, scene, renderer, gunMesh; // Added gunMesh
         let score = 0;
@@ -249,6 +253,8 @@
         let moveBackward = false;
         let moveLeft = false;
         let moveRight = false;
+        let yVelocity = 0; // Current vertical velocity
+        let canJump = false; // Tracks if player is on ground
         
         // Raycaster for shooting and vector for raycasting origin (center of screen)
         const raycaster = new THREE.Raycaster();
@@ -445,12 +451,28 @@
 
         function onKeyDown(event) {
             // Check if game is active OR if the timer is running (allows movement during countdown)
+            // Exception: Allow 'P' to work even if game logic is paused, though usually we want it to pause active games
+            
+            // Pause Keybind
+            if (event.code === 'KeyP') {
+                if (document.pointerLockElement === gameContainer) {
+                    document.exitPointerLock(); // This triggers onPointerLockChange and opens the pause menu
+                }
+                return;
+            }
+
             if (!isGameActive && !isTimerActive) return; 
             switch (event.code) {
                 case 'KeyW': moveForward = true; break;
                 case 'KeyS': moveBackward = true; break;
                 case 'KeyA': moveLeft = true; break;
                 case 'KeyD': moveRight = true; break;
+                case 'Space': 
+                    if (canJump) {
+                        yVelocity = jumpStrength;
+                        canJump = false;
+                    }
+                    break;
             }
         }
 
@@ -624,6 +646,7 @@
             health = 100;
             currentWave = 1; // Reset wave
             spawnTimer = initialSpawnDelay;
+            yVelocity = 0; // Reset jump velocity
             
             scoreElement.textContent = score;
             healthValueElement.textContent = health;
@@ -930,8 +953,18 @@
                     }
                 }
                 
-                // Enforce player height and arena boundaries (using the new targetRange 50)
-                camera.position.y = playerHeight;
+                // Apply Gravity
+                yVelocity -= gravity * delta;
+                camera.position.y += yVelocity * delta;
+
+                // Ground Collision & Jump Reset
+                if (camera.position.y <= playerHeight) {
+                    camera.position.y = playerHeight;
+                    yVelocity = 0;
+                    canJump = true;
+                }
+
+                // Enforce arena boundaries (Horizontal only)
                 camera.position.x = Math.max(-targetRange + 1, Math.min(targetRange - 1, camera.position.x));
                 camera.position.z = Math.max(-targetRange + 1, Math.min(targetRange - 1, camera.position.z));
                 
