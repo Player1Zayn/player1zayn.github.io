@@ -62,7 +62,7 @@
     <main class="flex-grow container mx-auto px-4 py-10">
         
         <div class="text-center mb-12">
-            <h2 class="text-4xl font-bold mb-4">Welcome Player</h2>
+            <h2 class="text-4xl font-bold mb-4">Welcome!!</h2>
             <p class="text-slate-400 max-w-2xl mx-auto">
                 Click on a game below to open it in a new tab.
                 Good luck and have fun!
@@ -82,16 +82,16 @@
                     </h3>
                     <div class="prose prose-invert text-slate-300 leading-relaxed">
                         <p>
-                            Hi and welcome to my game portal! 🎮 Don't forget to enable F11 while playing games!
+                            Hi and welcome to my game portal! 🎮 Don't forget to enable fullscreen (F11) while playing! 
                         </p>
                         <p class="mt-2">
-                            Right now I'm working on fixing the bug in <strong>Zombie Attack</strong> and adding a new high-score system. 
-                            Keep an eye out for new games next week!
+                            Right now I'm working on fixing the bug in <strong>FPS Game beta and U.M.D</strong> and adding a new high-score system. 
+                            Keep an eye out for new update!
                         </p>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 font-mono">
                         <i data-lucide="clock" class="w-3 h-3"></i>
-                        <span>Last updated: Today</span>
+                        <span>Last updated: 21/11 2025</span>
                     </div>
                 </div>
             </div>
@@ -139,7 +139,7 @@
     <!-- Footer -->
     <footer class="bg-slate-900 py-6 mt-auto border-t border-slate-800">
         <div class="container mx-auto text-center text-slate-500 text-sm">
-            <p>&copy; 2025 Game Portal. Built by the one and only Zayn Lilak.</p>
+            <p>&copy; 2025 Game Portal. Built by the one and only Zayn Lilak. All rights served.</p>
         </div>
     </footer>
 
@@ -149,25 +149,45 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- 1. Configure Firebase ---
-        const firebaseConfig = JSON.parse(window.__firebase_config || '{}');
-        const appId = window.__app_id || 'default-app-id';
-        const initialToken = window.__initial_auth_token;
+        // --- HÄR SKA DU KLISTRA IN DIN EGEN KONFIGURATION ---
+        // 1. Gå till console.firebase.google.com
+        // 2. Skapa ett nytt projekt
+        // 3. Lägg till en "Web App" (ikonen ser ut som </>)
+        // 4. Kopiera config-objektet du får och ersätt raderna nedan:
+        
+        const firebaseConfig = {
+            apiKey: "DIN_API_KEY_HÄR",
+            authDomain: "DITT_PROJEKT.firebaseapp.com",
+            projectId: "DITT_PROJEKT_ID",
+            storageBucket: "DITT_PROJEKT.firebasestorage.app",
+            messagingSenderId: "DINA_SIFFROR",
+            appId: "DITT_APP_ID"
+        };
+
+        // Kontrollera om användaren har bytt ut configen
+        const isUsingCustomConfig = firebaseConfig.apiKey !== "DIN_API_KEY_HÄR";
 
         // Init app
         let app, auth, db, user;
 
         try {
-            app = initializeApp(firebaseConfig);
+            // Försök använda användarens config, annars fallback till demo-miljön
+            const configToUse = isUsingCustomConfig 
+                ? firebaseConfig 
+                : JSON.parse(window.__firebase_config || '{}');
+
+            app = initializeApp(configToUse);
             auth = getAuth(app);
             db = getFirestore(app);
             
-            // --- 2. Authentication ---
+            // --- Authentication ---
             const initAuth = async () => {
                 try {
-                    if (initialToken) {
-                        await signInWithCustomToken(auth, initialToken);
+                    // Om vi använder systemets config, använd custom token om det finns
+                    if (!isUsingCustomConfig && window.__initial_auth_token) {
+                       await signInWithCustomToken(auth, window.__initial_auth_token);
                     } else {
+                        // För egen config eller fallback, kör anonym
                         await signInAnonymously(auth);
                     }
                 } catch (error) {
@@ -181,30 +201,45 @@
                 user = currentUser;
                 if (user) {
                     console.log("Connected to chat!", user.uid);
-                    loadComments(); // Start listening for comments when logged in
+                    loadComments();
                 }
             });
 
         } catch (e) {
-            console.error("Firebase could not start:", e);
-            document.getElementById('comments-list').innerHTML = '<div class="text-center text-red-400">Could not connect to chat.</div>';
+            console.error("Firebase configuration missing or incorrect.", e);
+            document.getElementById('comments-list').innerHTML = `
+                <div class="text-center text-red-400 p-4">
+                    <p class="font-bold">Chat configuration missing!</p>
+                    <p class="text-sm mt-2 text-slate-400">Du måste lägga in dina Firebase-nycklar i koden (rad 173).</p>
+                </div>`;
         }
 
-        // --- 3. Load Comments (Realtime) ---
+        // --- Load Comments (Realtime) ---
         function loadComments() {
-            const commentsRef = collection(db, 'artifacts', appId, 'public', 'data', 'comments');
+            let commentsRef;
+            
+            // LOGIK FÖR VILKEN DATABAS-SÖKVÄG VI SKA ANVÄNDA:
+            // 1. Om vi använder SYSTEMETS config (isUsingCustomConfig == false) och har ett app_id -> Använd komplex artifact-sökväg.
+            // 2. Annars (om du lagt in dina egna nycklar) -> Använd enkel 'comments'-sökväg.
+            
+            if (window.__app_id && !isUsingCustomConfig) {
+                 // System-miljö
+                 commentsRef = collection(db, 'artifacts', window.__app_id, 'public', 'data', 'comments');
+            } else {
+                // Din egen GitHub/Firebase miljö
+                commentsRef = collection(db, 'comments');
+            }
             
             // Listen for database changes
-            onSnapshot(query(commentsRef), (snapshot) => {
+            const q = query(commentsRef, orderBy("timestamp", "desc"), limit(50));
+
+            onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('comments-list');
                 const comments = [];
                 
                 snapshot.forEach(doc => {
                     comments.push({ id: doc.id, ...doc.data() });
                 });
-
-                // Client-side sort (newest first)
-                comments.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
                 if (comments.length === 0) {
                     list.innerHTML = '<div class="text-center text-slate-600 py-4">No messages yet. Be the first!</div>';
@@ -213,11 +248,9 @@
 
                 list.innerHTML = '';
                 comments.forEach(msg => {
-                    // Simple sanitation
                     const name = (msg.username || 'Anonymous').replace(/</g, "&lt;");
                     const text = (msg.text || '').replace(/</g, "&lt;");
                     
-                    // Create HTML for comment
                     const msgDiv = document.createElement('div');
                     msgDiv.className = 'bg-slate-800 p-3 rounded-lg border border-slate-700 flex gap-3 animate-in fade-in slide-in-from-bottom-2';
                     msgDiv.innerHTML = `
@@ -236,12 +269,15 @@
                 });
             }, (error) => {
                 console.error("Error fetching comments:", error);
+                if (error.code === 'permission-denied') {
+                     document.getElementById('comments-list').innerHTML = '<div class="text-center text-yellow-500">Permission Denied. Check Firestore Rules in Console.</div>';
+                }
             });
         }
 
-        // --- 4. Post Comment ---
+        // --- Post Comment ---
         window.postComment = async function() {
-            if (!user) return alert("Wait, connecting to server...");
+            if (!user) return alert("Connecting to chat server...");
             
             const nameInput = document.getElementById('username-input');
             const textInput = document.getElementById('comment-input');
@@ -252,12 +288,19 @@
 
             if (!text) return;
 
-            // Disable button while sending
             btn.disabled = true;
             btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sending...';
 
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'comments'), {
+                let commentsRef;
+                // Samma logik här som i loadComments
+                if (window.__app_id && !isUsingCustomConfig) {
+                     commentsRef = collection(db, 'artifacts', window.__app_id, 'public', 'data', 'comments');
+                } else {
+                    commentsRef = collection(db, 'comments');
+                }
+
+                await addDoc(commentsRef, {
                     username: username,
                     text: text,
                     timestamp: serverTimestamp(),
@@ -265,12 +308,11 @@
                     dateString: new Date().toLocaleDateString('en-US')
                 });
                 
-                // Clear field but keep name
                 textInput.value = '';
-                lucide.createIcons(); // Update icons
+                lucide.createIcons();
             } catch (error) {
                 console.error("Could not send:", error);
-                alert("Something went wrong when sending the message.");
+                alert("Could not send message. Check console for details.");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Send';
@@ -289,19 +331,18 @@
         const games = [
             { id: 1, name: "Last Defence", color: "from-blue-500 to-cyan-400", icon: "skull" },
             { id: 2, name: "Tank Survival", color: "from-green-500 to-emerald-400", icon: "truck" },
-            { id: 3, name: "U.M.D beta", color: "from-red-500 to-orange-400", icon: "crosshair" },
+            { id: 3, name: "U.M.D", color: "from-red-500 to-orange-400", icon: "crosshair" },
             { id: 4, name: "PRO Racing", color: "from-purple-500 to-pink-400", icon: "car" },
-            { id: 5, name: "FPS game beta", color: "from-gray-600 to-gray-400", icon: "sword" },
+            { id: 5, name: "FPS Game beta", color: "from-gray-600 to-gray-400", icon: "sword" },
             { id: 6, name: "Snakey", color: "from-yellow-500 to-orange-400", icon: "activity" },
-            { id: 7, name: "Comming soon", color: "from-indigo-500 to-purple-400", icon: "trees" },
-            { id: 8, name: "Comming soon", color: "from-slate-500 to-zinc-400", icon: "bot" },
-            { id: 9, name: "Comming soon", color: "from-rose-500 to-red-400", icon: "heart" },
-            { id: 10, name: "Comming soon", color: "from-amber-500 to-yellow-300", icon: "crown" },
+            { id: 7, name: "Comming Soon", color: "from-indigo-500 to-purple-400", icon: "trees" },
+            { id: 8, name: "Comming Soon", color: "from-slate-500 to-zinc-400", icon: "bot" },
+            { id: 9, name: "Comming Soon", color: "from-rose-500 to-red-400", icon: "heart" },
+            { id: 10, name: "Comming Soon", color: "from-amber-500 to-yellow-300", icon: "crown" },
         ];
 
         const grid = document.getElementById('game-grid');
 
-        // Function to create cards dynamically
         games.forEach(game => {
             const card = document.createElement('div');
             card.className = `
