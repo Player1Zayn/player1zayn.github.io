@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Game Portal</title>
+    <title>Super Game Portal</title>
     <!-- Tailwind CSS for design -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts for gaming feel -->
@@ -86,7 +86,7 @@
                         </p>
                         <p class="mt-2">
                             Right now I'm working on fixing the bug in <strong>Last Defence</strong> and adding a new high-score system. 
-                            Keep an eye out for new updates!
+                            Keep an eye out for new games next week!
                         </p>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 font-mono">
@@ -153,12 +153,12 @@
         // --- HÄR SKA DU KLISTRA IN DIN EGEN KONFIGURATION ---
         // OBS: Se till att du INTE har med "measurementId" i slutet!
         const firebaseConfig = {
-           apiKey: "AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs",
-  authDomain: "chat-for-website-67a6f.firebaseapp.com",
-  projectId: "chat-for-website-67a6f",
-  storageBucket: "chat-for-website-67a6f.firebasestorage.app",
-  messagingSenderId: "82109104044",
-  appId: "1:82109104044:web:b2715d7d0efed21f010409"
+            apiKey: "AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs",
+            authDomain: "chat-for-website-67a6f.firebaseapp.com",
+            projectId: "chat-for-website-67a6f",
+            storageBucket: "chat-for-website-67a6f.firebasestorage.app",
+            messagingSenderId: "82109104044",
+            appId: "1:82109104044:web:b2715d7d0efed21f010409"
         };
 
         const isUsingCustomConfig = firebaseConfig.apiKey !== "AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs";
@@ -327,16 +327,16 @@
     <script>
         // --- GAME CONFIGURATION ---
         const games = [
-            { id: 1, name: "Space Adventure", color: "from-blue-500 to-cyan-400", icon: "skull" },
-            { id: 2, name: "Zombie Attack", color: "from-green-500 to-emerald-400", icon: "truck" },
-            { id: 3, name: "Gun Master", color: "from-red-500 to-orange-400", icon: "crosshair" },
+            { id: 1, name: "Last Defence", color: "from-blue-500 to-cyan-400", icon: "skull" },
+            { id: 2, name: "Tank Survival", color: "from-green-500 to-emerald-400", icon: "truck" },
+            { id: 3, name: "U.M.D", color: "from-red-500 to-orange-400", icon: "crosshair" },
             { id: 4, name: "Racing Pro", color: "from-purple-500 to-pink-400", icon: "car" },
-            { id: 5, name: "Ninja Jump", color: "from-gray-600 to-gray-400", icon: "sword" },
-            { id: 6, name: "Football 2024", color: "from-yellow-500 to-orange-400", icon: "activity" },
-            { id: 7, name: "Magic Forest", color: "from-indigo-500 to-purple-400", icon: "trees" },
-            { id: 8, name: "Robot Wars", color: "from-slate-500 to-zinc-400", icon: "bot" },
-            { id: 9, name: "Card Game Deluxe", color: "from-rose-500 to-red-400", icon: "heart" },
-            { id: 10, name: "The Final Boss", color: "from-amber-500 to-yellow-300", icon: "crown" },
+            { id: 5, name: "FPS BETA", color: "from-gray-600 to-gray-400", icon: "sword" },
+            { id: 6, name: "Snakey", color: "from-yellow-500 to-orange-400", icon: "activity" },
+            { id: 7, name: "Comming Soon", color: "from-indigo-500 to-purple-400", icon: "trees" },
+            { id: 8, name: "Comming Soon", color: "from-slate-500 to-zinc-400", icon: "bot" },
+            { id: 9, name: "Comming Soon", color: "from-rose-500 to-red-400", icon: "heart" },
+            { id: 10, name: "Comming Soon", color: "from-amber-500 to-yellow-300", icon: "crown" },
         ];
 
         const grid = document.getElementById('game-grid');
