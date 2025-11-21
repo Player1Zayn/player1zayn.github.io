@@ -62,7 +62,7 @@
     <main class="flex-grow container mx-auto px-4 py-10">
         
         <div class="text-center mb-12">
-            <h2 class="text-4xl font-bold mb-4">Welcome!!</h2>
+            <h2 class="text-4xl font-bold mb-4">Welcome Player</h2>
             <p class="text-slate-400 max-w-2xl mx-auto">
                 Click on a game below to open it in a new tab.
                 Good luck and have fun!
@@ -82,16 +82,16 @@
                     </h3>
                     <div class="prose prose-invert text-slate-300 leading-relaxed">
                         <p>
-                            Hi and welcome to my game portal! 🎮 Don't forget to enable fullscreen (F11) while playing! 
+                            Hi and welcome to my game portal! 🎮
                         </p>
                         <p class="mt-2">
-                            Right now I'm working on fixing the bug in <strong>FPS Game beta and U.M.D</strong> and adding a new high-score system. 
-                            Keep an eye out for new update!
+                            Right now I'm working on fixing the bug in <strong>Zombie Attack</strong> and adding a new high-score system. 
+                            Keep an eye out for new games next week!
                         </p>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 font-mono">
                         <i data-lucide="clock" class="w-3 h-3"></i>
-                        <span>Last updated: 21/11 2025</span>
+                        <span>Last updated: Today</span>
                     </div>
                 </div>
             </div>
@@ -139,7 +139,7 @@
     <!-- Footer -->
     <footer class="bg-slate-900 py-6 mt-auto border-t border-slate-800">
         <div class="container mx-auto text-center text-slate-500 text-sm">
-            <p>&copy; 2025 Game Portal. Built by the one and only Zayn Lilak. All rights served.</p>
+            <p>&copy; 2024 My Game Portal. Built for GitHub Pages.</p>
         </div>
     </footer>
 
@@ -150,22 +150,20 @@
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- HÄR SKA DU KLISTRA IN DIN EGEN KONFIGURATION ---
-        // 1. Gå till console.firebase.google.com
-        // 2. Skapa ett nytt projekt
-        // 3. Lägg till en "Web App" (ikonen ser ut som </>)
-        // 4. Kopiera config-objektet du får och ersätt raderna nedan:
+        // OBS: Lägg bara till det som står INUTI måsvingarna { ... } här
         
         const firebaseConfig = {
-            apiKey: "AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs",
+            apiKey:"AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs",
             authDomain: "chat-for-website-67a6f.firebaseapp.com",
-            projectId:"chat-for-website-67a6f",
+            projectId: "chat-for-website-67a6f",
             storageBucket: "chat-for-website-67a6f.firebasestorage.app",
             messagingSenderId: "82109104044",
-            appId: "G-JB869DJVJM"
+            appId: "1:82109104044:web:b2715d7d0efed21f010409"
+            measurementId: "G-JB869DJVJM"
         };
 
         // Kontrollera om användaren har bytt ut configen
-        const isUsingCustomConfig = firebaseConfig.apiKey !== "AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs";
+        const isUsingCustomConfig = firebaseConfig.apiKey !== "DIN_API_KEY_HÄR";
 
         // Init app
         let app, auth, db, user;
@@ -209,8 +207,8 @@
             console.error("Firebase configuration missing or incorrect.", e);
             document.getElementById('comments-list').innerHTML = `
                 <div class="text-center text-red-400 p-4">
-                    <p class="font-bold">Chat configuration missing!</p>
-                    <p class="text-sm mt-2 text-slate-400">Du måste lägga in dina Firebase-nycklar i koden (rad 173).</p>
+                    <p class="font-bold">Chatt-konfiguration saknas!</p>
+                    <p class="text-sm mt-2 text-slate-400">Du måste lägga in dina Firebase-nycklar i koden (runt rad 173).</p>
                 </div>`;
         }
 
@@ -219,14 +217,11 @@
             let commentsRef;
             
             // LOGIK FÖR VILKEN DATABAS-SÖKVÄG VI SKA ANVÄNDA:
-            // 1. Om vi använder SYSTEMETS config (isUsingCustomConfig == false) och har ett app_id -> Använd komplex artifact-sökväg.
-            // 2. Annars (om du lagt in dina egna nycklar) -> Använd enkel 'comments'-sökväg.
-            
             if (window.__app_id && !isUsingCustomConfig) {
-                 // System-miljö
+                 // System-miljö (om nycklarna inte är utbytta)
                  commentsRef = collection(db, 'artifacts', window.__app_id, 'public', 'data', 'comments');
             } else {
-                // Din egen GitHub/Firebase miljö
+                // Din egen GitHub/Firebase miljö (efter att nycklarna är utbytta)
                 commentsRef = collection(db, 'comments');
             }
             
@@ -242,7 +237,7 @@
                 });
 
                 if (comments.length === 0) {
-                    list.innerHTML = '<div class="text-center text-slate-600 py-4">No messages yet. Be the first!</div>';
+                    list.innerHTML = '<div class="text-center text-slate-600 py-4">Inga meddelanden än. Var den första!</div>';
                     return;
                 }
 
@@ -260,7 +255,7 @@
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="font-bold text-purple-400 text-sm">${name}</span>
-                                <span class="text-xs text-slate-600">${msg.dateString || 'Just now'}</span>
+                                <span class="text-xs text-slate-600">${msg.dateString || 'Precis nu'}</span>
                             </div>
                             <p class="text-sm text-slate-300 break-all">${text}</p>
                         </div>
@@ -269,15 +264,20 @@
                 });
             }, (error) => {
                 console.error("Error fetching comments:", error);
+                // Detaljerat felmeddelande för behörighet
                 if (error.code === 'permission-denied') {
-                     document.getElementById('comments-list').innerHTML = '<div class="text-center text-yellow-500">Permission Denied. Check Firestore Rules in Console.</div>';
+                     document.getElementById('comments-list').innerHTML = `
+                         <div class="text-center text-yellow-500 p-4">
+                             <p class="font-bold">Behörighet nekad (Permission Denied)!</p>
+                             <p class="text-sm mt-2 text-slate-400">Du måste ställa in Firestore-regler för samlingen <strong>'comments'</strong> i Firebase Console. Kontrollera att regeln <code>allow read, write: if true;</code> är aktiv.</p>
+                         </div>`;
                 }
             });
         }
 
         // --- Post Comment ---
         window.postComment = async function() {
-            if (!user) return alert("Connecting to chat server...");
+            if (!user) return alert("Ansluter till chattservern...");
             
             const nameInput = document.getElementById('username-input');
             const textInput = document.getElementById('comment-input');
@@ -289,7 +289,7 @@
             if (!text) return;
 
             btn.disabled = true;
-            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sending...';
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Skickar...';
 
             try {
                 let commentsRef;
@@ -305,14 +305,19 @@
                     text: text,
                     timestamp: serverTimestamp(),
                     userId: user.uid,
-                    dateString: new Date().toLocaleDateString('en-US')
+                    dateString: new Date().toLocaleDateString('sv-SE')
                 });
                 
                 textInput.value = '';
                 lucide.createIcons();
             } catch (error) {
                 console.error("Could not send:", error);
-                alert("Could not send message. Check console for details.");
+                // Visa ett specifikt felmeddelande
+                if (error.code === 'permission-denied') {
+                    alert("Kunde inte skicka: Behörighet nekad! Kontrollera dina Firestore-regler för 'comments' i Firebase Console.");
+                } else {
+                    alert("Kunde inte skicka meddelande. Se konsolen (F12) för detaljer.");
+                }
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Send';
@@ -329,16 +334,16 @@
     <script>
         // --- GAME CONFIGURATION ---
         const games = [
-            { id: 1, name: "Last Defence", color: "from-blue-500 to-cyan-400", icon: "skull" },
-            { id: 2, name: "Tank Survival", color: "from-green-500 to-emerald-400", icon: "truck" },
-            { id: 3, name: "U.M.D", color: "from-red-500 to-orange-400", icon: "crosshair" },
-            { id: 4, name: "PRO Racing", color: "from-purple-500 to-pink-400", icon: "car" },
-            { id: 5, name: "FPS Game beta", color: "from-gray-600 to-gray-400", icon: "sword" },
-            { id: 6, name: "Snakey", color: "from-yellow-500 to-orange-400", icon: "activity" },
-            { id: 7, name: "Comming Soon", color: "from-indigo-500 to-purple-400", icon: "trees" },
-            { id: 8, name: "Comming Soon", color: "from-slate-500 to-zinc-400", icon: "bot" },
-            { id: 9, name: "Comming Soon", color: "from-rose-500 to-red-400", icon: "heart" },
-            { id: 10, name: "Comming Soon", color: "from-amber-500 to-yellow-300", icon: "crown" },
+            { id: 1, name: "Space Adventure", color: "from-blue-500 to-cyan-400", icon: "skull" },
+            { id: 2, name: "Zombie Attack", color: "from-green-500 to-emerald-400", icon: "truck" },
+            { id: 3, name: "Gun Master", color: "from-red-500 to-orange-400", icon: "crosshair" },
+            { id: 4, name: "Racing Pro", color: "from-purple-500 to-pink-400", icon: "car" },
+            { id: 5, name: "Ninja Jump", color: "from-gray-600 to-gray-400", icon: "sword" },
+            { id: 6, name: "Football 2024", color: "from-yellow-500 to-orange-400", icon: "activity" },
+            { id: 7, name: "Magic Forest", color: "from-indigo-500 to-purple-400", icon: "trees" },
+            { id: 8, name: "Robot Wars", color: "from-slate-500 to-zinc-400", icon: "bot" },
+            { id: 9, name: "Card Game Deluxe", color: "from-rose-500 to-red-400", icon: "heart" },
+            { id: 10, name: "The Final Boss", color: "from-amber-500 to-yellow-300", icon: "crown" },
         ];
 
         const grid = document.getElementById('game-grid');
