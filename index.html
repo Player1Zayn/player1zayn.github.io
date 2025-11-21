@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Portal</title>
+    <title>My Game Portal</title>
     <!-- Tailwind CSS for design -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts for gaming feel -->
@@ -85,8 +85,8 @@
                             Hi and welcome to my game portal! 🎮
                         </p>
                         <p class="mt-2">
-                            Right now I'm working on fixing the bug in <strong>Zombie Attack</strong> and adding a new high-score system. 
-                            Keep an eye out for new games next week!
+                            Right now I'm working on fixing the bug in <strong>Last Defence</strong> and adding a new high-score system. 
+                            Keep an eye out for new updates!
                         </p>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 font-mono">
@@ -121,6 +121,7 @@
                             <input type="text" id="username-input" placeholder="Your name" class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-1/3 p-2.5" maxlength="15">
                             <input type="text" id="comment-input" placeholder="Write a message..." class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">
                         </div>
+                        <!-- Felet 'postComment is not defined' fixas här, eftersom funktionen nu är global -->
                         <button onclick="postComment()" id="send-btn" class="w-full sm:w-auto self-end bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2 justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                             <i data-lucide="send" class="w-4 h-4"></i> Send
                         </button>
@@ -139,37 +140,31 @@
     <!-- Footer -->
     <footer class="bg-slate-900 py-6 mt-auto border-t border-slate-800">
         <div class="container mx-auto text-center text-slate-500 text-sm">
-            <p>&copy; 2025 Game Portal. Built by Zayn Lilak.</p>
+            <p>&copy; 2025 My Game Portal. Built for GitHub Pages.</p>
         </div>
     </footer>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs: Global definition for postComment must be before the button is clicked -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- HÄR SKA DU KLISTRA IN DIN EGEN KONFIGURATION ---
-        // OBS: Lägg bara till det som står INUTI måsvingarna { ... } här
-        
+        // OBS: Se till att du INTE har med "measurementId" i slutet!
         const firebaseConfig = {
-            apiKey: "AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs",
-            authDomain: "chat-for-website-67a6f.firebaseapp.com",
-            projectId: "chat-for-website-67a6f",
-            storageBucket: "chat-for-website-67a6f.firebasestorage.app",
-            messagingSenderId: "82109104044",
-            appId: "1:82109104044:web:b2715d7d0efed21f010409"
-            measurementId: "G-JB869DJVJM"
+           apiKey: "AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs",
+  authDomain: "chat-for-website-67a6f.firebaseapp.com",
+  projectId: "chat-for-website-67a6f",
+  storageBucket: "chat-for-website-67a6f.firebasestorage.app",
+  messagingSenderId: "82109104044",
+  appId: "1:82109104044:web:b2715d7d0efed21f010409"
         };
 
-        // Kontrollera om användaren har bytt ut configen
         const isUsingCustomConfig = firebaseConfig.apiKey !== "AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs";
-
-        // Init app
         let app, auth, db, user;
 
         try {
-            // Försök använda användarens config, annars fallback till demo-miljön
             const configToUse = isUsingCustomConfig 
                 ? firebaseConfig 
                 : JSON.parse(window.__firebase_config || '{}');
@@ -178,14 +173,11 @@
             auth = getAuth(app);
             db = getFirestore(app);
             
-            // --- Authentication ---
             const initAuth = async () => {
                 try {
-                    // Om vi använder systemets config, använd custom token om det finns
                     if (!isUsingCustomConfig && window.__initial_auth_token) {
                        await signInWithCustomToken(auth, window.__initial_auth_token);
                     } else {
-                        // För egen config eller fallback, kör anonym
                         await signInAnonymously(auth);
                     }
                 } catch (error) {
@@ -194,21 +186,20 @@
             };
             initAuth();
 
-            // Listen for login
             onAuthStateChanged(auth, (currentUser) => {
                 user = currentUser;
                 if (user) {
-                    console.log("Connected to chat!", user.uid);
+                    console.log("Connected to chat! User ID:", user.uid);
                     loadComments();
                 }
             });
 
         } catch (e) {
-            console.error("Firebase configuration missing or incorrect.", e);
+            console.error("Firebase configuration missing or incorrect. Check console.", e);
             document.getElementById('comments-list').innerHTML = `
                 <div class="text-center text-red-400 p-4">
                     <p class="font-bold">Chatt-konfiguration saknas!</p>
-                    <p class="text-sm mt-2 text-slate-400">Du måste lägga in dina Firebase-nycklar i koden (runt rad 173).</p>
+                    <p class="text-sm mt-2 text-slate-400">Fel: ${e.message}. Har du klistrat in nycklarna korrekt (runt rad 173)?</p>
                 </div>`;
         }
 
@@ -216,16 +207,12 @@
         function loadComments() {
             let commentsRef;
             
-            // LOGIK FÖR VILKEN DATABAS-SÖKVÄG VI SKA ANVÄNDA:
             if (window.__app_id && !isUsingCustomConfig) {
-                 // System-miljö (om nycklarna inte är utbytta)
                  commentsRef = collection(db, 'artifacts', window.__app_id, 'public', 'data', 'comments');
             } else {
-                // Din egen GitHub/Firebase miljö (efter att nycklarna är utbytta)
                 commentsRef = collection(db, 'comments');
             }
             
-            // Listen for database changes
             const q = query(commentsRef, orderBy("timestamp", "desc"), limit(50));
 
             onSnapshot(q, (snapshot) => {
@@ -264,20 +251,24 @@
                 });
             }, (error) => {
                 console.error("Error fetching comments:", error);
-                // Detaljerat felmeddelande för behörighet
                 if (error.code === 'permission-denied') {
                      document.getElementById('comments-list').innerHTML = `
                          <div class="text-center text-yellow-500 p-4">
                              <p class="font-bold">Behörighet nekad (Permission Denied)!</p>
-                             <p class="text-sm mt-2 text-slate-400">Du måste ställa in Firestore-regler för samlingen <strong>'comments'</strong> i Firebase Console. Kontrollera att regeln <code>allow read, write: if true;</code> är aktiv.</p>
+                             <p class="text-sm mt-2 text-slate-400">Du måste ställa in Firestore-regler för samlingen <strong>'comments'</strong> i Firebase Console.</p>
                          </div>`;
                 }
             });
         }
-
-        // --- Post Comment ---
+        
+        // Nu definierar vi funktionen globalt så att knappen kan hitta den.
         window.postComment = async function() {
-            if (!user) return alert("Ansluter till chattservern...");
+            if (!user) {
+                // Försök logga in om användaren inte är definierad
+                const initAuth = auth && auth.currentUser === null ? async () => { await signInAnonymously(auth); } : () => {};
+                await initAuth();
+                if (!user) return alert("Ansluter till chattservern... Försök igen om någon sekund.");
+            }
             
             const nameInput = document.getElementById('username-input');
             const textInput = document.getElementById('comment-input');
@@ -293,7 +284,6 @@
 
             try {
                 let commentsRef;
-                // Samma logik här som i loadComments
                 if (window.__app_id && !isUsingCustomConfig) {
                      commentsRef = collection(db, 'artifacts', window.__app_id, 'public', 'data', 'comments');
                 } else {
@@ -309,14 +299,16 @@
                 });
                 
                 textInput.value = '';
-                lucide.createIcons();
+                // Scrolla till botten efter skickat meddelande
+                const list = document.getElementById('comments-list');
+                list.scrollTop = list.scrollHeight; 
+
             } catch (error) {
                 console.error("Could not send:", error);
-                // Visa ett specifikt felmeddelande
                 if (error.code === 'permission-denied') {
-                    alert("Kunde inte skicka: Behörighet nekad! Kontrollera dina Firestore-regler för 'comments' i Firebase Console.");
+                    alert("Kunde inte skicka: Behörighet nekad! Kontrollera dina Firestore-regler (allow write) i Firebase Console.");
                 } else {
-                    alert("Kunde inte skicka meddelande. Se konsolen (F12) för detaljer.");
+                    alert(`Kunde inte skicka meddelande. Fel: ${error.message}`);
                 }
             } finally {
                 btn.disabled = false;
@@ -324,11 +316,12 @@
                 lucide.createIcons();
             }
         }
-
+        
         // Allow Enter key to send
         document.getElementById('comment-input').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') window.postComment();
         });
+        
     </script>
 
     <script>
