@@ -1,121 +1,344 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zayn's Spel</title>
-<style>
-html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    width: 100%;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
-    background: #5c94fc; /* blå himmel */
-    position: relative;
-}
-
-/* Svarta fluffiga moln */
-.cloud {
-    position: absolute;
-    background: #000000;  /* SVART */
-    border-radius: 50%;
-    z-index: 2;
-    animation: float linear infinite;
-}
-
-/* Olika storlekar */
-.cloud:nth-child(1) { width: 100px; height: 60px; top: 60px; left: -150px; animation-duration: 20s; }
-.cloud:nth-child(2) { width: 130px; height: 75px; top: 120px; left: -200px; animation-duration: 26s; }
-.cloud:nth-child(3) { width: 90px; height: 50px; top: 90px; left: -180px; animation-duration: 18s; }
-.cloud:nth-child(4) { width: 110px; height: 65px; top: 40px; left: -160px; animation-duration: 24s; }
-
-/* Fluff-delar – också SVARTA */
-.cloud::before, .cloud::after {
-    content: '';
-    position: absolute;
-    background: #000000; /* SVART */
-    border-radius: 50%;
-}
-.cloud::before { width: 60%; height: 60%; top: -30%; left: 10%; }
-.cloud::after  { width: 50%; height: 50%; top: 20%; left: 55%; }
-
-/* Rörelse */
-@keyframes float {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(120vw); }
-}
-
-/* Gräs */
-.ground {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    height: 35%;
-    background: #2ecc71;
-    z-index: 0;
-}
-
-/* Meny */
-#menu {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    align-items: center;
-    z-index: 10;
-}
-
-.menu-button {
-    width: 140px;
-    height: 50px;
-    background: linear-gradient(145deg, #ffec99, #ffd32a);
-    border-radius: 12px;
-    border: 2px solid #f1c40f;
-    text-decoration: none;
-    color: #333;
-    font-weight: bold;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 6px 10px rgba(0,0,0,0.4);
-    transition: 0.3s;
-}
-.menu-button:hover {
-    transform: translateY(-5px) scale(1.05);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.6);
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Portal</title>
+    <!-- Tailwind CSS for design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for gaming feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0f172a; /* Dark blue background */
+            background-image: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+        h1, h2, .game-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Neon glow effect on hover */
+        .game-card:hover {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+            border-color: #60a5fa;
+        }
+        /* Scrollbar for comments */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+    </style>
 </head>
-<body>
+<body class="text-gray-100 min-h-screen flex flex-col">
 
-<!-- Svarta moln -->
-<div class="cloud"></div>
-<div class="cloud"></div>
-<div class="cloud"></div>
-<div class="cloud"></div>
+    <!-- Header -->
+    <header class="w-full p-6 bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i data-lucide="gamepad-2" class="text-blue-500 w-8 h-8"></i>
+                <h1 class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+                    GAME HUB
+                </h1>
+            </div>
+            <div class="text-sm text-slate-400 hidden sm:block">
+                Select a game to start
+            </div>
+        </div>
+    </header>
 
-<!-- Gräs -->
-<div class="ground"></div>
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-10">
+        
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-bold mb-4">Welcome Player</h2>
+            <p class="text-slate-400 max-w-2xl mx-auto">
+                Click on a game below to open it in a new tab.
+                Good luck and have fun!
+            </p>
+        </div>
 
-<!-- Meny -->
-<div id="menu">
-    <a href="spel1.html" class="menu-button" target="_blank">Last Defence</a>
-    <a href="spel2.html" class="menu-button" target="_blank">Tank Survival</a>
-    <a href="spel3.html" class="menu-button" target="_blank">U.M.D Beta</a>
-    <a href="spel4.html" class="menu-button" target="_blank">PRO Racing Beta </a>
-    <a href="spel5.html" class="menu-button" target="_blank">FPS beta game</a>
-    <a href="spel6.html" class="menu-button" target="_blank">Snakey</a>
-    <a href="spel7.html" class="menu-button" target="_blank">Kommer snart</a>
-    <a href="spel8.html" class="menu-button" target="_blank">Kommer snart</a>
-    <a href="spel9.html" class="menu-button" target="_blank">Kommer snart</a>
-    <a href="spel10.html" class="menu-button" target="_blank">Kommer snart</a>
-</div>
+        <!-- Developer Message Section -->
+        <div class="max-w-4xl mx-auto mb-8 p-6 bg-slate-800/50 border-l-4 border-blue-500 rounded-r-xl backdrop-blur-sm shadow-lg hover:bg-slate-800/70 transition-colors">
+            <div class="flex items-start gap-4">
+                <div class="p-3 bg-blue-500/10 rounded-lg hidden sm:block">
+                    <i data-lucide="terminal" class="w-6 h-6 text-blue-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-blue-400 mb-2 game-font flex items-center gap-2">
+                        <span class="sm:hidden"><i data-lucide="terminal" class="w-4 h-4 inline"></i></span>
+                        DEVELOPER UPDATE
+                    </h3>
+                    <div class="prose prose-invert text-slate-300 leading-relaxed">
+                        <p>
+                            Hi and welcome to my game portal! 🎮 Don't forget to enable F11 while playing games!
+                        </p>
+                        <p class="mt-2">
+                            Right now I'm working on fixing the bug in <strong>Zombie Attack</strong> and adding a new high-score system. 
+                            Keep an eye out for new games next week!
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 font-mono">
+                        <i data-lucide="clock" class="w-3 h-3"></i>
+                        <span>Last updated: Today</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <!-- Comments Section -->
+        <div class="max-w-4xl mx-auto mb-16">
+            <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
+                <!-- Comments Header -->
+                <div class="p-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-slate-200 flex items-center gap-2">
+                        <i data-lucide="message-square" class="w-5 h-5 text-purple-400"></i>
+                        Community Chat
+                    </h3>
+                    <span class="text-xs text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700">Live</span>
+                </div>
+
+                <!-- Comments List -->
+                <div id="comments-list" class="p-6 h-64 overflow-y-auto custom-scroll space-y-4 bg-slate-900/50">
+                    <div class="text-center text-slate-500 py-10 italic">Loading messages...</div>
+                </div>
+
+                <!-- Input Form -->
+                <div class="p-4 bg-slate-800 border-t border-slate-700">
+                    <div class="flex flex-col gap-3">
+                        <div class="flex gap-3">
+                            <input type="text" id="username-input" placeholder="Your name" class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-1/3 p-2.5" maxlength="15">
+                            <input type="text" id="comment-input" placeholder="Write a message..." class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">
+                        </div>
+                        <button onclick="postComment()" id="send-btn" class="w-full sm:w-auto self-end bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2 justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i data-lucide="send" class="w-4 h-4"></i> Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Grid -->
+        <div id="game-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            <!-- Cards generated by JavaScript below -->
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 py-6 mt-auto border-t border-slate-800">
+        <div class="container mx-auto text-center text-slate-500 text-sm">
+            <p>&copy; 2025 Game Portal. Built by the one and only Zayn Lilak.</p>
+        </div>
+    </footer>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- 1. Configure Firebase ---
+        const firebaseConfig = JSON.parse(window.__firebase_config || '{}');
+        const appId = window.__app_id || 'default-app-id';
+        const initialToken = window.__initial_auth_token;
+
+        // Init app
+        let app, auth, db, user;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            
+            // --- 2. Authentication ---
+            const initAuth = async () => {
+                try {
+                    if (initialToken) {
+                        await signInWithCustomToken(auth, initialToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Auth error:", error);
+                }
+            };
+            initAuth();
+
+            // Listen for login
+            onAuthStateChanged(auth, (currentUser) => {
+                user = currentUser;
+                if (user) {
+                    console.log("Connected to chat!", user.uid);
+                    loadComments(); // Start listening for comments when logged in
+                }
+            });
+
+        } catch (e) {
+            console.error("Firebase could not start:", e);
+            document.getElementById('comments-list').innerHTML = '<div class="text-center text-red-400">Could not connect to chat.</div>';
+        }
+
+        // --- 3. Load Comments (Realtime) ---
+        function loadComments() {
+            const commentsRef = collection(db, 'artifacts', appId, 'public', 'data', 'comments');
+            
+            // Listen for database changes
+            onSnapshot(query(commentsRef), (snapshot) => {
+                const list = document.getElementById('comments-list');
+                const comments = [];
+                
+                snapshot.forEach(doc => {
+                    comments.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Client-side sort (newest first)
+                comments.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                if (comments.length === 0) {
+                    list.innerHTML = '<div class="text-center text-slate-600 py-4">No messages yet. Be the first!</div>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                comments.forEach(msg => {
+                    // Simple sanitation
+                    const name = (msg.username || 'Anonymous').replace(/</g, "&lt;");
+                    const text = (msg.text || '').replace(/</g, "&lt;");
+                    
+                    // Create HTML for comment
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = 'bg-slate-800 p-3 rounded-lg border border-slate-700 flex gap-3 animate-in fade-in slide-in-from-bottom-2';
+                    msgDiv.innerHTML = `
+                        <div class="w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center border border-purple-500/30 shrink-0">
+                            <span class="text-xs font-bold text-purple-300">${name.charAt(0).toUpperCase()}</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-bold text-purple-400 text-sm">${name}</span>
+                                <span class="text-xs text-slate-600">${msg.dateString || 'Just now'}</span>
+                            </div>
+                            <p class="text-sm text-slate-300 break-all">${text}</p>
+                        </div>
+                    `;
+                    list.appendChild(msgDiv);
+                });
+            }, (error) => {
+                console.error("Error fetching comments:", error);
+            });
+        }
+
+        // --- 4. Post Comment ---
+        window.postComment = async function() {
+            if (!user) return alert("Wait, connecting to server...");
+            
+            const nameInput = document.getElementById('username-input');
+            const textInput = document.getElementById('comment-input');
+            const btn = document.getElementById('send-btn');
+
+            const username = nameInput.value.trim() || 'Anonymous Player';
+            const text = textInput.value.trim();
+
+            if (!text) return;
+
+            // Disable button while sending
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sending...';
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'comments'), {
+                    username: username,
+                    text: text,
+                    timestamp: serverTimestamp(),
+                    userId: user.uid,
+                    dateString: new Date().toLocaleDateString('en-US')
+                });
+                
+                // Clear field but keep name
+                textInput.value = '';
+                lucide.createIcons(); // Update icons
+            } catch (error) {
+                console.error("Could not send:", error);
+                alert("Something went wrong when sending the message.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Send';
+                lucide.createIcons();
+            }
+        }
+
+        // Allow Enter key to send
+        document.getElementById('comment-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') window.postComment();
+        });
+    </script>
+
+    <script>
+        // --- GAME CONFIGURATION ---
+        const games = [
+            { id: 1, name: "Last Defence", color: "from-blue-500 to-cyan-400", icon: "skull" },
+            { id: 2, name: "Tank Survival", color: "from-green-500 to-emerald-400", icon: "truck" },
+            { id: 3, name: "U.M.D beta", color: "from-red-500 to-orange-400", icon: "crosshair" },
+            { id: 4, name: "PRO Racing", color: "from-purple-500 to-pink-400", icon: "car" },
+            { id: 5, name: "FPS game beta", color: "from-gray-600 to-gray-400", icon: "sword" },
+            { id: 6, name: "Snakey", color: "from-yellow-500 to-orange-400", icon: "activity" },
+            { id: 7, name: "Comming soon", color: "from-indigo-500 to-purple-400", icon: "trees" },
+            { id: 8, name: "Comming soon", color: "from-slate-500 to-zinc-400", icon: "bot" },
+            { id: 9, name: "Comming soon", color: "from-rose-500 to-red-400", icon: "heart" },
+            { id: 10, name: "Comming soon", color: "from-amber-500 to-yellow-300", icon: "crown" },
+        ];
+
+        const grid = document.getElementById('game-grid');
+
+        // Function to create cards dynamically
+        games.forEach(game => {
+            const card = document.createElement('div');
+            card.className = `
+                game-card bg-slate-800 border border-slate-700 rounded-xl p-6 
+                flex flex-col items-center justify-between 
+                transition-all duration-300 transform hover:-translate-y-2 hover:bg-slate-750 cursor-pointer
+                group relative overflow-hidden
+            `;
+            
+            card.innerHTML = `
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${game.color}"></div>
+                <div class="w-16 h-16 mb-4 rounded-full bg-slate-900 flex items-center justify-center border border-slate-600 group-hover:border-white transition-colors">
+                    <i data-lucide="${game.icon}" class="w-8 h-8 text-gray-300 group-hover:text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2 game-font text-center">${game.name}</h3>
+                <span class="text-xs text-slate-500 mb-6">Game ${game.id}</span>
+                <button onclick="openGame(${game.id})" class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 transition-transform hover:opacity-90">
+                    PLAY NOW
+                </button>
+            `;
+            grid.appendChild(card);
+        });
+
+        lucide.createIcons();
+
+        function openGame(id) {
+            const url = `spel${id}.html`;
+            const newWindow = window.open(url, '_blank');
+            try {
+                window.close();
+                if (!newWindow.closed) {
+                    console.log("Browser did not allow closing this tab.");
+                }
+            } catch (e) {
+                console.log("Could not close window automatically.");
+            }
+        }
+    </script>
 </body>
 </html>
