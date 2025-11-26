@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spel 1</title>
+
+<style>
+    body {
+        margin: 0;
+        background: black;
+        overflow: hidden;
+    }
+
+    #game-container {
+        width: 100vw;
+        height: 100vh;
+        background: black;
+    }
+
+    /* Flyttad till höger nedre hörn */
+    .back {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.5);
+        padding: 10px 16px;
+        border-radius: 8px;
+        color: white;
+        text-decoration: none;
+        border: 2px solid #666;
+        z-index: 9999;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .back:hover {
+        background: rgba(40,40,40,0.6);
+    }
+</style>
+</head>
+<body>
+
+<!-- Stäng-knapp som stänger fliken -->
+<button class="back" onclick="window.close()">✖ Stäng</button>
+
+<div id="game-container">
+    <!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Geometry Dash Retro - Zayn Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+        :root {
+            --primary: #00f3ff; /* Cyan Neon */
+            --secondary: #ff00ff; /* Magenta Neon */
+            --bg-color: #050510;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw; 
+            height: 100vh; 
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.2);
+            border: 2px solid var(--glass);
+            background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 100%);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%; 
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        /* UI Överlägg */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(5, 5, 16, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            display: none !important;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
+            background: -webkit-linear-gradient(#fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            text-shadow: 0 0 10px var(--secondary);
+            color: var(--secondary);
+            text-align: center;
+        }
+
+        /* Nivågallret och Navigering */
+        .level-grid-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 700px; /* Sätter en maxbredd för hela navigationen */
+            margin-bottom: 20px;
+        }
+
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid var(--glass);
+            max-width: clamp(300px, 80%, 600px);
+            flex-grow: 1;
+        }
+
+        .lvl-btn {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            font-size: clamp(0.6rem, 1.5vw, 1rem); /* Justerad fontstorlek */
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.2s;
+            text-shadow: 0 0 5px var(--primary);
+            box-shadow: 0 0 5px rgba(0, 243, 255, 0.2);
+            height: 60px; /* Fixerad höjd för att rymma namn */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lvl-btn strong {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+        }
+
+        .lvl-btn:hover {
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 20px var(--primary);
+            transform: scale(1.1);
+        }
+
+        .lvl-btn.hard {
+            border-color: var(--secondary);
+            color: var(--secondary);
+            text-shadow: 0 0 5px var(--secondary);
+            box-shadow: 0 0 5px rgba(255, 0, 255, 0.2);
+        }
+        
+        .lvl-btn.hard:hover {
+            background: var(--secondary);
+            color: white;
+            box-shadow: 0 0 20px var(--secondary);
+        }
+
+        .nav-arrow {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 15px 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.2s;
+            margin: 0 10px;
+            width: 50px; 
+            text-align: center;
+        }
+
+        .nav-arrow:hover {
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        /* Knappar */
+        .btn-main {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            background: linear-gradient(45deg, var(--secondary), #ff55ff);
+            border: none;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            cursor: pointer;
+            border-radius: 30px;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px var(--secondary);
+            transition: transform 0.1s;
+        }
+
+        .btn-main:active {
+            transform: scale(0.95);
+        }
+
+        .btn-small {
+            margin-top: 15px;
+            padding: 8px 20px;
+            background: transparent;
+            border: 1px solid white;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: clamp(0.7rem, 2vw, 1rem);
+        }
+        
+        .btn-small:hover {
+            background: white;
+            color: black;
+        }
+
+        /* Credits Modal */
+        #credits-modal {
+            position: fixed; 
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid var(--secondary);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.3);
+            z-index: 20;
+            max-width: 90%;
+        }
+
+        .creator-name {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            color: var(--primary);
+            margin: 20px 0;
+            text-shadow: 0 0 15px var(--primary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { text-shadow: 0 0 10px var(--primary); }
+            50% { text-shadow: 0 0 25px var(--primary), 0 0 5px white; }
+            100% { text-shadow: 0 0 10px var(--primary); }
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 5;
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+        }
+
+        .hud-text {
+            font-weight: bold;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 5px;
+            background: var(--primary);
+            width: 0%;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Progress Bar --><div id="progress" class="progress-bar"></div>
+
+        <!-- Canvas --><canvas id="gameCanvas" width="800" height="450"></canvas>
+
+        <!-- HUD --><div id="hud" class="hidden">
+            <div class="hud-text" id="level-display">Nivå 1</div>
+            <div class="hud-text" id="attempt-display">Försök: 1</div>
+        </div>
+
+        <!-- NYA Huvudmenyn (Startskärm) --><div id="menu-screen" class="ui-layer">
+            <h1>NEON DASH</h1>
+            <p style="color: #aaa; margin-bottom: 10px;">ZAYN EDITION</p>
+            <button class="btn-main" onclick="showLevelChoose()">STARTA SPEL</button>
+            <button class="btn-small" onclick="requestFullscreenHandler()">FULLSCREEN</button>
+            <button class="btn-small" onclick="showCredits()">CREDITS</button>
+        </div>
+
+        <!-- Level Choosement Skärm (Nivåval) --><div id="level-choose-screen" class="ui-layer hidden">
+            <h2>VÄLJ NIVÅ</h2>
+            <div id="level-group-name" style="margin-bottom: 20px; font-size: 1.5rem; color: var(--primary);"></div>
+            <div class="level-grid-container">
+                <button class="nav-arrow" onclick="navigateLevels(-1)">&#9664;</button> <!-- Vänsterpil -->
+                <div class="level-grid" id="level-selector">
+                    <!-- Genereras av JS -->
+                </div>
+                <button class="nav-arrow" onclick="navigateLevels(1)">&#9654;</button> <!-- Högerpil -->
+            </div>
+            <button class="btn-small" onclick="goToMenu()">TILLBAKA TILL START</button>
+        </div>
+
+
+        <!-- Game Over Skärm --><div id="game-over-screen" class="ui-layer hidden">
+            <h1 style="color: #ff3333; text-shadow: 0 0 20px #ff0000;">KRASCH!</h1>
+            <h2 id="fail-percent">95% KLART</h2>
+            <button class="btn-main" onclick="retryLevel()">FÖRSÖK IGEN</button>
+            <button class="btn-small" onclick="goToMenu()">MENY</button>
+        </div>
+
+        <!-- Vinst Skärm --><div id="win-screen" class="ui-layer hidden">
+            <h1 style="color: #33ff33; text-shadow: 0 0 20px #00ff00;">NIVÅ KLAR!</h1>
+            <button class="btn-main" onclick="nextLevel()">NÄSTA NIVÅ</button>
+            <button class="btn-small" onclick="goToMenu()">MENY</button>
+        </div>
+
+        <!-- Credits Modal --><div id="credits-modal" class="hidden">
+            <h2>UTVECKLAD AV</h2>
+            <div class="creator-name">Zayn Lilak</div>
+            <p>Inspirerad av Geometry Dash</p>
+            <button class="btn-small" onclick="hideCredits()">TILLBAKA</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * GEOMETRY DASH RETRO - GAME ENGINE
+         */
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game Constants
+        const ORIGINAL_CANVAS_WIDTH = 800;
+        const ORIGINAL_CANVAS_HEIGHT = 450;
+        
+        // Fysik
+        const GRAVITY = 1.0; 
+        const JUMP_FORCE = -15; 
+        const PAD_FORCE = -22; 
+        
+        const GROUND_Y_RATIO = 350 / ORIGINAL_CANVAS_HEIGHT; 
+        const PLAYER_SIZE_RATIO = 30 / ORIGINAL_CANVAS_WIDTH; 
+        
+        // Färgkonstanter
+        const HAZARD_COLOR = '#ff0055'; 
+        const SAFE_COLOR = '#1e90ff'; 
+        const SAFE_OUTLINE = '#00f3ff'; 
+        const PAD_COLOR = '#ffff00'; 
+        const RING_COLOR = '#ffff00'; 
+        
+        let GROUND_Y;
+        let PLAYER_SIZE;
+
+        // --- LEVEL PRESET DATA (20 UNIKA NIVÅER) ---
+
+        // Nivådata-struktur: [x, y, type, w, h] (w och h är valfria beroende på typ)
+        // Y-värden är relativa till toppen av canvasen. Y=350 är marknivån (baserat på GROUND_Y_RATIO).
+        
+        const LEVEL_PRESETS = {
+            // --- EASY (Nivå 1-5) ---
+            1: { // Neon Rise
+                length: 5000, speed: 8,
+                obstacles: [
+                    [300, 350, 'SPIKE', 30, 30],
+                    [550, 320, 'BLOCK', 50, 30],
+                    [800, 350, 'SPIKE', 30, 30],
+                    [950, 350, 'SPIKE', 30, 30],
+                    [1200, 350, 'PAD', 40, 10], // Jump Pad
+                    [1600, 150, 'BLOCK', 100, 50],
+                    [2000, 350, 'SPIKE', 30, 30],
+                    [2200, 350, 'SPIKE', 30, 30],
+                    // -- EXTENDED --
+                    [2500, 320, 'BLOCK', 50, 30],
+                    [2550, 320, 'BLOCK', 50, 30],
+                    [2800, 350, 'SPIKE', 30, 30],
+                    [3000, 350, 'PAD', 40, 10],
+                    [3400, 200, 'BLOCK', 100, 50],
+                    [3700, 350, 'SPIKE', 30, 30],
+                    [4000, 350, 'SPIKE', 30, 30],
+                    [4050, 350, 'SPIKE', 30, 30],
+                    [4300, 350, 'RING', 40, 40],
+                    [4600, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            2: { // Binary Stream
+                length: 5500, speed: 8.2,
+                obstacles: [
+                    [350, 320, 'BLOCK', 40, 30],
+                    [500, 350, 'SPIKE', 30, 30],
+                    [700, 320, 'BLOCK', 80, 30],
+                    [1000, 350, 'SPIKE', 30, 30],
+                    [1050, 350, 'SPIKE', 30, 30],
+                    [1750, 350, 'SPIKE', 30, 30], // Var 1800
+                    [1900, 350, 'PAD', 40, 10], // FLYTTAD FRÅN 1300
+                    [2000, 250, 'BLOCK', 50, 100], // Wall
+                    // -- EXTENDED --
+                    [2300, 350, 'SPIKE', 30, 30],
+                    [2500, 350, 'SPIKE', 30, 30],
+                    [2700, 320, 'BLOCK', 60, 30],
+                    [3000, 350, 'RING', 40, 40],
+                    [3300, 350, 'SPIKE', 30, 30],
+                    [3350, 350, 'SPIKE', 30, 30],
+                    [3600, 350, 'PAD', 40, 10],
+                    [4000, 150, 'BLOCK', 100, 50],
+                    [4300, 350, 'SPIKE', 30, 30],
+                    [4600, 280, 'BLOCK', 50, 70],
+                    [5000, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            3: { // Pixel Pulse
+                length: 6000, speed: 8.5,
+                obstacles: [
+                    [300, 350, 'SPIKE', 30, 30],
+                    [500, 350, 'SPIKE', 30, 30],
+                    [550, 350, 'SPIKE', 30, 30], // Double Spike
+                    [800, 290, 'BLOCK', 60, 60],
+                    [1000, 350, 'RING', 40, 40], // Jump Ring
+                    [1300, 350, 'SPIKE', 30, 30],
+                    [1500, 350, 'PAD', 40, 10],
+                    [1800, 150, 'BLOCK', 150, 50],
+                    // -- EXTENDED --
+                    [2100, 350, 'SPIKE', 30, 30],
+                    [2300, 350, 'PAD', 40, 10],
+                    [2700, 150, 'BLOCK', 100, 50],
+                    [3000, 350, 'SPIKE', 30, 30],
+                    [3050, 350, 'SPIKE', 30, 30],
+                    [3300, 320, 'BLOCK', 50, 30],
+                    [3500, 350, 'RING', 40, 40],
+                    [3800, 350, 'SPIKE', 30, 30],
+                    [4100, 290, 'BLOCK', 60, 60],
+                    [4500, 350, 'SPIKE', 30, 30],
+                    [4800, 350, 'PAD', 40, 10],
+                    [5200, 200, 'BLOCK', 150, 50],
+                    [5500, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            4: { // Electro Grid
+                length: 6500, speed: 8.7,
+                obstacles: [
+                    [300, 320, 'BLOCK', 100, 30],
+                    [600, 350, 'SPIKE', 30, 30],
+                    [700, 350, 'SPIKE', 30, 30],
+                    [800, 350, 'PAD', 40, 10], // FLYTTAD FRÅN 1200
+                    [900, 250, 'BLOCK', 50, 100], // Tall Wall (FIXED from 150 high)
+                    [1200, 350, 'SPIKE', 30, 30], // Var Pad
+                    [1500, 350, 'RING', 40, 40],
+                    [1800, 350, 'SPIKE', 30, 30],
+                    [1850, 350, 'SPIKE', 30, 30],
+                    [1900, 350, 'SPIKE', 30, 30], // Triple Spike
+                    // -- EXTENDED --
+                    [2200, 350, 'SPIKE', 30, 30],
+                    [2400, 320, 'BLOCK', 100, 30],
+                    [2700, 350, 'PAD', 40, 10],
+                    [3100, 150, 'BLOCK', 80, 50],
+                    [3400, 350, 'RING', 40, 40],
+                    [3700, 350, 'SPIKE', 30, 30],
+                    [3750, 350, 'SPIKE', 30, 30],
+                    [4000, 300, 'BLOCK', 50, 50],
+                    [4300, 350, 'SPIKE', 30, 30],
+                    [4600, 350, 'SPIKE', 30, 30],
+                    [4900, 350, 'PAD', 40, 10],
+                    [5300, 200, 'BLOCK', 100, 50],
+                    [5600, 350, 'SPIKE', 30, 30],
+                    [5900, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            5: { // Cyan Core
+                length: 7000, speed: 9.0,
+                obstacles: [
+                    [350, 320, 'BLOCK', 40, 30],
+                    [450, 290, 'BLOCK', 40, 30], // Stairs up
+                    [650, 350, 'SPIKE', 30, 30],
+                    [800, 350, 'PAD', 40, 10],
+                    [1200, 350, 'RING', 40, 40],
+                    [1500, 350, 'SPIKE', 30, 30],
+                    [1600, 350, 'PAD', 40, 10],
+                    [2000, 150, 'BLOCK', 50, 50],
+                    // -- EXTENDED --
+                    [2300, 350, 'SPIKE', 30, 30],
+                    [2500, 350, 'SPIKE', 30, 30],
+                    [2700, 320, 'BLOCK', 40, 30],
+                    [2900, 350, 'PAD', 40, 10],
+                    [3300, 150, 'BLOCK', 50, 50],
+                    [3600, 350, 'RING', 40, 40],
+                    [3900, 350, 'SPIKE', 30, 30],
+                    [4200, 290, 'BLOCK', 40, 30],
+                    [4500, 350, 'SPIKE', 30, 30],
+                    [4800, 350, 'PAD', 40, 10],
+                    [5200, 250, 'BLOCK', 80, 100],
+                    [5500, 350, 'SPIKE', 30, 30],
+                    [5800, 350, 'SPIKE', 30, 30],
+                    [6100, 350, 'RING', 40, 40],
+                    [6400, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            
+            // --- MEDIUM (Nivå 6-10) ---
+            6: { // Magenta Maze
+                length: 7500, speed: 9.5,
+                obstacles: [
+                    [350, 350, 'SPIKE', 30, 30],
+                    [500, 270, 'BLOCK', 80, 40], // Flytande ö
+                    [700, 350, 'SPIKE', 30, 30],
+                    [750, 350, 'SPIKE', 30, 30],
+                    [1000, 310, 'BLOCK', 60, 40], // Lägre flytande ö
+                    [1300, 230, 'RING', 40, 40], 
+                    [1600, 350, 'SPIKE', 30, 30],
+                    [1650, 350, 'SPIKE', 30, 30],
+                    [1900, 350, 'PAD', 40, 10],
+                    // -- EXTENDED --
+                    [2200, 350, 'SPIKE', 30, 30],
+                    [2400, 270, 'BLOCK', 80, 40],
+                    [2700, 350, 'SPIKE', 30, 30],
+                    [3000, 350, 'PAD', 40, 10],
+                    [3400, 150, 'BLOCK', 100, 50],
+                    [3700, 350, 'SPIKE', 30, 30],
+                    [4000, 350, 'RING', 40, 40],
+                    [4300, 310, 'BLOCK', 60, 40],
+                    [4600, 350, 'SPIKE', 30, 30],
+                    [4650, 350, 'SPIKE', 30, 30],
+                    [5000, 350, 'PAD', 40, 10],
+                    [5400, 230, 'RING', 40, 40],
+                    [5800, 200, 'BLOCK', 100, 50],
+                    [6200, 350, 'SPIKE', 30, 30],
+                    [6500, 350, 'SPIKE', 30, 30],
+                    [6800, 300, 'BLOCK', 50, 50],
+                    [7100, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            7: { // The Gap Jumper
+                length: 8000, speed: 9.8,
+                obstacles: [
+                    [300, 350, 'SPIKE', 30, 30],
+                    [500, 350, 'SPIKE', 30, 30],
+                    [700, 350, 'SPIKE', 30, 30], // Trippel gap
+                    [1000, 300, 'BLOCK', 40, 50],
+                    [1200, 200, 'BLOCK', 40, 50],
+                    [1400, 300, 'BLOCK', 40, 50], // Stege ner
+                    [1650, 350, 'PAD', 40, 10],
+                    [2000, 350, 'RING', 40, 40],
+                    [2200, 350, 'SPIKE', 30, 30],
+                    // -- EXTENDED --
+                    [2500, 350, 'SPIKE', 30, 30],
+                    [2800, 350, 'PAD', 40, 10],
+                    [3200, 150, 'BLOCK', 80, 50],
+                    [3500, 350, 'SPIKE', 30, 30],
+                    [3800, 350, 'RING', 40, 40],
+                    [4100, 300, 'BLOCK', 40, 50],
+                    [4400, 350, 'SPIKE', 30, 30],
+                    [4700, 200, 'BLOCK', 40, 50],
+                    [5000, 350, 'SPIKE', 30, 30],
+                    [5300, 350, 'PAD', 40, 10],
+                    [5700, 300, 'BLOCK', 40, 50],
+                    [6000, 350, 'SPIKE', 30, 30],
+                    [6300, 350, 'RING', 40, 40],
+                    [6600, 250, 'BLOCK', 100, 100],
+                    [7000, 350, 'SPIKE', 30, 30],
+                    [7300, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            8: { // Laser Gridlock
+                length: 8500, speed: 10.0,
+                obstacles: [
+                    [300, 300, 'BLOCK', 100, 50], // Sänkt vägg (var 250, 100)
+                    [500, 350, 'SPIKE', 30, 30],
+                    [550, 350, 'SPIKE', 30, 30],
+                    [800, 350, 'PAD', 40, 10],
+                    [1200, 150, 'BLOCK', 80, 50],
+                    [1500, 350, 'SPIKE', 30, 30],
+                    [1600, 350, 'RING', 40, 40],
+                    [1900, 300, 'BLOCK', 50, 50],
+                    [2200, 350, 'SPIKE', 30, 30],
+                    [2250, 350, 'SPIKE', 30, 30],
+                    // -- EXTENDED --
+                    [2600, 350, 'PAD', 40, 10],
+                    [3000, 150, 'BLOCK', 80, 50],
+                    [3300, 350, 'SPIKE', 30, 30],
+                    [3500, 350, 'RING', 40, 40],
+                    [3800, 250, 'BLOCK', 100, 100],
+                    [4100, 350, 'SPIKE', 30, 30],
+                    [4400, 350, 'SPIKE', 30, 30],
+                    [4700, 350, 'PAD', 40, 10],
+                    [5100, 200, 'BLOCK', 100, 50],
+                    [5400, 350, 'SPIKE', 30, 30],
+                    [5700, 300, 'BLOCK', 50, 50],
+                    [6000, 350, 'SPIKE', 30, 30],
+                    [6300, 350, 'RING', 40, 40],
+                    [6600, 350, 'SPIKE', 30, 30],
+                    [6900, 350, 'SPIKE', 30, 30],
+                    [7200, 350, 'PAD', 40, 10],
+                    [7600, 100, 'BLOCK', 150, 50],
+                    [7900, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            9: { // Gravity Flip
+                length: 9000, speed: 10.3,
+                obstacles: [
+                    [400, 350, 'SPIKE', 30, 30],
+                    [600, 350, 'PAD', 40, 10],
+                    [1000, 150, 'BLOCK', 50, 50],
+                    [1250, 350, 'SPIKE', 30, 30],
+                    [1300, 350, 'SPIKE', 30, 30],
+                    [1600, 350, 'RING', 40, 40],
+                    [1800, 300, 'BLOCK', 80, 50],
+                    [2200, 350, 'SPIKE', 30, 30],
+                    [2230, 350, 'SPIKE', 30, 30],
+                    [2260, 350, 'SPIKE', 30, 30], // Tätt Triple Spike
+                    // -- EXTENDED --
+                    [2600, 350, 'SPIKE', 30, 30],
+                    [2800, 350, 'PAD', 40, 10],
+                    [3200, 150, 'BLOCK', 50, 50],
+                    [3500, 350, 'SPIKE', 30, 30],
+                    [3800, 350, 'RING', 40, 40],
+                    [4100, 300, 'BLOCK', 80, 50],
+                    [4400, 350, 'SPIKE', 30, 30],
+                    [4700, 350, 'PAD', 40, 10],
+                    [5100, 200, 'BLOCK', 100, 50],
+                    [5400, 350, 'SPIKE', 30, 30],
+                    [5700, 350, 'SPIKE', 30, 30],
+                    [6000, 350, 'RING', 40, 40],
+                    [6300, 250, 'BLOCK', 100, 100],
+                    [6600, 350, 'SPIKE', 30, 30],
+                    [6900, 350, 'PAD', 40, 10],
+                    [7300, 150, 'BLOCK', 80, 50],
+                    [7600, 350, 'SPIKE', 30, 30],
+                    [7900, 350, 'SPIKE', 30, 30],
+                    [8200, 350, 'SPIKE', 30, 30],
+                    [8500, 350, 'RING', 40, 40],
+                ]
+            },
+            10: { // Orbitron City
+                length: 9500, speed: 10.5,
+                obstacles: [
+                    [300, 300, 'BLOCK', 50, 50], // Sänkt vägg (var 250, 100)
+                    [500, 350, 'PAD', 40, 10],
+                    [800, 100, 'BLOCK', 50, 50],
+                    [1000, 350, 'SPIKE', 30, 30],
+                    [1200, 350, 'RING', 40, 40],
+                    [1500, 250, 'BLOCK', 60, 100],
+                    [1800, 350, 'SPIKE', 30, 30],
+                    [2000, 350, 'PAD', 40, 10],
+                    [2300, 150, 'BLOCK', 100, 50],
+                    // -- EXTENDED --
+                    [2600, 350, 'SPIKE', 30, 30],
+                    [2900, 350, 'PAD', 40, 10],
+                    [3300, 100, 'BLOCK', 50, 50],
+                    [3600, 350, 'SPIKE', 30, 30],
+                    [3900, 350, 'RING', 40, 40],
+                    [4200, 250, 'BLOCK', 60, 100],
+                    [4500, 350, 'SPIKE', 30, 30],
+                    [4800, 350, 'PAD', 40, 10],
+                    [5200, 150, 'BLOCK', 100, 50],
+                    [5500, 350, 'SPIKE', 30, 30],
+                    [5800, 350, 'RING', 40, 40],
+                    [6100, 300, 'BLOCK', 50, 50],
+                    [6400, 350, 'SPIKE', 30, 30],
+                    [6700, 350, 'PAD', 40, 10],
+                    [7100, 100, 'BLOCK', 80, 50],
+                    [7400, 350, 'SPIKE', 30, 30],
+                    [7700, 350, 'SPIKE', 30, 30],
+                    [7900, 350, 'RING', 40, 40], // FLYTTAD FRÅN 8300
+                    [8000, 250, 'BLOCK', 50, 100], // Original fixed wall
+                    [8300, 350, 'SPIKE', 30, 30], // Var Ring
+                    [8600, 350, 'SPIKE', 30, 30],
+                    [8900, 350, 'SPIKE', 30, 30],
+                ]
+            },
+
+            // --- HARD (Nivå 11-15) ---
+            11: { // Spike Factory
+                length: 10000, speed: 11.0,
+                obstacles: [
+                    [300, 350, 'SPIKE', 30, 30],
+                    [330, 350, 'SPIKE', 30, 30],
+                    [360, 350, 'SPIKE', 30, 30],
+                    [500, 350, 'PAD', 40, 10],
+                    [800, 350, 'SPIKE', 30, 30],
+                    [830, 350, 'SPIKE', 30, 30],
+                    [1000, 350, 'RING', 40, 40],
+                    [1200, 250, 'BLOCK', 40, 100], // Very high jump required (FIXED from 150 high)
+                    [1500, 350, 'SPIKE', 30, 30],
+                    [1530, 350, 'SPIKE', 30, 30],
+                    [1800, 350, 'PAD', 40, 10],
+                    [2200, 350, 'SPIKE', 30, 30],
+                    // -- EXTENDED --
+                    [2500, 350, 'SPIKE', 30, 30],
+                    [2800, 350, 'PAD', 40, 10],
+                    [3200, 150, 'BLOCK', 50, 50],
+                    [3500, 350, 'SPIKE', 30, 30],
+                    [3800, 350, 'RING', 40, 40],
+                    [4100, 350, 'SPIKE', 30, 30],
+                    [4130, 350, 'SPIKE', 30, 30],
+                    [4400, 300, 'BLOCK', 50, 50],
+                    [4700, 350, 'PAD', 40, 10],
+                    [5100, 250, 'BLOCK', 40, 100], // Original fixed wall
+                    [5400, 350, 'SPIKE', 30, 30],
+                    [5700, 350, 'RING', 40, 40],
+                    [6000, 350, 'SPIKE', 30, 30],
+                    [6030, 350, 'SPIKE', 30, 30],
+                    [6300, 350, 'SPIKE', 30, 30],
+                    [6600, 350, 'PAD', 40, 10],
+                    [7000, 100, 'BLOCK', 100, 50],
+                    [7300, 350, 'SPIKE', 30, 30],
+                    [7600, 350, 'RING', 40, 40],
+                    [7900, 250, 'BLOCK', 80, 100],
+                    [8200, 350, 'SPIKE', 30, 30],
+                    [8500, 350, 'SPIKE', 30, 30],
+                    [8800, 350, 'PAD', 40, 10],
+                    [9200, 150, 'BLOCK', 100, 50],
+                    [9500, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            12: { // Insanity Road
+                length: 10500, speed: 11.5,
+                obstacles: [
+                    [300, 350, 'SPIKE', 30, 30],
+                    [400, 350, 'SPIKE', 30, 30],
+                    [500, 350, 'SPIKE', 30, 30],
+                    [600, 350, 'SPIKE', 30, 30], // Four spikes in a row!
+                    [900, 350, 'PAD', 40, 10],
+                    [1050, 100, 'BLOCK', 50, 50], // Landing block
+                    [1500, 350, 'SPIKE', 30, 30], // Var 1600
+                    [1700, 350, 'RING', 40, 40], // FLYTTAD FRÅN 1300
+                    [1800, 250, 'BLOCK', 40, 100],
+                    [2100, 350, 'SPIKE', 30, 30],
+                    [2130, 350, 'SPIKE', 30, 30],
+                    // -- EXTENDED --
+                    [2500, 350, 'SPIKE', 30, 30],
+                    [2800, 350, 'PAD', 40, 10],
+                    [3200, 100, 'BLOCK', 50, 50],
+                    [3500, 350, 'SPIKE', 30, 30],
+                    [3800, 350, 'RING', 40, 40],
+                    [4100, 250, 'BLOCK', 40, 100],
+                    [4400, 350, 'SPIKE', 30, 30],
+                    [4700, 350, 'SPIKE', 30, 30],
+                    [5000, 350, 'PAD', 40, 10],
+                    [5400, 150, 'BLOCK', 80, 50],
+                    [5700, 350, 'SPIKE', 30, 30],
+                    [6000, 350, 'SPIKE', 30, 30],
+                    [6300, 350, 'RING', 40, 40],
+                    [6600, 300, 'BLOCK', 50, 50],
+                    [6900, 350, 'SPIKE', 30, 30],
+                    [7200, 350, 'PAD', 40, 10],
+                    [7600, 100, 'BLOCK', 100, 50],
+                    [7900, 350, 'SPIKE', 30, 30],
+                    [8200, 350, 'SPIKE', 30, 30],
+                    [8500, 350, 'SPIKE', 30, 30],
+                    [8800, 350, 'RING', 40, 40],
+                    [9100, 230, 'BLOCK', 100, 120], // Sänkt vägg från 150
+                    [9400, 350, 'SPIKE', 30, 30],
+                    [9700, 350, 'PAD', 40, 10],
+                    [10000, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            13: { // Chaos Theory
+                length: 11000, speed: 12.0,
+                obstacles: [
+                    [300, 300, 'BLOCK', 40, 50],
+                    [450, 350, 'RING', 40, 40],
+                    [600, 350, 'SPIKE', 30, 30],
+                    [750, 350, 'PAD', 40, 10],
+                    [1000, 100, 'BLOCK', 100, 50],
+                    [1400, 350, 'SPIKE', 30, 30],
+                    [1430, 350, 'SPIKE', 30, 30],
+                    [1600, 300, 'BLOCK', 40, 50],
+                    [1750, 350, 'SPIKE', 30, 30],
+                    [2000, 350, 'RING', 40, 40],
+                    [2200, 350, 'SPIKE', 30, 30],
+                    // -- EXTENDED --
+                    [2500, 300, 'BLOCK', 40, 50],
+                    [2800, 350, 'PAD', 40, 10],
+                    [3200, 100, 'BLOCK', 100, 50],
+                    [3500, 350, 'SPIKE', 30, 30],
+                    [3800, 350, 'RING', 40, 40],
+                    [4100, 350, 'SPIKE', 30, 30],
+                    [4400, 350, 'SPIKE', 30, 30],
+                    [4700, 300, 'BLOCK', 40, 50],
+                    [5000, 350, 'PAD', 40, 10],
+                    [5400, 150, 'BLOCK', 80, 50],
+                    [5700, 350, 'SPIKE', 30, 30],
+                    [6000, 350, 'RING', 40, 40],
+                    [6300, 350, 'SPIKE', 30, 30],
+                    [6600, 350, 'SPIKE', 30, 30],
+                    [6900, 300, 'BLOCK', 40, 50],
+                    [7200, 350, 'PAD', 40, 10],
+                    [7600, 100, 'BLOCK', 100, 50],
+                    [7900, 350, 'SPIKE', 30, 30],
+                    [8200, 350, 'RING', 40, 40],
+                    [8500, 250, 'BLOCK', 100, 100],
+                    [8800, 350, 'SPIKE', 30, 30],
+                    [9100, 350, 'PAD', 40, 10],
+                    [9500, 150, 'BLOCK', 50, 50],
+                    [9800, 350, 'SPIKE', 30, 30],
+                    [10100, 350, 'SPIKE', 30, 30],
+                    [10400, 350, 'RING', 40, 40],
+                    [10700, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            14: { // Triple Jump
+                length: 11500, speed: 12.5,
+                obstacles: [
+                    [300, 350, 'SPIKE', 30, 30],
+                    [400, 350, 'SPIKE', 30, 30],
+                    [500, 350, 'SPIKE', 30, 30], // Triple jump sequence
+                    [700, 300, 'BLOCK', 40, 50],
+                    [800, 250, 'BLOCK', 40, 50],
+                    [900, 200, 'BLOCK', 40, 50], // Stairs up
+                    [1200, 350, 'PAD', 40, 10],
+                    [1500, 350, 'RING', 40, 40],
+                    [1800, 350, 'SPIKE', 30, 30],
+                    [1900, 350, 'SPIKE', 30, 30],
+                    [2000, 350, 'SPIKE', 30, 30],
+                    // -- EXTENDED --
+                    [2300, 300, 'BLOCK', 40, 50],
+                    [2500, 250, 'BLOCK', 40, 50],
+                    [2700, 200, 'BLOCK', 40, 50],
+                    [3000, 350, 'PAD', 40, 10],
+                    [3400, 150, 'BLOCK', 80, 50],
+                    [3700, 350, 'SPIKE', 30, 30],
+                    [4000, 350, 'RING', 40, 40],
+                    [4300, 350, 'SPIKE', 30, 30],
+                    [4600, 350, 'SPIKE', 30, 30],
+                    [4900, 350, 'SPIKE', 30, 30],
+                    [5200, 350, 'PAD', 40, 10],
+                    [5600, 100, 'BLOCK', 100, 50],
+                    [5900, 350, 'SPIKE', 30, 30],
+                    [6200, 350, 'RING', 40, 40],
+                    [6500, 300, 'BLOCK', 40, 50],
+                    [6800, 250, 'BLOCK', 40, 50],
+                    [7100, 200, 'BLOCK', 40, 50],
+                    [7400, 350, 'PAD', 40, 10],
+                    [7800, 150, 'BLOCK', 100, 50],
+                    [8100, 350, 'SPIKE', 30, 30],
+                    [8400, 350, 'SPIKE', 30, 30],
+                    [8700, 350, 'RING', 40, 40],
+                    [9000, 350, 'SPIKE', 30, 30],
+                    [9300, 350, 'SPIKE', 30, 30],
+                    [9600, 350, 'PAD', 40, 10],
+                    [10000, 230, 'BLOCK', 100, 120], // Sänkt vägg från 150
+                    [10300, 350, 'SPIKE', 30, 30],
+                    [10600, 350, 'RING', 40, 40],
+                    [10900, 350, 'SPIKE', 30, 30],
+                    [11200, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            15: { // Zayn's Nightmare
+                length: 12000, speed: 13.0,
+                obstacles: [
+                    [300, 350, 'PAD', 40, 10],
+                    [450, 150, 'BLOCK', 50, 50],
+                    [700, 350, 'SPIKE', 30, 30],
+                    [730, 350, 'SPIKE', 30, 30],
+                    [900, 350, 'RING', 40, 40],
+                    [1100, 350, 'SPIKE', 30, 30],
+                    [1300, 350, 'PAD', 40, 10],
+                    [1500, 200, 'BLOCK', 50, 50],
+                    [1700, 350, 'SPIKE', 30, 30],
+                    [2000, 350, 'SPIKE', 30, 30],
+                    [2030, 350, 'SPIKE', 30, 30],
+                    // -- EXTENDED --
+                    [2300, 350, 'PAD', 40, 10],
+                    [2700, 150, 'BLOCK', 50, 50],
+                    [3000, 350, 'SPIKE', 30, 30],
+                    [3300, 350, 'RING', 40, 40],
+                    [3600, 350, 'SPIKE', 30, 30],
+                    [3900, 350, 'PAD', 40, 10],
+                    [4300, 200, 'BLOCK', 50, 50],
+                    [4600, 350, 'SPIKE', 30, 30],
+                    [4900, 350, 'SPIKE', 30, 30],
+                    [5200, 350, 'RING', 40, 40],
+                    [5500, 350, 'PAD', 40, 10],
+                    [5900, 100, 'BLOCK', 100, 50],
+                    [6200, 350, 'SPIKE', 30, 30],
+                    [6500, 350, 'SPIKE', 30, 30],
+                    [6800, 350, 'RING', 40, 40],
+                    [7100, 300, 'BLOCK', 50, 50],
+                    [7400, 350, 'SPIKE', 30, 30],
+                    [7700, 350, 'PAD', 40, 10],
+                    [8100, 150, 'BLOCK', 80, 50],
+                    [8400, 350, 'SPIKE', 30, 30],
+                    [8700, 350, 'RING', 40, 40],
+                    [9000, 350, 'SPIKE', 30, 30],
+                    [9300, 350, 'SPIKE', 30, 30],
+                    [9600, 350, 'PAD', 40, 10],
+                    [10000, 230, 'BLOCK', 100, 120], // Sänkt vägg från 150
+                    [10300, 350, 'SPIKE', 30, 30],
+                    [10600, 350, 'RING', 40, 40],
+                    [10900, 350, 'SPIKE', 30, 30],
+                    [11200, 350, 'PAD', 40, 10],
+                    [11600, 100, 'BLOCK', 50, 50],
+                    [11900, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            
+            // --- INSANE (Nivå 16-20) ---
+            16: { // Ultra-Flow
+                length: 12500, speed: 13.5,
+                obstacles: [
+                    [300, 350, 'SPIKE', 30, 30],
+                    [330, 350, 'SPIKE', 30, 30],
+                    [450, 350, 'PAD', 40, 10],
+                    [600, 150, 'BLOCK', 40, 40],
+                    [700, 350, 'SPIKE', 30, 30],
+                    [850, 350, 'RING', 40, 40],
+                    [1000, 350, 'SPIKE', 30, 30],
+                    [1030, 350, 'SPIKE', 30, 30],
+                    [1200, 250, 'BLOCK', 50, 50],
+                    [1400, 350, 'PAD', 40, 10],
+                    [1600, 100, 'BLOCK', 50, 50],
+                    // -- EXTENDED --
+                    [1900, 350, 'SPIKE', 30, 30],
+                    [2200, 350, 'RING', 40, 40],
+                    [2500, 350, 'SPIKE', 30, 30],
+                    [2800, 350, 'PAD', 40, 10],
+                    [3200, 150, 'BLOCK', 40, 40],
+                    [3500, 350, 'SPIKE', 30, 30],
+                    [3800, 350, 'RING', 40, 40],
+                    [4100, 350, 'SPIKE', 30, 30],
+                    [4400, 250, 'BLOCK', 50, 50],
+                    [4700, 350, 'PAD', 40, 10],
+                    [5100, 100, 'BLOCK', 50, 50],
+                    [5400, 350, 'SPIKE', 30, 30],
+                    [5700, 350, 'SPIKE', 30, 30],
+                    [6000, 350, 'RING', 40, 40],
+                    [6300, 350, 'PAD', 40, 10],
+                    [6700, 150, 'BLOCK', 100, 50],
+                    [7000, 350, 'SPIKE', 30, 30],
+                    [7300, 350, 'SPIKE', 30, 30],
+                    [7600, 350, 'RING', 40, 40],
+                    [7900, 300, 'BLOCK', 50, 50],
+                    [8200, 350, 'SPIKE', 30, 30],
+                    [8500, 350, 'PAD', 40, 10],
+                    [8900, 100, 'BLOCK', 80, 50],
+                    [9200, 350, 'SPIKE', 30, 30],
+                    [9500, 350, 'RING', 40, 40],
+                    [9800, 350, 'SPIKE', 30, 30],
+                    [10100, 350, 'SPIKE', 30, 30],
+                    [10400, 350, 'PAD', 40, 10],
+                    [10800, 230, 'BLOCK', 100, 120], // Sänkt vägg från 150
+                    [11100, 350, 'SPIKE', 30, 30],
+                    [11400, 350, 'RING', 40, 40],
+                    [11700, 350, 'SPIKE', 30, 30],
+                    [12000, 350, 'PAD', 40, 10],
+                    [12300, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            17: { // Impossible Run
+                length: 13000, speed: 14.0,
+                obstacles: [
+                    [300, 350, 'SPIKE', 30, 30],
+                    [360, 350, 'SPIKE', 30, 30],
+                    [420, 350, 'SPIKE', 30, 30],
+                    [500, 350, 'PAD', 40, 10],
+                    [700, 150, 'BLOCK', 40, 40],
+                    [800, 350, 'SPIKE', 30, 30],
+                    [900, 350, 'RING', 40, 40],
+                    [1050, 350, 'SPIKE', 30, 30],
+                    [1080, 350, 'SPIKE', 30, 30],
+                    [1200, 200, 'BLOCK', 100, 50],
+                    [1500, 350, 'PAD', 40, 10],
+                    // -- EXTENDED --
+                    [1800, 350, 'SPIKE', 30, 30],
+                    [2100, 350, 'RING', 40, 40],
+                    [2400, 350, 'SPIKE', 30, 30],
+                    [2700, 350, 'PAD', 40, 10],
+                    [3100, 150, 'BLOCK', 40, 40],
+                    [3400, 350, 'SPIKE', 30, 30],
+                    [3700, 350, 'RING', 40, 40],
+                    [4000, 350, 'SPIKE', 30, 30],
+                    [4300, 200, 'BLOCK', 100, 50],
+                    [4600, 350, 'PAD', 40, 10],
+                    [5000, 100, 'BLOCK', 50, 50],
+                    [5300, 350, 'SPIKE', 30, 30],
+                    [5600, 350, 'SPIKE', 30, 30],
+                    [5900, 350, 'RING', 40, 40],
+                    [6200, 350, 'PAD', 40, 10],
+                    [6600, 150, 'BLOCK', 100, 50],
+                    [6900, 350, 'SPIKE', 30, 30],
+                    [7200, 350, 'SPIKE', 30, 30],
+                    [7500, 350, 'RING', 40, 40],
+                    [7800, 300, 'BLOCK', 50, 50],
+                    [8100, 350, 'SPIKE', 30, 30],
+                    [8400, 350, 'PAD', 40, 10],
+                    [8800, 100, 'BLOCK', 80, 50],
+                    [9100, 350, 'SPIKE', 30, 30],
+                    [9400, 350, 'RING', 40, 40],
+                    [9700, 350, 'SPIKE', 30, 30],
+                    [10000, 350, 'SPIKE', 30, 30],
+                    [10300, 350, 'PAD', 40, 10],
+                    [10700, 230, 'BLOCK', 100, 120], // Sänkt vägg från 150
+                    [11000, 350, 'SPIKE', 30, 30],
+                    [11300, 350, 'RING', 40, 40],
+                    [11600, 350, 'SPIKE', 30, 30],
+                    [11900, 350, 'PAD', 40, 10],
+                    [12200, 350, 'SPIKE', 30, 30],
+                    [12500, 350, 'RING', 40, 40],
+                    [12800, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            18: { // The Machine
+                length: 13500, speed: 14.5,
+                obstacles: [
+                    [300, 250, 'BLOCK', 50, 100],
+                    [500, 350, 'SPIKE', 30, 30],
+                    [600, 350, 'PAD', 40, 10],
+                    [750, 150, 'BLOCK', 40, 40],
+                    [900, 350, 'SPIKE', 30, 30],
+                    [1000, 350, 'RING', 40, 40],
+                    [1200, 350, 'SPIKE', 30, 30],
+                    [1300, 200, 'BLOCK', 40, 40],
+                    [1450, 350, 'PAD', 40, 10],
+                    [1600, 350, 'SPIKE', 30, 30],
+                    [1630, 350, 'SPIKE', 30, 30],
+                    [1660, 350, 'SPIKE', 30, 30],
+                    // -- EXTENDED --
+                    [1900, 350, 'PAD', 40, 10],
+                    [2300, 150, 'BLOCK', 40, 40],
+                    [2600, 350, 'SPIKE', 30, 30],
+                    [2900, 350, 'RING', 40, 40],
+                    [3200, 350, 'SPIKE', 30, 30],
+                    [3500, 200, 'BLOCK', 40, 40],
+                    [3800, 350, 'PAD', 40, 10],
+                    [4200, 350, 'SPIKE', 30, 30],
+                    [4500, 350, 'SPIKE', 30, 30],
+                    [4800, 350, 'SPIKE', 30, 30],
+                    [5000, 350, 'PAD', 40, 10], // LADE TILL PAD
+                    [5100, 250, 'BLOCK', 50, 100],
+                    [5400, 350, 'RING', 40, 40],
+                    [5700, 350, 'PAD', 40, 10],
+                    [6100, 100, 'BLOCK', 100, 50],
+                    [6400, 350, 'SPIKE', 30, 30],
+                    [6700, 350, 'SPIKE', 30, 30],
+                    [7000, 350, 'RING', 40, 40],
+                    [7300, 200, 'BLOCK', 40, 40],
+                    [7600, 350, 'PAD', 40, 10],
+                    [8000, 350, 'SPIKE', 30, 30],
+                    [8300, 350, 'SPIKE', 30, 30],
+                    [8600, 350, 'SPIKE', 30, 30],
+                    [8700, 350, 'RING', 40, 40], // LADE TILL RING
+                    [8800, 250, 'BLOCK', 50, 100], // Var [8900, 300, 'BLOCK', 50, 50]
+                    [8900, 350, 'SPIKE', 30, 30], // Var block
+                    [9200, 350, 'SPIKE', 30, 30], // Var ring
+                    [9500, 350, 'PAD', 40, 10],
+                    [9900, 150, 'BLOCK', 80, 50],
+                    [10200, 350, 'SPIKE', 30, 30],
+                    [10500, 350, 'SPIKE', 30, 30],
+                    [10800, 350, 'RING', 40, 40],
+                    [11100, 250, 'BLOCK', 100, 100],
+                    [11400, 350, 'PAD', 40, 10],
+                    [11800, 100, 'BLOCK', 50, 50],
+                    [12100, 350, 'SPIKE', 30, 30],
+                    [12400, 350, 'RING', 40, 40],
+                    [12700, 350, 'SPIKE', 30, 30],
+                    [13000, 350, 'SPIKE', 30, 30],
+                    [13300, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            19: { // Abyss Dive
+                length: 14000, speed: 15.0,
+                obstacles: [
+                    [300, 350, 'RING', 40, 40],
+                    [450, 350, 'SPIKE', 30, 30],
+                    [550, 350, 'PAD', 40, 10],
+                    [700, 100, 'BLOCK', 50, 50],
+                    [900, 350, 'SPIKE', 30, 30],
+                    [930, 350, 'SPIKE', 30, 30],
+                    [1000, 350, 'RING', 40, 40],
+                    [1200, 350, 'SPIKE', 30, 30],
+                    [1300, 350, 'PAD', 40, 10],
+                    [1500, 200, 'BLOCK', 40, 40],
+                    [1700, 350, 'SPIKE', 30, 30],
+                    [1730, 350, 'SPIKE', 30, 30],
+                    // -- EXTENDED --
+                    [2000, 350, 'PAD', 40, 10],
+                    [2400, 100, 'BLOCK', 50, 50],
+                    [2700, 350, 'SPIKE', 30, 30],
+                    [3000, 350, 'RING', 40, 40],
+                    [3300, 350, 'SPIKE', 30, 30],
+                    [3600, 350, 'PAD', 40, 10],
+                    [4000, 200, 'BLOCK', 40, 40],
+                    [4300, 350, 'SPIKE', 30, 30],
+                    [4600, 350, 'SPIKE', 30, 30],
+                    [4900, 350, 'RING', 40, 40],
+                    [5200, 350, 'PAD', 40, 10],
+                    [5600, 150, 'BLOCK', 80, 50],
+                    [5900, 350, 'SPIKE', 30, 30],
+                    [6200, 350, 'RING', 40, 40],
+                    [6500, 350, 'SPIKE', 30, 30],
+                    [6800, 350, 'PAD', 40, 10],
+                    [7200, 100, 'BLOCK', 50, 50],
+                    [7500, 350, 'SPIKE', 30, 30],
+                    [7800, 350, 'SPIKE', 30, 30],
+                    [8100, 350, 'RING', 40, 40],
+                    [8400, 250, 'BLOCK', 100, 100],
+                    [8700, 350, 'PAD', 40, 10],
+                    [9100, 150, 'BLOCK', 50, 50],
+                    [9400, 350, 'SPIKE', 30, 30],
+                    [9700, 350, 'RING', 40, 40],
+                    [10000, 350, 'SPIKE', 30, 30],
+                    [10300, 350, 'PAD', 40, 10],
+                    [10700, 200, 'BLOCK', 40, 40],
+                    [11000, 350, 'SPIKE', 30, 30],
+                    [11300, 350, 'SPIKE', 30, 30],
+                    [11600, 350, 'RING', 40, 40],
+                    [11900, 350, 'PAD', 40, 10],
+                    [12300, 100, 'BLOCK', 100, 50],
+                    [12600, 350, 'SPIKE', 30, 30],
+                    [12900, 350, 'RING', 40, 40],
+                    [13200, 350, 'SPIKE', 30, 30],
+                    [13500, 350, 'SPIKE', 30, 30],
+                    [13800, 350, 'SPIKE', 30, 30],
+                ]
+            },
+            20: { // Final Frontier (Ultimate Challenge)
+                length: 15000, speed: 16.0,
+                obstacles: [
+                    [300, 350, 'SPIKE', 30, 30],
+                    [330, 350, 'SPIKE', 30, 30],
+                    [360, 350, 'SPIKE', 30, 30],
+                    [500, 350, 'PAD', 40, 10],
+                    [650, 150, 'BLOCK', 40, 40],
+                    [800, 350, 'RING', 40, 40],
+                    [950, 350, 'SPIKE', 30, 30],
+                    [980, 350, 'SPIKE', 30, 30],
+                    [1100, 200, 'BLOCK', 50, 50],
+                    [1300, 350, 'PAD', 40, 10],
+                    [1500, 100, 'BLOCK', 50, 50],
+                    [1700, 350, 'SPIKE', 30, 30],
+                    [1730, 350, 'SPIKE', 30, 30],
+                    [1760, 350, 'SPIKE', 30, 30],
+                    [1800, 350, 'RING', 40, 40],
+                    // -- EXTENDED --
+                    [2100, 350, 'SPIKE', 30, 30],
+                    [2300, 350, 'PAD', 40, 10],
+                    [2700, 150, 'BLOCK', 50, 50],
+                    [3000, 350, 'SPIKE', 30, 30],
+                    [3030, 350, 'SPIKE', 30, 30],
+                    [3300, 350, 'RING', 40, 40],
+                    [3600, 250, 'BLOCK', 100, 100],
+                    [3900, 350, 'SPIKE', 30, 30],
+                    [4200, 350, 'PAD', 40, 10],
+                    [4600, 100, 'BLOCK', 80, 50],
+                    [4900, 350, 'SPIKE', 30, 30],
+                    [5200, 350, 'SPIKE', 30, 30],
+                    [5500, 350, 'RING', 40, 40],
+                    [5800, 350, 'SPIKE', 30, 30],
+                    [6100, 350, 'PAD', 40, 10],
+                    [6500, 200, 'BLOCK', 50, 50],
+                    [6800, 350, 'SPIKE', 30, 30],
+                    [7100, 350, 'RING', 40, 40],
+                    [7400, 350, 'SPIKE', 30, 30],
+                    [7430, 350, 'SPIKE', 30, 30],
+                    [7460, 350, 'SPIKE', 30, 30],
+                    [7800, 350, 'PAD', 40, 10],
+                    [8200, 150, 'BLOCK', 100, 50],
+                    [8500, 350, 'SPIKE', 30, 30],
+                    [8700, 350, 'PAD', 40, 10], // LADE TILL PAD
+                    [8800, 250, 'BLOCK', 50, 100],
+                    [9100, 350, 'RING', 40, 40],
+                    [9400, 350, 'SPIKE', 30, 30],
+                    [9700, 350, 'PAD', 40, 10],
+                    [10100, 100, 'BLOCK', 50, 50],
+                    [10400, 350, 'SPIKE', 30, 30],
+                    [10700, 350, 'RING', 40, 40],
+                    [11000, 350, 'SPIKE', 30, 30],
+                    [11300, 350, 'SPIKE', 30, 30],
+                    [11600, 350, 'PAD', 40, 10],
+                    [12000, 200, 'BLOCK', 80, 50],
+                    [12300, 350, 'SPIKE', 30, 30],
+                    [12600, 350, 'RING', 40, 40],
+                    [12900, 350, 'SPIKE', 30, 30],
+                    [13200, 300, 'BLOCK', 50, 50],
+                    [13500, 350, 'SPIKE', 30, 30],
+                    [13800, 350, 'PAD', 40, 10],
+                    [14200, 150, 'BLOCK', 100, 50],
+                    [14500, 350, 'SPIKE', 30, 30],
+                    [14530, 350, 'SPIKE', 30, 30],
+                ]
+            }
+        };
+        
+        // Fallback är inte längre nödvändig eftersom alla 20 nivåer är definierade.
+
+
+        const LEVELS = [
+            { id: 1, name: "Neon Rise", difficulty: "Easy" },
+            { id: 2, name: "Binary Stream", difficulty: "Easy" },
+            { id: 3, name: "Pixel Pulse", difficulty: "Easy" },
+            { id: 4, name: "Electro Grid", difficulty: "Easy" },
+            { id: 5, name: "Cyan Core", difficulty: "Easy" },
+            
+            { id: 6, name: "Magenta Maze", difficulty: "Medium" },
+            { id: 7, name: "The Gap Jumper", difficulty: "Medium" },
+            { id: 8, name: "Laser Gridlock", difficulty: "Medium" },
+            { id: 9, name: "Gravity Flip", difficulty: "Medium" },
+            { id: 10, name: "Orbitron City", difficulty: "Medium" },
+            
+            { id: 11, name: "Spike Factory", difficulty: "Hard" },
+            { id: 12, name: "Insanity Road", difficulty: "Hard" },
+            { id: 13, name: "Chaos Theory", difficulty: "Hard" },
+            { id: 14, name: "Triple Jump", difficulty: "Hard" },
+            { id: 15, name: "Zayn's Nightmare", difficulty: "Hard" },
+            
+            { id: 16, name: "Ultra-Flow", difficulty: "Insane" },
+            { id: 17, name: "Impossible Run", difficulty: "Insane" },
+            { id: 18, name: "The Machine", difficulty: "Insane" },
+            { id: 19, name: "Abyss Dive", difficulty: "Insane" },
+            { id: 20, name: "Final Frontier", difficulty: "Insane" }
+        ];
+        const LEVELS_PER_PAGE = 5;
+        let currentPage = 0; 
+        let totalPages = Math.ceil(LEVELS.length / LEVELS_PER_PAGE);
+
+        // Game State
+        let gameState = 'MENU'; 
+        let currentLevel = 1;
+        let attempt = 1;
+        let frameCount = 0;
+        let gameSpeed = 8;
+        let cameraX = 0;
+        let levelLength = 0;
+
+        // Entities
+        let player = {
+            x: 100, 
+            y: 0, 
+            dy: 0,
+            rotation: 0,
+            isGrounded: true,
+            isDead: false,
+            nearestOrb: null 
+        };
+
+        let obstacles = [];
+        let particles = [];
+        
+        // --- Fullscreen and Canvas Scaling ---
+        function resizeCanvas() {
+            const container = document.getElementById('game-container');
+            const aspectRatio = ORIGINAL_CANVAS_WIDTH / ORIGINAL_CANVAS_HEIGHT;
+
+            let newWidth = container.clientWidth;
+            let newHeight = container.clientHeight;
+
+            if (newWidth / newHeight > aspectRatio) {
+                newWidth = newHeight * aspectRatio;
+            } else {
+                newHeight = newWidth / aspectRatio;
+            }
+
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+
+            // Scale game constants
+            PLAYER_SIZE = canvas.width * PLAYER_SIZE_RATIO;
+            GROUND_Y = canvas.height * GROUND_Y_RATIO;
+
+            // Adjust player position if game is playing
+            if (gameState === 'PLAYING' || gameState === 'MENU' || gameState === 'GAMEOVER' || gameState === 'WIN') {
+                if (player.isGrounded || player.y === 0) { // Only adjust if player is on ground or hasn't moved yet
+                    player.y = GROUND_Y - PLAYER_SIZE;
+                }
+            }
+        }
+
+        function requestFullscreenHandler() {
+            const elem = document.documentElement; 
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.mozRequestFullScreen) { 
+                elem.mozRequestFullScreen();
+            } else if (elem.webkitRequestFullscreen) { 
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { 
+                elem.msRequestFullscreen();
+            }
+        }
+
+        // --- Level Loading (Fixed Presets) ---
+
+        /**
+         * Laddar en förinställd nivåstruktur baserat på levelNum.
+         */
+        function loadLevel(levelNum) {
+            obstacles = [];
+            
+            // Använd alltid den förinställda datan, oavsett nivå
+            const preset = LEVEL_PRESETS[levelNum];
+            
+            gameSpeed = preset.speed;
+            levelLength = preset.length;
+
+            const WORLD_GROUND_Y = ORIGINAL_CANVAS_HEIGHT * GROUND_Y_RATIO; 
+            
+            // Konvertera den statiska listan av hinder till den interna obstacles-arrayen
+            preset.obstacles.forEach(data => {
+                const [x, y, type, w, h] = data;
+                
+                // Om typen är SPIKE på marken (y är nära markvärdet), justera Y till GROUND_Y för exakt placering
+                let finalY = y;
+                if (type === 'SPIKE' && y > WORLD_GROUND_Y - 50) {
+                     finalY = WORLD_GROUND_Y; // Markspik
+                }
+                
+                // För PADs, placera basen på marken
+                if (type === 'PAD' && y > WORLD_GROUND_Y - 50) {
+                    finalY = WORLD_GROUND_Y - (h / 2); // Placerar PAD'ens mitt på marken
+                }
+
+
+                obstacles.push({ 
+                    x: x, 
+                    y: finalY, 
+                    type: type, 
+                    w: w, 
+                    h: h 
+                });
+            });
+
+            // Slutflagga
+            obstacles.push({ x: levelLength + 200, y: 0, type: 'FINISH', w: 50, h: ORIGINAL_CANVAS_HEIGHT });
+        }
+
+
+        // --- Core Functions ---
+
+        function init() {
+            resizeCanvas(); 
+            window.addEventListener('resize', resizeCanvas); 
+            
+            createLevelButtons(currentPage); 
+            
+            // Input handlers
+            document.addEventListener('keydown', (e) => {
+                if ((e.code === 'Space' || e.code === 'ArrowUp') && gameState === 'PLAYING') {
+                    jump();
+                }
+            });
+
+            canvas.addEventListener('mousedown', () => {
+                if (gameState === 'PLAYING') jump();
+            });
+
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault(); 
+                if (gameState === 'PLAYING') jump();
+            }, {passive: false});
+
+            gameLoop();
+        }
+
+        // Funktion för att rendera knappar för den aktuella sidan
+        function createLevelButtons(pageIndex) {
+            const grid = document.getElementById('level-selector');
+            grid.innerHTML = '';
+            
+            const start = pageIndex * LEVELS_PER_PAGE;
+            const end = Math.min(start + LEVELS_PER_PAGE, LEVELS.length);
+            
+            // Uppdatera pilar (visas endast i level-choose-screen)
+            document.querySelectorAll('.nav-arrow')[0].style.visibility = pageIndex > 0 ? 'visible' : 'hidden';
+            document.querySelectorAll('.nav-arrow')[1].style.visibility = pageIndex < totalPages - 1 ? 'visible' : 'hidden';
+
+            for(let i = start; i < end; i++) {
+                const lvlIndex = i + 1; // 1-baserat index
+                const level = LEVELS[i];
+                
+                let btn = document.createElement('button');
+                
+                let difficultyClass = '';
+                if (level.difficulty === 'Hard' || level.difficulty === 'Insane') {
+                    difficultyClass = 'hard';
+                }
+
+                btn.className = `lvl-btn ${difficultyClass}`;
+                btn.innerHTML = `<strong>${lvlIndex}</strong><br><small>${level.name}</small>`;
+                btn.onclick = () => startLevel(lvlIndex);
+                grid.appendChild(btn);
+            }
+            
+            // Uppdatera sidrubriken
+            const groupNameEl = document.getElementById('level-group-name');
+            if (LEVELS[start]) {
+                 groupNameEl.innerText = `${LEVELS[start].difficulty} Levels (${pageIndex + 1}/${totalPages})`;
+            }
+        }
+
+        // Navigering mellan nivåmenyer
+        function navigateLevels(direction) {
+            currentPage += direction;
+            if (currentPage < 0) currentPage = 0;
+            if (currentPage >= totalPages) currentPage = totalPages - 1;
+            
+            createLevelButtons(currentPage);
+        }
+
+        // Visa Level Choosement screen
+        function showLevelChoose() {
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('level-choose-screen').classList.remove('hidden');
+            createLevelButtons(currentPage); 
+        }
+
+        function startLevel(lvl) {
+            currentLevel = lvl;
+            resetGame();
+            
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('level-choose-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('win-screen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            
+            // Hämta namnet från data
+            const levelName = LEVELS[lvl - 1] ? LEVELS[lvl - 1].name : `NIVÅ ${lvl}`;
+            
+            document.getElementById('level-display').innerText = `${lvl}. ${levelName}`;
+            document.getElementById('attempt-display').innerText = `FÖRSÖK: ${attempt}`;
+            
+            loadLevel(lvl); // Ladda nivåns förinställningar
+            gameState = 'PLAYING';
+        }
+
+        function retryLevel() {
+            attempt++;
+            startLevel(currentLevel);
+        }
+
+        function nextLevel() {
+            if (currentLevel < LEVELS.length) {
+                currentLevel++;
+                attempt = 1;
+                startLevel(currentLevel);
+            } else {
+                goToMenu();
+            }
+        }
+
+        function goToMenu() {
+            gameState = 'MENU';
+            attempt = 1;
+            document.getElementById('menu-screen').classList.remove('hidden'); 
+            document.getElementById('level-choose-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('win-screen').classList.add('hidden');
+            document.getElementById('hud').classList.add('hidden');
+        }
+
+        function showCredits() {
+            document.getElementById('credits-modal').classList.remove('hidden');
+        }
+
+        function hideCredits() {
+            document.getElementById('credits-modal').classList.add('hidden');
+        }
+
+
+        function resetGame() {
+            player = {
+                x: 100,
+                y: GROUND_Y - PLAYER_SIZE, 
+                dy: 0,
+                rotation: 0,
+                isGrounded: true,
+                isDead: false,
+                nearestOrb: null
+            };
+            cameraX = 0;
+            particles = [];
+        }
+
+        function jump() {
+            // Logic för normalt hopp och Ring-hopp
+            if (player.isGrounded) {
+                player.dy = JUMP_FORCE;
+                player.isGrounded = false;
+                createParticles(player.x, player.y + PLAYER_SIZE, 5, '#fff');
+            } else if (player.nearestOrb) {
+                // Ring Jump!
+                player.dy = JUMP_FORCE; // Reset velocity
+                player.isGrounded = false;
+                createParticles(player.nearestOrb.x + player.nearestOrb.w/2, player.nearestOrb.y + player.nearestOrb.h/2, 10, RING_COLOR);
+                player.nearestOrb = null; 
+            }
+        }
+
+        function createParticles(x, y, count, color) {
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 1.0,
+                    color: color
+                });
+            }
+        }
+
+        function spawnDeathParticles() {
+            createParticles(player.x + PLAYER_SIZE/2, player.y + PLAYER_SIZE/2, 30, HAZARD_COLOR); 
+            createParticles(player.x + PLAYER_SIZE/2, player.y + PLAYER_SIZE/2, 15, '#ffffff');
+        }
+
+        // --- Physics & Logic ---
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            // Player Physics
+            player.dy += GRAVITY;
+            player.y += player.dy;
+
+            // Floor Collision
+            if (player.y > GROUND_Y - PLAYER_SIZE) {
+                player.y = GROUND_Y - PLAYER_SIZE;
+                player.dy = 0;
+                player.isGrounded = true; 
+
+                let r = player.rotation % 360;
+                if (r < 45 || r > 315) player.rotation = 0;
+                else if (r < 135) player.rotation = 90;
+                else if (r < 225) player.rotation = 180;
+                else player.rotation = 270;
+            } else {
+                player.rotation += 5; 
+            }
+
+            // Move Camera/World
+            cameraX += gameSpeed;
+            
+            checkCollisions();
+            
+            if (cameraX > levelLength - 400) { 
+                gameState = 'WIN';
+                document.getElementById('win-screen').classList.remove('hidden');
+                document.getElementById('hud').classList.add('hidden');
+            }
+
+            let pct = Math.min(100, (cameraX / levelLength) * 100);
+            document.getElementById('progress').style.width = pct + '%';
+
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.05;
+            });
+            particles = particles.filter(p => p.life > 0);
+
+            frameCount++;
+        }
+
+        function checkCollisions() {
+            let playerScreenX = player.x; 
+            let playerScreenY = player.y;
+            let playerCenterX = playerScreenX + PLAYER_SIZE/2;
+            let playerCenterY = playerScreenY + PLAYER_SIZE/2;
+
+            const scaleW = canvas.width / ORIGINAL_CANVAS_WIDTH;
+            const scaleH = canvas.height / ORIGINAL_CANVAS_HEIGHT;
+            
+            player.nearestOrb = null; 
+
+            for (let obs of obstacles) {
+                
+                const scaledObsX = obs.x * scaleW;
+                let scaledObsY = obs.y * scaleH;
+                const scaledObsW = obs.w * scaleW;
+                const scaledObsH = obs.h * scaleH;
+
+                if (obs.x * scaleW < cameraX * scaleW - 100 - scaledObsW || 
+                    obs.x * scaleW > cameraX * scaleW + canvas.width + scaledObsW) continue;
+                
+                let obsScreenX = scaledObsX - (cameraX * scaleW) + player.x;
+                
+                // --- PAD LOGIC ---
+                if (obs.type === 'PAD') {
+                    if (rectIntersect(playerScreenX, playerScreenY, PLAYER_SIZE, PLAYER_SIZE,
+                                      obsScreenX, scaledObsY - 5, scaledObsW, scaledObsH + 10)) { 
+                        player.dy = PAD_FORCE; // BOOST!
+                        player.isGrounded = false;
+                        createParticles(playerScreenX, playerScreenY + PLAYER_SIZE, 5, PAD_COLOR);
+                    }
+                }
+                // --- RING (ORB) LOGIC ---
+                else if (obs.type === 'RING') {
+                    // Cirkulär kollision/avstånd för ring
+                    let ringCenterX = obsScreenX + scaledObsW/2;
+                    let ringCenterY = scaledObsY + scaledObsH/2;
+                    let dist = Math.hypot(playerCenterX - ringCenterX, playerCenterY - ringCenterY);
+                    
+                    if (dist < 50) { 
+                        player.nearestOrb = obs; 
+                    }
+                }
+                // --- SPIKE LOGIC ---
+                else if (obs.type === 'SPIKE') {
+                    let spikeBaseY = scaledObsY; 
+                    if (obs.y * scaleH > GROUND_Y - 50) spikeBaseY = GROUND_Y;
+                    let spikeTipY = spikeBaseY - scaledObsH; 
+
+                    let p1 = { x: obsScreenX, y: spikeBaseY }; 
+                    let p2 = { x: obsScreenX + scaledObsW, y: spikeBaseY };
+                    let p3 = { x: obsScreenX + scaledObsW / 2, y: spikeTipY }; 
+
+                    let playerBottomY = playerScreenY + PLAYER_SIZE;
+
+                    if (obsScreenX < playerScreenX + PLAYER_SIZE && obsScreenX + scaledObsW > playerScreenX &&
+                        spikeTipY < playerBottomY && spikeBaseY > playerScreenY) {
+
+                        if (isPointInTriangle({x: playerScreenX, y: playerBottomY}, p1, p2, p3) ||
+                            isPointInTriangle({x: playerScreenX + PLAYER_SIZE, y: playerBottomY}, p1, p2, p3) ||
+                            isPointInTriangle({x: playerScreenX, y: playerScreenY}, p1, p2, p3) ||
+                            isPointInTriangle({x: playerScreenX + PLAYER_SIZE, y: playerScreenY}, p1, p2, p3)) {
+                            die();
+                            return;
+                        }
+                    }
+                } 
+                // --- BLOCK LOGIC ---
+                else if (obs.type === 'BLOCK') {
+                    let blockTop = scaledObsY;
+                    if (rectIntersect(playerScreenX, playerScreenY, PLAYER_SIZE, PLAYER_SIZE,
+                                      obsScreenX , blockTop, scaledObsW, scaledObsH)) {
+                        if (player.dy > 0 && (playerScreenY + PLAYER_SIZE - gameSpeed) < blockTop) { 
+                            player.y = blockTop - PLAYER_SIZE;
+                            player.dy = 0;
+                            player.isGrounded = true; 
+                        } else {
+                            die();
+                        }
+                    }
+                }
+            }
+        }
+
+        function sign (p1, p2, p3) {
+            return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+        }
+
+        function isPointInTriangle (pt, v1, v2, v3) {
+            let d1, d2, d3;
+            let has_neg, has_pos;
+            d1 = sign(pt, v1, v2);
+            d2 = sign(pt, v2, v3);
+            d3 = sign(pt, v3, v1);
+            has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+            has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+            return !(has_neg && has_pos); 
+        }
+
+        function rectIntersect(pl, pt, pw, ph, ol, ot, ow, oh) {
+            return ol < pl + pw && ol + ow > pl && ot < pt + ph && ot + oh > pt;
+        }
+
+        function die() {
+            if (player.isDead) return;
+            player.isDead = true;
+            spawnDeathParticles();
+            gameState = 'GAMEOVER';
+            let pct = Math.floor((cameraX / levelLength) * 100);
+            document.getElementById('fail-percent').innerText = `${pct}% KLART`;
+            setTimeout(() => {
+                document.getElementById('game-over-screen').classList.remove('hidden');
+                document.getElementById('hud').classList.add('hidden');
+            }, 500);
+        }
+
+        // --- Rendering ---
+
+        function draw() {
+            ctx.fillStyle = '#0a0a1a'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const scaleW = canvas.width / ORIGINAL_CANVAS_WIDTH;
+            const scaleH = canvas.height / ORIGINAL_CANVAS_HEIGHT;
+
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.1)';
+            ctx.lineWidth = 1;
+            const scaledCameraX = cameraX * scaleW;
+            let gridOffset = -(scaledCameraX * 0.5) % 50;
+            
+            // Enkel Grid
+            for(let x = gridOffset; x < canvas.width; x+=50) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for(let y = 0; y < canvas.height; y+=50) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#00f3ff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00f3ff';
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_Y);
+            ctx.lineTo(canvas.width, GROUND_Y);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            if (gameState === 'PLAYING' || gameState === 'WIN' || player.isDead) {
+                
+                ctx.save();
+                ctx.translate(-(scaledCameraX) + player.x, 0); 
+
+                obstacles.forEach(obs => {
+                    const scaledObsX = obs.x * scaleW;
+                    const scaledObsY = obs.y * scaleH;
+                    const scaledObsW = obs.w * scaleW;
+                    const scaledObsH = obs.h * scaleH;
+
+                    if (obs.type === 'SPIKE') {
+                        ctx.fillStyle = HAZARD_COLOR; 
+                        let spikeBaseY = scaledObsY;
+                        // Spikar på marken använder GROUND_Y som bas
+                        if (obs.y > ORIGINAL_CANVAS_HEIGHT * GROUND_Y_RATIO - 50) spikeBaseY = GROUND_Y;
+                        else spikeBaseY = scaledObsY + scaledObsH; // Spikar på block använder blockets topp som bas
+
+                        ctx.beginPath();
+                        ctx.moveTo(scaledObsX, spikeBaseY); 
+                        ctx.lineTo(scaledObsX + scaledObsW/2, spikeBaseY - scaledObsH); 
+                        ctx.lineTo(scaledObsX + scaledObsW, spikeBaseY); 
+                        ctx.closePath();
+                        ctx.fill();
+                    } else if (obs.type === 'BLOCK') {
+                        ctx.fillStyle = SAFE_COLOR; 
+                        ctx.fillRect(scaledObsX, scaledObsY, scaledObsW, scaledObsH);
+                        ctx.strokeStyle = SAFE_OUTLINE;
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(scaledObsX, scaledObsY, scaledObsW, scaledObsH);
+                    } else if (obs.type === 'PAD') {
+                        ctx.fillStyle = PAD_COLOR;
+                        // Rita en platt rektangel på marken
+                        ctx.fillRect(scaledObsX, scaledObsY, scaledObsW, scaledObsH); 
+                        // Glöd
+                        ctx.shadowBlur = 10; ctx.shadowColor = PAD_COLOR;
+                        ctx.fillRect(scaledObsX + 5, scaledObsY + scaledObsH/2, scaledObsW - 10, 2);
+                        ctx.shadowBlur = 0;
+                    } else if (obs.type === 'RING') {
+                        ctx.beginPath();
+                        ctx.arc(scaledObsX + scaledObsW/2, scaledObsY + scaledObsH/2, 20, 0, Math.PI*2);
+                        ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'; // Genomskinlig fyllning
+                        ctx.fill();
+                        ctx.lineWidth = 4;
+                        ctx.strokeStyle = RING_COLOR;
+                        ctx.stroke();
+                        ctx.beginPath(); // Inre ring
+                        ctx.arc(scaledObsX + scaledObsW/2, scaledObsY + scaledObsH/2, 12, 0, Math.PI*2);
+                        ctx.stroke();
+                    } else if (obs.type === 'FINISH') {
+                        ctx.fillStyle = 'rgba(50, 255, 50, 0.5)';
+                        ctx.fillRect(scaledObsX, scaledObsY, scaledObsW, scaledObsH);
+                    }
+                });
+
+                ctx.restore(); 
+
+                // Draw Player
+                if (!player.isDead) {
+                    ctx.save();
+                    ctx.fillStyle = '#fff';
+                    ctx.strokeStyle = '#ff00ff'; 
+                    ctx.lineWidth = 3;
+                    ctx.translate(player.x + PLAYER_SIZE / 2, player.y + PLAYER_SIZE / 2);
+                    ctx.rotate(player.rotation * Math.PI / 180);
+                    ctx.fillRect(-PLAYER_SIZE / 2, -PLAYER_SIZE / 2, PLAYER_SIZE, PLAYER_SIZE);
+                    ctx.strokeRect(-PLAYER_SIZE / 2, -PLAYER_SIZE / 2, PLAYER_SIZE, PLAYER_SIZE);
+                    ctx.restore();
+                }
+
+                particles.forEach(p => {
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = p.life;
+                    ctx.fillRect(p.x, p.y, 4, 4);
+                });
+                ctx.globalAlpha = 1.0; 
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        init();
+    </script>
+</body>
+</html>
+</div>
+
+</body>
+</html>
