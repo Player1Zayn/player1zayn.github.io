@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Backrooms</title>
+
+<style>
+    body {
+        margin: 0;
+        background: black;
+        overflow: hidden;
+    }
+
+    #game-container {
+        width: 100vw;
+        height: 100vh;
+        background: black;
+    }
+
+    /* Flyttad till höger nedre hörn */
+    .back {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.5);
+        padding: 10px 16px;
+        border-radius: 8px;
+        color: white;
+        text-decoration: none;
+        border: 2px solid #666;
+        z-index: 9999;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .back:hover {
+        background: rgba(40,40,40,0.6);
+    }
+</style>
+</head>
+<body>
+
+<!-- Stäng-knapp som stänger fliken -->
+<button class="back" onclick="window.close()">✖ Stäng</button>
+
+<div id="game-container">
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>The Backrooms: Descent</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 10;
+        }
+
+        #hud {
+            padding: 20px;
+            color: #ddd;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        #center-reticle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #start-screen, #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fdfd96; /* Pastel yellow text */
+            pointer-events: auto;
+            z-index: 20;
+            text-align: center;
+        }
+
+        #pause-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fdfd96;
+            z-index: 25;
+            backdrop-filter: blur(5px);
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            color: #cfcfc4;
+        }
+
+        p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            color: #888;
+        }
+
+        button {
+            background: #444;
+            color: #fff;
+            border: 2px solid #666;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #666;
+            border-color: #888;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            height: 150px;
+            display: none; /* Shown via JS on touch devices */
+            pointer-events: none;
+        }
+        
+        .control-zone {
+            position: absolute;
+            bottom: 0;
+            width: 50%;
+            height: 100%;
+            pointer-events: auto;
+        }
+        #zone-move { left: 0; }
+        #zone-look { right: 0; }
+
+        /* Scanline effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.3;
+        }
+        
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.6) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            #hud { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <div id="ui-layer">
+        <div id="hud">
+            <span id="level-display">LEVEL 0</span>
+            <span id="status-display">Use Headphones</span>
+        </div>
+        <div id="center-reticle"></div>
+    </div>
+
+    <div id="start-screen">
+        <h1>The Backrooms</h1>
+        <p>You have clipped out of reality. Find the GREEN EXIT to escape.</p>
+        <p style="font-size: 0.9rem; color: #d4af37;">Beware: entities multiply with every level.</p>
+        <button id="start-btn">ENTER REALITY</button>
+    </div>
+
+    <div id="pause-screen" class="hidden">
+        <h1>PAUSED</h1>
+        <p>Press P to Resume</p>
+    </div>
+
+    <div id="game-over-screen" class="hidden">
+        <h1 style="color: #900;">CAUGHT</h1>
+        <p id="death-message">The entity found you.</p>
+        <button id="restart-btn">TRY AGAIN</button>
+    </div>
+
+    <div id="mobile-controls">
+        <div id="zone-move" class="control-zone"></div>
+        <div id="zone-look" class="control-zone"></div>
+    </div>
+
+    <script>
+        // --- GAME CONFIGURATION ---
+        const MAZE_SIZE = 21; // Must be odd
+        const WALL_HEIGHT = 4;
+        const CELL_SIZE = 5;
+        const PLAYER_SPEED = 0.15;
+        const PLAYER_RUN_SPEED = 0.25;
+        const ENTITY_SPEED = 0.08; // Slightly slower than walking
+        const ENTITY_KILL_DIST = 1.5;
+        
+        let currentLevel = 1;
+        let isGameActive = false;
+        let isPaused = false;
+        let score = 0;
+
+        // --- AUDIO SYSTEM (Procedural) ---
+        let audioCtx;
+        let humOsc, humGain;
+        let noiseNode, noiseGain;
+        let dangerOsc, dangerGain;
+
+        function initAudio() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            
+            // 1. The Hum (60Hz Mains Buzz)
+            humOsc = audioCtx.createOscillator();
+            humOsc.type = 'sawtooth';
+            humOsc.frequency.value = 60;
+            humGain = audioCtx.createGain();
+            humGain.gain.value = 0.025; // Background level
+            
+            // Detune slightly for "uncomfortable" feeling
+            const humOsc2 = audioCtx.createOscillator();
+            humOsc2.type = 'sine';
+            humOsc2.frequency.value = 58; // 2Hz beat frequency
+            const humGain2 = audioCtx.createGain();
+            humGain2.gain.value = 0.025;
+
+            humOsc.connect(humGain).connect(audioCtx.destination);
+            humOsc2.connect(humGain2).connect(audioCtx.destination);
+            humOsc.start();
+            humOsc2.start();
+
+            // 2. The Hiss (Fluorescent light static)
+            const bufferSize = audioCtx.sampleRate * 2; // 2 seconds loop
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            noiseNode = audioCtx.createBufferSource();
+            noiseNode.buffer = buffer;
+            noiseNode.loop = true;
+            
+            const noiseFilter = audioCtx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = 800; // Muffle the harshness
+
+            noiseGain = audioCtx.createGain();
+            noiseGain.gain.value = 0.015;
+
+            noiseNode.connect(noiseFilter).connect(noiseGain).connect(audioCtx.destination);
+            noiseNode.start();
+
+            // 3. Danger Sound (Proximity detection)
+            dangerOsc = audioCtx.createOscillator();
+            dangerOsc.type = 'sawtooth';
+            dangerOsc.frequency.value = 50; // Base rumble
+            
+            dangerGain = audioCtx.createGain();
+            dangerGain.gain.value = 0; // Start silent
+
+            // Add a filter to the danger sound to make it sound "distant" then "close"
+            const dangerFilter = audioCtx.createBiquadFilter();
+            dangerFilter.type = 'lowpass';
+            dangerFilter.frequency.value = 200;
+
+            dangerOsc.connect(dangerFilter).connect(dangerGain).connect(audioCtx.destination);
+            dangerOsc.start();
+
+            // Store references to update dynamically
+            window.audioDangerRefs = { osc: dangerOsc, gain: dangerGain, filter: dangerFilter };
+        }
+
+        function updateAudio() {
+            if (!audioCtx || !window.audioDangerRefs) return;
+
+            // Find closest entity
+            let closestDist = Infinity;
+            entities.forEach(e => {
+                const d = camera.position.distanceTo(e.mesh.position);
+                if (d < closestDist) closestDist = d;
+            });
+
+            // Audio Logic
+            // Max Volume at 3 units, Silent at 25 units
+            const maxDist = 25;
+            const minDist = 3;
+            
+            if (closestDist < maxDist) {
+                const rawIntensity = 1 - ((closestDist - minDist) / (maxDist - minDist));
+                const intensity = Math.max(0, Math.min(1, rawIntensity));
+                
+                // Volume rises
+                const vol = intensity * 0.15;
+                window.audioDangerRefs.gain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.1);
+                
+                // Pitch rises (panic effect)
+                // 50Hz (rumble) -> 400Hz (scream)
+                const pitch = 50 + (intensity * 350) + (Math.random() * 10); // Little jitter
+                window.audioDangerRefs.osc.frequency.setTargetAtTime(pitch, audioCtx.currentTime, 0.1);
+
+                // Filter opens up (muffled -> clear)
+                const filterFreq = 200 + (intensity * 2000);
+                window.audioDangerRefs.filter.frequency.setTargetAtTime(filterFreq, audioCtx.currentTime, 0.1);
+
+            } else {
+                window.audioDangerRefs.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+            }
+        }
+
+        // --- THREE.JS SETUP ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x8e855e); // Lighter "Backrooms" Yellow/Beige
+        scene.fog = new THREE.FogExp2(0x8e855e, 0.05); // Match background, less dense
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // --- TEXTURE GENERATION (Procedural - No external assets) ---
+        function createNoiseTexture(width, height, colorBase, noiseIntensity) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            // Fill base
+            ctx.fillStyle = colorBase;
+            ctx.fillRect(0, 0, width, height);
+            
+            // Add noise
+            const imgData = ctx.getImageData(0, 0, width, height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const val = (Math.random() - 0.5) * noiseIntensity;
+                data[i] += val;
+                data[i+1] += val;
+                data[i+2] += val;
+            }
+            ctx.putImageData(imgData, 0, 0);
+            
+            // Add some stains/grunge
+            for(let i=0; i<20; i++) {
+                const x = Math.random() * width;
+                const y = Math.random() * height;
+                const r = Math.random() * 50;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.1})`;
+                ctx.fill();
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            return texture;
+        }
+
+        const wallTexture = createNoiseTexture(512, 512, '#c2b280', 40); // Mono yellow
+        const floorTexture = createNoiseTexture(512, 512, '#d0c080', 50); // Damp yellow-beige
+        const ceilingTexture = createNoiseTexture(512, 512, '#e0d090', 30); // Light yellow
+
+        const wallMaterial = new THREE.MeshStandardMaterial({ 
+            map: wallTexture, 
+            roughness: 0.9,
+            color: 0xffeebb
+        });
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            map: floorTexture, 
+            roughness: 0.8,
+            color: 0xffebb0 // Pale yellow
+        });
+        const ceilingMaterial = new THREE.MeshStandardMaterial({ 
+            map: ceilingTexture, 
+            roughness: 0.5,
+            emissive: 0x333322 // Dim yellow emissive
+        });
+
+        // --- MAZE GENERATION (Recursive Backtracker + Openness) ---
+        let map = []; // 1 = Wall, 0 = Empty
+
+        function generateMaze(size) {
+            // Initialize filled grid
+            let grid = [];
+            for (let x = 0; x < size; x++) {
+                grid[x] = [];
+                for (let y = 0; y < size; y++) {
+                    grid[x][y] = 1;
+                }
+            }
+
+            const dirs = [
+                {x: 0, y: -2}, {x: 0, y: 2}, {x: -2, y: 0}, {x: 2, y: 0}
+            ];
+
+            function shuffle(array) {
+                array.sort(() => Math.random() - 0.5);
+            }
+
+            function carve(x, y) {
+                grid[x][y] = 0;
+                shuffle(dirs);
+                
+                for (let dir of dirs) {
+                    let nx = x + dir.x;
+                    let ny = y + dir.y;
+
+                    if (nx > 0 && nx < size - 1 && ny > 0 && ny < size - 1 && grid[nx][ny] === 1) {
+                        grid[x + dir.x/2][y + dir.y/2] = 0;
+                        carve(nx, ny);
+                    }
+                }
+            }
+
+            carve(1, 1);
+
+            // Make it more open by randomly removing walls
+            for (let x = 1; x < size - 1; x++) {
+                for (let y = 1; y < size - 1; y++) {
+                    if (grid[x][y] === 1 && Math.random() > 0.7) { // 30% chance to remove a wall
+                        grid[x][y] = 0;
+                    }
+                }
+            }
+
+            return grid;
+        }
+
+        // --- WORLD BUILDER ---
+        let walls = [];
+        let exitObj = null;
+        let entities = [];
+        
+        function buildLevel(level) {
+            // Cleanup
+            walls.forEach(w => scene.remove(w));
+            walls = [];
+            entities.forEach(e => scene.remove(e.mesh));
+            entities = [];
+            if (exitObj) scene.remove(exitObj);
+            
+            // Generate Maze
+            const size = MAZE_SIZE + (Math.floor(level/2) * 2); // Map gets slightly bigger
+            map = generateMaze(size);
+
+            // Build Geometry
+            const wallGeo = new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, CELL_SIZE);
+            const floorGeo = new THREE.PlaneGeometry(size * CELL_SIZE, size * CELL_SIZE);
+            
+            // Floor
+            const floor = new THREE.Mesh(floorGeo, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set((size * CELL_SIZE)/2 - CELL_SIZE/2, 0, (size * CELL_SIZE)/2 - CELL_SIZE/2);
+            scene.add(floor);
+            walls.push(floor); // Logic helper, not for collision
+
+            // Ceiling
+            const ceiling = new THREE.Mesh(floorGeo, ceilingMaterial);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.set((size * CELL_SIZE)/2 - CELL_SIZE/2, WALL_HEIGHT, (size * CELL_SIZE)/2 - CELL_SIZE/2);
+            scene.add(ceiling);
+
+            // Walls
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (map[x][y] === 1) {
+                        const wall = new THREE.Mesh(wallGeo, wallMaterial);
+                        wall.position.set(x * CELL_SIZE, WALL_HEIGHT/2, y * CELL_SIZE);
+                        scene.add(wall);
+                        walls.push(wall);
+                    }
+                }
+            }
+
+            // Place Player (Always at 1,1)
+            camera.position.set(1 * CELL_SIZE, WALL_HEIGHT/2, 1 * CELL_SIZE);
+            camera.rotation.set(0, 0, 0);
+
+            // Place Exit (Furthest empty spot)
+            let maxDist = 0;
+            let exitPos = {x: 1, y: 1};
+            for(let x=1; x<size; x++) {
+                for(let y=1; y<size; y++) {
+                    if(map[x][y] === 0) {
+                        const d = Math.sqrt((x-1)**2 + (y-1)**2);
+                        if(d > maxDist) {
+                            maxDist = d;
+                            exitPos = {x, y};
+                        }
+                    }
+                }
+            }
+
+            const exitGeo = new THREE.BoxGeometry(CELL_SIZE * 0.8, WALL_HEIGHT * 0.8, CELL_SIZE * 0.1);
+            const exitMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            exitObj = new THREE.Mesh(exitGeo, exitMat);
+            exitObj.position.set(exitPos.x * CELL_SIZE, WALL_HEIGHT/2, exitPos.y * CELL_SIZE);
+            
+            // Add a light to the exit
+            const exitLight = new THREE.PointLight(0x00ff00, 1, 15);
+            exitObj.add(exitLight);
+            scene.add(exitObj);
+
+            // Spawn Entities (Count = Level)
+            for(let i=0; i<level; i++) {
+                spawnEntity(size, exitPos);
+            }
+        }
+
+        // --- ENTITY SYSTEM ---
+        class Entity {
+            constructor(startGridX, startGridY) {
+                this.group = new THREE.Group();
+                
+                // Body - Taller
+                const bodyGeo = new THREE.CylinderGeometry(0.3, 0.3, 2.8, 16);
+                const material = new THREE.MeshLambertMaterial({ color: 0x000000 });
+                const body = new THREE.Mesh(bodyGeo, material);
+                body.position.y = 1.4; // Center of 2.8 height
+                
+                // Head - Higher up
+                const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
+                const head = new THREE.Mesh(headGeo, material);
+                head.position.y = 2.9; // On top of body
+
+                this.group.add(body);
+                this.group.add(head);
+                
+                this.mesh = this.group;
+                this.mesh.position.set(startGridX * CELL_SIZE, 0, startGridY * CELL_SIZE);
+                scene.add(this.mesh);
+
+                this.path = [];
+                this.lastPathTime = 0;
+            }
+
+            update(dt, playerPos) {
+                // Simple bobbing
+                this.mesh.position.y = Math.sin(Date.now() * 0.005) * 0.1;
+
+                // Pathfinding (BFS) every 0.5 seconds
+                if (Date.now() - this.lastPathTime > 500) {
+                    this.calculatePath(playerPos);
+                    this.lastPathTime = Date.now();
+                }
+
+                // Move along path
+                if (this.path.length > 0) {
+                    const target = this.path[0];
+                    const targetPos = new THREE.Vector3(target.x * CELL_SIZE, 0, target.y * CELL_SIZE);
+                    
+                    const dir = new THREE.Vector3().subVectors(targetPos, this.mesh.position);
+                    dir.y = 0;
+                    const dist = dir.length();
+                    
+                    if (dist < 0.1) {
+                        this.path.shift(); // Reached node
+                    } else {
+                        dir.normalize();
+                        this.mesh.position.add(dir.multiplyScalar(ENTITY_SPEED)); // Framerate dependent simplified
+                        this.mesh.lookAt(targetPos.x, 1.8, targetPos.z);
+                    }
+                } else {
+                    // Direct chase fallback if close
+                    const dir = new THREE.Vector3().subVectors(playerPos, this.mesh.position);
+                    dir.y = 0;
+                    dir.normalize();
+                    this.mesh.position.add(dir.multiplyScalar(ENTITY_SPEED * 0.5));
+                    this.mesh.lookAt(playerPos.x, 1.8, playerPos.z);
+                }
+            }
+
+            calculatePath(playerPos) {
+                const startX = Math.round(this.mesh.position.x / CELL_SIZE);
+                const startY = Math.round(this.mesh.position.z / CELL_SIZE);
+                const targetX = Math.round(playerPos.x / CELL_SIZE);
+                const targetY = Math.round(playerPos.z / CELL_SIZE);
+
+                // BFS
+                let queue = [{x: startX, y: startY, path: []}];
+                let visited = new Set();
+                visited.add(`${startX},${startY}`);
+                
+                // Limit depth for performance
+                let iterations = 0;
+
+                while(queue.length > 0 && iterations < 200) {
+                    let current = queue.shift();
+                    iterations++;
+
+                    if (current.x === targetX && current.y === targetY) {
+                        this.path = current.path;
+                        return;
+                    }
+
+                    const neighbors = [
+                        {x:0, y:1}, {x:0, y:-1}, {x:1, y:0}, {x:-1, y:0}
+                    ];
+
+                    for(let n of neighbors) {
+                        let nx = current.x + n.x;
+                        let ny = current.y + n.y;
+                        
+                        // Check bounds and walls
+                        if (nx >= 0 && nx < map.length && ny >= 0 && ny < map[0].length && map[nx][ny] === 0) {
+                            if (!visited.has(`${nx},${ny}`)) {
+                                visited.add(`${nx},${ny}`);
+                                let newPath = [...current.path, {x: nx, y: ny}];
+                                queue.push({x: nx, y: ny, path: newPath});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function spawnEntity(size, playerStartPos) {
+            let placed = false;
+            while(!placed) {
+                let x = Math.floor(Math.random() * size);
+                let y = Math.floor(Math.random() * size);
+                
+                // Ensure distance from player
+                const d = Math.sqrt((x-1)**2 + (y-1)**2);
+
+                if(map[x][y] === 0 && d > 5) {
+                    entities.push(new Entity(x, y));
+                    placed = true;
+                }
+            }
+        }
+
+        // --- LIGHTING ---
+        // Brighter ambient light for the office buzz feel
+        const ambientLight = new THREE.AmbientLight(0xffffee, 0.6);
+        scene.add(ambientLight);
+
+        // Player light (Flashlight feel)
+        const spotLight = new THREE.SpotLight(0xffffff, 0.8, 25, Math.PI/4, 0.5, 1);
+        spotLight.position.set(0, 0, 0); 
+        
+        // Fix: Use a separate object for the target, not the camera itself
+        const targetObject = new THREE.Object3D();
+        targetObject.position.set(0, 0, -1); // Pointing forward
+        
+        camera.add(spotLight);
+        camera.add(targetObject);
+        spotLight.target = targetObject;
+
+        scene.add(camera);
+
+        // --- CONTROLS ---
+        const keys = { w: false, a: false, s: false, d: false, shift: false };
+        
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = true;
+            if (e.key === "Shift") keys.shift = true;
+            
+            if (key === 'p' && isGameActive) {
+                togglePause();
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = false;
+            if (e.key === "Shift") keys.shift = false;
+        });
+
+        function togglePause() {
+            isPaused = !isPaused;
+            const pauseScreen = document.getElementById('pause-screen');
+            
+            if (isPaused) {
+                pauseScreen.classList.remove('hidden');
+                document.exitPointerLock();
+                if(audioCtx) audioCtx.suspend(); // Stop audio
+            } else {
+                pauseScreen.classList.add('hidden');
+                canvas.requestPointerLock();
+                if(audioCtx) audioCtx.resume(); // Resume audio
+            }
+        }
+
+        // Pointer Lock
+        const canvas = renderer.domElement;
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', resetGame);
+
+        function startGame() {
+            initAudio(); // Start Audio Context on gesture
+            if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+
+            document.getElementById('start-screen').classList.add('hidden');
+            canvas.requestPointerLock();
+            isGameActive = true;
+            currentLevel = 1;
+            buildLevel(currentLevel);
+            updateHUD();
+            if (isTouchDevice()) showMobileControls();
+        }
+
+        function resetGame() {
+            document.getElementById('game-over-screen').classList.add('hidden');
+            canvas.requestPointerLock();
+            isGameActive = true;
+            currentLevel = 1;
+            buildLevel(currentLevel);
+            updateHUD();
+            if(audioCtx) audioCtx.resume();
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement === canvas) {
+                camera.rotation.y -= e.movementX * 0.002;
+                // Clamping look up/down isn't strictly necessary for MVP but good for feel, ignoring for brevity
+            }
+        });
+
+        // --- MOBILE CONTROLS ---
+        function isTouchDevice() {
+            return (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+        }
+
+        function showMobileControls() {
+            document.getElementById('mobile-controls').style.display = 'block';
+            // Hide reticle on mobile usually, but we keep it for aim
+        }
+
+        const touchState = { moveX: 0, moveY: 0, lookX: 0 };
+        
+        const moveZone = document.getElementById('zone-move');
+        const lookZone = document.getElementById('zone-look');
+
+        let moveTouchId = null;
+        let lookTouchId = null;
+        let lookStartX = 0;
+
+        moveZone.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            moveTouchId = touch.identifier;
+            updateMoveVector(touch);
+        }, {passive: false});
+
+        moveZone.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            for (let i=0; i<e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === moveTouchId) {
+                    updateMoveVector(e.changedTouches[i]);
+                }
+            }
+        }, {passive: false});
+
+        moveZone.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            for (let i=0; i<e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === moveTouchId) {
+                    touchState.moveX = 0;
+                    touchState.moveY = 0;
+                    moveTouchId = null;
+                }
+            }
+        });
+
+        function updateMoveVector(touch) {
+            const rect = moveZone.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            // Normalize -1 to 1
+            touchState.moveX = (touch.clientX - centerX) / (rect.width/2);
+            touchState.moveY = (touch.clientY - centerY) / (rect.height/2);
+        }
+
+        lookZone.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            lookTouchId = touch.identifier;
+            lookStartX = touch.clientX;
+        }, {passive: false});
+
+        lookZone.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            for (let i=0; i<e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === lookTouchId) {
+                    const deltaX = e.changedTouches[i].clientX - lookStartX;
+                    camera.rotation.y -= deltaX * 0.005;
+                    lookStartX = e.changedTouches[i].clientX;
+                }
+            }
+        }, {passive: false});
+
+
+        // --- GAME LOGIC & PHYSICS ---
+        function checkCollision(x, z) {
+            const gridX = Math.round(x / CELL_SIZE);
+            const gridZ = Math.round(z / CELL_SIZE);
+            
+            // Boundary check
+            if (gridX < 0 || gridX >= map.length || gridZ < 0 || gridZ >= map[0].length) return true;
+
+            // Wall check
+            if (map[gridX][gridZ] === 1) {
+                // Simple box collision logic
+                const minX = gridX * CELL_SIZE - CELL_SIZE/2 - 0.2;
+                const maxX = gridX * CELL_SIZE + CELL_SIZE/2 + 0.2;
+                const minZ = gridZ * CELL_SIZE - CELL_SIZE/2 - 0.2;
+                const maxZ = gridZ * CELL_SIZE + CELL_SIZE/2 + 0.2;
+
+                if (x > minX && x < maxX && z > minZ && z < maxZ) return true;
+            }
+            return false;
+        }
+
+        function updateHUD() {
+            document.getElementById('level-display').innerText = `LEVEL ${currentLevel}`;
+            document.getElementById('status-display').innerText = `ENTITIES: ${entities.length}`;
+        }
+
+        function gameOver() {
+            isGameActive = false;
+            document.exitPointerLock();
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            if(audioCtx) audioCtx.suspend(); // Stop scary noises
+        }
+
+        function nextLevel() {
+            currentLevel++;
+            buildLevel(currentLevel);
+            updateHUD();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (!isGameActive) return;
+
+            // Pause Logic
+            if (isPaused) {
+                renderer.render(scene, camera);
+                return;
+            }
+            
+            updateAudio(); // Process Audio
+
+            // Movement Logic
+            const speed = keys.shift ? PLAYER_RUN_SPEED : PLAYER_SPEED;
+            const direction = new THREE.Vector3();
+
+            // Keyboard
+            if (keys.w) direction.z -= 1;
+            if (keys.s) direction.z += 1;
+            if (keys.a) direction.x -= 1;
+            if (keys.d) direction.x += 1;
+
+            // Touch
+            if (moveTouchId !== null) {
+                direction.z += touchState.moveY;
+                direction.x += touchState.moveX;
+            }
+
+            direction.applyEuler(camera.rotation); // Orient to camera
+            direction.y = 0; // No flying
+            
+            if (direction.length() > 0) direction.normalize().multiplyScalar(speed);
+
+            // Collision Detection (X axis)
+            if (!checkCollision(camera.position.x + direction.x, camera.position.z)) {
+                camera.position.x += direction.x;
+            }
+            // Collision Detection (Z axis)
+            if (!checkCollision(camera.position.x, camera.position.z + direction.z)) {
+                camera.position.z += direction.z;
+            }
+
+            // Head Bob
+            if (direction.length() > 0) {
+                camera.position.y = (WALL_HEIGHT/2) + Math.sin(Date.now() * (keys.shift ? 0.015 : 0.01)) * 0.1;
+            } else {
+                camera.position.y = THREE.MathUtils.lerp(camera.position.y, WALL_HEIGHT/2, 0.1);
+            }
+
+            // Entity Logic
+            entities.forEach(entity => {
+                entity.update(0.016, camera.position);
+                
+                // Kill Check - Use 2D distance (ignore height difference)
+                const playerPosFlat = new THREE.Vector3(camera.position.x, 0, camera.position.z);
+                const entityPosFlat = new THREE.Vector3(entity.mesh.position.x, 0, entity.mesh.position.z);
+                const dist = playerPosFlat.distanceTo(entityPosFlat);
+
+                if (dist < ENTITY_KILL_DIST) {
+                    gameOver();
+                }
+            });
+
+            // Exit Check
+            if (exitObj) {
+                const distToExit = camera.position.distanceTo(exitObj.position);
+                if (distToExit < 2) {
+                    nextLevel();
+                }
+                // Pulse Exit Light
+                exitObj.children[0].intensity = 1 + Math.sin(Date.now() * 0.005) * 0.5;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Init
+        animate();
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
+</div>
+
+</body>
+</html>
