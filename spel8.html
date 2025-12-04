@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Geometry Dash</title>
+<title>Geometry Dash Clone</title>
 
 <style>
     body {
@@ -50,14 +50,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Geometry Dash Retro - Zayn Edition</title>
+    <title>Geometry Dash Retro - Ultimate Edition</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
         :root {
-            --primary: #00f3ff; /* Cyan Neon */
-            --secondary: #ff00ff; /* Magenta Neon */
-            --bg-color: #050510;
+            --primary: #00f3ff; /* Cyan */
+            --secondary: #ff00ff; /* Magenta */
+            --ship-color: #ffaa00; /* Orange för ship mode */
+            --bg-dark: #050510;
+            --bg-light: #1a1a2e;
             --glass: rgba(255, 255, 255, 0.1);
         }
 
@@ -67,13 +69,14 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: var(--bg-color);
+            background-color: var(--bg-dark);
             color: white;
             font-family: 'Orbitron', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             user-select: none;
+            -webkit-user-select: none;
         }
 
         #game-container {
@@ -82,15 +85,26 @@
             height: 100vh; 
             box-shadow: 0 0 50px rgba(0, 243, 255, 0.2);
             border: 2px solid var(--glass);
-            background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 100%);
+            background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-light) 100%);
             overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
+        /* Bakgrundseffekt som pulserar */
+        #bg-pulse {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at center, rgba(0, 243, 255, 0.05) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
         canvas {
             display: block;
+            position: relative;
+            z-index: 1;
             max-width: 100%; 
             max-height: 100%;
             object-fit: contain;
@@ -107,10 +121,10 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(5, 5, 16, 0.85);
-            backdrop-filter: blur(5px);
+            background: rgba(5, 5, 16, 0.9);
+            backdrop-filter: blur(8px);
             z-index: 10;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.3s;
         }
 
         .hidden {
@@ -120,1361 +134,751 @@
         }
 
         h1 {
-            font-size: clamp(2rem, 5vw, 4rem);
-            margin-bottom: 20px;
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            margin-bottom: 10px;
             text-transform: uppercase;
-            text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
+            text-shadow: 0 0 20px var(--primary);
             background: -webkit-linear-gradient(#fff, var(--primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: 2px;
+            letter-spacing: 4px;
             text-align: center;
         }
 
         h2 {
-            font-size: clamp(1.2rem, 3vw, 2rem);
-            text-shadow: 0 0 10px var(--secondary);
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
             color: var(--secondary);
+            text-shadow: 0 0 10px var(--secondary);
             text-align: center;
+            margin-bottom: 20px;
         }
 
-        /* Nivågallret och Navigering */
+        p { color: #ccc; font-size: 1rem; text-align: center; max-width: 600px; line-height: 1.5; }
+
+        /* Nivåväljare */
         .level-grid-container {
             display: flex;
             align-items: center;
             justify-content: center;
             width: 100%;
-            max-width: 700px; /* Sätter en maxbredd för hela navigationen */
-            margin-bottom: 20px;
+            max-width: 800px;
+            margin: 20px 0;
         }
 
         .level-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
+            gap: 12px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
             border: 1px solid var(--glass);
-            max-width: clamp(300px, 80%, 600px);
             flex-grow: 1;
         }
 
         .lvl-btn {
-            background: transparent;
+            background: rgba(0, 243, 255, 0.05);
             border: 2px solid var(--primary);
             color: var(--primary);
-            padding: 10px;
+            padding: 5px;
             font-family: 'Orbitron', sans-serif;
             font-weight: bold;
-            font-size: clamp(0.6rem, 1.5vw, 1rem); /* Justerad fontstorlek */
             cursor: pointer;
-            border-radius: 5px;
-            transition: all 0.2s;
-            text-shadow: 0 0 5px var(--primary);
-            box-shadow: 0 0 5px rgba(0, 243, 255, 0.2);
-            height: 60px; /* Fixerad höjd för att rymma namn */
+            border-radius: 8px;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            height: 70px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            position: relative;
+            overflow: hidden;
         }
 
-        .lvl-btn strong {
-            font-size: clamp(1rem, 3vw, 1.5rem);
-        }
+        .lvl-btn strong { font-size: 1.4rem; z-index: 2; }
+        .lvl-btn span { font-size: 0.6rem; z-index: 2; text-transform: uppercase; margin-top: 2px; }
 
         .lvl-btn:hover {
             background: var(--primary);
             color: #000;
-            box-shadow: 0 0 20px var(--primary);
+            box-shadow: 0 0 25px var(--primary);
             transform: scale(1.1);
         }
 
         .lvl-btn.hard {
             border-color: var(--secondary);
             color: var(--secondary);
-            text-shadow: 0 0 5px var(--secondary);
-            box-shadow: 0 0 5px rgba(255, 0, 255, 0.2);
+            background: rgba(255, 0, 255, 0.05);
         }
         
         .lvl-btn.hard:hover {
             background: var(--secondary);
             color: white;
-            box-shadow: 0 0 20px var(--secondary);
+            box-shadow: 0 0 25px var(--secondary);
         }
 
         .nav-arrow {
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid var(--primary);
-            color: var(--primary);
-            padding: 15px 10px;
-            font-size: 1.5rem;
+            background: rgba(0,0,0,0.6);
+            border: none;
+            color: white;
+            font-size: 2rem;
             cursor: pointer;
-            border-radius: 5px;
-            transition: all 0.2s;
-            margin: 0 10px;
-            width: 50px; 
-            text-align: center;
+            padding: 0 15px;
+            transition: 0.2s;
         }
-
-        .nav-arrow:hover {
-            background: var(--primary);
-            color: #000;
-            box-shadow: 0 0 15px var(--primary);
-        }
+        .nav-arrow:hover { color: var(--primary); transform: scale(1.2); }
 
         /* Knappar */
         .btn-main {
             margin-top: 20px;
-            padding: 15px 40px;
-            font-size: clamp(1rem, 3vw, 1.5rem);
-            background: linear-gradient(45deg, var(--secondary), #ff55ff);
+            padding: 15px 50px;
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, var(--secondary), #aa00aa);
             border: none;
             color: white;
             font-family: 'Orbitron', sans-serif;
             font-weight: 900;
             cursor: pointer;
-            border-radius: 30px;
+            border-radius: 50px;
             text-transform: uppercase;
-            box-shadow: 0 0 15px var(--secondary);
-            transition: transform 0.1s;
-        }
-
-        .btn-main:active {
-            transform: scale(0.95);
-        }
-
-        .btn-small {
-            margin-top: 15px;
-            padding: 8px 20px;
-            background: transparent;
-            border: 1px solid white;
-            color: white;
-            font-family: 'Orbitron', sans-serif;
-            cursor: pointer;
-            transition: 0.2s;
-            font-size: clamp(0.7rem, 2vw, 1rem);
+            box-shadow: 0 0 20px var(--secondary);
+            transition: transform 0.1s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
         }
         
-        .btn-small:hover {
-            background: white;
-            color: black;
+        .btn-main::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(rgba(255,255,255,0.2), transparent);
+            transform: rotate(45deg);
+            transition: 0.5s;
+            opacity: 0;
         }
+        .btn-main:hover::after { opacity: 1; left: 100%; }
 
-        /* Credits Modal */
-        #credits-modal {
-            position: fixed; 
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            border: 2px solid var(--secondary);
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 0 30px rgba(255, 0, 255, 0.3);
-            z-index: 20;
-            max-width: 90%;
-        }
+        .btn-main:active { transform: scale(0.95); }
 
-        .creator-name {
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
-            color: var(--primary);
-            margin: 20px 0;
-            text-shadow: 0 0 15px var(--primary);
-            animation: pulse 2s infinite;
+        .btn-sub {
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.7);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 5px;
+            font-family: 'Orbitron', sans-serif;
+            transition: 0.2s;
         }
-
-        @keyframes pulse {
-            0% { text-shadow: 0 0 10px var(--primary); }
-            50% { text-shadow: 0 0 25px var(--primary), 0 0 5px white; }
-            100% { text-shadow: 0 0 10px var(--primary); }
-        }
+        .btn-sub:hover { border-color: white; color: white; background: rgba(255,255,255,0.1); }
 
         /* HUD */
         #hud {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
+            top: 20px; left: 20px; right: 20px;
             display: flex;
             justify-content: space-between;
             pointer-events: none;
             z-index: 5;
-            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-
-        .hud-text {
-            font-weight: bold;
-            text-shadow: 1px 1px 0 #000;
-        }
-
-        .progress-bar {
+        .hud-text { text-shadow: 2px 2px 0 #000; }
+        
+        .progress-bar-container {
             position: absolute;
-            top: 0;
-            left: 0;
-            height: 5px;
-            background: var(--primary);
+            top: 0; left: 0; width: 100%; height: 6px;
+            background: rgba(255,255,255,0.1);
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
             width: 0%;
             box-shadow: 0 0 10px var(--primary);
+            transition: width 0.1s linear;
         }
+
+        /* Volymkontroll */
+        #sound-toggle {
+            position: absolute;
+            bottom: 20px; right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 20;
+            opacity: 0.7;
+            transition: 0.2s;
+        }
+        #sound-toggle:hover { opacity: 1; transform: scale(1.1); }
 
     </style>
 </head>
 <body>
 
     <div id="game-container">
-        <!-- Progress Bar --><div id="progress" class="progress-bar"></div>
+        <div id="bg-pulse"></div>
+        <div class="progress-bar-container"><div id="progress" class="progress-bar"></div></div>
+        
+        <canvas id="gameCanvas" width="800" height="450"></canvas>
 
-        <!-- Canvas --><canvas id="gameCanvas" width="800" height="450"></canvas>
-
-        <!-- HUD --><div id="hud" class="hidden">
+        <div id="hud" class="hidden">
             <div class="hud-text" id="level-display">Nivå 1</div>
+            <div class="hud-text" id="mode-display">CUBE</div>
             <div class="hud-text" id="attempt-display">Försök: 1</div>
         </div>
 
-        <!-- NYA Huvudmenyn (Startskärm) --><div id="menu-screen" class="ui-layer">
+        <!-- Huvudmeny -->
+        <div id="menu-screen" class="ui-layer">
             <h1>NEON DASH</h1>
-            <p style="color: #aaa; margin-bottom: 10px;">SHIT EDITION</p>
-            <button class="btn-main" onclick="showLevelChoose()">STARTA SPEL</button>
-            <button class="btn-small" onclick="requestFullscreenHandler()">FULLSCREEN</button>
-            <button class="btn-small" onclick="showCredits()">CREDITS</button>
-        </div>
-
-        <!-- Level Choosement Skärm (Nivåval) --><div id="level-choose-screen" class="ui-layer hidden">
-            <h2>VÄLJ NIVÅ</h2>
-            <div id="level-group-name" style="margin-bottom: 20px; font-size: 1.5rem; color: var(--primary);"></div>
-            <div class="level-grid-container">
-                <button class="nav-arrow" onclick="navigateLevels(-1)">&#9664;</button> <!-- Vänsterpil -->
-                <div class="level-grid" id="level-selector">
-                    <!-- Genereras av JS -->
-                </div>
-                <button class="nav-arrow" onclick="navigateLevels(1)">&#9654;</button> <!-- Högerpil -->
+            <p>Ultimate Edition • Håll för att hoppa • Undvik spikar</p>
+            <br>
+            <button class="btn-main" onclick="showLevelChoose()">Spela</button>
+            <div style="margin-top: 20px;">
+                <button class="btn-sub" onclick="requestFullscreenHandler()">Fullskärm</button>
+                <button class="btn-sub" onclick="showCredits()">Credits</button>
             </div>
-            <button class="btn-small" onclick="goToMenu()">TILLBAKA TILL START</button>
         </div>
 
-
-        <!-- Game Over Skärm --><div id="game-over-screen" class="ui-layer hidden">
-            <h1 style="color: #ff3333; text-shadow: 0 0 20px #ff0000;">Imagine fail</h1>
-            <h2 id="fail-percent">95% KLART</h2>
-            <button class="btn-main" onclick="retryLevel()">FÖRSÖK IGEN</button>
-            <button class="btn-small" onclick="goToMenu()">MENY</button>
+        <!-- Nivåväljare -->
+        <div id="level-choose-screen" class="ui-layer hidden">
+            <h2>VÄLJ NIVÅ</h2>
+            <div id="level-group-name" style="margin-bottom: 10px; font-size: 1.2rem; color: var(--primary);"></div>
+            <div class="level-grid-container">
+                <button class="nav-arrow" onclick="navigateLevels(-1)">&#10094;</button>
+                <div class="level-grid" id="level-selector"></div>
+                <button class="nav-arrow" onclick="navigateLevels(1)">&#10095;</button>
+            </div>
+            <button class="btn-sub" onclick="goToMenu()">Tillbaka</button>
         </div>
 
-        <!-- Vinst Skärm --><div id="win-screen" class="ui-layer hidden">
-            <h1 style="color: #33ff33; text-shadow: 0 0 20px #00ff00;">NIVÅ KLAR!</h1>
-            <button class="btn-main" onclick="nextLevel()">NÄSTA NIVÅ</button>
-            <button class="btn-small" onclick="goToMenu()">MENY</button>
+        <!-- Game Over -->
+        <div id="game-over-screen" class="ui-layer hidden">
+            <h1 style="color: #ff4444; text-shadow: 0 0 30px red;">KRASCH!</h1>
+            <h2 id="fail-percent" style="color: white; text-shadow: none;">95%</h2>
+            <button class="btn-main" onclick="retryLevel()">Försök Igen</button>
+            <button class="btn-sub" onclick="goToMenu()">Meny</button>
         </div>
 
-        <!-- Credits Modal --><div id="credits-modal" class="hidden">
+        <!-- Vinst -->
+        <div id="win-screen" class="ui-layer hidden">
+            <h1 style="color: #44ff44; text-shadow: 0 0 30px lime;">KLARAD!</h1>
+            <h2 style="color: white;">Snyggt jobbat!</h2>
+            <button class="btn-main" onclick="nextLevel()">Nästa Nivå</button>
+            <button class="btn-sub" onclick="goToMenu()">Meny</button>
+        </div>
+
+        <!-- Credits -->
+        <div id="credits-modal" class="ui-layer hidden">
             <h2>UTVECKLAD AV</h2>
-            <div class="creator-name">Zayn Lilak</div>
-            <p>"Inspirerad" av Geometry Dash</p>
-            <button class="btn-small" onclick="hideCredits()">TILLBAKA</button>
+            <h1 style="font-size: 3rem; color: var(--primary);">Zayn Lilak</h1>
+            <p>Musik & SFX: Syntetiserad i realtid via Web Audio API.</p>
+            <p>Inspirerad av RobTop Games.</p>
+            <button class="btn-sub" onclick="hideCredits()">Stäng</button>
         </div>
+        
+        <div id="sound-toggle" onclick="toggleSound()">🔊</div>
     </div>
 
     <script>
         /**
-         * GEOMETRY DASH RETRO - GAME ENGINE
+         * GEOMETRY DASH RETRO - ULTIMATE EDITION ENGINE
          */
-
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Game Constants
-        const ORIGINAL_CANVAS_WIDTH = 800;
-        const ORIGINAL_CANVAS_HEIGHT = 450;
-        
-        // Fysik
-        const GRAVITY = 1.0; 
-        const JUMP_FORCE = -15; 
-        const PAD_FORCE = -22; 
-        
-        const GROUND_Y_RATIO = 350 / ORIGINAL_CANVAS_HEIGHT; 
-        const PLAYER_SIZE_RATIO = 30 / ORIGINAL_CANVAS_WIDTH; 
-        
-        // Färgkonstanter
-        const HAZARD_COLOR = '#ff0055'; 
-        const SAFE_COLOR = '#1e90ff'; 
-        const SAFE_OUTLINE = '#00f3ff'; 
-        const PAD_COLOR = '#ffff00'; 
-        const RING_COLOR = '#ffff00'; 
-        
-        let GROUND_Y;
-        let PLAYER_SIZE;
+        const ctx = canvas.getContext('2d', { alpha: false }); // Optimering
 
-        // --- LEVEL PRESET DATA (20 UNIKA NIVÅER) ---
+        // --- AUDIO SYSTEM (Web Audio API) ---
+        const AudioSys = {
+            ctx: null,
+            masterGain: null,
+            bgmInterval: null,
+            muted: false,
+            currentLevelId: 1,
 
-        // Nivådata-struktur: [x, y, type, w, h] (w och h är valfria beroende på typ)
-        // Y-värden är relativa till toppen av canvasen. Y=350 är marknivån (baserat på GROUND_Y_RATIO).
-        
-        const LEVEL_PRESETS = {
-            // --- EASY (Nivå 1-5) ---
-            1: { // Neon Rise
-                length: 5000, speed: 8,
-                obstacles: [
-                    [300, 350, 'SPIKE', 30, 30],
-                    [550, 320, 'BLOCK', 50, 30],
-                    [800, 350, 'SPIKE', 30, 30],
-                    [950, 350, 'SPIKE', 30, 30],
-                    [1200, 350, 'PAD', 40, 10], // Jump Pad
-                    [1600, 150, 'BLOCK', 100, 50],
-                    [2000, 350, 'SPIKE', 30, 30],
-                    [2200, 350, 'SPIKE', 30, 30],
-                    // -- EXTENDED --
-                    [2500, 320, 'BLOCK', 50, 30],
-                    [2550, 320, 'BLOCK', 50, 30],
-                    [2800, 350, 'SPIKE', 30, 30],
-                    [3000, 350, 'PAD', 40, 10],
-                    [3400, 200, 'BLOCK', 100, 50],
-                    [3700, 350, 'SPIKE', 30, 30],
-                    [4000, 350, 'SPIKE', 30, 30],
-                    [4050, 350, 'SPIKE', 30, 30],
-                    [4300, 350, 'RING', 40, 40],
-                    [4600, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            2: { // Binary Stream
-                length: 5500, speed: 8.2,
-                obstacles: [
-                    [350, 320, 'BLOCK', 40, 30],
-                    [500, 350, 'SPIKE', 30, 30],
-                    [700, 320, 'BLOCK', 80, 30],
-                    [1000, 350, 'SPIKE', 30, 30],
-                    [1050, 350, 'SPIKE', 30, 30],
-                    [1750, 350, 'SPIKE', 30, 30], // Var 1800
-                    [1900, 350, 'PAD', 40, 10], // FLYTTAD FRÅN 1300
-                    [2000, 250, 'BLOCK', 50, 100], // Wall
-                    // -- EXTENDED --
-                    [2300, 350, 'SPIKE', 30, 30],
-                    [2500, 350, 'SPIKE', 30, 30],
-                    [2700, 320, 'BLOCK', 60, 30],
-                    [3000, 350, 'RING', 40, 40],
-                    [3300, 350, 'SPIKE', 30, 30],
-                    [3350, 350, 'SPIKE', 30, 30],
-                    [3600, 350, 'PAD', 40, 10],
-                    [4000, 150, 'BLOCK', 100, 50],
-                    [4300, 350, 'SPIKE', 30, 30],
-                    [4600, 280, 'BLOCK', 50, 70],
-                    [5000, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            3: { // Pixel Pulse
-                length: 6000, speed: 8.5,
-                obstacles: [
-                    [300, 350, 'SPIKE', 30, 30],
-                    [500, 350, 'SPIKE', 30, 30],
-                    [550, 350, 'SPIKE', 30, 30], // Double Spike
-                    [800, 290, 'BLOCK', 60, 60],
-                    [1000, 350, 'RING', 40, 40], // Jump Ring
-                    [1300, 350, 'SPIKE', 30, 30],
-                    [1500, 350, 'PAD', 40, 10],
-                    [1800, 150, 'BLOCK', 150, 50],
-                    // -- EXTENDED --
-                    [2100, 350, 'SPIKE', 30, 30],
-                    [2300, 350, 'PAD', 40, 10],
-                    [2700, 150, 'BLOCK', 100, 50],
-                    [3000, 350, 'SPIKE', 30, 30],
-                    [3050, 350, 'SPIKE', 30, 30],
-                    [3300, 320, 'BLOCK', 50, 30],
-                    [3500, 350, 'RING', 40, 40],
-                    [3800, 350, 'SPIKE', 30, 30],
-                    [4100, 290, 'BLOCK', 60, 60],
-                    [4500, 350, 'SPIKE', 30, 30],
-                    [4800, 350, 'PAD', 40, 10],
-                    [5200, 200, 'BLOCK', 150, 50],
-                    [5500, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            4: { // Electro Grid
-                length: 6500, speed: 8.7,
-                obstacles: [
-                    [300, 320, 'BLOCK', 100, 30],
-                    [600, 350, 'SPIKE', 30, 30],
-                    [700, 350, 'SPIKE', 30, 30],
-                    [800, 350, 'PAD', 40, 10], // FLYTTAD FRÅN 1200
-                    [900, 250, 'BLOCK', 50, 100], // Tall Wall (FIXED from 150 high)
-                    [1200, 350, 'SPIKE', 30, 30], // Var Pad
-                    [1500, 350, 'RING', 40, 40],
-                    [1800, 350, 'SPIKE', 30, 30],
-                    [1850, 350, 'SPIKE', 30, 30],
-                    [1900, 350, 'SPIKE', 30, 30], // Triple Spike
-                    // -- EXTENDED --
-                    [2200, 350, 'SPIKE', 30, 30],
-                    [2400, 320, 'BLOCK', 100, 30],
-                    [2700, 350, 'PAD', 40, 10],
-                    [3100, 150, 'BLOCK', 80, 50],
-                    [3400, 350, 'RING', 40, 40],
-                    [3700, 350, 'SPIKE', 30, 30],
-                    [3750, 350, 'SPIKE', 30, 30],
-                    [4000, 300, 'BLOCK', 50, 50],
-                    [4300, 350, 'SPIKE', 30, 30],
-                    [4600, 350, 'SPIKE', 30, 30],
-                    [4900, 350, 'PAD', 40, 10],
-                    [5300, 200, 'BLOCK', 100, 50],
-                    [5600, 350, 'SPIKE', 30, 30],
-                    [5900, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            5: { // Cyan Core
-                length: 7000, speed: 9.0,
-                obstacles: [
-                    [350, 320, 'BLOCK', 40, 30],
-                    [450, 290, 'BLOCK', 40, 30], // Stairs up
-                    [650, 350, 'SPIKE', 30, 30],
-                    [800, 350, 'PAD', 40, 10],
-                    [1200, 350, 'RING', 40, 40],
-                    [1500, 350, 'SPIKE', 30, 30],
-                    [1600, 350, 'PAD', 40, 10],
-                    [2000, 150, 'BLOCK', 50, 50],
-                    // -- EXTENDED --
-                    [2300, 350, 'SPIKE', 30, 30],
-                    [2500, 350, 'SPIKE', 30, 30],
-                    [2700, 320, 'BLOCK', 40, 30],
-                    [2900, 350, 'PAD', 40, 10],
-                    [3300, 150, 'BLOCK', 50, 50],
-                    [3600, 350, 'RING', 40, 40],
-                    [3900, 350, 'SPIKE', 30, 30],
-                    [4200, 290, 'BLOCK', 40, 30],
-                    [4500, 350, 'SPIKE', 30, 30],
-                    [4800, 350, 'PAD', 40, 10],
-                    [5200, 250, 'BLOCK', 80, 100],
-                    [5500, 350, 'SPIKE', 30, 30],
-                    [5800, 350, 'SPIKE', 30, 30],
-                    [6100, 350, 'RING', 40, 40],
-                    [6400, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            
-            // --- MEDIUM (Nivå 6-10) ---
-            6: { // Magenta Maze
-                length: 7500, speed: 9.5,
-                obstacles: [
-                    [350, 350, 'SPIKE', 30, 30],
-                    [500, 270, 'BLOCK', 80, 40], // Flytande ö
-                    [700, 350, 'SPIKE', 30, 30],
-                    [750, 350, 'SPIKE', 30, 30],
-                    [1000, 310, 'BLOCK', 60, 40], // Lägre flytande ö
-                    [1300, 230, 'RING', 40, 40], 
-                    [1600, 350, 'SPIKE', 30, 30],
-                    [1650, 350, 'SPIKE', 30, 30],
-                    [1900, 350, 'PAD', 40, 10],
-                    // -- EXTENDED --
-                    [2200, 350, 'SPIKE', 30, 30],
-                    [2400, 270, 'BLOCK', 80, 40],
-                    [2700, 350, 'SPIKE', 30, 30],
-                    [3000, 350, 'PAD', 40, 10],
-                    [3400, 150, 'BLOCK', 100, 50],
-                    [3700, 350, 'SPIKE', 30, 30],
-                    [4000, 350, 'RING', 40, 40],
-                    [4300, 310, 'BLOCK', 60, 40],
-                    [4600, 350, 'SPIKE', 30, 30],
-                    [4650, 350, 'SPIKE', 30, 30],
-                    [5000, 350, 'PAD', 40, 10],
-                    [5400, 230, 'RING', 40, 40],
-                    [5800, 200, 'BLOCK', 100, 50],
-                    [6200, 350, 'SPIKE', 30, 30],
-                    [6500, 350, 'SPIKE', 30, 30],
-                    [6800, 300, 'BLOCK', 50, 50],
-                    [7100, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            7: { // The Gap Jumper
-                length: 8000, speed: 9.8,
-                obstacles: [
-                    [300, 350, 'SPIKE', 30, 30],
-                    [500, 350, 'SPIKE', 30, 30],
-                    [700, 350, 'SPIKE', 30, 30], // Trippel gap
-                    [1000, 300, 'BLOCK', 40, 50],
-                    [1200, 200, 'BLOCK', 40, 50],
-                    [1400, 300, 'BLOCK', 40, 50], // Stege ner
-                    [1650, 350, 'PAD', 40, 10],
-                    [2000, 350, 'RING', 40, 40],
-                    [2200, 350, 'SPIKE', 30, 30],
-                    // -- EXTENDED --
-                    [2500, 350, 'SPIKE', 30, 30],
-                    [2800, 350, 'PAD', 40, 10],
-                    [3200, 150, 'BLOCK', 80, 50],
-                    [3500, 350, 'SPIKE', 30, 30],
-                    [3800, 350, 'RING', 40, 40],
-                    [4100, 300, 'BLOCK', 40, 50],
-                    [4400, 350, 'SPIKE', 30, 30],
-                    [4700, 200, 'BLOCK', 40, 50],
-                    [5000, 350, 'SPIKE', 30, 30],
-                    [5300, 350, 'PAD', 40, 10],
-                    [5700, 300, 'BLOCK', 40, 50],
-                    [6000, 350, 'SPIKE', 30, 30],
-                    [6300, 350, 'RING', 40, 40],
-                    [6600, 250, 'BLOCK', 100, 100],
-                    [7000, 350, 'SPIKE', 30, 30],
-                    [7300, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            8: { // Laser Gridlock
-                length: 8500, speed: 10.0,
-                obstacles: [
-                    [300, 300, 'BLOCK', 100, 50], // Sänkt vägg (var 250, 100)
-                    [500, 350, 'SPIKE', 30, 30],
-                    [550, 350, 'SPIKE', 30, 30],
-                    [800, 350, 'PAD', 40, 10],
-                    [1200, 150, 'BLOCK', 80, 50],
-                    [1500, 350, 'SPIKE', 30, 30],
-                    [1600, 350, 'RING', 40, 40],
-                    [1900, 300, 'BLOCK', 50, 50],
-                    [2200, 350, 'SPIKE', 30, 30],
-                    [2250, 350, 'SPIKE', 30, 30],
-                    // -- EXTENDED --
-                    [2600, 350, 'PAD', 40, 10],
-                    [3000, 150, 'BLOCK', 80, 50],
-                    [3300, 350, 'SPIKE', 30, 30],
-                    [3500, 350, 'RING', 40, 40],
-                    [3800, 250, 'BLOCK', 100, 100],
-                    [4100, 350, 'SPIKE', 30, 30],
-                    [4400, 350, 'SPIKE', 30, 30],
-                    [4700, 350, 'PAD', 40, 10],
-                    [5100, 200, 'BLOCK', 100, 50],
-                    [5400, 350, 'SPIKE', 30, 30],
-                    [5700, 300, 'BLOCK', 50, 50],
-                    [6000, 350, 'SPIKE', 30, 30],
-                    [6300, 350, 'RING', 40, 40],
-                    [6600, 350, 'SPIKE', 30, 30],
-                    [6900, 350, 'SPIKE', 30, 30],
-                    [7200, 350, 'PAD', 40, 10],
-                    [7600, 100, 'BLOCK', 150, 50],
-                    [7900, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            9: { // Gravity Flip
-                length: 9000, speed: 10.3,
-                obstacles: [
-                    [400, 350, 'SPIKE', 30, 30],
-                    [600, 350, 'PAD', 40, 10],
-                    [1000, 150, 'BLOCK', 50, 50],
-                    [1250, 350, 'SPIKE', 30, 30],
-                    [1300, 350, 'SPIKE', 30, 30],
-                    [1600, 350, 'RING', 40, 40],
-                    [1800, 300, 'BLOCK', 80, 50],
-                    [2200, 350, 'SPIKE', 30, 30],
-                    [2230, 350, 'SPIKE', 30, 30],
-                    [2260, 350, 'SPIKE', 30, 30], // Tätt Triple Spike
-                    // -- EXTENDED --
-                    [2600, 350, 'SPIKE', 30, 30],
-                    [2800, 350, 'PAD', 40, 10],
-                    [3200, 150, 'BLOCK', 50, 50],
-                    [3500, 350, 'SPIKE', 30, 30],
-                    [3800, 350, 'RING', 40, 40],
-                    [4100, 300, 'BLOCK', 80, 50],
-                    [4400, 350, 'SPIKE', 30, 30],
-                    [4700, 350, 'PAD', 40, 10],
-                    [5100, 200, 'BLOCK', 100, 50],
-                    [5400, 350, 'SPIKE', 30, 30],
-                    [5700, 350, 'SPIKE', 30, 30],
-                    [6000, 350, 'RING', 40, 40],
-                    [6300, 250, 'BLOCK', 100, 100],
-                    [6600, 350, 'SPIKE', 30, 30],
-                    [6900, 350, 'PAD', 40, 10],
-                    [7300, 150, 'BLOCK', 80, 50],
-                    [7600, 350, 'SPIKE', 30, 30],
-                    [7900, 350, 'SPIKE', 30, 30],
-                    [8200, 350, 'SPIKE', 30, 30],
-                    [8500, 350, 'RING', 40, 40],
-                ]
-            },
-            10: { // Orbitron City
-                length: 9500, speed: 10.5,
-                obstacles: [
-                    [300, 300, 'BLOCK', 50, 50], // Sänkt vägg (var 250, 100)
-                    [500, 350, 'PAD', 40, 10],
-                    [800, 100, 'BLOCK', 50, 50],
-                    [1000, 350, 'SPIKE', 30, 30],
-                    [1200, 350, 'RING', 40, 40],
-                    [1500, 250, 'BLOCK', 60, 100],
-                    [1800, 350, 'SPIKE', 30, 30],
-                    [2000, 350, 'PAD', 40, 10],
-                    [2300, 150, 'BLOCK', 100, 50],
-                    // -- EXTENDED --
-                    [2600, 350, 'SPIKE', 30, 30],
-                    [2900, 350, 'PAD', 40, 10],
-                    [3300, 100, 'BLOCK', 50, 50],
-                    [3600, 350, 'SPIKE', 30, 30],
-                    [3900, 350, 'RING', 40, 40],
-                    [4200, 250, 'BLOCK', 60, 100],
-                    [4500, 350, 'SPIKE', 30, 30],
-                    [4800, 350, 'PAD', 40, 10],
-                    [5200, 150, 'BLOCK', 100, 50],
-                    [5500, 350, 'SPIKE', 30, 30],
-                    [5800, 350, 'RING', 40, 40],
-                    [6100, 300, 'BLOCK', 50, 50],
-                    [6400, 350, 'SPIKE', 30, 30],
-                    [6700, 350, 'PAD', 40, 10],
-                    [7100, 100, 'BLOCK', 80, 50],
-                    [7400, 350, 'SPIKE', 30, 30],
-                    [7700, 350, 'SPIKE', 30, 30],
-                    [7900, 350, 'RING', 40, 40], // FLYTTAD FRÅN 8300
-                    [8000, 250, 'BLOCK', 50, 100], // Original fixed wall
-                    [8300, 350, 'SPIKE', 30, 30], // Var Ring
-                    [8600, 350, 'SPIKE', 30, 30],
-                    [8900, 350, 'SPIKE', 30, 30],
-                ]
+            init: function() {
+                if (this.ctx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.gain.value = 0.3; 
+                this.masterGain.connect(this.ctx.destination);
             },
 
-            // --- HARD (Nivå 11-15) ---
-            11: { // Spike Factory
-                length: 10000, speed: 11.0,
-                obstacles: [
-                    [300, 350, 'SPIKE', 30, 30],
-                    [330, 350, 'SPIKE', 30, 30],
-                    [360, 350, 'SPIKE', 30, 30],
-                    [500, 350, 'PAD', 40, 10],
-                    [800, 350, 'SPIKE', 30, 30],
-                    [830, 350, 'SPIKE', 30, 30],
-                    [1000, 350, 'RING', 40, 40],
-                    [1200, 250, 'BLOCK', 40, 100], // Very high jump required (FIXED from 150 high)
-                    [1500, 350, 'SPIKE', 30, 30],
-                    [1530, 350, 'SPIKE', 30, 30],
-                    [1800, 350, 'PAD', 40, 10],
-                    [2200, 350, 'SPIKE', 30, 30],
-                    // -- EXTENDED --
-                    [2500, 350, 'SPIKE', 30, 30],
-                    [2800, 350, 'PAD', 40, 10],
-                    [3200, 150, 'BLOCK', 50, 50],
-                    [3500, 350, 'SPIKE', 30, 30],
-                    [3800, 350, 'RING', 40, 40],
-                    [4100, 350, 'SPIKE', 30, 30],
-                    [4130, 350, 'SPIKE', 30, 30],
-                    [4400, 300, 'BLOCK', 50, 50],
-                    [4700, 350, 'PAD', 40, 10],
-                    [5100, 250, 'BLOCK', 40, 100], // Original fixed wall
-                    [5400, 350, 'SPIKE', 30, 30],
-                    [5700, 350, 'RING', 40, 40],
-                    [6000, 350, 'SPIKE', 30, 30],
-                    [6030, 350, 'SPIKE', 30, 30],
-                    [6300, 350, 'SPIKE', 30, 30],
-                    [6600, 350, 'PAD', 40, 10],
-                    [7000, 100, 'BLOCK', 100, 50],
-                    [7300, 350, 'SPIKE', 30, 30],
-                    [7600, 350, 'RING', 40, 40],
-                    [7900, 250, 'BLOCK', 80, 100],
-                    [8200, 350, 'SPIKE', 30, 30],
-                    [8500, 350, 'SPIKE', 30, 30],
-                    [8800, 350, 'PAD', 40, 10],
-                    [9200, 150, 'BLOCK', 100, 50],
-                    [9500, 350, 'SPIKE', 30, 30],
-                ]
+            playTone: function(freq, type, duration, vol = 1, slideTo = null) {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                if (slideTo) {
+                    osc.frequency.exponentialRampToValueAtTime(slideTo, this.ctx.currentTime + duration);
+                }
+
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
             },
-            12: { // Insanity Road
-                length: 10500, speed: 11.5,
-                obstacles: [
-                    [300, 350, 'SPIKE', 30, 30],
-                    [400, 350, 'SPIKE', 30, 30],
-                    [500, 350, 'SPIKE', 30, 30],
-                    [600, 350, 'SPIKE', 30, 30], // Four spikes in a row!
-                    [900, 350, 'PAD', 40, 10],
-                    [1050, 100, 'BLOCK', 50, 50], // Landing block
-                    [1500, 350, 'SPIKE', 30, 30], // Var 1600
-                    [1700, 350, 'RING', 40, 40], // FLYTTAD FRÅN 1300
-                    [1800, 250, 'BLOCK', 40, 100],
-                    [2100, 350, 'SPIKE', 30, 30],
-                    [2130, 350, 'SPIKE', 30, 30],
-                    // -- EXTENDED --
-                    [2500, 350, 'SPIKE', 30, 30],
-                    [2800, 350, 'PAD', 40, 10],
-                    [3200, 100, 'BLOCK', 50, 50],
-                    [3500, 350, 'SPIKE', 30, 30],
-                    [3800, 350, 'RING', 40, 40],
-                    [4100, 250, 'BLOCK', 40, 100],
-                    [4400, 350, 'SPIKE', 30, 30],
-                    [4700, 350, 'SPIKE', 30, 30],
-                    [5000, 350, 'PAD', 40, 10],
-                    [5400, 150, 'BLOCK', 80, 50],
-                    [5700, 350, 'SPIKE', 30, 30],
-                    [6000, 350, 'SPIKE', 30, 30],
-                    [6300, 350, 'RING', 40, 40],
-                    [6600, 300, 'BLOCK', 50, 50],
-                    [6900, 350, 'SPIKE', 30, 30],
-                    [7200, 350, 'PAD', 40, 10],
-                    [7600, 100, 'BLOCK', 100, 50],
-                    [7900, 350, 'SPIKE', 30, 30],
-                    [8200, 350, 'SPIKE', 30, 30],
-                    [8500, 350, 'SPIKE', 30, 30],
-                    [8800, 350, 'RING', 40, 40],
-                    [9100, 230, 'BLOCK', 100, 120], // Sänkt vägg från 150
-                    [9400, 350, 'SPIKE', 30, 30],
-                    [9700, 350, 'PAD', 40, 10],
-                    [10000, 350, 'SPIKE', 30, 30],
-                ]
+
+            playJump: function() { this.playTone(150, 'square', 0.1, 0.5, 400); },
+            playOrb: function() { this.playTone(600, 'sine', 0.2, 0.4, 1200); },
+            playPad: function() { this.playTone(100, 'sawtooth', 0.3, 0.5, 300); },
+            playPadHigh: function() { this.playTone(200, 'square', 0.4, 0.5, 600); }, // Nytt ljud för High Pad
+
+            playCrash: function() {
+                if (this.muted || !this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 0.5;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+                noise.connect(gain);
+                gain.connect(this.masterGain);
+                noise.start();
             },
-            13: { // Chaos Theory
-                length: 11000, speed: 12.0,
-                obstacles: [
-                    [300, 300, 'BLOCK', 40, 50],
-                    [450, 350, 'RING', 40, 40],
-                    [600, 350, 'SPIKE', 30, 30],
-                    [750, 350, 'PAD', 40, 10],
-                    [1000, 100, 'BLOCK', 100, 50],
-                    [1400, 350, 'SPIKE', 30, 30],
-                    [1430, 350, 'SPIKE', 30, 30],
-                    [1600, 300, 'BLOCK', 40, 50],
-                    [1750, 350, 'SPIKE', 30, 30],
-                    [2000, 350, 'RING', 40, 40],
-                    [2200, 350, 'SPIKE', 30, 30],
-                    // -- EXTENDED --
-                    [2500, 300, 'BLOCK', 40, 50],
-                    [2800, 350, 'PAD', 40, 10],
-                    [3200, 100, 'BLOCK', 100, 50],
-                    [3500, 350, 'SPIKE', 30, 30],
-                    [3800, 350, 'RING', 40, 40],
-                    [4100, 350, 'SPIKE', 30, 30],
-                    [4400, 350, 'SPIKE', 30, 30],
-                    [4700, 300, 'BLOCK', 40, 50],
-                    [5000, 350, 'PAD', 40, 10],
-                    [5400, 150, 'BLOCK', 80, 50],
-                    [5700, 350, 'SPIKE', 30, 30],
-                    [6000, 350, 'RING', 40, 40],
-                    [6300, 350, 'SPIKE', 30, 30],
-                    [6600, 350, 'SPIKE', 30, 30],
-                    [6900, 300, 'BLOCK', 40, 50],
-                    [7200, 350, 'PAD', 40, 10],
-                    [7600, 100, 'BLOCK', 100, 50],
-                    [7900, 350, 'SPIKE', 30, 30],
-                    [8200, 350, 'RING', 40, 40],
-                    [8500, 250, 'BLOCK', 100, 100],
-                    [8800, 350, 'SPIKE', 30, 30],
-                    [9100, 350, 'PAD', 40, 10],
-                    [9500, 150, 'BLOCK', 50, 50],
-                    [9800, 350, 'SPIKE', 30, 30],
-                    [10100, 350, 'SPIKE', 30, 30],
-                    [10400, 350, 'RING', 40, 40],
-                    [10700, 350, 'SPIKE', 30, 30],
-                ]
+
+            playWin: function() {
+                [440, 554, 659, 880].forEach((freq, i) => {
+                    setTimeout(() => this.playTone(freq, 'square', 0.4, 0.4), i * 150);
+                });
             },
-            14: { // Triple Jump
-                length: 11500, speed: 12.5,
-                obstacles: [
-                    [300, 350, 'SPIKE', 30, 30],
-                    [400, 350, 'SPIKE', 30, 30],
-                    [500, 350, 'SPIKE', 30, 30], // Triple jump sequence
-                    [700, 300, 'BLOCK', 40, 50],
-                    [800, 250, 'BLOCK', 40, 50],
-                    [900, 200, 'BLOCK', 40, 50], // Stairs up
-                    [1200, 350, 'PAD', 40, 10],
-                    [1500, 350, 'RING', 40, 40],
-                    [1800, 350, 'SPIKE', 30, 30],
-                    [1900, 350, 'SPIKE', 30, 30],
-                    [2000, 350, 'SPIKE', 30, 30],
-                    // -- EXTENDED --
-                    [2300, 300, 'BLOCK', 40, 50],
-                    [2500, 250, 'BLOCK', 40, 50],
-                    [2700, 200, 'BLOCK', 40, 50],
-                    [3000, 350, 'PAD', 40, 10],
-                    [3400, 150, 'BLOCK', 80, 50],
-                    [3700, 350, 'SPIKE', 30, 30],
-                    [4000, 350, 'RING', 40, 40],
-                    [4300, 350, 'SPIKE', 30, 30],
-                    [4600, 350, 'SPIKE', 30, 30],
-                    [4900, 350, 'SPIKE', 30, 30],
-                    [5200, 350, 'PAD', 40, 10],
-                    [5600, 100, 'BLOCK', 100, 50],
-                    [5900, 350, 'SPIKE', 30, 30],
-                    [6200, 350, 'RING', 40, 40],
-                    [6500, 300, 'BLOCK', 40, 50],
-                    [6800, 250, 'BLOCK', 40, 50],
-                    [7100, 200, 'BLOCK', 40, 50],
-                    [7400, 350, 'PAD', 40, 10],
-                    [7800, 150, 'BLOCK', 100, 50],
-                    [8100, 350, 'SPIKE', 30, 30],
-                    [8400, 350, 'SPIKE', 30, 30],
-                    [8700, 350, 'RING', 40, 40],
-                    [9000, 350, 'SPIKE', 30, 30],
-                    [9300, 350, 'SPIKE', 30, 30],
-                    [9600, 350, 'PAD', 40, 10],
-                    [10000, 230, 'BLOCK', 100, 120], // Sänkt vägg från 150
-                    [10300, 350, 'SPIKE', 30, 30],
-                    [10600, 350, 'RING', 40, 40],
-                    [10900, 350, 'SPIKE', 30, 30],
-                    [11200, 350, 'SPIKE', 30, 30],
-                ]
+
+            // Genererar toner baserat på level-ID för att skapa unik musik
+            getLevelNote: function(levelId, step) {
+                // Skalor (Enkelt system)
+                const baseFreq = 100 + (levelId * 5); // Högre nivåer = ljusare/snabbare känsla
+                const scale = [0, 3, 5, 7, 10, 12]; // Pentatonisk-ish
+                const noteIndex = (step * levelId) % scale.length;
+                return baseFreq + (scale[noteIndex] * 10);
             },
-            15: { // Zayn's Nightmare
-                length: 12000, speed: 13.0,
-                obstacles: [
-                    [300, 350, 'PAD', 40, 10],
-                    [450, 150, 'BLOCK', 50, 50],
-                    [700, 350, 'SPIKE', 30, 30],
-                    [730, 350, 'SPIKE', 30, 30],
-                    [900, 350, 'RING', 40, 40],
-                    [1100, 350, 'SPIKE', 30, 30],
-                    [1300, 350, 'PAD', 40, 10],
-                    [1500, 200, 'BLOCK', 50, 50],
-                    [1700, 350, 'SPIKE', 30, 30],
-                    [2000, 350, 'SPIKE', 30, 30],
-                    [2030, 350, 'SPIKE', 30, 30],
-                    // -- EXTENDED --
-                    [2300, 350, 'PAD', 40, 10],
-                    [2700, 150, 'BLOCK', 50, 50],
-                    [3000, 350, 'SPIKE', 30, 30],
-                    [3300, 350, 'RING', 40, 40],
-                    [3600, 350, 'SPIKE', 30, 30],
-                    [3900, 350, 'PAD', 40, 10],
-                    [4300, 200, 'BLOCK', 50, 50],
-                    [4600, 350, 'SPIKE', 30, 30],
-                    [4900, 350, 'SPIKE', 30, 30],
-                    [5200, 350, 'RING', 40, 40],
-                    [5500, 350, 'PAD', 40, 10],
-                    [5900, 100, 'BLOCK', 100, 50],
-                    [6200, 350, 'SPIKE', 30, 30],
-                    [6500, 350, 'SPIKE', 30, 30],
-                    [6800, 350, 'RING', 40, 40],
-                    [7100, 300, 'BLOCK', 50, 50],
-                    [7400, 350, 'SPIKE', 30, 30],
-                    [7700, 350, 'PAD', 40, 10],
-                    [8100, 150, 'BLOCK', 80, 50],
-                    [8400, 350, 'SPIKE', 30, 30],
-                    [8700, 350, 'RING', 40, 40],
-                    [9000, 350, 'SPIKE', 30, 30],
-                    [9300, 350, 'SPIKE', 30, 30],
-                    [9600, 350, 'PAD', 40, 10],
-                    [10000, 230, 'BLOCK', 100, 120], // Sänkt vägg från 150
-                    [10300, 350, 'SPIKE', 30, 30],
-                    [10600, 350, 'RING', 40, 40],
-                    [10900, 350, 'SPIKE', 30, 30],
-                    [11200, 350, 'PAD', 40, 10],
-                    [11600, 100, 'BLOCK', 50, 50],
-                    [11900, 350, 'SPIKE', 30, 30],
-                ]
+
+            startBGM: function(levelId) {
+                if (this.bgmInterval) clearInterval(this.bgmInterval);
+                if (!this.ctx) this.init();
+                this.currentLevelId = levelId;
+                
+                let step = 0;
+                // Tempo ökar lite per nivå
+                const bpm = 120 + (levelId * 2); 
+                const stepTime = 60000 / bpm / 4; 
+
+                this.bgmInterval = setInterval(() => {
+                    if (this.muted || document.hidden) return;
+                    
+                    if (step % 4 === 0) {
+                        // Kick
+                        this.playTone(80, 'sine', 0.1, 0.8, 0.01);
+                        pulseBackground();
+                    }
+                    
+                    // Procedural basgång
+                    if (step % 2 === 0) {
+                        const freq = this.getLevelNote(levelId, Math.floor(step/4));
+                        this.playTone(freq, 'sawtooth', 0.15, 0.15);
+                    }
+                    
+                    // Melodi på högre nivåer
+                    if (levelId > 5 && step % 8 === 2) {
+                         this.playTone(this.getLevelNote(levelId, step) * 2, 'square', 0.1, 0.05);
+                    }
+
+                    step++;
+                }, stepTime);
             },
-            
-            // --- INSANE (Nivå 16-20) ---
-            16: { // Ultra-Flow
-                length: 12500, speed: 13.5,
-                obstacles: [
-                    [300, 350, 'SPIKE', 30, 30],
-                    [330, 350, 'SPIKE', 30, 30],
-                    [450, 350, 'PAD', 40, 10],
-                    [600, 150, 'BLOCK', 40, 40],
-                    [700, 350, 'SPIKE', 30, 30],
-                    [850, 350, 'RING', 40, 40],
-                    [1000, 350, 'SPIKE', 30, 30],
-                    [1030, 350, 'SPIKE', 30, 30],
-                    [1200, 250, 'BLOCK', 50, 50],
-                    [1400, 350, 'PAD', 40, 10],
-                    [1600, 100, 'BLOCK', 50, 50],
-                    // -- EXTENDED --
-                    [1900, 350, 'SPIKE', 30, 30],
-                    [2200, 350, 'RING', 40, 40],
-                    [2500, 350, 'SPIKE', 30, 30],
-                    [2800, 350, 'PAD', 40, 10],
-                    [3200, 150, 'BLOCK', 40, 40],
-                    [3500, 350, 'SPIKE', 30, 30],
-                    [3800, 350, 'RING', 40, 40],
-                    [4100, 350, 'SPIKE', 30, 30],
-                    [4400, 250, 'BLOCK', 50, 50],
-                    [4700, 350, 'PAD', 40, 10],
-                    [5100, 100, 'BLOCK', 50, 50],
-                    [5400, 350, 'SPIKE', 30, 30],
-                    [5700, 350, 'SPIKE', 30, 30],
-                    [6000, 350, 'RING', 40, 40],
-                    [6300, 350, 'PAD', 40, 10],
-                    [6700, 150, 'BLOCK', 100, 50],
-                    [7000, 350, 'SPIKE', 30, 30],
-                    [7300, 350, 'SPIKE', 30, 30],
-                    [7600, 350, 'RING', 40, 40],
-                    [7900, 300, 'BLOCK', 50, 50],
-                    [8200, 350, 'SPIKE', 30, 30],
-                    [8500, 350, 'PAD', 40, 10],
-                    [8900, 100, 'BLOCK', 80, 50],
-                    [9200, 350, 'SPIKE', 30, 30],
-                    [9500, 350, 'RING', 40, 40],
-                    [9800, 350, 'SPIKE', 30, 30],
-                    [10100, 350, 'SPIKE', 30, 30],
-                    [10400, 350, 'PAD', 40, 10],
-                    [10800, 230, 'BLOCK', 100, 120], // Sänkt vägg från 150
-                    [11100, 350, 'SPIKE', 30, 30],
-                    [11400, 350, 'RING', 40, 40],
-                    [11700, 350, 'SPIKE', 30, 30],
-                    [12000, 350, 'PAD', 40, 10],
-                    [12300, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            17: { // Impossible Run
-                length: 13000, speed: 14.0,
-                obstacles: [
-                    [300, 350, 'SPIKE', 30, 30],
-                    [360, 350, 'SPIKE', 30, 30],
-                    [420, 350, 'SPIKE', 30, 30],
-                    [500, 350, 'PAD', 40, 10],
-                    [700, 150, 'BLOCK', 40, 40],
-                    [800, 350, 'SPIKE', 30, 30],
-                    [900, 350, 'RING', 40, 40],
-                    [1050, 350, 'SPIKE', 30, 30],
-                    [1080, 350, 'SPIKE', 30, 30],
-                    [1200, 200, 'BLOCK', 100, 50],
-                    [1500, 350, 'PAD', 40, 10],
-                    // -- EXTENDED --
-                    [1800, 350, 'SPIKE', 30, 30],
-                    [2100, 350, 'RING', 40, 40],
-                    [2400, 350, 'SPIKE', 30, 30],
-                    [2700, 350, 'PAD', 40, 10],
-                    [3100, 150, 'BLOCK', 40, 40],
-                    [3400, 350, 'SPIKE', 30, 30],
-                    [3700, 350, 'RING', 40, 40],
-                    [4000, 350, 'SPIKE', 30, 30],
-                    [4300, 200, 'BLOCK', 100, 50],
-                    [4600, 350, 'PAD', 40, 10],
-                    [5000, 100, 'BLOCK', 50, 50],
-                    [5300, 350, 'SPIKE', 30, 30],
-                    [5600, 350, 'SPIKE', 30, 30],
-                    [5900, 350, 'RING', 40, 40],
-                    [6200, 350, 'PAD', 40, 10],
-                    [6600, 150, 'BLOCK', 100, 50],
-                    [6900, 350, 'SPIKE', 30, 30],
-                    [7200, 350, 'SPIKE', 30, 30],
-                    [7500, 350, 'RING', 40, 40],
-                    [7800, 300, 'BLOCK', 50, 50],
-                    [8100, 350, 'SPIKE', 30, 30],
-                    [8400, 350, 'PAD', 40, 10],
-                    [8800, 100, 'BLOCK', 80, 50],
-                    [9100, 350, 'SPIKE', 30, 30],
-                    [9400, 350, 'RING', 40, 40],
-                    [9700, 350, 'SPIKE', 30, 30],
-                    [10000, 350, 'SPIKE', 30, 30],
-                    [10300, 350, 'PAD', 40, 10],
-                    [10700, 230, 'BLOCK', 100, 120], // Sänkt vägg från 150
-                    [11000, 350, 'SPIKE', 30, 30],
-                    [11300, 350, 'RING', 40, 40],
-                    [11600, 350, 'SPIKE', 30, 30],
-                    [11900, 350, 'PAD', 40, 10],
-                    [12200, 350, 'SPIKE', 30, 30],
-                    [12500, 350, 'RING', 40, 40],
-                    [12800, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            18: { // The Machine
-                length: 13500, speed: 14.5,
-                obstacles: [
-                    [300, 250, 'BLOCK', 50, 100],
-                    [500, 350, 'SPIKE', 30, 30],
-                    [600, 350, 'PAD', 40, 10],
-                    [750, 150, 'BLOCK', 40, 40],
-                    [900, 350, 'SPIKE', 30, 30],
-                    [1000, 350, 'RING', 40, 40],
-                    [1200, 350, 'SPIKE', 30, 30],
-                    [1300, 200, 'BLOCK', 40, 40],
-                    [1450, 350, 'PAD', 40, 10],
-                    [1600, 350, 'SPIKE', 30, 30],
-                    [1630, 350, 'SPIKE', 30, 30],
-                    [1660, 350, 'SPIKE', 30, 30],
-                    // -- EXTENDED --
-                    [1900, 350, 'PAD', 40, 10],
-                    [2300, 150, 'BLOCK', 40, 40],
-                    [2600, 350, 'SPIKE', 30, 30],
-                    [2900, 350, 'RING', 40, 40],
-                    [3200, 350, 'SPIKE', 30, 30],
-                    [3500, 200, 'BLOCK', 40, 40],
-                    [3800, 350, 'PAD', 40, 10],
-                    [4200, 350, 'SPIKE', 30, 30],
-                    [4500, 350, 'SPIKE', 30, 30],
-                    [4800, 350, 'SPIKE', 30, 30],
-                    [5000, 350, 'PAD', 40, 10], // LADE TILL PAD
-                    [5100, 250, 'BLOCK', 50, 100],
-                    [5400, 350, 'RING', 40, 40],
-                    [5700, 350, 'PAD', 40, 10],
-                    [6100, 100, 'BLOCK', 100, 50],
-                    [6400, 350, 'SPIKE', 30, 30],
-                    [6700, 350, 'SPIKE', 30, 30],
-                    [7000, 350, 'RING', 40, 40],
-                    [7300, 200, 'BLOCK', 40, 40],
-                    [7600, 350, 'PAD', 40, 10],
-                    [8000, 350, 'SPIKE', 30, 30],
-                    [8300, 350, 'SPIKE', 30, 30],
-                    [8600, 350, 'SPIKE', 30, 30],
-                    [8700, 350, 'RING', 40, 40], // LADE TILL RING
-                    [8800, 250, 'BLOCK', 50, 100], // Var [8900, 300, 'BLOCK', 50, 50]
-                    [8900, 350, 'SPIKE', 30, 30], // Var block
-                    [9200, 350, 'SPIKE', 30, 30], // Var ring
-                    [9500, 350, 'PAD', 40, 10],
-                    [9900, 150, 'BLOCK', 80, 50],
-                    [10200, 350, 'SPIKE', 30, 30],
-                    [10500, 350, 'SPIKE', 30, 30],
-                    [10800, 350, 'RING', 40, 40],
-                    [11100, 250, 'BLOCK', 100, 100],
-                    [11400, 350, 'PAD', 40, 10],
-                    [11800, 100, 'BLOCK', 50, 50],
-                    [12100, 350, 'SPIKE', 30, 30],
-                    [12400, 350, 'RING', 40, 40],
-                    [12700, 350, 'SPIKE', 30, 30],
-                    [13000, 350, 'SPIKE', 30, 30],
-                    [13300, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            19: { // Abyss Dive
-                length: 14000, speed: 15.0,
-                obstacles: [
-                    [300, 350, 'RING', 40, 40],
-                    [450, 350, 'SPIKE', 30, 30],
-                    [550, 350, 'PAD', 40, 10],
-                    [700, 100, 'BLOCK', 50, 50],
-                    [900, 350, 'SPIKE', 30, 30],
-                    [930, 350, 'SPIKE', 30, 30],
-                    [1000, 350, 'RING', 40, 40],
-                    [1200, 350, 'SPIKE', 30, 30],
-                    [1300, 350, 'PAD', 40, 10],
-                    [1500, 200, 'BLOCK', 40, 40],
-                    [1700, 350, 'SPIKE', 30, 30],
-                    [1730, 350, 'SPIKE', 30, 30],
-                    // -- EXTENDED --
-                    [2000, 350, 'PAD', 40, 10],
-                    [2400, 100, 'BLOCK', 50, 50],
-                    [2700, 350, 'SPIKE', 30, 30],
-                    [3000, 350, 'RING', 40, 40],
-                    [3300, 350, 'SPIKE', 30, 30],
-                    [3600, 350, 'PAD', 40, 10],
-                    [4000, 200, 'BLOCK', 40, 40],
-                    [4300, 350, 'SPIKE', 30, 30],
-                    [4600, 350, 'SPIKE', 30, 30],
-                    [4900, 350, 'RING', 40, 40],
-                    [5200, 350, 'PAD', 40, 10],
-                    [5600, 150, 'BLOCK', 80, 50],
-                    [5900, 350, 'SPIKE', 30, 30],
-                    [6200, 350, 'RING', 40, 40],
-                    [6500, 350, 'SPIKE', 30, 30],
-                    [6800, 350, 'PAD', 40, 10],
-                    [7200, 100, 'BLOCK', 50, 50],
-                    [7500, 350, 'SPIKE', 30, 30],
-                    [7800, 350, 'SPIKE', 30, 30],
-                    [8100, 350, 'RING', 40, 40],
-                    [8400, 250, 'BLOCK', 100, 100],
-                    [8700, 350, 'PAD', 40, 10],
-                    [9100, 150, 'BLOCK', 50, 50],
-                    [9400, 350, 'SPIKE', 30, 30],
-                    [9700, 350, 'RING', 40, 40],
-                    [10000, 350, 'SPIKE', 30, 30],
-                    [10300, 350, 'PAD', 40, 10],
-                    [10700, 200, 'BLOCK', 40, 40],
-                    [11000, 350, 'SPIKE', 30, 30],
-                    [11300, 350, 'SPIKE', 30, 30],
-                    [11600, 350, 'RING', 40, 40],
-                    [11900, 350, 'PAD', 40, 10],
-                    [12300, 100, 'BLOCK', 100, 50],
-                    [12600, 350, 'SPIKE', 30, 30],
-                    [12900, 350, 'RING', 40, 40],
-                    [13200, 350, 'SPIKE', 30, 30],
-                    [13500, 350, 'SPIKE', 30, 30],
-                    [13800, 350, 'SPIKE', 30, 30],
-                ]
-            },
-            20: { // Final Frontier (Ultimate Challenge)
-                length: 15000, speed: 16.0,
-                obstacles: [
-                    [300, 350, 'SPIKE', 30, 30],
-                    [330, 350, 'SPIKE', 30, 30],
-                    [360, 350, 'SPIKE', 30, 30],
-                    [500, 350, 'PAD', 40, 10],
-                    [650, 150, 'BLOCK', 40, 40],
-                    [800, 350, 'RING', 40, 40],
-                    [950, 350, 'SPIKE', 30, 30],
-                    [980, 350, 'SPIKE', 30, 30],
-                    [1100, 200, 'BLOCK', 50, 50],
-                    [1300, 350, 'PAD', 40, 10],
-                    [1500, 100, 'BLOCK', 50, 50],
-                    [1700, 350, 'SPIKE', 30, 30],
-                    [1730, 350, 'SPIKE', 30, 30],
-                    [1760, 350, 'SPIKE', 30, 30],
-                    [1800, 350, 'RING', 40, 40],
-                    // -- EXTENDED --
-                    [2100, 350, 'SPIKE', 30, 30],
-                    [2300, 350, 'PAD', 40, 10],
-                    [2700, 150, 'BLOCK', 50, 50],
-                    [3000, 350, 'SPIKE', 30, 30],
-                    [3030, 350, 'SPIKE', 30, 30],
-                    [3300, 350, 'RING', 40, 40],
-                    [3600, 250, 'BLOCK', 100, 100],
-                    [3900, 350, 'SPIKE', 30, 30],
-                    [4200, 350, 'PAD', 40, 10],
-                    [4600, 100, 'BLOCK', 80, 50],
-                    [4900, 350, 'SPIKE', 30, 30],
-                    [5200, 350, 'SPIKE', 30, 30],
-                    [5500, 350, 'RING', 40, 40],
-                    [5800, 350, 'SPIKE', 30, 30],
-                    [6100, 350, 'PAD', 40, 10],
-                    [6500, 200, 'BLOCK', 50, 50],
-                    [6800, 350, 'SPIKE', 30, 30],
-                    [7100, 350, 'RING', 40, 40],
-                    [7400, 350, 'SPIKE', 30, 30],
-                    [7430, 350, 'SPIKE', 30, 30],
-                    [7460, 350, 'SPIKE', 30, 30],
-                    [7800, 350, 'PAD', 40, 10],
-                    [8200, 150, 'BLOCK', 100, 50],
-                    [8500, 350, 'SPIKE', 30, 30],
-                    [8700, 350, 'PAD', 40, 10], // LADE TILL PAD
-                    [8800, 250, 'BLOCK', 50, 100],
-                    [9100, 350, 'RING', 40, 40],
-                    [9400, 350, 'SPIKE', 30, 30],
-                    [9700, 350, 'PAD', 40, 10],
-                    [10100, 100, 'BLOCK', 50, 50],
-                    [10400, 350, 'SPIKE', 30, 30],
-                    [10700, 350, 'RING', 40, 40],
-                    [11000, 350, 'SPIKE', 30, 30],
-                    [11300, 350, 'SPIKE', 30, 30],
-                    [11600, 350, 'PAD', 40, 10],
-                    [12000, 200, 'BLOCK', 80, 50],
-                    [12300, 350, 'SPIKE', 30, 30],
-                    [12600, 350, 'RING', 40, 40],
-                    [12900, 350, 'SPIKE', 30, 30],
-                    [13200, 300, 'BLOCK', 50, 50],
-                    [13500, 350, 'SPIKE', 30, 30],
-                    [13800, 350, 'PAD', 40, 10],
-                    [14200, 150, 'BLOCK', 100, 50],
-                    [14500, 350, 'SPIKE', 30, 30],
-                    [14530, 350, 'SPIKE', 30, 30],
-                ]
+
+            stopBGM: function() {
+                if (this.bgmInterval) clearInterval(this.bgmInterval);
             }
         };
+
+        function toggleSound() {
+            AudioSys.muted = !AudioSys.muted;
+            document.getElementById('sound-toggle').innerText = AudioSys.muted ? '🔇' : '🔊';
+            if (!AudioSys.ctx) AudioSys.init();
+            if (AudioSys.ctx && AudioSys.ctx.state === 'suspended') AudioSys.ctx.resume();
+        }
         
-        // Fallback är inte längre nödvändig eftersom alla 20 nivåer är definierade.
+        function pulseBackground() {
+            const bg = document.getElementById('bg-pulse');
+            bg.style.opacity = '1';
+            setTimeout(() => { bg.style.opacity = '0.3'; }, 100);
+        }
 
 
-        const LEVELS = [
-            { id: 1, name: "Neon Rise", difficulty: "Easy" },
-            { id: 2, name: "Binary Stream", difficulty: "Easy" },
-            { id: 3, name: "Pixel Pulse", difficulty: "Easy" },
-            { id: 4, name: "Electro Grid", difficulty: "Easy" },
-            { id: 5, name: "Cyan Core", difficulty: "Easy" },
-            
-            { id: 6, name: "Magenta Maze", difficulty: "Medium" },
-            { id: 7, name: "The Gap Jumper", difficulty: "Medium" },
-            { id: 8, name: "Laser Gridlock", difficulty: "Medium" },
-            { id: 9, name: "Gravity Flip", difficulty: "Medium" },
-            { id: 10, name: "Orbitron City", difficulty: "Medium" },
-            
-            { id: 11, name: "Spike Factory", difficulty: "Hard" },
-            { id: 12, name: "Insanity Road", difficulty: "Hard" },
-            { id: 13, name: "Chaos Theory", difficulty: "Hard" },
-            { id: 14, name: "Triple Jump", difficulty: "Hard" },
-            { id: 15, name: "Zayn's Nightmare", difficulty: "Hard" },
-            
-            { id: 16, name: "Ultra-Flow", difficulty: "Insane" },
-            { id: 17, name: "Impossible Run", difficulty: "Insane" },
-            { id: 18, name: "The Machine", difficulty: "Insane" },
-            { id: 19, name: "Abyss Dive", difficulty: "Insane" },
-            { id: 20, name: "Final Frontier", difficulty: "Insane" }
-        ];
-        const LEVELS_PER_PAGE = 5;
-        let currentPage = 0; 
-        let totalPages = Math.ceil(LEVELS.length / LEVELS_PER_PAGE);
+        // --- SPELKONSTANTER & VARIABLER ---
+        const ORIGINAL_WIDTH = 800;
+        const ORIGINAL_HEIGHT = 450;
+        const GROUND_Y_RATIO = 380 / 450; 
+        
+        const GRAVITY_CUBE = 1.3;
+        const JUMP_FORCE = -17.5;
+        const TERMINAL_VELOCITY = 20;
 
-        // Game State
-        let gameState = 'MENU'; 
+        const GRAVITY_SHIP = 0.4;
+        const THRUST_SHIP = -0.7;
+        const MAX_SHIP_SPEED = 8;
+
+        let gameState = 'MENU';
         let currentLevel = 1;
         let attempt = 1;
-        let frameCount = 0;
-        let gameSpeed = 8;
         let cameraX = 0;
         let levelLength = 0;
+        let gameSpeed = 10; 
 
-        // Entities
+        let inputState = {
+            holding: false,
+            pressedThisFrame: false
+        };
+
         let player = {
-            x: 100, 
-            y: 0, 
-            dy: 0,
+            x: 100, y: 0, dy: 0, w: 30, h: 30,
+            mode: 'CUBE', 
             rotation: 0,
-            isGrounded: true,
+            isGrounded: false,
             isDead: false,
-            nearestOrb: null 
+            nearestOrb: null
         };
 
         let obstacles = [];
         let particles = [];
+        let floorParticles = [];
+
+        // --- NIVÅDATA (GENERATOR) ---
+        const T_BLOCK = 'BLOCK';
+        const T_SPIKE = 'SPIKE';
+        const T_PAD = 'PAD'; // Gul pad (normal hopp)
+        const T_PAD_HIGH = 'PAD_HIGH'; // Lila pad (högt hopp)
+        const T_RING = 'RING';
+        const T_SHIP_PORTAL = 'SHIP_PORTAL';
+        const T_CUBE_PORTAL = 'CUBE_PORTAL';
+        const T_SHIP_CEILING = 'SHIP_CEILING'; 
+        const T_SHIP_FLOOR = 'SHIP_FLOOR';
+        const T_SPIKE_FLOOR = 'SPIKE_FLOOR'; // Instant death
+
+        const LEVELS = [];
+
+        function generateLevels() {
+            for (let i = 1; i <= 20; i++) {
+                let diff = "Easy";
+                if (i > 5) diff = "Medium";
+                if (i > 10) diff = "Hard";
+                if (i > 15) diff = "Insane";
+                if (i === 20) diff = "Demon";
+
+                let speed = 10.5;
+
+                let lvlData = {
+                    id: i,
+                    name: getLevelName(i),
+                    difficulty: diff,
+                    speed: speed,
+                    data: createLevelLayout(i)
+                };
+                LEVELS.push(lvlData);
+            }
+        }
+
+        function getLevelName(i) {
+            const names = [
+                "Stereo Start", "Back on Track", "Polargeist", "Dry Out", "Base After Base",
+                "Cant Let Go", "Jumper", "Time Machine", "Cycles", "xStep",
+                "Clutterfunk", "Theory of All", "Electroman", "Clubstep", "Electrodynamix",
+                "Hexagon Force", "Blast Process", "Geometrical", "Deadlocked", "Fingerdash"
+            ];
+            return names[i-1] || `Level ${i}`;
+        }
+
+        function createLevelLayout(lvlNum) {
+            let obs = [];
+            // Startposition
+            let x = 800; 
+            const floorY = 380; 
+
+            // Helpers
+            const addSpike = (offset) => obs.push([x + offset, floorY, T_SPIKE, 30, 30]);
+            const addTripleSpike = (offset) => {
+                obs.push([x + offset, floorY, T_SPIKE, 30, 30]);
+                obs.push([x + offset + 30, floorY, T_SPIKE, 30, 30]);
+                obs.push([x + offset + 60, floorY, T_SPIKE, 30, 30]);
+            };
+            const addBlock = (offset, h) => obs.push([x + offset, floorY - h, T_BLOCK, 40, h]);
+            // Flytande plattform
+            const addPlatform = (offset, yFromFloor, w) => obs.push([x + offset, floorY - yFromFloor, T_BLOCK, w, 30]);
+            
+            const addPad = (offset) => obs.push([x + offset, floorY, T_PAD, 40, 10]);
+            const addHighPad = (offset) => obs.push([x + offset, floorY, T_PAD_HIGH, 40, 10]); // Ny helper
+            
+            const addRing = (offset, height) => obs.push([x + offset, floorY - height, T_RING, 40, 40]);
+            
+            // Parkour helper med dödligt golv
+            const addParkourSection = (difficulty) => {
+                let px = 0;
+                let steps = difficulty * 2 + 4;
+                let currentH = 0;
+                let sectionStart = x;
+                
+                // Dödligt golv under hela sektionen
+                obs.push([sectionStart, floorY, T_SPIKE_FLOOR, 10000, 30]); 
+                
+                // Första plattformen för att starta parkouren
+                addPlatform(px, 40, 60);
+                px += 60; // Gå till kanten av första blocket
+
+                for(let k=0; k<steps; k++) {
+                    // Beräkna nästa höjd
+                    let targetH = Math.floor(Math.random() * 3) * 40 + 40; // 40, 80, 120
+                    if (targetH > currentH + 40) targetH = currentH + 40;
+                    
+                    // Avstånd - Minska gapen något för att göra det mer spelbart men intensivt
+                    let gap = 160 + (Math.random() * 40); 
+                    
+                    // Skapa plattformen
+                    addPlatform(px + gap, targetH, 50);
+                    
+                    // Ibland spik PÅ plattformen
+                    if (lvlNum > 8 && Math.random() > 0.7) {
+                        obs.push([x + px + gap + 15, floorY - targetH - 30, T_SPIKE, 20, 20]);
+                    }
+
+                    px += gap + 50; // Flytta positionen
+                    currentH = targetH;
+                }
+                
+                // Markera golvet efter
+                addPlatform(px + 150, 0, 100); // Säker landning på marknivå-block
+                
+                // Uppdatera spike floor längd
+                let spikeFloor = obs.find(o => o.x === sectionStart && o.type === T_SPIKE_FLOOR);
+                if(spikeFloor) {
+                    spikeFloor.w = px + 100; 
+                }
+                
+                return px + 150;
+            };
+
+            let shipStart = 0;
+            if (lvlNum >= 3) {
+                shipStart = 2000 + (lvlNum * 400); // Variera startpunkten lite
+            }
+
+            const length = 76000; 
+
+            // Genereringsloop - Nu med TÄTARE intervaller
+            while (x < length) {
+                // SHIP MODE
+                if (shipStart > 0 && x > shipStart && x < shipStart + 1800) {
+                    if (!obs.some(o => o[2] === T_SHIP_PORTAL)) {
+                        const portalX = x;
+                        const portalY = 200;
+                        const portalH = 100;
+                        obs.push([portalX, portalY, T_SHIP_PORTAL, 50, portalH]);
+                        obs.push([portalX, 0, T_SHIP_CEILING, 50, portalY]); 
+                        obs.push([portalX, portalY + portalH, T_SHIP_FLOOR, 50, floorY - (portalY + portalH)]);
+                    }
+                    
+                    if (x % 350 < 50) { // Tätare skepphinder
+                        let ceilHeight = 100 + Math.random() * 100;
+                        let floorHeight = 80 + Math.random() * 60;
+                        obs.push([x + 300, 0, T_SHIP_CEILING, 80, ceilHeight]); 
+                        obs.push([x + 300, 380 - floorHeight, T_SHIP_FLOOR, 80, floorHeight]); 
+                    }
+                    x += 200; // Tätare loop
+                    continue;
+                } else if (shipStart > 0 && x > shipStart + 1800 && !obs.some(o => o[2] === T_CUBE_PORTAL)) {
+                     const portalTop = 200;
+                     const portalHeight = 100;
+                     obs.push([x, 0, T_SHIP_CEILING, 50, portalTop]); 
+                     obs.push([x, portalTop + portalHeight, T_SHIP_FLOOR, 50, floorY - (portalTop + portalHeight)]); 
+                     obs.push([x, portalTop, T_CUBE_PORTAL, 50, portalHeight]);
+                     x += 300; 
+                     continue;
+                }
+
+                // CUBE MODE - Tätare och mer varierat
+                const r = Math.random();
+                
+                // Mönster
+                if (r < 0.15) {
+                    // Enkel spik eller trippel
+                    if (lvlNum > 5 && Math.random() > 0.5) addTripleSpike(0);
+                    else addSpike(0);
+                    x += 200; // Mycket mindre gap till nästa hinder
+                } 
+                else if (r < 0.30) {
+                    // Blocktrappa (tätare)
+                    addBlock(0, 40); 
+                    addBlock(50, 80); // Trappa upp
+                    if (lvlNum > 3) addBlock(100, 40); // Ner igen
+                    x += 250;
+                }
+                else if (r < 0.45) {
+                    // Pad jump (High eller Low)
+                    if (lvlNum > 4 && Math.random() > 0.5) {
+                        addHighPad(0); // LILA PAD
+                        // Måste ha något högt att landa på eller hoppa över
+                        addPlatform(300, 150, 100); // Flytande plattform högt upp
+                    } else {
+                        addPad(0); // GUL PAD
+                        addBlock(200, 70); // Block att hoppa över
+                    }
+                    x += 400;
+                }
+                else if (r < 0.60) {
+                    // "Mid air" plattformar (block i luften)
+                    addPlatform(0, 50, 50);
+                    addPlatform(180, 90, 50); // Nästa steg
+                    x += 300;
+                }
+                else if (r < 0.75) {
+                     // Parkour-sektion (Mer frekvent nu)
+                     let advance = addParkourSection(lvlNum > 10 ? 3 : 1);
+                     x += advance;
+                }
+                else if (r < 0.85) {
+                    // Ring
+                    addRing(0, 100);
+                    addSpike(100); // Spik under ringen
+                    x += 300;
+                }
+                else {
+                    // Trap jump
+                    if (lvlNum > 6) {
+                         const trapX = x + 50;
+                         obs.push([trapX, floorY, T_PAD, 40, 10]);
+                         obs.push([trapX - 100, 100, T_SHIP_CEILING, 300, 50]); 
+                         addPlatform(trapX + 300, 40, 50);
+                         x += 400;
+                    } else {
+                        addBlock(0, 40);
+                        x += 150;
+                    }
+                }
+            }
+            
+            obs.push([length + 200, 0, 'FINISH', 50, 1000]);
+            return obs;
+        }
         
-        // --- Fullscreen and Canvas Scaling ---
-        function resizeCanvas() {
-            const container = document.getElementById('game-container');
-            const aspectRatio = ORIGINAL_CANVAS_WIDTH / ORIGINAL_CANVAS_HEIGHT;
+        generateLevels();
 
-            let newWidth = container.clientWidth;
-            let newHeight = container.clientHeight;
+        // --- SETUP & NAVIGERING ---
 
-            if (newWidth / newHeight > aspectRatio) {
-                newWidth = newHeight * aspectRatio;
-            } else {
-                newHeight = newWidth / aspectRatio;
-            }
-
-            canvas.width = newWidth;
-            canvas.height = newHeight;
-
-            // Scale game constants
-            PLAYER_SIZE = canvas.width * PLAYER_SIZE_RATIO;
-            GROUND_Y = canvas.height * GROUND_Y_RATIO;
-
-            // Adjust player position if game is playing
-            if (gameState === 'PLAYING' || gameState === 'MENU' || gameState === 'GAMEOVER' || gameState === 'WIN') {
-                if (player.isGrounded || player.y === 0) { // Only adjust if player is on ground or hasn't moved yet
-                    player.y = GROUND_Y - PLAYER_SIZE;
-                }
-            }
-        }
-
-        function requestFullscreenHandler() {
-            const elem = document.documentElement; 
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-            } else if (elem.mozRequestFullScreen) { 
-                elem.mozRequestFullScreen();
-            } else if (elem.webkitRequestFullscreen) { 
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) { 
-                elem.msRequestFullscreen();
-            }
-        }
-
-        // --- Level Loading (Fixed Presets) ---
-
-        /**
-         * Laddar en förinställd nivåstruktur baserat på levelNum.
-         */
-        function loadLevel(levelNum) {
-            obstacles = [];
-            
-            // Använd alltid den förinställda datan, oavsett nivå
-            const preset = LEVEL_PRESETS[levelNum];
-            
-            gameSpeed = preset.speed;
-            levelLength = preset.length;
-
-            const WORLD_GROUND_Y = ORIGINAL_CANVAS_HEIGHT * GROUND_Y_RATIO; 
-            
-            // Konvertera den statiska listan av hinder till den interna obstacles-arrayen
-            preset.obstacles.forEach(data => {
-                const [x, y, type, w, h] = data;
-                
-                // Om typen är SPIKE på marken (y är nära markvärdet), justera Y till GROUND_Y för exakt placering
-                let finalY = y;
-                if (type === 'SPIKE' && y > WORLD_GROUND_Y - 50) {
-                     finalY = WORLD_GROUND_Y; // Markspik
-                }
-                
-                // För PADs, placera basen på marken
-                if (type === 'PAD' && y > WORLD_GROUND_Y - 50) {
-                    finalY = WORLD_GROUND_Y - (h / 2); // Placerar PAD'ens mitt på marken
-                }
-
-
-                obstacles.push({ 
-                    x: x, 
-                    y: finalY, 
-                    type: type, 
-                    w: w, 
-                    h: h 
-                });
-            });
-
-            // Slutflagga
-            obstacles.push({ x: levelLength + 200, y: 0, type: 'FINISH', w: 50, h: ORIGINAL_CANVAS_HEIGHT });
-        }
-
-
-        // --- Core Functions ---
+        const LEVELS_PER_PAGE = 5;
+        let currentPage = 0;
 
         function init() {
-            resizeCanvas(); 
-            window.addEventListener('resize', resizeCanvas); 
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            createLevelButtons(currentPage);
             
-            createLevelButtons(currentPage); 
-            
-            // Input handlers
-            document.addEventListener('keydown', (e) => {
-                if ((e.code === 'Space' || e.code === 'ArrowUp') && gameState === 'PLAYING') {
-                    jump();
+            window.addEventListener('keydown', e => {
+                if (e.code === 'Space' || e.code === 'ArrowUp') {
+                    inputState.holding = true;
+                    inputState.pressedThisFrame = true;
+                    if (gameState === 'MENU' && e.code === 'Space') showLevelChoose();
                 }
             });
-
+            window.addEventListener('keyup', e => {
+                if (e.code === 'Space' || e.code === 'ArrowUp') inputState.holding = false;
+            });
+            
             canvas.addEventListener('mousedown', () => {
-                if (gameState === 'PLAYING') jump();
+                inputState.holding = true;
+                inputState.pressedThisFrame = true;
+                if (!AudioSys.ctx) AudioSys.init();
+            });
+            canvas.addEventListener('mouseup', () => inputState.holding = false);
+            
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                inputState.holding = true;
+                inputState.pressedThisFrame = true;
+                if (!AudioSys.ctx) AudioSys.init();
+            }, {passive: false});
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                inputState.holding = false;
             });
 
-            canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault(); 
-                if (gameState === 'PLAYING') jump();
-            }, {passive: false});
-
-            gameLoop();
+            requestAnimationFrame(gameLoop);
         }
 
-        // Funktion för att rendera knappar för den aktuella sidan
-        function createLevelButtons(pageIndex) {
-            const grid = document.getElementById('level-selector');
-            grid.innerHTML = '';
-            
-            const start = pageIndex * LEVELS_PER_PAGE;
+        function createLevelButtons(page) {
+            const container = document.getElementById('level-selector');
+            container.innerHTML = '';
+            const start = page * LEVELS_PER_PAGE;
             const end = Math.min(start + LEVELS_PER_PAGE, LEVELS.length);
             
-            // Uppdatera pilar (visas endast i level-choose-screen)
-            document.querySelectorAll('.nav-arrow')[0].style.visibility = pageIndex > 0 ? 'visible' : 'hidden';
-            document.querySelectorAll('.nav-arrow')[1].style.visibility = pageIndex < totalPages - 1 ? 'visible' : 'hidden';
-
-            for(let i = start; i < end; i++) {
-                const lvlIndex = i + 1; // 1-baserat index
-                const level = LEVELS[i];
-                
-                let btn = document.createElement('button');
-                
-                let difficultyClass = '';
-                if (level.difficulty === 'Hard' || level.difficulty === 'Insane') {
-                    difficultyClass = 'hard';
-                }
-
-                btn.className = `lvl-btn ${difficultyClass}`;
-                btn.innerHTML = `<strong>${lvlIndex}</strong><br><small>${level.name}</small>`;
-                btn.onclick = () => startLevel(lvlIndex);
-                grid.appendChild(btn);
+            for (let i = start; i < end; i++) {
+                const lvl = LEVELS[i];
+                const btn = document.createElement('div');
+                btn.className = `lvl-btn ${lvl.difficulty === 'Insane' || lvl.difficulty === 'Demon' ? 'hard' : ''}`;
+                btn.onclick = () => startLevel(lvl.id);
+                btn.innerHTML = `<strong>${lvl.id}</strong><span>${lvl.name}</span>`;
+                container.appendChild(btn);
             }
             
-            // Uppdatera sidrubriken
-            const groupNameEl = document.getElementById('level-group-name');
-            if (LEVELS[start]) {
-                 groupNameEl.innerText = `${LEVELS[start].difficulty} Levels (${pageIndex + 1}/${totalPages})`;
-            }
+            const groupName = document.getElementById('level-group-name');
+            if (LEVELS[start]) groupName.innerText = `${LEVELS[start].difficulty} Levels`;
         }
 
-        // Navigering mellan nivåmenyer
-        function navigateLevels(direction) {
-            currentPage += direction;
+        function navigateLevels(dir) {
+            const maxPages = Math.ceil(LEVELS.length / LEVELS_PER_PAGE);
+            currentPage += dir;
             if (currentPage < 0) currentPage = 0;
-            if (currentPage >= totalPages) currentPage = totalPages - 1;
-            
+            if (currentPage >= maxPages) currentPage = maxPages - 1;
             createLevelButtons(currentPage);
         }
 
-        // Visa Level Choosement screen
-        function showLevelChoose() {
-            document.getElementById('menu-screen').classList.add('hidden');
-            document.getElementById('level-choose-screen').classList.remove('hidden');
-            createLevelButtons(currentPage); 
-        }
+        // --- SPELFLÖDE ---
 
-        function startLevel(lvl) {
-            currentLevel = lvl;
-            resetGame();
+        function startLevel(id) {
+            const lvl = LEVELS[id - 1];
+            currentLevel = id;
+            gameSpeed = lvl.speed;
+            
+            obstacles = lvl.data.map(d => ({
+                x: d[0], y: d[1], type: d[2], w: d[3], h: d[4], 
+                passed: false
+            }));
+            
+            const finish = obstacles.find(o => o.type === 'FINISH');
+            levelLength = finish ? finish.x : 10000;
+
+            resetPlayer();
+            gameState = 'PLAYING';
             
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('level-choose-screen').classList.add('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
             document.getElementById('win-screen').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('level-display').innerText = `${id}. ${lvl.name}`;
+            document.getElementById('attempt-display').innerText = `Attempt ${attempt}`;
             
-            // Hämta namnet från data
-            const levelName = LEVELS[lvl - 1] ? LEVELS[lvl - 1].name : `NIVÅ ${lvl}`;
-            
-            document.getElementById('level-display').innerText = `${lvl}. ${levelName}`;
-            document.getElementById('attempt-display').innerText = `FÖRSÖK: ${attempt}`;
-            
-            loadLevel(lvl); // Ladda nivåns förinställningar
-            gameState = 'PLAYING';
+            AudioSys.startBGM(currentLevel);
+        }
+
+        function resetPlayer() {
+            player.x = 100;
+            player.y = 380 - 30; 
+            player.dy = 0;
+            player.rotation = 0;
+            player.mode = 'CUBE';
+            player.isDead = false;
+            player.isGrounded = true; 
+            cameraX = 0;
+            inputState.holding = false;
+            particles = [];
+            floorParticles = [];
         }
 
         function retryLevel() {
@@ -1492,351 +896,461 @@
             }
         }
 
-        function goToMenu() {
-            gameState = 'MENU';
-            attempt = 1;
-            document.getElementById('menu-screen').classList.remove('hidden'); 
-            document.getElementById('level-choose-screen').classList.add('hidden');
-            document.getElementById('game-over-screen').classList.add('hidden');
-            document.getElementById('win-screen').classList.add('hidden');
+        function die() {
+            if (player.isDead) return;
+            player.isDead = true;
+            AudioSys.playCrash();
+            spawnDeathParticles(player.x, player.y);
+            
+            const can = document.getElementById('gameCanvas');
+            can.style.transform = 'translate(5px, 5px)';
+            setTimeout(() => can.style.transform = 'none', 50);
+
+            gameState = 'GAMEOVER';
+            const pct = Math.floor((cameraX / levelLength) * 100);
+            document.getElementById('fail-percent').innerText = `${pct}%`;
+            
+            setTimeout(() => {
+                document.getElementById('game-over-screen').classList.remove('hidden');
+                document.getElementById('hud').classList.add('hidden');
+            }, 800);
+        }
+
+        function win() {
+            if (gameState === 'WIN') return;
+            gameState = 'WIN';
+            AudioSys.playWin();
+            document.getElementById('win-screen').classList.remove('hidden');
             document.getElementById('hud').classList.add('hidden');
         }
 
-        function showCredits() {
-            document.getElementById('credits-modal').classList.remove('hidden');
-        }
-
-        function hideCredits() {
-            document.getElementById('credits-modal').classList.add('hidden');
-        }
-
-
-        function resetGame() {
-            player = {
-                x: 100,
-                y: GROUND_Y - PLAYER_SIZE, 
-                dy: 0,
-                rotation: 0,
-                isGrounded: true,
-                isDead: false,
-                nearestOrb: null
-            };
-            cameraX = 0;
-            particles = [];
-        }
-
-        function jump() {
-            // Logic för normalt hopp och Ring-hopp
-            if (player.isGrounded) {
-                player.dy = JUMP_FORCE;
-                player.isGrounded = false;
-                createParticles(player.x, player.y + PLAYER_SIZE, 5, '#fff');
-            } else if (player.nearestOrb) {
-                // Ring Jump!
-                player.dy = JUMP_FORCE; // Reset velocity
-                player.isGrounded = false;
-                createParticles(player.nearestOrb.x + player.nearestOrb.w/2, player.nearestOrb.y + player.nearestOrb.h/2, 10, RING_COLOR);
-                player.nearestOrb = null; 
-            }
-        }
-
-        function createParticles(x, y, count, color) {
-            for(let i=0; i<count; i++) {
-                particles.push({
-                    x: x,
-                    y: y,
-                    vx: (Math.random() - 0.5) * 10,
-                    vy: (Math.random() - 0.5) * 10,
-                    life: 1.0,
-                    color: color
-                });
-            }
-        }
-
-        function spawnDeathParticles() {
-            createParticles(player.x + PLAYER_SIZE/2, player.y + PLAYER_SIZE/2, 30, HAZARD_COLOR); 
-            createParticles(player.x + PLAYER_SIZE/2, player.y + PLAYER_SIZE/2, 15, '#ffffff');
-        }
-
-        // --- Physics & Logic ---
+        // --- UPDATE LOOP ---
 
         function update() {
             if (gameState !== 'PLAYING') return;
 
-            // Player Physics
-            player.dy += GRAVITY;
+            if (player.mode === 'CUBE') {
+                if (inputState.holding && player.isGrounded) {
+                    player.dy = JUMP_FORCE;
+                    player.isGrounded = false;
+                    AudioSys.playJump();
+                } 
+                
+                if (inputState.pressedThisFrame && player.nearestOrb) {
+                    player.dy = JUMP_FORCE * 1.2;
+                    player.isGrounded = false;
+                    AudioSys.playOrb();
+                    spawnOrbParticles(player.nearestOrb.x, player.nearestOrb.y);
+                    player.nearestOrb = null;
+                }
+            } else if (player.mode === 'SHIP') {
+                if (inputState.holding) {
+                    player.dy += THRUST_SHIP;
+                } else {
+                    player.dy += GRAVITY_SHIP;
+                }
+            }
+
+            inputState.pressedThisFrame = false;
+
+            if (player.mode === 'CUBE') {
+                player.dy += GRAVITY_CUBE;
+                if (player.dy > TERMINAL_VELOCITY) player.dy = TERMINAL_VELOCITY;
+                
+                if (!player.isGrounded) {
+                    player.rotation += 6;
+                } else {
+                    const r = player.rotation % 360;
+                    if (r > 0 && r < 45) player.rotation -= r;
+                    else if (r >= 45 && r < 135) player.rotation += (90 - r);
+                    else if (r >= 135 && r < 225) player.rotation += (180 - r);
+                    else if (r >= 225 && r < 315) player.rotation += (270 - r);
+                    else if (r >= 315) player.rotation += (360 - r);
+                }
+            } else {
+                if (player.dy > MAX_SHIP_SPEED) player.dy = MAX_SHIP_SPEED;
+                if (player.dy < -MAX_SHIP_SPEED) player.dy = -MAX_SHIP_SPEED;
+                player.rotation = player.dy * 3; 
+            }
+
             player.y += player.dy;
 
-            // Floor Collision
-            if (player.y > GROUND_Y - PLAYER_SIZE) {
-                player.y = GROUND_Y - PLAYER_SIZE;
-                player.dy = 0;
-                player.isGrounded = true; 
-
-                let r = player.rotation % 360;
-                if (r < 45 || r > 315) player.rotation = 0;
-                else if (r < 135) player.rotation = 90;
-                else if (r < 225) player.rotation = 180;
-                else player.rotation = 270;
+            const LOGICAL_FLOOR = 380; 
+            if (player.y > LOGICAL_FLOOR - 30) {
+                // Den verkliga "marken" utanför hinder
+                player.y = LOGICAL_FLOOR - 30;
+                if (player.mode === 'CUBE') {
+                    player.dy = 0;
+                    player.isGrounded = true;
+                    if (Math.random() > 0.8) spawnFloorParticles(player.x, player.y + 30);
+                } else {
+                    player.dy = 0;
+                }
             } else {
-                player.rotation += 5; 
+                player.isGrounded = false;
             }
 
-            // Move Camera/World
+            if (player.mode === 'SHIP' && player.y < 0) {
+                player.y = 0;
+                player.dy = 0;
+            }
+
             cameraX += gameSpeed;
-            
+            if (cameraX >= levelLength) win();
+
             checkCollisions();
-            
-            if (cameraX > levelLength - 400) { 
-                gameState = 'WIN';
-                document.getElementById('win-screen').classList.remove('hidden');
-                document.getElementById('hud').classList.add('hidden');
-            }
 
-            let pct = Math.min(100, (cameraX / levelLength) * 100);
-            document.getElementById('progress').style.width = pct + '%';
-
-            particles.forEach(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= 0.05;
-            });
+            particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.05; });
             particles = particles.filter(p => p.life > 0);
+            
+            floorParticles.forEach(p => { p.x -= gameSpeed; p.y -= 0.5; p.life -= 0.03; p.size -= 0.1; });
+            floorParticles = floorParticles.filter(p => p.life > 0 && p.size > 0);
 
-            frameCount++;
+            const progress = Math.min(100, (cameraX / levelLength) * 100);
+            document.getElementById('progress').style.width = progress + '%';
+            document.getElementById('mode-display').innerText = player.mode;
         }
 
         function checkCollisions() {
-            let playerScreenX = player.x; 
-            let playerScreenY = player.y;
-            let playerCenterX = playerScreenX + PLAYER_SIZE/2;
-            let playerCenterY = playerScreenY + PLAYER_SIZE/2;
-
-            const scaleW = canvas.width / ORIGINAL_CANVAS_WIDTH;
-            const scaleH = canvas.height / ORIGINAL_CANVAS_HEIGHT;
-            
-            player.nearestOrb = null; 
+            player.nearestOrb = null;
+            const playerWorldX = cameraX + 100;
+            const renderOffset = cameraX;
 
             for (let obs of obstacles) {
-                
-                const scaledObsX = obs.x * scaleW;
-                let scaledObsY = obs.y * scaleH;
-                const scaledObsW = obs.w * scaleW;
-                const scaledObsH = obs.h * scaleH;
+                if (obs.x < renderOffset - 100 || obs.x > renderOffset + 900) continue;
 
-                if (obs.x * scaleW < cameraX * scaleW - 100 - scaledObsW || 
-                    obs.x * scaleW > cameraX * scaleW + canvas.width + scaledObsW) continue;
+                const obsX = obs.x;
+                const obsY = obs.y;
                 
-                let obsScreenX = scaledObsX - (cameraX * scaleW) + player.x;
-                
-                // --- PAD LOGIC ---
-                if (obs.type === 'PAD') {
-                    if (rectIntersect(playerScreenX, playerScreenY, PLAYER_SIZE, PLAYER_SIZE,
-                                      obsScreenX, scaledObsY - 5, scaledObsW, scaledObsH + 10)) { 
-                        player.dy = PAD_FORCE; // BOOST!
-                        player.isGrounded = false;
-                        createParticles(playerScreenX, playerScreenY + PLAYER_SIZE, 5, PAD_COLOR);
+                if (obs.type === T_SPIKE) {
+                    if (rectIntersect(playerWorldX + 8, player.y + 8, 14, 14, obsX + 10, obsY - 20, 10, 20)) {
+                        die();
+                        return;
+                    }
+                } 
+                // INSTANT KILL FÖR SPIKE FLOOR - Strict collision
+                else if (obs.type === T_SPIKE_FLOOR) {
+                     // Här kollar vi om spelaren ens snuddar området
+                     if (rectIntersect(playerWorldX + 5, player.y + 5, 20, 25, obsX, obsY, obs.w, obs.h)) {
+                        die();
+                        return;
                     }
                 }
-                // --- RING (ORB) LOGIC ---
-                else if (obs.type === 'RING') {
-                    // Cirkulär kollision/avstånd för ring
-                    let ringCenterX = obsScreenX + scaledObsW/2;
-                    let ringCenterY = scaledObsY + scaledObsH/2;
-                    let dist = Math.hypot(playerCenterX - ringCenterX, playerCenterY - ringCenterY);
-                    
-                    if (dist < 50) { 
-                        player.nearestOrb = obs; 
-                    }
-                }
-                // --- SPIKE LOGIC ---
-                else if (obs.type === 'SPIKE') {
-                    let spikeBaseY = scaledObsY; 
-                    if (obs.y * scaleH > GROUND_Y - 50) spikeBaseY = GROUND_Y;
-                    let spikeTipY = spikeBaseY - scaledObsH; 
-
-                    let p1 = { x: obsScreenX, y: spikeBaseY }; 
-                    let p2 = { x: obsScreenX + scaledObsW, y: spikeBaseY };
-                    let p3 = { x: obsScreenX + scaledObsW / 2, y: spikeTipY }; 
-
-                    let playerBottomY = playerScreenY + PLAYER_SIZE;
-
-                    if (obsScreenX < playerScreenX + PLAYER_SIZE && obsScreenX + scaledObsW > playerScreenX &&
-                        spikeTipY < playerBottomY && spikeBaseY > playerScreenY) {
-
-                        if (isPointInTriangle({x: playerScreenX, y: playerBottomY}, p1, p2, p3) ||
-                            isPointInTriangle({x: playerScreenX + PLAYER_SIZE, y: playerBottomY}, p1, p2, p3) ||
-                            isPointInTriangle({x: playerScreenX, y: playerScreenY}, p1, p2, p3) ||
-                            isPointInTriangle({x: playerScreenX + PLAYER_SIZE, y: playerScreenY}, p1, p2, p3)) {
+                else if (obs.type === T_BLOCK || obs.type === T_SHIP_CEILING || obs.type === T_SHIP_FLOOR) {
+                    if (rectIntersect(playerWorldX, player.y, 30, 30, obsX, obsY, obs.w, obs.h)) {
+                        if (player.mode === 'SHIP') {
+                            die();
+                            return; 
+                        }
+                        
+                        const pBottom = player.y + 30;
+                        const bTop = obsY;
+                        const pRight = playerWorldX + 30;
+                        const bLeft = obsX;
+                        
+                        if ( (obs.type === T_BLOCK || obs.type === T_SHIP_FLOOR) && 
+                             player.dy >= 0 && pBottom <= bTop + 20 && pRight > bLeft + 5) 
+                        {
+                            player.y = bTop - 30;
+                            player.dy = 0;
+                            player.isGrounded = true;
+                            if (player.mode === 'CUBE') player.rotation = 0; 
+                        } else {
                             die();
                             return;
                         }
                     }
-                } 
-                // --- BLOCK LOGIC ---
-                else if (obs.type === 'BLOCK') {
-                    let blockTop = scaledObsY;
-                    if (rectIntersect(playerScreenX, playerScreenY, PLAYER_SIZE, PLAYER_SIZE,
-                                      obsScreenX , blockTop, scaledObsW, scaledObsH)) {
-                        if (player.dy > 0 && (playerScreenY + PLAYER_SIZE - gameSpeed) < blockTop) { 
-                            player.y = blockTop - PLAYER_SIZE;
-                            player.dy = 0;
-                            player.isGrounded = true; 
-                        } else {
-                            die();
+                }
+                else if (obs.type === T_PAD) {
+                    if (rectIntersect(playerWorldX, player.y, 30, 30, obsX, obsY - 10, obs.w, 15)) {
+                        player.dy = -22; 
+                        player.isGrounded = false;
+                        AudioSys.playPad();
+                        spawnOrbParticles(obsX + 20, obsY);
+                    }
+                }
+                else if (obs.type === T_PAD_HIGH) { // Lila pad - Högre hopp
+                    if (rectIntersect(playerWorldX, player.y, 30, 30, obsX, obsY - 10, obs.w, 15)) {
+                        player.dy = -28; // Mycket högre hopp
+                        player.isGrounded = false;
+                        AudioSys.playPadHigh();
+                        spawnOrbParticles(obsX + 20, obsY);
+                    }
+                }
+                else if (obs.type === T_RING) {
+                    const centerX = obsX + 20;
+                    const centerY = obsY + 20;
+                    const pCenterX = playerWorldX + 15;
+                    const pCenterY = player.y + 15;
+                    const dist = Math.hypot(centerX - pCenterX, centerY - pCenterY);
+                    
+                    if (dist < 50) { 
+                        player.nearestOrb = obs;
+                    }
+                }
+                else if (obs.type === T_SHIP_PORTAL) {
+                    if (rectIntersect(playerWorldX, player.y, 30, 30, obsX, obsY, 50, 100)) {
+                        if (player.mode !== 'SHIP') {
+                            player.mode = 'SHIP';
+                            AudioSys.playOrb(); 
+                            player.y -= 20;
+                        }
+                    }
+                }
+                else if (obs.type === T_CUBE_PORTAL) {
+                    if (rectIntersect(playerWorldX, player.y, 30, 30, obsX, obsY, 50, 100)) {
+                        if (player.mode !== 'CUBE') {
+                            player.mode = 'CUBE';
+                            player.rotation = 0;
+                            AudioSys.playOrb();
                         }
                     }
                 }
             }
         }
 
-        function sign (p1, p2, p3) {
-            return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+        function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return x2 < x1 + w1 && x2 + w2 > x1 && y2 < y1 + h1 && y2 + h2 > y1;
         }
 
-        function isPointInTriangle (pt, v1, v2, v3) {
-            let d1, d2, d3;
-            let has_neg, has_pos;
-            d1 = sign(pt, v1, v2);
-            d2 = sign(pt, v2, v3);
-            d3 = sign(pt, v3, v1);
-            has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-            has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
-            return !(has_neg && has_pos); 
+        // --- PARTIKLAR & RENDERING (Samma som förut) ---
+        function spawnDeathParticles(x, y) {
+            for(let i=0; i<30; i++) {
+                particles.push({
+                    x: x + 15, y: y + 15,
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 0.5) * 15,
+                    color: i % 2 === 0 ? 'white' : 'red',
+                    life: 1.0, size: Math.random() * 5 + 2
+                });
+            }
         }
 
-        function rectIntersect(pl, pt, pw, ph, ol, ot, ow, oh) {
-            return ol < pl + pw && ol + ow > pl && ot < pt + ph && ot + oh > pt;
+        function spawnOrbParticles(x, y) {
+            for(let i=0; i<10; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    color: 'yellow',
+                    life: 0.8, size: 3
+                });
+            }
         }
-
-        function die() {
-            if (player.isDead) return;
-            player.isDead = true;
-            spawnDeathParticles();
-            gameState = 'GAMEOVER';
-            let pct = Math.floor((cameraX / levelLength) * 100);
-            document.getElementById('fail-percent').innerText = `${pct}% KLART`;
-            setTimeout(() => {
-                document.getElementById('game-over-screen').classList.remove('hidden');
-                document.getElementById('hud').classList.add('hidden');
-            }, 500);
+        
+        function spawnFloorParticles(x, y) {
+            floorParticles.push({
+                x: x, y: y,
+                life: 1.0, size: Math.random() * 3 + 1,
+                color: 'rgba(255, 255, 255, 0.5)'
+            });
         }
-
-        // --- Rendering ---
 
         function draw() {
-            ctx.fillStyle = '#0a0a1a'; 
+            ctx.fillStyle = '#050510';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const scaleW = canvas.width / ORIGINAL_CANVAS_WIDTH;
-            const scaleH = canvas.height / ORIGINAL_CANVAS_HEIGHT;
-
-            ctx.strokeStyle = 'rgba(0, 243, 255, 0.1)';
-            ctx.lineWidth = 1;
-            const scaledCameraX = cameraX * scaleW;
-            let gridOffset = -(scaledCameraX * 0.5) % 50;
             
-            // Enkel Grid
-            for(let x = gridOffset; x < canvas.width; x+=50) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-            }
-            for(let y = 0; y < canvas.height; y+=50) {
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-            }
+            const scaleX = canvas.width / ORIGINAL_WIDTH;
+            const scaleY = canvas.height / ORIGINAL_HEIGHT;
+            ctx.save();
+            ctx.scale(scaleX, scaleY);
 
             ctx.strokeStyle = '#00f3ff';
             ctx.lineWidth = 3;
             ctx.shadowBlur = 10;
             ctx.shadowColor = '#00f3ff';
             ctx.beginPath();
-            ctx.moveTo(0, GROUND_Y);
-            ctx.lineTo(canvas.width, GROUND_Y);
+            ctx.moveTo(0, 380);
+            ctx.lineTo(800, 380);
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            if (gameState === 'PLAYING' || gameState === 'WIN' || player.isDead) {
-                
-                ctx.save();
-                ctx.translate(-(scaledCameraX) + player.x, 0); 
+            ctx.translate(-cameraX + 100, 0); 
 
-                obstacles.forEach(obs => {
-                    const scaledObsX = obs.x * scaleW;
-                    const scaledObsY = obs.y * scaleH;
-                    const scaledObsW = obs.w * scaleW;
-                    const scaledObsH = obs.h * scaleH;
+            for (let obs of obstacles) {
+                if (obs.x < cameraX - 200 || obs.x > cameraX + 1000) continue;
 
-                    if (obs.type === 'SPIKE') {
-                        ctx.fillStyle = HAZARD_COLOR; 
-                        let spikeBaseY = scaledObsY;
-                        // Spikar på marken använder GROUND_Y som bas
-                        if (obs.y > ORIGINAL_CANVAS_HEIGHT * GROUND_Y_RATIO - 50) spikeBaseY = GROUND_Y;
-                        else spikeBaseY = scaledObsY + scaledObsH; // Spikar på block använder blockets topp som bas
-
-                        ctx.beginPath();
-                        ctx.moveTo(scaledObsX, spikeBaseY); 
-                        ctx.lineTo(scaledObsX + scaledObsW/2, spikeBaseY - scaledObsH); 
-                        ctx.lineTo(scaledObsX + scaledObsW, spikeBaseY); 
-                        ctx.closePath();
-                        ctx.fill();
-                    } else if (obs.type === 'BLOCK') {
-                        ctx.fillStyle = SAFE_COLOR; 
-                        ctx.fillRect(scaledObsX, scaledObsY, scaledObsW, scaledObsH);
-                        ctx.strokeStyle = SAFE_OUTLINE;
-                        ctx.lineWidth = 2;
-                        ctx.strokeRect(scaledObsX, scaledObsY, scaledObsW, scaledObsH);
-                    } else if (obs.type === 'PAD') {
-                        ctx.fillStyle = PAD_COLOR;
-                        // Rita en platt rektangel på marken
-                        ctx.fillRect(scaledObsX, scaledObsY, scaledObsW, scaledObsH); 
-                        // Glöd
-                        ctx.shadowBlur = 10; ctx.shadowColor = PAD_COLOR;
-                        ctx.fillRect(scaledObsX + 5, scaledObsY + scaledObsH/2, scaledObsW - 10, 2);
-                        ctx.shadowBlur = 0;
-                    } else if (obs.type === 'RING') {
-                        ctx.beginPath();
-                        ctx.arc(scaledObsX + scaledObsW/2, scaledObsY + scaledObsH/2, 20, 0, Math.PI*2);
-                        ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'; // Genomskinlig fyllning
-                        ctx.fill();
-                        ctx.lineWidth = 4;
-                        ctx.strokeStyle = RING_COLOR;
-                        ctx.stroke();
-                        ctx.beginPath(); // Inre ring
-                        ctx.arc(scaledObsX + scaledObsW/2, scaledObsY + scaledObsH/2, 12, 0, Math.PI*2);
-                        ctx.stroke();
-                    } else if (obs.type === 'FINISH') {
-                        ctx.fillStyle = 'rgba(50, 255, 50, 0.5)';
-                        ctx.fillRect(scaledObsX, scaledObsY, scaledObsW, scaledObsH);
+                if (obs.type === T_SPIKE) {
+                    ctx.fillStyle = '#ff0055'; 
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x, obs.y);
+                    ctx.lineTo(obs.x + 15, obs.y - 30);
+                    ctx.lineTo(obs.x + 30, obs.y);
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                } 
+                else if (obs.type === T_SPIKE_FLOOR) {
+                    ctx.fillStyle = 'rgba(255, 0, 85, 0.6)'; // Starkare färg
+                    ctx.strokeStyle = '#ff0055';
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                    
+                    for (let i = 0; i < obs.w; i += 30) {
+                         if (i > obs.w) break;
+                         ctx.fillStyle = '#ff0055'; 
+                         ctx.beginPath();
+                         ctx.moveTo(obs.x + i, obs.y);
+                         ctx.lineTo(obs.x + i + 15, obs.y + 20); 
+                         ctx.lineTo(obs.x + i + 30, obs.y);
+                         ctx.fill();
                     }
-                });
-
-                ctx.restore(); 
-
-                // Draw Player
-                if (!player.isDead) {
-                    ctx.save();
-                    ctx.fillStyle = '#fff';
-                    ctx.strokeStyle = '#ff00ff'; 
-                    ctx.lineWidth = 3;
-                    ctx.translate(player.x + PLAYER_SIZE / 2, player.y + PLAYER_SIZE / 2);
-                    ctx.rotate(player.rotation * Math.PI / 180);
-                    ctx.fillRect(-PLAYER_SIZE / 2, -PLAYER_SIZE / 2, PLAYER_SIZE, PLAYER_SIZE);
-                    ctx.strokeRect(-PLAYER_SIZE / 2, -PLAYER_SIZE / 2, PLAYER_SIZE, PLAYER_SIZE);
-                    ctx.restore();
                 }
-
-                particles.forEach(p => {
-                    ctx.fillStyle = p.color;
-                    ctx.globalAlpha = p.life;
-                    ctx.fillRect(p.x, p.y, 4, 4);
-                });
-                ctx.globalAlpha = 1.0; 
+                else if (obs.type === T_BLOCK) {
+                    ctx.fillStyle = 'rgba(0, 243, 255, 0.2)';
+                    ctx.strokeStyle = '#00f3ff';
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                    ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+                    ctx.strokeRect(obs.x + 5, obs.y + 5, obs.w - 10, obs.h - 10);
+                }
+                else if (obs.type === T_SHIP_CEILING || obs.type === T_SHIP_FLOOR) {
+                    ctx.fillStyle = 'rgba(255, 0, 85, 0.2)'; 
+                    ctx.strokeStyle = '#ff0055';
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                    ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+                }
+                else if (obs.type === T_PAD) {
+                    ctx.fillStyle = '#ffff00';
+                    ctx.fillRect(obs.x, obs.y - 5, obs.w, 10);
+                    ctx.shadowColor = 'yellow'; ctx.shadowBlur = 15;
+                    ctx.fillRect(obs.x + 5, obs.y - 3, obs.w - 10, 4);
+                    ctx.shadowBlur = 0;
+                    ctx.beginPath(); ctx.arc(obs.x + 20, obs.y, 15, Math.PI, 0); ctx.stroke();
+                }
+                else if (obs.type === T_PAD_HIGH) { // Lila pad
+                    ctx.fillStyle = '#ff00ff';
+                    ctx.fillRect(obs.x, obs.y - 5, obs.w, 10);
+                    ctx.shadowColor = '#ff00ff'; ctx.shadowBlur = 15;
+                    ctx.fillRect(obs.x + 5, obs.y - 3, obs.w - 10, 4);
+                    ctx.shadowBlur = 0;
+                    ctx.beginPath(); ctx.arc(obs.x + 20, obs.y, 15, Math.PI, 0); ctx.stroke();
+                }
+                else if (obs.type === T_RING) {
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 20, obs.y + 20, 20, 0, Math.PI*2);
+                    ctx.strokeStyle = '#ffff00';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 20, obs.y + 20, 12, 0, Math.PI*2);
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+                    ctx.fill();
+                }
+                else if (obs.type === T_SHIP_PORTAL) {
+                    ctx.fillStyle = 'orange';
+                    ctx.fillRect(obs.x, obs.y, 40, 90);
+                    ctx.strokeStyle = 'white';
+                    ctx.strokeRect(obs.x, obs.y, 40, 90);
+                }
+                else if (obs.type === T_CUBE_PORTAL) {
+                    ctx.fillStyle = '#00f3ff';
+                    ctx.fillRect(obs.x, obs.y, 40, 90);
+                    ctx.strokeStyle = 'white';
+                    ctx.strokeRect(obs.x, obs.y, 40, 90);
+                }
+                else if (obs.type === 'FINISH') {
+                    ctx.fillStyle = 'lime';
+                    ctx.globalAlpha = 0.5;
+                    ctx.fillRect(obs.x, 0, 50, 450);
+                    ctx.globalAlpha = 1;
+                }
             }
+            
+            floorParticles.forEach(p => {
+                ctx.fillStyle = p.color;
+                const radius = Math.max(0, p.size);
+                ctx.beginPath(); ctx.arc(p.x, p.y, radius, 0, Math.PI*2); ctx.fill();
+            });
+
+            if (!player.isDead) {
+                ctx.save();
+                ctx.translate(cameraX + 100 + 15, player.y + 15);
+                ctx.rotate(player.rotation * Math.PI / 180);
+                
+                if (player.mode === 'CUBE') {
+                    ctx.fillStyle = '#ffaa00'; 
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(-15, -15, 30, 30);
+                    ctx.strokeRect(-15, -15, 30, 30);
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(5, -5, 8, 8); 
+                    ctx.fillRect(5, -12, 4, 4); 
+                } else {
+                    ctx.fillStyle = '#ffaa00';
+                    ctx.beginPath();
+                    ctx.moveTo(15, 0);
+                    ctx.lineTo(-10, 10);
+                    ctx.lineTo(-10, -10);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#00f3ff';
+                    ctx.beginPath(); ctx.arc(0, -5, 5, 0, Math.PI*2); ctx.fill();
+                    if (inputState.holding) {
+                        ctx.fillStyle = 'orange';
+                        ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-25, 5); ctx.lineTo(-25, -5); ctx.fill();
+                    }
+                }
+                ctx.restore();
+            }
+
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, Math.max(0, p.size), 0, Math.PI*2); 
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            ctx.restore();
         }
 
-        function gameLoop() {
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+            
             update();
             draw();
             requestAnimationFrame(gameLoop);
+        }
+        
+        function showLevelChoose() {
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('level-choose-screen').classList.remove('hidden');
+            if(!AudioSys.ctx) AudioSys.init();
+        }
+        function goToMenu() {
+            gameState = 'MENU';
+            AudioSys.stopBGM();
+            document.getElementById('menu-screen').classList.remove('hidden');
+            document.getElementById('level-choose-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('win-screen').classList.add('hidden');
+            document.getElementById('hud').classList.add('hidden');
+        }
+        function showCredits() { document.getElementById('credits-modal').classList.remove('hidden'); }
+        function hideCredits() { document.getElementById('credits-modal').classList.add('hidden'); }
+        
+        function resizeCanvas() {
+            const cont = document.getElementById('game-container');
+            const ratio = 16/9;
+            let w = cont.clientWidth;
+            let h = cont.clientHeight;
+            if (w/h > ratio) w = h * ratio;
+            else h = w / ratio;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+        }
+        
+        function requestFullscreenHandler() {
+            const el = document.documentElement;
+            if(el.requestFullscreen) el.requestFullscreen();
+            else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
         }
 
         init();
