@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>U.M.D</title>
+<title>Spel 1</title>
 
 <style>
     body {
@@ -50,1293 +50,1386 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Monster Defense</title>
-    <!-- Importerar Tailwind CSS för snabb styling av UI -->
+    <title>Ultimate Basketball Tournament - Uppgraderad med Paus</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Sätter en mörk bakgrundsfärg för hela sidan */
+        @import url('https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Press+Start+2P&display=swap');
+        
+        /* Globala stilar */
         body {
-            background-color: #1a202c; /* mörkgrå */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
             margin: 0;
-            height: 100vh;
-            overflow: hidden; /* Förhindrar scrollning */
+            background-color: #0d111c; /* Mörkare bakgrund för kontrast */
             font-family: 'Inter', sans-serif;
-        }
-        /* Stilar för själva spel-canvasen */
-        canvas {
-            background-color: #2d3748; /* lite ljusare grå */
-            display: block;
-            cursor: default; /* Standardpekare */
-        }
-        /* Styling för alla centrala menyer/modals */
-        .menu-modal {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #1f2937; /* Lätt mörkare bakgrund */
-            border: 2px solid #60a5fa; /* Blå kant */
-            border-radius: 12px;
-            padding: 3rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-            z-index: 20;
-            width: 90%;
-            max-width: 500px;
-            color: white; /* Säkerställ att texten är vit i modals */
-        }
-        /* Knappstyling för menyn */
-        .menu-button {
-            width: 100%;
-            margin-bottom: 1rem;
-            padding: 0.75rem 1.5rem;
-            font-size: 1.125rem;
-            font-weight: bold;
-            color: white;
-            border-radius: 8px;
-            transition: all 0.2s ease-in-out;
-            background-color: #3b82f6; /* Blå */
-        }
-        .menu-button:hover {
-            background-color: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-        .menu-button:focus {
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.5);
+            overflow: hidden;
         }
 
+        #game-container {
+            width: 95vw;
+            max-width: 1400px;
+            aspect-ratio: 16 / 9; /* Bättre för basketplan */
+            min-height: 500px;
+            background-color: #1f2937; /* Mörkblå/grå container */
+            border: 10px solid #f97316; /* Orange ram */
+            border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #game-canvas {
+            background: linear-gradient(to bottom, #10b981 0%, #34d399 100%); /* Lätt grön/blå himmel */
+            display: block;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        /* Stilar för alla Overlays */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .overlay h1 {
+            font-family: 'Bungee Inline', cursive;
+            font-size: clamp(3rem, 10vw, 5rem);
+            color: #f59e0b; /* Gul orange */
+            margin-bottom: 2rem;
+            text-shadow: 6px 6px #dc2626, 8px 8px #000; /* Djupt röd/svart skugga */
+        }
+        
+        .overlay h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(1rem, 4vw, 1.8rem);
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+        }
+
+        .menu-button {
+            background-color: #10b981; 
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            padding: 1.2rem 2.5rem;
+            margin: 0.7rem 0;
+            border: 4px solid #047857; /* Tjockare kant */
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.15s ease-out, background-color 0.15s;
+            box-shadow: 0 6px #059669;
+            font-size: clamp(0.7rem, 2vw, 1.1rem);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .menu-button:hover {
+            background-color: #059669;
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px #057a55;
+        }
+
+        .menu-button:active {
+            transform: translateY(3px);
+            box-shadow: 0 3px #047857;
+        }
+        
+        /* Casual / Svårighetsknappar */
+        .difficulty-button {
+            background-color: #6366f1;
+            border-color: #4f46e5;
+            box-shadow: 0 6px #4f46e5;
+        }
+        .difficulty-button:hover {
+            background-color: #4f46e5;
+            box-shadow: 0 8px #4338ca;
+        }
+
+        /* Back Button */
+        .back-button {
+            background-color: #94a3b8;
+            border-color: #64748b;
+            box-shadow: 0 6px #64748b;
+        }
+        .back-button:hover {
+            background-color: #64748b;
+            box-shadow: 0 8px #475569;
+        }
+        
+        /* Pausknapp */
+        .pause-button {
+            background-color: #f59e0b;
+            border-color: #d97706;
+            box-shadow: 0 6px #d97706;
+        }
+        .pause-button:hover {
+            background-color: #d97706;
+            box-shadow: 0 8px #b45309;
+        }
+
+
+        /* Game UI */
+        #game-ui {
+            padding: 12px 20px;
+            background-color: #0f172a; 
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(0.5rem, 2vw, 0.8rem);
+            border-top: 5px solid #f97316;
+            min-height: 50px;
+        }
+        
+        #game-ui > span {
+            padding: 5px 10px;
+            border-radius: 6px;
+        }
+        
+        #game-mode-info {
+            background-color: #f59e0b;
+            color: #0f172a;
+        }
+        
+        #tournament-info {
+            background-color: #3b82f6;
+        }
+        
+        #score-player {
+            color: #10b981;
+        }
+        
+        #score-bot {
+            color: #ef4444;
+        }
+
+        /* Meddelanderuta */
+        #message-box {
+            position: absolute;
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            color: #1e293b;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(0.7rem, 2vw, 0.9rem);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.7);
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            white-space: nowrap;
+            animation: bounceIn 0.3s ease-out;
+            border: 3px solid #f97316;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: translate(-50%, -10px) scale(0.5); opacity: 0; }
+            100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+        }
     </style>
 </head>
-<body class="text-white">
+<body>
 
-    <!-- Start Meny -->
-    <div id="startMenu" class="menu-modal">
-        <h1 class="text-6xl font-extrabold text-center mb-10 text-yellow-400 tracking-wider">
-            Ultimate Monster Defense
-        </h1>
-        <button id="startGameButton" class="menu-button bg-green-500 hover:bg-green-600">
-            START GAME
-        </button>
-        <button id="sandboxButton" class="menu-button bg-indigo-500 hover:bg-indigo-600">
-            SANDBOX
-        </button>
-        <button id="controlsButton" class="menu-button bg-gray-500 hover:bg-gray-600">
-            CONTROLS (KEYBINDS)
-        </button>
-        <button id="creditsButton" class="menu-button bg-gray-500 hover:bg-gray-600">
-            CREDITS
-        </button>
+<div id="game-container">
+    <canvas id="game-canvas"></canvas>
+
+    <div id="game-ui">
+        <span id="game-mode-info">LÄGE: MENY</span>
+        <span id="tournament-info" class="bg-gray-700">Runda 0/4</span>
+        <span id="score-player">Spelare: 0</span>
+        <span id="score-bot">Bot: 0</span>
+    </div>
+    
+    <div id="message-box"></div>
+
+    <!-- 1. Huvudmeny -->
+    <div id="menu-overlay" class="overlay">
+        <h1>Ultimate Basketball</h1>
+        <h2 style="color: #f97316; margin-top: -1rem; margin-bottom: 2rem;">2D Arcade Hoops</h2>
+        <button class="menu-button" onclick="showTournamentMode()">STARTA TURNERING (4 RUNDOR)</button>
+        <button class="menu-button difficulty-button" onclick="showCasualMode()">VÄNSKAPSMATCH (VÄLJ NIVÅ)</button>
+    </div>
+    
+    <!-- 2. Tournament Svårighetsval (Steg 2 i Turnering) -->
+    <div id="tournament-difficulty-overlay" class="overlay" style="display:none;">
+        <h2>Välkommen till Turneringen!</h2>
+        <p style="color: #94a3b8; margin-bottom: 2rem; font-size: clamp(0.8rem, 2vw, 1.2rem);">
+            Turneringen har 4 rundor. Svårighetsgraden ökar automatiskt i varje match.<br>
+            Första motståndaren är *Snabbe Sven* på LÄTT nivå.
+        </p>
+        <button class="menu-button difficulty-button" onclick="startTournament()">STARTA TURNERING</button>
+        <button class="menu-button back-button" onclick="showMainMenu()">TILLBAKA</button>
     </div>
 
-    <!-- Controls Modal -->
-    <div id="controlsModal" class="menu-modal hidden">
-        <h2 class="text-3xl font-bold mb-4 text-center border-b border-gray-600 pb-2 text-blue-400">Controls (Keybinds)</h2>
-        <div class="space-y-3 text-lg">
-            <p><span class="font-bold text-yellow-300">E:</span> Öppna/Stäng Sälj/Upgrade Meny (Spelet Fortsätter)</p>
-            <p><span class="font-bold text-yellow-300">F:</span> Öppna/Stäng Bygg Meny (Spelet Fortsätter)</p>
-            <p><span class="font-bold text-yellow-300">L:</span> Pausa Spelet / Öppna Pausmeny</p>
-            <p><span class="font-bold text-yellow-300">Musklick:</span> Placera Byggnad</p>
+    <!-- 3. Casual Mode Motståndarval -->
+    <div id="casual-select-overlay" class="overlay" style="display:none;">
+        <h2>Välj din motståndare</h2>
+        <div id="opponent-buttons" style="display: flex; flex-direction: column; gap: 0.7rem; width: 90%; max-width: 400px;">
+            <!-- Buttons populated by JS -->
         </div>
-        <button id="closeControlsButton" class="menu-button bg-red-500 hover:bg-red-600 mt-6">
-            Tillbaka till Huvudmeny
-        </button>
+        <button class="menu-button back-button mt-4" onclick="showMainMenu()">TILLBAKA</button>
     </div>
 
-    <!-- Credits Modal -->
-    <div id="creditsModal" class="menu-modal hidden">
-        <h2 class="text-3xl font-bold mb-4 text-center border-b border-gray-600 pb-2 text-blue-400">Credits</h2>
-        <p class="text-4xl text-center font-extrabold text-yellow-300 py-4">Zayn Lilak</p>
-        <p class="text-center text-gray-400">Spelets design och idé.</p>
-        <button id="closeCreditsButton" class="menu-button bg-red-500 hover:bg-red-600 mt-6">
-            Tillbaka till Huvudmeny
-        </button>
+    <!-- 4. Game Over / Runda Slut -->
+    <div id="gameover-overlay" class="overlay" style="display:none;">
+        <h1 id="gameover-title" style="font-size: clamp(2.5rem, 8vw, 4rem);">GRATTIS!</h1>
+        <h2 id="gameover-message">Du vann turneringen!</h2>
+        <button id="gameover-button" class="menu-button" onclick="showMainMenu()">SPELA IGEN</button>
+    </div>
+    
+    <!-- 5. Pausmeny -->
+    <div id="pause-overlay" class="overlay" style="display:none;">
+        <h1>PAUS</h1>
+        <h2 style="color: #f59e0b;">Spelet är pausat</h2>
+        <p style="color: #94a3b8; margin-bottom: 2rem; font-size: clamp(0.8rem, 2vw, 1.2rem);">
+            Tryck på L igen för att återuppta, eller välj nedan.
+        </p>
+        <button class="menu-button pause-button" onclick="unpauseGame()">FORTSÄTT SPEL</button>
+        <button class="menu-button back-button" onclick="confirmReturnToMenu()">TILLBAKA TILL MENY</button>
+    </div>
+    
+    <!-- 6. Bekräftelsemeny (för Return to Menu från Paus) -->
+    <div id="confirm-overlay" class="overlay" style="display:none;">
+        <h2>Är du säker?</h2>
+        <p style="color: #94a3b8; margin-bottom: 2rem; font-size: clamp(0.8rem, 2vw, 1.2rem);">
+            Du kommer att förlora dina framsteg i denna match/runda.
+        </p>
+        <button class="menu-button back-button" onclick="showMainMenu()">JA, ÅTERGÅ TILL MENY</button>
+        <button class="menu-button pause-button" onclick="showPauseMenu()">NEJ, FORTSÄTT SPELA</button>
     </div>
 
-    <!-- Paus Meny -->
-    <div id="pauseMenu" class="menu-modal hidden">
-        <h2 class="text-5xl font-extrabold mb-8 text-center text-yellow-400">SPELET PAUSAT</h2>
-        <button id="resumeButton" class="menu-button bg-green-500 hover:bg-green-600">
-            ÅTERUPPTA SPEL
-        </button>
-        <button id="restartButton" class="menu-button bg-blue-500 hover:bg-blue-600">
-            STARTA OM
-        </button>
-        <button id="returnToMenuButton" class="menu-button bg-red-500 hover:bg-red-600">
-            ÅTERGÅ TILL HUVUDMENY
-        </button>
-    </div>
+</div>
 
-    <!-- Spel-kontainer som håller både canvas och UI-element -->
-    <!-- Döljer hela spel-kontainern tills spelet startas -->
-    <div id="gameContainer" class="relative hidden">
-        <!-- Spelytan där allt ritas -->
-        <canvas id="gameCanvas"></canvas>
+<script>
+    // --- KONSTANTER OCH SPELVARIABLER ---
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const gameContainer = document.getElementById('game-container');
+    const menuOverlay = document.getElementById('menu-overlay');
+    const tournamentDifficultyOverlay = document.getElementById('tournament-difficulty-overlay');
+    const casualSelectOverlay = document.getElementById('casual-select-overlay');
+    const gameoverOverlay = document.getElementById('gameover-overlay');
+    const pauseOverlay = document.getElementById('pause-overlay'); // NYTT: Paus overlay
+    const confirmOverlay = document.getElementById('confirm-overlay'); // NYTT: Bekräftelse overlay
+    const gameoverTitleEl = document.getElementById('gameover-title');
+    const gameoverMessageEl = document.getElementById('gameover-message');
+    const gameoverButton = document.getElementById('gameover-button');
+    const scorePlayerEl = document.getElementById('score-player');
+    const scoreBotEl = document.getElementById('score-bot');
+    const tournamentInfoEl = document.getElementById('tournament-info');
+    const gameModeInfoEl = document.getElementById('game-mode-info');
+    const opponentButtonsContainer = document.getElementById('opponent-buttons');
+    const messageBox = document.getElementById('message-box');
 
-        <!-- UI-överlägg för statistik (Coins, Waste och nya resurser) -->
-        <div id="statsContainer" class="absolute top-4 right-4 bg-gray-900 bg-opacity-80 p-4 rounded-lg shadow-xl w-48">
-            <h3 class="text-lg font-bold border-b border-gray-600 pb-2 mb-2">Resurser</h3>
-            <div id="coinsDisplay" class="text-yellow-400 text-lg">Coins: 0</div>
-            <div id="wasteDisplay" class="text-green-400 text-lg">Waste: 0</div>
-            <!-- NYA RESURSER -->
-            <div id="foodDisplay" class="text-red-400 text-lg">Food: 0</div>
-            <div id="woodDisplay" class="text-orange-400 text-lg">Wood: 0</div>
-            <div id="metalDisplay" class="text-gray-400 text-lg">Metal: 0</div>
-            <div id="earthDisplay" class="text-yellow-600 text-lg">Earth: 0</div>
-            <div id="modeDisplay" class="mt-2 text-sm font-bold text-indigo-400">Mode: Standard</div>
-        </div>
+    const MAX_SCORE = 5; 
+    const STEAL_THRESHOLD_FRAMES = 90; 
+    
+    let gameLoopId = null; 
+    let isGameRunning = false;
+    let isGamePaused = false; // NYTT: Pausstatus
+    let gameMode = 'MENU'; 
+    let currentRound = 0;
+    let totalRounds = 4;
+    
+    // Svårighetsinställningar (ändras per runda/match)
+    let DIFFICULTY_MULTIPLIER = {
+        level: 'easy', 
+        speed: 1.0, 
+        accuracy: 0.8, 
+        reaction: 60, // Frames (lägre = snabbare)
+        aggression: 0.5 // Chans att hoppa/interceptera
+    };
 
-        <!-- Tornets nivå-display (längst nere till vänster, endast Lvl X) -->
-        <div id="towerLevelHUD" class="absolute bottom-8 left-12 bg-gray-900 bg-opacity-80 p-3 rounded-xl shadow-2xl border-2 border-yellow-500">
-            <p id="towerLevelDisplay" class="text-4xl font-extrabold text-yellow-400">Lvl 1</p>
-        </div>
-
-
-        <!-- Sälj- och Uppgraderingsmeny (aktiveras med 'E') -->
-        <div id="sellMenu" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 bg-opacity-95 p-6 rounded-lg shadow-xl w-80 hidden border-2 border-blue-500 z-10">
-            <h2 class="text-2xl font-bold mb-4 text-center border-b border-gray-700 pb-2">Kontrollpanel</h2>
-
-            <!-- Sälj Sektion -->
-            <div class="mb-6 pb-4 border-b border-gray-700">
-                <h3 class="text-xl font-semibold mb-2 text-green-400">Sälj Monster Waste</h3>
-                <p class="mb-3 text-gray-300">Du har <span id="wasteToSell" class="font-bold text-green-400">0</span> Monster Waste.</p>
-                <p class="mb-4 text-gray-400 text-sm">Värde: 2 Coins per Waste</p>
-                
-                <button id="sellButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
-                    SÄLJ ALLT
-                </button>
-            </div>
-
-            <!-- Uppgraderings Sektion -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2 text-blue-400">Huvudtorn Uppgradering</h3>
-                <p class="text-lg mb-1">Nuvarande nivå: <span id="currentLevelInMenu" class="font-bold text-yellow-400">Lvl 1</span></p>
-                <p id="upgradeCostDisplay" class="text-base text-gray-400 mb-3">Kostnad: 20 C</p>
-                <button id="upgradeButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
-                    UPPGRADERA TORNET
-                </button>
-            </div>
-            
-            <p class="text-xs text-gray-500 mt-4 text-center">Tryck 'E' för att stänga. Tryck 'L' för paus.</p>
-        </div>
+    // Bot AI Inställningar baserat på svårighet
+    const DIFFICULTY_SETTINGS = {
+        easy: { level: 'easy', speed: 0.8, accuracy: 0.75, reaction: 90, aggression: 0.3 },
+        normal: { level: 'normal', speed: 1.0, accuracy: 0.85, reaction: 60, aggression: 0.5 },
+        hard: { level: 'hard', speed: 1.2, accuracy: 0.92, reaction: 40, aggression: 0.7 },
+        impossible: { level: 'impossible', speed: 1.5, accuracy: 0.98, reaction: 30, aggression: 0.9 }
+    };
+    
+    // Motståndardata (Estetik och Svårighetsnivå)
+    const OPPONENT_DATA = [
+        // Tournament Motståndare (Används i ordning)
+        { id: 't1', name: "Snabbe Sven", level: 'easy', skinColor: '#fef3c7', shirtColor: '#10b981', hairColor: '#374151' },
+        { id: 't2', name: "Norma Nisse", level: 'normal', skinColor: '#fcd34d', shirtColor: '#3b82f6', hairColor: '#0f172a' },
+        { id: 't3', name: "Svåra Selma", level: 'hard', skinColor: '#a8713a', shirtColor: '#ef4444', hairColor: '#d946ef' },
+        { id: 't4', name: "Den Oslagbara", level: 'impossible', skinColor: '#e0e0e0', shirtColor: '#a855f7', hairColor: '#ffffff' },
         
-        <!-- Byggnadsmeny (aktiveras med 'F') -->
-        <div id="buildMenu" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 bg-opacity-95 p-6 rounded-lg shadow-xl w-80 hidden border-2 border-green-500 z-10">
-            <h2 class="text-2xl font-bold mb-4 text-center border-b border-gray-700 pb-2">Byggmeny</h2>
-
-            <!-- Farm Sektion -->
-            <div class="mb-4 pb-4 border-b border-gray-700">
-                <h3 class="text-xl font-semibold mb-2 text-lime-400">Farm</h3>
-                <p id="farmCostDisplay" class="text-base text-gray-400 mb-2">Kostnad: 20 Coins</p>
-                <p class="text-sm text-gray-500 mb-3">Genererar: Food och Wood</p>
-                <button id="selectFarmButton" data-building="FARM" class="w-full bg-lime-600 hover:bg-lime-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
-                    VÄLJ FARM
-                </button>
-            </div>
-
-            <!-- Gruva Sektion -->
-            <div>
-                <h3 class="text-xl font-semibold mb-2 text-yellow-600">Gruva</h3>
-                <p id="mineCostDisplay" class="text-base text-gray-400 mb-2">Kostnad: 15 Wood</p>
-                <p class="text-sm text-gray-500 mb-3">Genererar: Metal, Coins och Earth</p>
-                <button id="selectMineButton" data-building="MINE" class="w-full bg-yellow-700 hover:bg-yellow-800 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
-                    VÄLJ GRUVA
-                </button>
-            </div>
-            
-            <p class="text-xs text-gray-500 mt-4 text-center">Tryck 'F' för att stänga. Klicka på duken för att placera.</p>
-        </div>
-    </div>
-
-    <script>
-        // --- DOM-element ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const gameContainer = document.getElementById('gameContainer');
-        
-        // Meny-element
-        const startMenu = document.getElementById('startMenu');
-        const startGameButton = document.getElementById('startGameButton');
-        const sandboxButton = document.getElementById('sandboxButton');
-        const controlsButton = document.getElementById('controlsButton');
-        const creditsButton = document.getElementById('creditsButton');
-        const controlsModal = document.getElementById('controlsModal');
-        const creditsModal = document.getElementById('creditsModal');
-        const closeControlsButton = document.getElementById('closeControlsButton');
-        const closeCreditsButton = document.getElementById('closeCreditsButton');
-        const pauseMenu = document.getElementById('pauseMenu'); 
-        const resumeButton = document.getElementById('resumeButton'); 
-        const restartButton = document.getElementById('restartButton'); 
-        const returnToMenuButton = document.getElementById('returnToMenuButton'); 
-        
-        // UI-paneler och displayer
-        const coinsDisplay = document.getElementById('coinsDisplay');
-        const wasteDisplay = document.getElementById('wasteDisplay');
-        const foodDisplay = document.getElementById('foodDisplay');
-        const woodDisplay = document.getElementById('woodDisplay');
-        const metalDisplay = document.getElementById('metalDisplay');
-        const earthDisplay = document.getElementById('earthDisplay');
-        const modeDisplay = document.getElementById('modeDisplay');
-        const sellMenu = document.getElementById('sellMenu');
-        const buildMenu = document.getElementById('buildMenu'); 
-        const wasteToSell = document.getElementById('wasteToSell');
-        const sellButton = document.getElementById('sellButton');
-        const upgradeButton = document.getElementById('upgradeButton'); 
-        const selectFarmButton = document.getElementById('selectFarmButton'); 
-        const selectMineButton = document.getElementById('selectMineButton'); 
-        
-        // Torn UI element
-        const towerLevelDisplay = document.getElementById('towerLevelDisplay'); 
-        const currentLevelInMenu = document.getElementById('currentLevelInMenu'); 
-        const upgradeCostDisplay = document.getElementById('upgradeCostDisplay'); 
-
-        // Sätter storleken på canvas till fullskärm
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // Casual Motståndare (Kan väljas fritt)
+        { id: 'c1', name: "Lätta Lena", level: 'easy', skinColor: '#fef3c7', shirtColor: '#4c1d95', hairColor: '#e5e7eb' },
+        { id: 'c2', name: "Mellanstora Max", level: 'normal', skinColor: '#fcd34d', shirtColor: '#d97706', hairColor: '#1f2937' },
+        { id: 'c3', name: "Skjutande Stina", level: 'hard', skinColor: '#a8713a', shirtColor: '#065f46', hairColor: '#65a30d' },
+        { id: 'c4', name: "Extreme Erik", level: 'impossible', skinColor: '#000000', shirtColor: '#000000', hairColor: '#ff0000' },
+        { 
+            id: 'c5', 
+            name: "Jamaican Jamal", 
+            level: 'impossible', 
+            skinColor: '#43281C', 
+            shirtColor: '#dc2626', 
+            hairColor: '#0f172a', 
+            isPlayerSpeed: true 
         }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+    ];
 
-        // --- Spelvariabler ---
-        let gameState = 'MENU'; // Spel-tillstånd: 'MENU', 'PLAYING', 'PAUSED', 'GAME_OVER'
-        let coins = 0;
-        let monsterWaste = 0;
-        let food = 0; 
-        let wood = 0; 
-        let metal = 0; 
-        let earth = 0; 
-        
-        const WASTE_COIN_VALUE = 2; 
-        let gameRunning = false; 
-        let menuOpen = false; // Säljmeny/Uppgraderingsmeny öppen
-        let isBuildingMode = false; // Byggmeny öppen
-        let selectedBuildingType = null; // Typ av byggnad som ska placeras
-        let baseHealth = 100; 
-        let isSandboxMode = false; 
+    // Spelets konstanter
+    const GRAVITY = 0.5;
+    const COURT_HEIGHT_FACTOR = 0.85; 
+    const SHOOT_PEAK_HEIGHT_FACTOR = 0.3; 
+    const MIN_PEAK_HEIGHT = 100; 
+    const BOT_SHOOT_DISTANCE = 300; 
+    const COLLISION_DISTANCE_SQ = (30 * 1.5) ** 2; 
+    
+    // Spelar- och Bot-objekt (Gubbar)
+    const player = {
+        x: 100, y: 0, width: 30, height: 70, 
+        dx: 0, dy: 0, speed: 6, jumpPower: 12, isJumping: false,
+        hasBall: false, score: 0, name: "Spelare",
+        facing: 1, 
+        frame: 0, frameTimer: 0, stealTimer: 0,
+        skinColor: '#fef3c7', shirtColor: '#f59e0b', hairColor: '#374151',
+        isPlayerSpeed: false 
+    };
 
-        // Spel-arrayer
-        let monsters = [];
-        let projectiles = [];
-        let buildings = []; 
-        
-        // Uppgraderingskonstanter
-        const BASE_UPGRADE_COST = 20; 
-        const UPGRADE_COST_MULTIPLIER = 1.25; 
-        const DUAL_TURRET_LEVEL = 10; 
-        
-        // Monster Skalningskonstanter
-        const BASE_MONSTER_HP = 70;
-        const HP_SCALE_PER_LEVEL = 1.15; // Ökad skalning
-        const SPAWN_INTERVAL_SCALE_PER_LEVEL = 0.95; 
-        
-        // Torn-statistik (Gemensamma konstanter)
-        const BASE_TOWER_DAMAGE = 10; 
-        const DAMAGE_SCALE_PER_LEVEL = 10; 
-        const FIRE_RATE_DECREASE_MULTIPLIER = 0.95; 
+    const bot = {
+        x: 1100, y: 0, width: 30, height: 70, 
+        dx: 0, dy: 0, speed: 4, jumpPower: 12, isJumping: false,
+        hasBall: false, score: 0, name: "Bot",
+        facing: -1, 
+        frame: 0, frameTimer: 0, stealTimer: 0,
+        skinColor: '#a8713a', shirtColor: '#ef4444', hairColor: '#0f172a',
+        isPlayerSpeed: false 
+    };
 
-        // Initial boost konstanter
-        const INITIAL_DAMAGE_BOOST = 20; 
-        const INITIAL_FIRE_RATE_BOOST_MS = -200; // Från 1000ms till 800ms
-        const BOOST_MAX_LEVEL = 5;
+    // Basketboll-objekt
+    const ball = {
+        x: 600, y: 0, radius: 10, color: '#f97316', // Orange boll
+        dx: 0, dy: 0,
+        isMoving: false,
+        owner: null 
+    };
 
-        // Byggnads-konstanter
-        const BUILDING_SIZE = 50; 
-        const FARM_COST_COINS = 20;
-        const MINE_COST_WOOD = 15;
-        const BUILD_ZONE_LIMIT = 150; 
-        const PRODUCTION_INTERVAL = 5000; 
-        const FARM_PRODUCTION = { food: 1, wood: 1 };
-        const MINE_PRODUCTION = { metal: 1, coins: 5, earth: 1 };
+    // Basketkorgar
+    const hoops = {
+        player: { x: 50, y: 0, height: 200, color: '#0f172a', targetX: 60, targetY: 250 }, 
+        bot: { x: 1150, y: 0, height: 200, color: '#0f172a', targetX: 1140, targetY: 250 } 
+    };
+
+    // Kontrollstatus
+    const keys = { 'a': false, 'd': false, 'w': false, 'f': false };
+
+    // --- INITIALISERING OCH RITFUNKTIONER ---
+
+    function resizeCanvas() {
+        const uiHeight = document.getElementById('game-ui')?.offsetHeight || 50; 
+        const newWidth = gameContainer.clientWidth;
+        const newHeight = gameContainer.clientHeight - uiHeight;
+
+        canvas.width = newWidth;
+        canvas.height = newHeight;
         
-        // --- Monster-spawning ---
-        let baseSpawnInterval = 7000; 
-        let lastSpawn = 0;
+        player.groundY = canvas.height * COURT_HEIGHT_FACTOR;
+        bot.groundY = canvas.height * COURT_HEIGHT_FACTOR;
+        ball.groundY = player.groundY;
+
+        hoops.player.y = player.groundY;
+        hoops.bot.y = bot.groundY;
+        hoops.bot.x = canvas.width - 50;
+        hoops.bot.targetX = canvas.width - 60;
         
-        // --- Torn-instanser ---
-        let tower = null; // Huvudtornet
-        let tower2 = null; // Sekundärt torn (null tills nivå 10)
-
-        // --- Game Logic Functions ---
-
-        /**
-         * Visar huvudmenyn och döljer spelet.
-         */
-        function showMenu() {
-            gameState = 'MENU';
-            gameRunning = false;
-            gameContainer.classList.add('hidden');
-            startMenu.classList.remove('hidden');
-            pauseMenu.classList.add('hidden'); 
-            sellMenu.classList.add('hidden');
-            buildMenu.classList.add('hidden');
+        if (isGameRunning || gameMode !== 'MENU') {
+            resetPlayersAndBall(ball.owner || player, true); 
         }
+    }
+
+    // Funktioner för drawPlayer, updateAnimation, drawBall, drawHoop, drawCourt är oförändrade
+
+    function drawPlayer(p) {
+        const facingDirection = p.facing; 
+        const bodyWidth = 22;
+        const limbWidth = 6;
+        const bodyX = p.x - bodyWidth / 2;
+        const legY = p.y + p.height; 
         
-        /**
-         * Startar spelet och döljer menyn.
-         * @param {string} mode - 'standard' eller 'sandbox'
-         */
-        function startGame(mode) {
-            gameState = 'PLAYING';
-            gameRunning = true;
-            startMenu.classList.add('hidden');
-            pauseMenu.classList.add('hidden'); 
-            gameContainer.classList.remove('hidden');
-
-            isSandboxMode = (mode === 'sandbox'); 
-            modeDisplay.textContent = `Mode: ${isSandboxMode ? 'Sandbox (Oändligt)' : 'Standard'}`;
-
-            // Återställ alla tillstånd
-            monsters = [];
-            projectiles = [];
-            buildings = [];
-            baseHealth = 100; 
-            baseSpawnInterval = 7000;
-            
-            // Återställ resurser
-            coins = 0; 
-            monsterWaste = 0;
-            food = 0; 
-            wood = 0; 
-            metal = 0; 
-            earth = 0; 
-
-            // Skapa torn-instanserna
-            tower = new Tower(50, canvas.height / 2);
-            tower2 = null; 
-
-            // Ge resurser om Sandbox
-            if (isSandboxMode) {
-                coins = 5000;
-                wood = 5000;
-                food = 5000;
-                metal = 5000;
-                earth = 5000;
-            }
-
-            updateUI();
-        }
-
-        /**
-         * Beräknar uppgraderingskostnaden baserat på tornets nuvarande nivå.
-         */
-        function getUpgradeCost(currentLevel) {
-            let cost = BASE_UPGRADE_COST;
-            for (let i = 1; i < currentLevel; i++) {
-                cost *= UPGRADE_COST_MULTIPLIER;
-            }
-            return Math.ceil(cost); 
-        }
-
-        /**
-         * Växlar paus-läget ('L') och visar pausmenyn.
-         * Denna funktion är den ENDA som sätter gameRunning = false (för paus)
-         */
-        function togglePause() {
-            if (gameState === 'PLAYING') {
-                gameState = 'PAUSED';
-                gameRunning = false;
-                // Stäng alla andra menyer
-                if (menuOpen) toggleSellMenu(false); // Används för att stänga menyn UTAN att pausa/återuppta
-                if (isBuildingMode) toggleBuildMenu(false); 
-                pauseMenu.classList.remove('hidden');
-            } else if (gameState === 'PAUSED') {
-                gameState = 'PLAYING';
-                gameRunning = true;
-                pauseMenu.classList.add('hidden');
+        // Gånganimation
+        let legOffset1 = 0; 
+        let legOffset2 = 0; 
+        const walkAmplitude = 4; 
+        
+        if (p.dx !== 0 && !p.isJumping) {
+            const frameIndex = p.frame; 
+            if (frameIndex === 1) { 
+                legOffset1 = -walkAmplitude;
+                legOffset2 = walkAmplitude;
+            } else { 
+                legOffset1 = walkAmplitude; 
+                legOffset2 = -walkAmplitude; 
             }
         }
         
-        /**
-         * Växlar sälj-menyn (öppna/stäng). PAUSAR INTE SPELET.
-         * @param {boolean} toggleDisplay - Om UI-displayen ska växlas (standard true).
-         */
-        function toggleSellMenu(toggleDisplay = true) {
-            if (gameState !== 'PLAYING' && gameState !== 'PAUSED') return;
+        // HUVUD OCH HÅR
+        const headHeight = 15;
+        const headWidth = p.width / 2;
+        const headX = p.x - headWidth / 2; 
+        const headY = p.y - headHeight;
+        
+        ctx.fillStyle = p.skinColor; 
+        ctx.fillRect(headX, headY, headWidth, headHeight);
 
-            // Stäng bygg-relaterade lägen om säljmenyn öppnas
-            if (isBuildingMode) {
-                isBuildingMode = false;
-                buildMenu.classList.add('hidden');
-                selectedBuildingType = null;
-            }
+        ctx.fillStyle = p.hairColor; 
+        const hairHeight = 5;
+        ctx.fillRect(headX, headY - hairHeight, headWidth, hairHeight);
+
+        // KROPP (Tröja)
+        ctx.fillStyle = p.shirtColor;
+        ctx.fillRect(bodyX, p.y, bodyWidth, p.height / 2);
+        
+        // Byxor/Shorts (Använd en neutral mörk färg)
+        ctx.fillStyle = '#1f2937'; 
+        ctx.fillRect(bodyX, p.y + p.height / 2, bodyWidth, p.height / 2);
+
+        // BEN 
+        ctx.fillStyle = p.skinColor;
+        const legLength = p.height / 3;
+        
+        // Ben 1 (Vänster ben från betraktaren)
+        ctx.fillRect(p.x - bodyWidth / 2 + 2, legY - legLength + legOffset1, limbWidth, legLength);
+        // Ben 2 (Höger ben från betraktaren)
+        ctx.fillRect(p.x + bodyWidth / 2 - limbWidth - 2, legY - legLength + legOffset2, limbWidth, legLength);
+        
+        // ARM (enkel block)
+        ctx.fillStyle = p.skinColor;
+        const armY = p.y + p.height / 4;
+        const armLength = p.height / 4;
+        
+        // Arm 1 (Mot boll/framåt)
+        const armX1 = p.x + (facingDirection * bodyWidth / 2);
+        ctx.fillRect(armX1 - limbWidth / 2, armY, limbWidth, armLength);
+
+
+        // BOLL
+        if (p.hasBall) {
+            ctx.fillStyle = ball.color;
+            ctx.beginPath();
+            // Placera bollen nära handen/armbågen framför
+            const ballX = p.x + (facingDirection * (p.width / 2));
+            const ballY = armY + armLength;
+            ctx.arc(ballX, ballY, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
             
-            if (toggleDisplay) {
-                menuOpen = !menuOpen;
-                sellMenu.classList.toggle('hidden');
+            // Stöldindikator (Visuell feedback för stöld)
+            if (p.stealTimer > 0 && p.stealTimer < STEAL_THRESHOLD_FRAMES) {
+                 const percentage = p.stealTimer / STEAL_THRESHOLD_FRAMES;
+                 ctx.fillStyle = `rgba(255, 0, 0, ${percentage * 0.5})`;
+                 ctx.beginPath();
+                 ctx.arc(p.x, p.y + p.height / 2, p.width, 0, Math.PI * 2);
+                 ctx.fill();
+            }
+        }
+    }
+    
+    function updateAnimation(p) {
+        if (p.dx !== 0 && !p.isJumping) {
+            p.frameTimer++;
+            if (p.frameTimer > 8) { 
+                p.frame = 1 - p.frame; 
+                p.frameTimer = 0;
+            }
+        } else {
+            p.frame = 0; 
+            p.frameTimer = 0;
+        }
+    }
+
+    function drawBall() {
+        ctx.fillStyle = ball.color;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Basketboll linjer
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ball.x - ball.radius, ball.y);
+        ctx.lineTo(ball.x + ball.radius, ball.y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius / 2, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    function drawHoop(hoop) {
+        const poleWidth = 10;
+        const rimLength = 50;
+        const rimThickness = 5;
+        const backboardHeight = 50;
+        const backboardWidth = 5;
+
+        // Rita stolpen (Svart)
+        ctx.fillStyle = hoop.color;
+        ctx.fillRect(hoop.x - poleWidth / 2, hoop.y - hoop.height, poleWidth, hoop.height);
+        
+        // Rita bakplattan (Backboard - Vit med röd kant)
+        const backboardX = hoop.x + (hoop === hoops.player ? 0 : -backboardWidth);
+        ctx.fillStyle = '#fefefe';
+        ctx.fillRect(backboardX, hoop.y - hoop.height - backboardHeight, backboardWidth, backboardHeight);
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(backboardX, hoop.y - hoop.height - backboardHeight, backboardWidth, backboardHeight);
+
+
+        // Rita korgring (Rim - Röd)
+        ctx.fillStyle = '#dc2626';
+        const rimX = hoop.x + (hoop === hoops.player ? backboardWidth : -rimLength);
+        ctx.fillRect(rimX, hoop.y - hoop.height, rimLength, rimThickness);
+
+        // Rita nätet (Net - Linjer)
+        ctx.strokeStyle = '#fefefe';
+        ctx.lineWidth = 1;
+        const netY = hoop.y - hoop.height + rimThickness;
+        const netDepth = 25;
+        const numLines = 5;
+
+        for (let i = 0; i <= numLines; i++) {
+            const ratio = i / numLines;
+            ctx.beginPath();
+            // Rita vertikala/diagonal linjer
+            ctx.moveTo(rimX + (rimLength * ratio), netY);
+            ctx.lineTo(rimX + (rimLength / 2) + ((rimLength / 2 - rimLength * ratio) * 0.5), netY + netDepth);
+            ctx.stroke();
+        }
+        
+        // Uppdatera skjutmål (target) för träffkoll
+        hoop.targetX = rimX + rimLength / 2;
+        hoop.targetY = netY; // Målet är nätets topp
+    }
+
+    function drawCourt() {
+        // Mark (Basketparkett)
+        const woodLight = '#a0522d'; // Ljusbrun
+        const woodDark = '#8b4513'; // Mörkbrun
+        const groundY = player.groundY;
+        
+        // Bakgrundsfärg (en av träfärgerna)
+        ctx.fillStyle = woodDark;
+        ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+        // Rita träribbor (enkel linjetextur)
+        ctx.strokeStyle = woodLight;
+        ctx.lineWidth = 1;
+        const numPlanks = 40;
+        for (let i = 0; i < numPlanks; i++) {
+            ctx.beginPath();
+            const y = groundY + (i / numPlanks) * (canvas.height - groundY);
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+        
+        // Marklinjer (Vit)
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 4;
+        
+        // Mittlinje
+        ctx.beginPath();
+        ctx.moveTo(canvas.width/2, groundY);
+        ctx.lineTo(canvas.width/2, groundY - 150);
+        ctx.stroke();
+        
+        // Fri-kast linje (Simulerad: 200px från korg)
+        const ftLength = 100;
+        const ftY = groundY - 150;
+        
+        // Fri-kast linje Spelare
+        ctx.beginPath();
+        ctx.moveTo(hoops.player.x + 200, ftY);
+        ctx.lineTo(hoops.player.x + 200, groundY);
+        ctx.stroke();
+        
+        // Fri-kast linje Bot
+        ctx.beginPath();
+        ctx.moveTo(hoops.bot.x - 200, ftY);
+        ctx.lineTo(hoops.bot.x - 200, groundY);
+        ctx.stroke();
+    }
+
+
+    function showMessage(text) {
+        messageBox.textContent = text;
+        messageBox.style.opacity = '1';
+        messageBox.style.transform = 'translateX(-50%) scale(1)';
+        
+        clearTimeout(messageBox.timer);
+        messageBox.timer = setTimeout(() => {
+            messageBox.style.opacity = '0';
+        }, 2000);
+    }
+    
+    // --- SPEL LOGIK ---
+
+    function updatePlayer(p) {
+        // Rörelse och Ansiktsriktning (Endast för Spelaren)
+        if (p === player) {
+            p.dx = 0;
+            if (keys['a']) {
+                p.dx = -p.speed;
+                p.facing = -1; 
+            } else if (keys['d']) {
+                p.dx = p.speed;
+                p.facing = 1; 
+            }
+        }
+        
+        // Botens facing
+        if (p === bot) {
+            const targetX = bot.hasBall ? hoops.player.targetX : ball.x;
+            p.facing = targetX > p.x ? 1 : -1;
+            
+            const baseSpeed = bot.isPlayerSpeed ? player.speed : 4; 
+            p.speed = baseSpeed * DIFFICULTY_MULTIPLIER.speed; 
+        }
+
+        // Applicera rörelse
+        p.x += p.dx;
+
+        // Studsa mot väggar
+        const halfWidth = p.width / 2;
+        if (p.x < halfWidth) {
+            p.x = halfWidth;
+            p.dx = 0;
+        } else if (p.x > canvas.width - halfWidth) {
+            p.x = canvas.width - halfWidth;
+            p.dx = 0;
+        }
+
+        // Hopp och gravitation
+        if (p.isJumping) {
+            p.dy += GRAVITY;
+            p.y += p.dy;
+        }
+
+        // Kollision med marken
+        if (p.y + p.height >= p.groundY) { 
+            p.y = p.groundY - p.height;
+            p.dy = 0;
+            p.isJumping = false;
+        }
+
+        // Bollen följer spelaren
+        if (p.hasBall) {
+            const ballXOffset = p.width / 2 * p.facing + (ball.radius * p.facing);
+            
+            // Dribbling animation
+            const dribbleHeight = p.isJumping ? 0 : 5;
+            ball.y = p.y + p.height / 2 + Math.sin(p.frameTimer * 0.5) * dribbleHeight;
+
+            ball.x = p.x + ballXOffset;
+            ball.dx = 0; 
+            ball.dy = 0; 
+            ball.isMoving = false;
+            ball.owner = p;
+        }
+        
+        updateAnimation(p);
+    }
+    
+    function botLogic() {
+        if (!isGameRunning || isGamePaused) return; // FIX: Stoppa boten om pausad
+
+        const targetHoop = hoops.player;
+        const shootRange = BOT_SHOOT_DISTANCE; 
+        const shootX = targetHoop.targetX + (shootRange + (1 - DIFFICULTY_MULTIPLIER.accuracy) * 100); 
+        
+        const reactionDelay = DIFFICULTY_MULTIPLIER.reaction;
+        if (Math.random() * 60 < reactionDelay / 3) return; 
+        
+        if (bot.hasBall) {
+            const dxToShootPosition = shootX - bot.x;
+            
+            if (Math.abs(dxToShootPosition) > 10) {
+                 bot.dx = Math.sign(dxToShootPosition) * bot.speed;
             } else {
-                menuOpen = false;
-                sellMenu.classList.add('hidden');
-            }
-            
-            // Spelet fortsätter köra även om menyn är öppen, om inte L är nedtryckt.
-            if (gameState === 'PLAYING') {
-                 gameRunning = true; 
-            }
-
-            updateUI(); 
-        }
-
-        /**
-         * Växlar bygg-menyn (öppna/stäng). SPELET FORTSÄTTER.
-         * @param {boolean} toggleDisplay - Om UI-displayen ska växlas (standard true).
-         */
-        function toggleBuildMenu(toggleDisplay = true) {
-            if (gameState !== 'PLAYING' && gameState !== 'PAUSED') return;
-
-            // Stäng säljmenyn om byggmenyn öppnas
-            if (menuOpen) {
-                menuOpen = false;
-                sellMenu.classList.add('hidden');
-            }
-            
-            if (toggleDisplay) {
-                isBuildingMode = !isBuildingMode;
-                buildMenu.classList.toggle('hidden');
-            } else {
-                isBuildingMode = false;
-                buildMenu.classList.add('hidden');
-            }
-
-            // Återställ vald byggnad när menyn stängs
-            if (!isBuildingMode) selectedBuildingType = null; 
-            
-            // Spelet fortsätter köra även om byggmenyn är öppen.
-            if (gameState === 'PLAYING') {
-                gameRunning = true; 
-            }
-            
-            updateUI(); 
-        }
-
-        /**
-         * Kontrollerar om en given position (x, y) överlappar med en befintlig byggnad.
-         */
-        function checkBuildingCollision(x, y) {
-            // Använder en standardstorlek för kollisionsdetektering, oavsett visuell form.
-            const size = BUILDING_SIZE; 
-
-            for (const b of buildings) {
-                // Kontrollera överlappning mellan rektanglar
-                if (x < b.x + b.width / 2 &&
-                    x + size / 2 > b.x - b.width / 2 && 
-                    y < b.y + b.height / 2 &&
-                    y + size / 2 > b.y - b.height / 2) {
-                    return true;
+                bot.dx = 0;
+                
+                if (!bot.isJumping) {
+                    shootBall(bot, targetHoop);
                 }
             }
-            return false;
-        }
+        } else {
+            const dx = ball.x - bot.x;
+            const distance = Math.abs(dx); 
+            const ballIsFree = !ball.owner;
 
-        // --- Spelklasser ---
+            if (player.hasBall) {
+                 const targetBlockX = player.x + (player.facing === 1 ? player.width : -player.width);
+                 const blockDx = targetBlockX - bot.x;
+                 
+                 if (Math.abs(blockDx) > 5) {
+                    bot.dx = Math.sign(blockDx) * (bot.speed * 1.2); 
+                 } else {
+                    bot.dx = 0;
+                 }
+                 
+                 if (player.isJumping && Math.random() < DIFFICULTY_MULTIPLIER.aggression * 0.5 && distance < 150) {
+                    botJump();
+                 }
 
-        /**
-         * Klassen för byggnader (Farm och Gruva)
-         */
-        class Building {
-            constructor(x, y, type) {
-                this.x = x; 
-                this.y = y; 
-                this.type = type; 
-                this.productionInterval = PRODUCTION_INTERVAL;
-                this.lastProduction = performance.now();
-                
-                // Unika dimensioner baserat på typ
-                if (type === 'FARM') {
-                    this.width = 60;  // Bredare för Farm
-                    this.height = 30; // Lägre
-                    this.color = '#84cc16'; // Lime/grön
-                    this.label = 'FARM';
-                } else if (type === 'MINE') {
-                    this.width = 40;  // Smalare för Gruva
-                    this.height = 50; // Högre
-                    this.color = '#b8860b'; // Guld/brun
-                    this.label = 'GRUVA';
-                }
-            }
-
-            draw() {
-                ctx.fillStyle = this.color;
-                
-                // Rita olika former baserat på typ
-                if (this.type === 'FARM') {
-                    // Rektangel (Fält)
-                    ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
-                    
-                    // Lägg till några ränder för att symbolisera rader
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-                    for(let i = 0; i < 3; i++) {
-                        ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2 + 5 + i * 10, this.width, 4);
-                    }
-                    
-                } else if (this.type === 'MINE') {
-                    // Gruva: Bas + Topp (Triangel)
-                    
-                    // 1. Gruvbas (rektangel)
-                    const baseHeight = this.height * 0.7;
-                    ctx.fillRect(this.x - this.width / 2, this.y + this.height / 2 - baseHeight, this.width, baseHeight);
-                    
-                    // 2. Gruvtopp (triangel/tak)
-                    ctx.beginPath();
-                    ctx.moveTo(this.x - this.width / 2 - 5, this.y + this.height / 2 - baseHeight); // Vänster bas
-                    ctx.lineTo(this.x + this.width / 2 + 5, this.y + this.height / 2 - baseHeight); // Höger bas
-                    ctx.lineTo(this.x, this.y - this.height / 2); // Toppunkt
-                    ctx.closePath();
-                    ctx.fillStyle = '#6e7783'; // Mörkare grå för taket
-                    ctx.fill();
-                    
-                    // Fönster/ingång på basen
-                    ctx.fillStyle = '#1e293b'; 
-                    ctx.fillRect(this.x - 10, this.y + this.height / 2 - baseHeight + 5, 20, baseHeight - 10);
-                }
-
-                // Etikett
-                ctx.fillStyle = 'white';
-                ctx.font = '12px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(this.label, this.x, this.y + this.height / 2 + 15);
-                
-                // Produktionsstapel (ritas oavsett form)
-                const progress = (performance.now() - this.lastProduction) / this.productionInterval;
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                // Placeras ovanför byggnaden
-                ctx.fillRect(this.x - 20, this.y - this.height / 2 - 10, 40 * Math.min(progress, 1), 5);
-            }
-
-            update(currentTime) {
-                if (currentTime - this.lastProduction > this.productionInterval) {
-                    this.lastProduction = currentTime;
-                    
-                    if (this.type === 'FARM') {
-                        food += FARM_PRODUCTION.food;
-                        wood += FARM_PRODUCTION.wood;
-                        
-                    } else if (this.type === 'MINE') {
-                        metal += MINE_PRODUCTION.metal;
-                        coins += MINE_PRODUCTION.coins;
-                        earth += MINE_PRODUCTION.earth;
-                    }
-                    updateUI(); 
-                }
-            }
-        }
-        
-        /**
-         * Klassen för spelarens torn
-         */
-        class Tower {
-            constructor(startX, startY) {
-                this.width = 60;
-                this.height = 100;
-                this.x = startX;
-                this.y = startY - (this.height / 2); 
-                this.level = 1; 
-                this.baseRange = 550; 
-                
-                this.baseFireRate = 1000; 
-                this.baseDamage = BASE_TOWER_DAMAGE; 
-
-                // Beräknade stats
-                this.range = 0; 
-                this.fireRate = 0;
-                this.projectileDamage = 0;
-                
-                this.lastShot = 0; 
-                
-                // Rotationsvariabler
-                this.angle = 0; 
-                this.rotationSpeed = 0.05; 
-                this.pivotX = this.x + this.width / 4; 
-                this.pivotY = this.y + this.height / 2; 
-
-                // Recoil-effekt
-                this.recoilOffset = 0;
-                this.maxRecoil = 5;
-                this.recoilDecay = 0.9;
-                
-                this.upgrade(false); 
-            }
-            
-            /**
-             * Beräknar tornets stats med hänsyn till nivå och eventuell start-boost.
-             */
-            calculateStats() {
-                // Beräkna grundläggande nivå-stats
-                let calculatedDamage = this.baseDamage + (this.level - 1) * DAMAGE_SCALE_PER_LEVEL;
-                let calculatedFireRate = this.baseFireRate * Math.pow(FIRE_RATE_DECREASE_MULTIPLIER, this.level - 1);
-                
-                // Lägg till start-boost om nivån är lägre än eller lika med max boost-nivå
-                if (this.level < BOOST_MAX_LEVEL) {
-                    calculatedDamage += INITIAL_DAMAGE_BOOST;
-                    calculatedFireRate += INITIAL_FIRE_RATE_BOOST_MS; 
-                    // Se till att Fire Rate inte blir negativ
-                    calculatedFireRate = Math.max(100, calculatedFireRate);
-                }
-
-                // Tilldela de beräknade värdena
-                this.range = this.baseRange * (1 + (this.level * 0.1)); 
-                this.fireRate = calculatedFireRate;
-                this.projectileDamage = calculatedDamage;
-            }
-
-            /**
-             * Uppgraderar tornets statistik baserat på nivån.
-             */
-            upgrade(isRealUpgrade = true) {
-                if (isRealUpgrade) {
-                    this.level++;
-                }
-                this.calculateStats();
-            }
-
-            // Ritar ut tornet
-            draw() {
-                // Basen 
-                ctx.fillStyle = '#5a67d8'; 
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-
-                // Uppdatera recoil
-                this.recoilOffset *= this.recoilDecay;
-
-                // Spara canvas-kontexten
-                ctx.save();
-                
-                // Flytta origo (0,0) till tornets pivot-punkt
-                ctx.translate(this.pivotX, this.pivotY);
-                
-                // Rotera hela canvasen runt den nya origo-punkten
-                ctx.rotate(this.angle);
-
-                // --- Machine Gun Design ---
-                ctx.fillStyle = '#4a5568'; 
-                ctx.fillRect(-20, -15, 40, 30); 
-                
-                const barrelLength = this.width + 10;
-                const barrelWidth = 8;
-                ctx.fillStyle = '#a0aec0'; 
-                ctx.fillRect(-20 - this.recoilOffset, -barrelWidth / 2, barrelLength + this.recoilOffset, barrelWidth); 
-
-                ctx.fillStyle = '#333333';
-                ctx.fillRect(barrelLength - 10 - this.recoilOffset, -barrelWidth / 2, 10, barrelWidth); 
-
-                ctx.fillStyle = 'cyan';
-                ctx.beginPath();
-                ctx.arc(barrelLength / 2 - this.recoilOffset, 0, 5, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Återställ canvas-kontexten
-                ctx.restore();
-            }
-
-            // Uppdaterar tornet (roterar, hittar mål och skjuter)
-            update(currentTime) {
-                // Steg 1: Hitta ett mål
-                let target = null;
-                let closestDist = this.range;
-
-                for (const monster of monsters) {
-                    const dist = Math.hypot(monster.x - this.pivotX, monster.y - this.pivotY);
-                    if (dist < closestDist) {
-                        closestDist = dist;
-                        target = monster;
-                    }
-                }
-
-                let isAimed = false;
-
-                // Steg 2: Rotera mot målet
-                if (target) {
-                    const targetAngle = Math.atan2(target.y - this.pivotY, target.x - this.pivotX);
-                    let diff = targetAngle - this.angle;
-
-                    while (diff < -Math.PI) diff += Math.PI * 2;
-                    while (diff > Math.PI) diff -= Math.PI * 2;
-
-                    if (Math.abs(diff) < this.rotationSpeed) {
-                        this.angle = targetAngle;
-                        isAimed = true;
-                    } else {
-                        this.angle += Math.sign(diff) * this.rotationSpeed;
-                    }
-                }
-
-                // Steg 3: Skjut
-                if (target && isAimed && currentTime - this.lastShot > this.fireRate) {
-                    this.shoot(target);
-                    this.lastShot = currentTime;
-                    this.recoilOffset = this.maxRecoil;
-                }
-            }
-
-            // Skapar en ny projektil
-            shoot(target) {
-                const startX = this.pivotX + Math.cos(this.angle) * (this.width - 10);
-                const startY = this.pivotY + Math.sin(this.angle) * (this.width - 10);
-                
-                projectiles.push(new Projectile(startX, startY, target, this.projectileDamage, this.angle));
-            }
-        }
-
-        /**
-         * Klassen för monster
-         */
-        class Monster {
-            constructor(x, y, maxHp, speed, color) {
-                this.maxHp = maxHp;
-                this.hp = this.maxHp;
-                
-                this.radius = 15;
-                this.x = x; 
-                this.y = y; 
-                this.speed = speed; 
-                this.color = color; 
-            }
-
-            draw() {
-                // Kropp
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Ögon
-                ctx.fillStyle = 'black';
-                ctx.beginPath();
-                ctx.arc(this.x - 5, this.y - 4, 3, 0, Math.PI * 2);
-                ctx.arc(this.x + 5, this.y - 4, 3, 0, Math.PI * 2);
-                ctx.fill();
-
-                // HP-mätare (bakgrund)
-                ctx.fillStyle = 'red';
-                ctx.fillRect(this.x - this.radius, this.y - this.radius - 10, this.radius * 2, 5);
-                
-                // HP-mätare (nuvarande hälsa)
-                ctx.fillStyle = 'lime';
-                const hpWidth = (this.hp / this.maxHp) * (this.radius * 2);
-                ctx.fillRect(this.x - this.radius, this.y - this.radius - 10, hpWidth, 5);
-            }
-
-            update() {
-                this.x -= this.speed;
-            }
-
-            takeDamage(amount) {
-                this.hp -= amount;
-            }
-        }
-
-        /**
-         * Klassen för projektiler
-         */
-        class Projectile {
-            constructor(x, y, target, damage, angle) {
-                this.x = x;
-                this.y = y;
-                this.target = target;
-                this.damage = damage;
-                this.radius = 5;
-                this.speed = 5;
-                this.color = 'cyan';
-                
-                // Beräknar initial velocity baserat på tornets vinkel (för fast bana)
-                this.vx = Math.cos(angle) * this.speed;
-                this.vy = Math.sin(angle) * this.speed;
-            }
-
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            update() {
-                // Homing-läge: Om målet fortfarande finns
-                if (this.target && this.target.hp > 0) {
-                    const dx = this.target.x - this.x;
-                    const dy = this.target.y - this.y;
-                    const dist = Math.hypot(dx, dy);
-
-                    if (dist > 0) {
-                        const dirX = dx / dist;
-                        const dirY = dy / dist;
-                        
-                        this.x += dirX * this.speed;
-                        this.y += dirY * this.speed;
-                        
-                        this.vx = dirX * this.speed;
-                        this.vy = dirY * this.speed;
-                    } else {
-                        // Nådde målets nuvarande position, nollställ target för att gå över till fast bana
-                        this.target = null;
-                    }
-                    
+            } else if (ballIsFree && distance < canvas.width / 2) {
+                if (Math.abs(dx) > 5) {
+                    bot.dx = Math.sign(dx) * bot.speed;
                 } else {
-                    // Fast bana-läge: Målet är dött/null.
-                    this.target = null;
-                    this.x += this.vx;
-                    this.y += this.vy;
-                }
-            }
-        }
-
-        // --- Huvud-torn logik ---
-
-        /**
-         * Uppgraderar båda tornen och hanterar skapandet av tower2 vid nivå 10.
-         */
-        function upgradeTower() {
-            if (!tower) return;
-            const cost = getUpgradeCost(tower.level);
-            
-            if (isSandboxMode || coins >= cost) {
-                if (!isSandboxMode) {
-                    coins -= cost;
+                    bot.dx = 0;
                 }
                 
-                // Steg 1: Uppgradera det primära tornet
-                tower.upgrade(true); 
-                
-                // Steg 2: Synkronisera stats till eventuella sekundära torn
-                if (tower2) {
-                    tower2.level = tower.level;
-                    tower2.upgrade(false); 
+                if (ball.isMoving && ball.y < bot.y && Math.random() < DIFFICULTY_MULTIPLIER.aggression) {
+                    botJump();
                 }
-                
-                // Steg 3: Skapa det andra tornet om vi når DUAL_TURRET_LEVEL
-                if (tower.level >= DUAL_TURRET_LEVEL && !tower2) {
-                    // Justera tower positioner för att centrera de dubbla tornen
-                    const offset = 30; // Avstånd från mittlinjen
-                    const center = canvas.height / 2;
-                    
-                    // Skapa det sekundära tornet (placeras nedanför)
-                    tower2 = new Tower(50, center + offset);
-                    tower2.level = tower.level;
-                    tower2.calculateStats(); // Behöver bara kalla calculateStats för att sätta stats
-                    
-                    // Justera primära tornet (placeras ovanför)
-                    tower.y = center - tower.height / 2 - offset;
-                    tower.pivotY = tower.y + tower.height / 2;
-                }
-                
-                updateUI();
-                console.log(`Torn uppgraderat till nivå ${tower.level}`);
-            }
-        }
-        
-        // --- Monster-spawning ---
 
-        function calculateSpawnInterval() {
-            let interval = baseSpawnInterval * Math.pow(SPAWN_INTERVAL_SCALE_PER_LEVEL, tower.level - 1);
-            return Math.max(interval, 500); 
-        }
-
-        function spawnMonster(currentTime) {
-            if (!tower) return;
-            const spawnInterval = calculateSpawnInterval(); 
-
-            if (currentTime - lastSpawn > spawnInterval) {
-                // Beräkna monster HP baserat på tornets nivå (monsterna blir tuffare ju högre nivå tornet har)
-                const monsterMaxHp = BASE_MONSTER_HP * Math.pow(HP_SCALE_PER_LEVEL, tower.level - 1);
-                const monsterSpeed = Math.random() * 0.7 + 0.3;
-                const monsterColor = `hsl(${Math.random() * 60 + 20}, 70%, 50%)`;
-                
-                const startX = canvas.width + 15;
-                const startY = Math.random() * (canvas.height - 30) + 15;
-                
-                monsters.push(new Monster(startX, startY, monsterMaxHp, monsterSpeed, monsterColor)); 
-                lastSpawn = currentTime;
-                
-                if (baseSpawnInterval > 1500) { 
-                    baseSpawnInterval *= 0.99;
-                }
-            }
-        }
-
-        // --- UI-funktioner ---
-        
-        function updateUI() {
-            coinsDisplay.textContent = `Coins: ${coins}`;
-            wasteDisplay.textContent = `Waste: ${monsterWaste}`;
-            foodDisplay.textContent = `Food: ${food}`;
-            woodDisplay.textContent = `Wood: ${wood}`;
-            metalDisplay.textContent = `Metal: ${metal}`;
-            earthDisplay.textContent = `Earth: ${earth}`;
-            
-            wasteToSell.textContent = monsterWaste; 
-            modeDisplay.textContent = `Mode: ${isSandboxMode ? 'Sandbox (Oändligt)' : 'Standard'}`;
-
-            // Uppdaterar torn-UI
-            const levelText = `Lvl ${tower ? tower.level : 1}`;
-            towerLevelDisplay.textContent = levelText; 
-            if (currentLevelInMenu) {
-                currentLevelInMenu.textContent = levelText; 
-            }
-
-            const nextCost = getUpgradeCost(tower ? tower.level : 1);
-            upgradeCostDisplay.textContent = `Kostnad: ${isSandboxMode ? 'Gratis' : `${nextCost} C`}`;
-            
-            upgradeButton.disabled = !isSandboxMode && coins < nextCost;
-            
-            selectFarmButton.disabled = !isSandboxMode && coins < FARM_COST_COINS;
-            selectMineButton.disabled = !isSandboxMode && wood < MINE_COST_WOOD;
-            
-            // Uppdatera muspekare i byggläge
-            if (selectedBuildingType && gameState === 'PLAYING') {
-                 canvas.style.cursor = 'crosshair';
             } else {
-                 canvas.style.cursor = 'default';
+                 bot.dx = 0;
             }
         }
+    }
 
-        // --- Händelselyssnare (Menyer & Spelkontroller) ---
+    function updateBall() {
+        if (ball.owner) return; 
 
-        // Start Game
-        startGameButton.addEventListener('click', () => startGame('standard'));
-        
-        // Sandbox
-        sandboxButton.addEventListener('click', () => startGame('sandbox')); 
+        if (ball.isMoving) {
+            ball.dy += GRAVITY;
+            ball.dx *= 0.995; 
 
-        // Pausmeny-knappar
-        resumeButton.addEventListener('click', () => togglePause());
-        restartButton.addEventListener('click', () => startGame('standard'));
-        returnToMenuButton.addEventListener('click', () => showMenu());
-
-        // Controls Modal
-        controlsButton.addEventListener('click', () => {
-            startMenu.classList.add('hidden');
-            controlsModal.classList.remove('hidden');
-        });
-        closeControlsButton.addEventListener('click', () => {
-            controlsModal.classList.add('hidden');
-            startMenu.classList.remove('hidden');
-        });
-
-        // Credits Modal
-        creditsButton.addEventListener('click', () => {
-            startMenu.classList.add('hidden');
-            creditsModal.classList.remove('hidden');
-        });
-        closeCreditsButton.addEventListener('click', () => {
-            creditsModal.classList.add('hidden');
-            startMenu.classList.remove('hidden');
-        });
-
-        // Lyssnar efter 'E', 'F' och 'L'
-        window.addEventListener('keydown', (e) => {
-            const key = e.key.toLowerCase();
-            if (gameState === 'MENU' || gameState === 'GAME_OVER') return;
-
-            if (key === 'e') {
-                toggleSellMenu();
-            } else if (key === 'f') {
-                toggleBuildMenu();
-            } else if (key === 'l') {
-                // Pausknappen ska alltid fungera när spelet pågår eller är pausat
-                togglePause();
-            }
-        });
-
-        // Lyssnar efter klick på canvas för placering
-        canvas.addEventListener('mousedown', (e) => {
-            if (gameState !== 'PLAYING' || !selectedBuildingType) return;
-                
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            ball.x += ball.dx;
+            ball.y += ball.dy;
             
-            // 1. Förhindra byggnation i den blå skyddszonen (x < 150)
-            if (x < BUILD_ZONE_LIMIT) {
-                console.error("Kan inte bygga i skyddszonen.");
-                selectedBuildingType = null;
-                updateUI();
-                return; 
+            if (ball.y + ball.radius >= ball.groundY) {
+                ball.y = ball.groundY - ball.radius;
+                ball.dy *= -0.7; 
+                ball.dx *= 0.95; 
+                
+                if (Math.abs(ball.dy) < 1 && Math.abs(ball.dx) < 1) { 
+                    ball.dy = 0;
+                    ball.dx = 0;
+                    ball.isMoving = false;
+                }
+            }
+            
+            if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+                ball.dx *= -0.9;
+                ball.x = Math.max(ball.radius, Math.min(canvas.width - ball.radius, ball.x));
             }
 
-            // 2. Förhindra byggnadskollision
-            if (checkBuildingCollision(x, y)) {
-                 console.error("Kan inte placera byggnad ovanpå en annan!");
+            const targetHoop = ball.x < canvas.width / 2 ? hoops.player : hoops.bot;
+            const backboardX = targetHoop === hoops.player ? targetHoop.x + 0 : targetHoop.x - 5;
+            const backboardWidth = 5;
+            const backboardTop = targetHoop.y - targetHoop.height - 50;
+            const backboardBottom = targetHoop.y - targetHoop.height;
+
+            if (ball.y > backboardTop && ball.y < backboardBottom) {
+                if (targetHoop === hoops.bot && ball.x + ball.radius > backboardX && ball.x + ball.radius < backboardX + backboardWidth && ball.dx > 0) {
+                    ball.dx *= -0.7;
+                    ball.x = backboardX - ball.radius;
+                }
+                else if (targetHoop === hoops.player && ball.x - ball.radius < backboardX + backboardWidth && ball.x - ball.radius > backboardX && ball.dx < 0) {
+                    ball.dx *= -0.7;
+                    ball.x = backboardX + backboardWidth + ball.radius;
+                }
+            }
+        }
+    }
+
+    function checkCollision(p, b) {
+        const closestX = Math.max(p.x - p.width / 2, Math.min(b.x, p.x + p.width / 2));
+        const closestY = Math.max(p.y, Math.min(b.y, p.y + p.height));
+        
+        const dx = b.x - closestX;
+        const dy = b.y - closestY;
+        
+        return (dx * dx + dy * dy) < (b.radius * b.radius);
+    }
+
+    function handleBallControl() {
+        if (ball.owner) return; 
+
+        const players = [player, bot];
+
+        for (const p of players) {
+            if (checkCollision(p, ball) && !p.hasBall && !ball.owner) {
+                p.hasBall = true;
+                ball.owner = p;
+                ball.isMoving = false;
+                showMessage(`${p.name} tog bollen!`);
+
+                player.stealTimer = 0;
+                bot.stealTimer = 0;
+                return;
+            }
+        }
+    }
+    
+    function checkSteal() {
+        const dx = player.x - bot.x;
+        const dy = player.y - bot.y;
+        const distanceSq = dx * dx + dy * dy;
+
+        if (distanceSq < COLLISION_DISTANCE_SQ) {
+            
+            let stealer = null;
+            let ballCarrier = null;
+
+            if (bot.hasBall) {
+                stealer = player;
+                ballCarrier = bot;
+            } else if (player.hasBall) {
+                stealer = bot;
+                ballCarrier = player;
+            } else {
+                 player.stealTimer = 0;
+                 bot.stealTimer = 0;
                  return;
             }
-
-            let costMet = false;
-
-            // 3. Kolla kostnad och drag av resurser
-            if (isSandboxMode) {
-                costMet = true; 
-            } else if (selectedBuildingType === 'FARM' && coins >= FARM_COST_COINS) {
-                coins -= FARM_COST_COINS;
-                costMet = true;
-            } else if (selectedBuildingType === 'MINE' && wood >= MINE_COST_WOOD) {
-                wood -= MINE_COST_WOOD;
-                costMet = true;
-            }
-
-            if (costMet) {
-                // 4. Placera byggnad (x, y är centrerad klickposition)
-                buildings.push(new Building(x, y, selectedBuildingType));
-                
-                // Återställ byggläget 
-                isBuildingMode = false; 
-                selectedBuildingType = null;
-                buildMenu.classList.add('hidden');
-                
-            } else {
-                console.error(`Inte tillräckligt med resurser för att bygga ${selectedBuildingType}.`);
-                // Återställ byggläget om man klickar men inte har råd
-                isBuildingMode = false;
-                selectedBuildingType = null;
-                buildMenu.classList.add('hidden');
-            }
             
-            updateUI();
-        });
+            stealer.stealTimer++;
+            ballCarrier.stealTimer = 0; 
 
-        // Lyssnar efter klick på sälj-knappen
-        sellButton.addEventListener('click', () => {
-            coins += monsterWaste * WASTE_COIN_VALUE; 
-            monsterWaste = 0; 
-            updateUI();
-        });
-
-        // Lyssnar efter klick på uppgraderingsknappen
-        upgradeButton.addEventListener('click', () => {
-            if (tower) {
-                upgradeTower();
+            const threshold = stealer === bot 
+                ? STEAL_THRESHOLD_FRAMES * (1 / DIFFICULTY_MULTIPLIER.accuracy) * 0.75 
+                : STEAL_THRESHOLD_FRAMES;
+            
+            if (stealer.stealTimer > threshold) {
+                ballCarrier.hasBall = false;
+                ball.owner = stealer;
+                stealer.hasBall = true;
+                stealer.stealTimer = 0;
+                showMessage(`${stealer.name} stjäl bollen!`);
             }
-        });
+        } else {
+            player.stealTimer = 0;
+            bot.stealTimer = 0;
+        }
+    }
 
-        // Lyssnare för byggknappar
-        selectFarmButton.addEventListener('click', () => {
-            if (isSandboxMode || coins >= FARM_COST_COINS) {
-                selectedBuildingType = 'FARM';
-                buildMenu.classList.add('hidden'); 
-            } else {
-                 console.error("För lite Coins för Farm!");
-            }
-            updateUI();
-        });
 
-        selectMineButton.addEventListener('click', () => {
-            if (isSandboxMode || wood >= MINE_COST_WOOD) {
-                selectedBuildingType = 'MINE';
-                buildMenu.classList.add('hidden'); 
-            } else {
-                console.error("För lite Wood för Gruva!");
-            }
-            updateUI();
-        });
+    function shootBall(shooter, targetHoop) {
+        if (!shooter.hasBall) return;
         
-        // --- Bakgrundsritning ---
-        function drawBackground() {
-            // Mörkgrå bakgrund
-            ctx.fillStyle = '#4a5568'; 
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        shooter.hasBall = false;
+        ball.owner = null;
+        ball.isMoving = true;
 
-            // Basens "skyddszon"
-            ctx.fillStyle = 'rgba(90, 103, 216, 0.2)';
-            ctx.fillRect(0, 0, BUILD_ZONE_LIMIT, canvas.height); 
+        const ballStartY = shooter.y + shooter.height / 2;
+        const targetY = targetHoop.targetY; 
+        
+        const dx = targetHoop.targetX - shooter.x;
+        
+        const t_min_base = 15; 
+        const t_max = 50; 
+        const t_raw = Math.abs(dx) / 15; 
+        const t = Math.min(t_max, Math.max(t_min_base, t_raw)); 
+
+        let Vx = dx / t;
+
+        const initialPeakY = ballStartY - MIN_PEAK_HEIGHT; 
+        const absolutePeakY = canvas.height * SHOOT_PEAK_HEIGHT_FACTOR; 
+        
+        const desiredPeakY = Math.min(initialPeakY, absolutePeakY);
+
+        const dyToPeak = ballStartY - desiredPeakY;
+        const Vy_up = -Math.sqrt(2 * GRAVITY * dyToPeak); 
+
+        const t_peak = -Vy_up / GRAVITY;
+        
+        const dy_fall = targetY - desiredPeakY;
+        let t_fall = Math.sqrt(2 * dy_fall / GRAVITY);
+        
+        const T = t_peak + t_fall; 
+
+        let newVx = dx / T;
+        let newVy = Vy_up; 
+
+        const accuracyFactor = shooter === bot ? DIFFICULTY_MULTIPLIER.accuracy : 1.0;
+        const noiseRange = (1.0 - accuracyFactor) * 0.4; 
+        const noiseX = (Math.random() - 0.5) * noiseRange * 1.5; 
+        const noiseY = (Math.random() - 0.5) * noiseRange * 0.8; 
+        
+        newVx *= (1 + noiseX);
+        newVy *= (1 + noiseY);
+        
+        ball.dx = newVx;
+        ball.dy = newVy;
+        
+        showMessage(shooter === player ? "SKJUT! Lycka till." : `${shooter.name} skjuter...`);
+    }
+
+    function checkScore() {
+        if (gameLoopId && gameLoopId % 5 !== 0) return;
+
+        if (!ball.isMoving || ball.owner || ball.y + ball.radius >= ball.groundY) return; 
+
+        const targetHoop = ball.x < canvas.width / 2 ? hoops.player : hoops.bot;
+        
+        const rimXStart = targetHoop === hoops.player ? targetHoop.x + 5 : targetHoop.x - 50; 
+        const rimWidth = 50;
+        
+        if (ball.dy > 0 && 
+            ball.x + ball.radius > rimXStart && 
+            ball.x - ball.radius < rimXStart + rimWidth) {
             
-            // Linje för skyddszon
-            ctx.strokeStyle = 'rgba(90, 103, 216, 0.5)';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(BUILD_ZONE_LIMIT, 0, 2, canvas.height); 
-            
-            // Rita basens hälsa
-            if (tower) {
-                const healthBarWidth = tower.width * (tower2 ? 2 : 1);
-                const healthBarHeight = 15;
-                const x = tower.x;
-                // Rita hälsofältet under det nedre tornet (om dual) eller huvudtornet
-                const y = (tower2 ? tower2.y : tower.y) + tower.height + 10;
-                const hpRatio = baseHealth / 100;
-
-                // Grå bakgrund
-                ctx.fillStyle = '#ef4444'; // Röd bakgrund
-                ctx.fillRect(x, y, healthBarWidth, healthBarHeight);
-
-                // Grön hälsa
-                ctx.fillStyle = '#10b981'; // Smaragdgrön
-                ctx.fillRect(x, y, healthBarWidth * hpRatio, healthBarHeight);
+            if (ball.y <= targetHoop.targetY && ball.y + ball.radius + ball.dy >= targetHoop.targetY) {
                 
-                // Kant
-                ctx.strokeStyle = '#374151';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(x, y, healthBarWidth, healthBarHeight);
+                let scorer = null;
+                let hoopOwner = null;
+                
+                if (targetHoop === hoops.bot) {
+                    scorer = player;
+                    hoopOwner = bot; 
+                } 
+                else if (targetHoop === hoops.player) {
+                    scorer = bot;
+                    hoopOwner = player; 
+                }
+
+                if (scorer) {
+                    scorer.score++;
+                    updateScoreDisplay();
+                    showMessage(`${scorer.name} GÖR MÅL! POÄNG!`);
+                    
+                    ball.isMoving = false;
+                    ball.dx = 0;
+                    ball.dy = 0;
+                    ball.y = targetHoop.targetY + targetHoop.height + ball.radius; 
+
+                    
+                    if (scorer.score >= MAX_SCORE) {
+                        endRound(scorer);
+                        return;
+                    }
+                    
+                    setTimeout(() => resetPlayersAndBall(hoopOwner), 500); 
+                }
+            }
+        }
+    }
+    
+    // --- MENY OCH LÄGES HANTERING ---
+
+    function setupBot(opponentData) {
+        const settings = DIFFICULTY_SETTINGS[opponentData.level];
+
+        bot.name = opponentData.name;
+        bot.shirtColor = opponentData.shirtColor;
+        bot.skinColor = opponentData.skinColor;
+        bot.hairColor = opponentData.hairColor;
+        bot.isPlayerSpeed = opponentData.isPlayerSpeed || false;
+        
+        DIFFICULTY_MULTIPLIER = settings;
+    }
+    
+    function startCasual(opponentId) {
+        if (gameLoopId) {
+             cancelAnimationFrame(gameLoopId);
+             gameLoopId = null;
+        }
+
+        gameMode = 'CASUAL';
+        isGamePaused = false; // Säkerställ att spelet inte är pausat
+        const opponent = OPPONENT_DATA.find(o => o.id === opponentId);
+        setupBot(opponent);
+        
+        player.score = 0;
+        bot.score = 0;
+        
+        resetPlayersAndBall(player);
+
+        isGameRunning = true;
+        casualSelectOverlay.style.display = 'none';
+        
+        updateScoreDisplay();
+        showMessage(`Vänskapsmatch mot ${bot.name} (${DIFFICULTY_MULTIPLIER.level.toUpperCase()})`);
+        
+        gameLoop();
+    }
+
+    function startTournament() {
+        if (gameLoopId) {
+             cancelAnimationFrame(gameLoopId);
+             gameLoopId = null;
+        }
+
+        gameMode = 'TOURNAMENT';
+        isGamePaused = false; // Säkerställ att spelet inte är pausat
+        currentRound = 1;
+        player.totalWins = 0;
+        
+        tournamentDifficultyOverlay.style.display = 'none';
+        gameoverOverlay.style.display = 'none';
+
+        startRound();
+    }
+    
+    function startRound() {
+        gameoverOverlay.style.display = 'none';
+        
+        if (gameLoopId) {
+             cancelAnimationFrame(gameLoopId);
+             gameLoopId = null;
+        }
+
+        if (currentRound > totalRounds) {
+            endTournament(true); 
+            return;
+        }
+        
+        const opponent = OPPONENT_DATA.find(o => o.id === `t${currentRound}`);
+        if (!opponent) {
+             console.error(`Kunde inte hitta motståndare för runda ${currentRound}`);
+             endTournament(false); 
+             return;
+        }
+
+        setupBot(opponent);
+        
+        player.score = 0;
+        bot.score = 0;
+        
+        resetPlayersAndBall(player); 
+
+        isGameRunning = true;
+        isGamePaused = false;
+        updateScoreDisplay();
+        showMessage(`RUNDA ${currentRound}: Mot ${bot.name} (${DIFFICULTY_MULTIPLIER.level.toUpperCase()})`);
+        
+        gameLoop();
+    }
+    
+    function endRound(winner) {
+        isGameRunning = false;
+        isGamePaused = false; // Säkerställ att paus är borta
+        
+        if (gameLoopId) {
+            cancelAnimationFrame(gameLoopId);
+            gameLoopId = null;
+        }
+        
+        if (gameMode === 'CASUAL') {
+            gameoverTitleEl.textContent = winner === player ? "MATCH VINST!" : "MATCH FÖRLUST!";
+            gameoverMessageEl.textContent = winner === player 
+                ? `Du vann mot ${bot.name} med ${player.score}-${bot.score}!` 
+                : `${bot.name} vann matchen med ${bot.score}-${player.score}.`;
+                
+            gameoverButton.textContent = "NY VÄNSKAPSMATCH";
+            gameoverButton.onclick = showCasualMode; 
+            
+        } else if (gameMode === 'TOURNAMENT') {
+            if (winner === player) {
+                player.totalWins++;
+                currentRound++;
+                
+                if (currentRound > totalRounds) {
+                    endTournament(true);
+                } else {
+                    gameoverTitleEl.textContent = "RUNDA VINST!";
+                    gameoverMessageEl.textContent = `Du besegrade ${bot.name}. Fortsätt till Runda ${currentRound}/${totalRounds}.`;
+                    
+                    gameoverButton.textContent = "FORTSÄTT TILL NÄSTA RUNDA";
+                    gameoverButton.onclick = startRound; 
+                }
+            } else {
+                endTournament(false); 
             }
         }
 
-        // --- Huvud-spellogik ---
+        gameoverOverlay.style.display = 'flex';
+    }
+
+    function endTournament(isWinner) {
+        isGameRunning = false;
+        isGamePaused = false; // Säkerställ att paus är borta
+
+        if (gameLoopId) {
+            cancelAnimationFrame(gameLoopId);
+            gameLoopId = null;
+        }
         
-        let lastFrameTime = 0;
+        if (isWinner) {
+            gameoverTitleEl.textContent = "TURNERINGSMÄSTARE!";
+            gameoverMessageEl.textContent = "Du har besegrat alla motståndare och vinner titeln!";
+        } else {
+            gameoverTitleEl.textContent = "TURNERINGEN SLUT!";
+            gameoverMessageEl.textContent = `${bot.name} var för svår. Försök igen från början.`;
+        }
+        
+        gameoverButton.textContent = "TILLBAKA TILL MENY";
+        gameoverButton.onclick = showMainMenu;
+        
+        gameoverOverlay.style.display = 'flex';
+    }
 
-        // Hanterar all uppdatering och ritning
-        function gameLoop(currentTime) {
-            
-            const deltaTime = currentTime - lastFrameTime; 
-            lastFrameTime = currentTime;
+    function hideAllOverlays() {
+        menuOverlay.style.display = 'none';
+        tournamentDifficultyOverlay.style.display = 'none';
+        casualSelectOverlay.style.display = 'none';
+        gameoverOverlay.style.display = 'none';
+        pauseOverlay.style.display = 'none'; // NYTT
+        confirmOverlay.style.display = 'none'; // NYTT
+    }
 
-            // Rensa canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBackground();
-            
-            if (gameRunning && gameState === 'PLAYING' && tower) {
-                
-                // --- Uppdateringslogik ---
-                spawnMonster(currentTime);
-                
-                // Uppdatera torn(en)
-                tower.update(currentTime);
-                if (tower2) tower2.update(currentTime);
+    function showMainMenu() {
+        hideAllOverlays();
+        
+        if (gameLoopId) {
+             cancelAnimationFrame(gameLoopId);
+             gameLoopId = null;
+        }
+        
+        menuOverlay.style.display = 'flex';
+        isGameRunning = false;
+        isGamePaused = false;
+        
+        updateScoreDisplay(); 
+        gameModeInfoEl.textContent = "LÄGE: MENY";
+        tournamentInfoEl.textContent = "Runda 0/4";
+    }
 
-                buildings.forEach(b => b.update(currentTime)); 
+    function showTournamentMode() {
+        hideAllOverlays();
+        tournamentDifficultyOverlay.style.display = 'flex';
+    }
 
-                projectiles.forEach(p => p.update());
+    function showCasualMode() {
+        hideAllOverlays();
+        casualSelectOverlay.style.display = 'flex';
+        
+        opponentButtonsContainer.innerHTML = '';
+        
+        const casualOpponents = OPPONENT_DATA.filter(o => o.id.startsWith('c'));
+        
+        casualOpponents.forEach(opponent => {
+            const button = document.createElement('button');
+            button.className = 'menu-button difficulty-button';
+            button.textContent = `${opponent.name} (${opponent.level.toUpperCase()})`;
+            button.onclick = () => startCasual(opponent.id);
+            opponentButtonsContainer.appendChild(button);
+        });
+    }
+    
+    // NYTT: Paus-hantering
+    function showPauseMenu() {
+        if (!isGameRunning) return;
+        
+        isGamePaused = true;
+        pauseOverlay.style.display = 'flex';
+        confirmOverlay.style.display = 'none';
+    }
 
-                monsters.forEach(m => m.update());
+    function unpauseGame() {
+        isGamePaused = false;
+        pauseOverlay.style.display = 'none';
+        confirmOverlay.style.display = 'none';
+        
+        // Återuppta spel loopen
+        if (gameLoopId === null) {
+            gameLoop();
+        }
+    }
+    
+    function confirmReturnToMenu() {
+        pauseOverlay.style.display = 'none';
+        confirmOverlay.style.display = 'flex';
+    }
 
-                // --- Kollisionshantering ---
-                
-                for (let i = projectiles.length - 1; i >= 0; i--) {
-                    const p = projectiles[i];
-                    let hit = false;
 
-                    // Kontrollera om projektilens mål har dött.
-                    if (p.target && p.target.hp <= 0) {
-                        p.target = null;
-                    }
-                    
-                    for (let j = monsters.length - 1; j >= 0; j--) {
-                        const m = monsters[j];
-                        
-                        const dist = Math.hypot(p.x - m.x, p.y - m.y);
-                        if (dist < p.radius + m.radius) {
-                            m.takeDamage(p.damage);
-                            hit = true;
-                            
-                            p.target = null; 
+    function resetPlayersAndBall(starter, keepPosition = false) {
+        if (!player.groundY) resizeCanvas();
 
-                            if (m.hp <= 0) {
-                                monsters.splice(j, 1); 
-                                monsterWaste++; 
-                                updateUI();
-                            }
-                            break; 
-                        }
-                    }
-
-                    const outsideBounds = p.x < -100 || p.x > canvas.width + 100 || p.y < -100 || p.y > canvas.height + 100;
-
-                    if (hit || outsideBounds) {
-                        projectiles.splice(i, 1);
-                    }
-                }
-
-                // Kolla om monster nått basen
-                for (let i = monsters.length - 1; i >= 0; i--) {
-                    if (monsters[i].x - monsters[i].radius < tower.x + tower.width) {
-                        monsters.splice(i, 1); 
-                        baseHealth -= 10; 
-                        console.log(`Basen tog skada! Hälsa: ${baseHealth}`);
-                        if (baseHealth <= 0) {
-                            console.log("GAME OVER");
-                            gameState = 'GAME_OVER'; 
-                            gameRunning = false; 
-                        }
-                    }
-                }
-                
-                updateUI(); 
-
-            } // Slut på if (gameRunning && gameState === 'PLAYING')
-
-            // --- Ritningslogik (körs oavsett paus, men visas inte om GAME_OVER) ---
-            
-            if (tower) {
-                // Rita tornen
-                tower.draw();
-                if (tower2) tower2.draw();
-            }
-            
-            buildings.forEach(b => b.draw());
-
-            projectiles.forEach(p => p.draw());
-
-            monsters.forEach(m => m.draw());
-
-            // Hantera paus/game over overlay
-            if (gameState === 'PAUSED' || gameState === 'GAME_OVER') {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'white';
-                ctx.font = '50px sans-serif';
-                ctx.textAlign = 'center';
-                
-                let overlayText = '';
-
-                if (gameState === 'PAUSED') {
-                    // Om Pausmeny är synlig, rita inte texten
-                    if (pauseMenu.classList.contains('hidden')) { 
-                        overlayText = 'PAUSAT (Tryck L)';
-                        ctx.fillText(overlayText, canvas.width / 2, canvas.height / 2);
-                    }
-                } else if (gameState === 'GAME_OVER') {
-                    overlayText = 'GAME OVER';
-                    ctx.font = '70px sans-serif';
-                    ctx.fillText(overlayText, canvas.width / 2, canvas.height / 2);
-                    
-                    // Om Game Over, visa pausmenyns knappar för omstart/återgång
-                    pauseMenu.classList.remove('hidden');
-                    document.getElementById('resumeButton').classList.add('hidden'); // Dölj "Återuppta"
-                }
-            } else {
-                 document.getElementById('resumeButton').classList.add('hidden'); 
-            }
-            
-            // Om vi är i placeringsläge, visa placeringsguide
-            if (selectedBuildingType && gameState === 'PLAYING') {
-                 ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                 ctx.font = '30px sans-serif';
-                 ctx.textAlign = 'center';
-                 ctx.fillText(`PLACERA ${selectedBuildingType}`, canvas.width / 2, 50);
-                 
-                 // Markör som rör sig med musen
-                 const rect = canvas.getBoundingClientRect();
-                 const mouseX = (window.mouseX - rect.left);
-                 const mouseY = (window.mouseY - rect.top);
-                 
-                 // Building size för markör (använder större storlek för att vara generisk)
-                 const markerSize = BUILDING_SIZE;
-                 const isCollision = checkBuildingCollision(mouseX, mouseY);
-                 const canPlace = mouseX >= BUILD_ZONE_LIMIT && !isCollision;
-                 
-                 ctx.strokeStyle = canPlace ? 'lime' : 'red';
-                 ctx.lineWidth = 4;
-                 
-                 // Rektangulär markör för enkel placering
-                 ctx.strokeRect(mouseX - markerSize/2, mouseY - markerSize/2, markerSize, markerSize);
-                 
-                 ctx.fillStyle = canPlace ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.3)';
-                 ctx.fillRect(mouseX - markerSize/2, mouseY - markerSize/2, markerSize, markerSize);
-            }
-
-            // Anropa nästa frame
-            requestAnimationFrame(gameLoop);
+        if (!keepPosition) {
+            player.x = 100; player.dx = 0; player.dy = 0; player.isJumping = false;
+            bot.x = canvas.width - 100; bot.dx = 0; bot.dy = 0; bot.isJumping = false;
+        } else {
+            player.dx = 0; player.dy = 0; player.isJumping = false;
+            bot.dx = 0; bot.dy = 0; bot.isJumping = false;
         }
 
-        // Uppdatera globala muspositioner för placeringsmarkören
-        window.addEventListener('mousemove', (e) => {
-            window.mouseX = e.clientX;
-            window.mouseY = e.clientY;
-        });
-
-        // --- Starta spelet (Initialisering) ---
-        // Sätt en initial tower instans 
-        tower = new Tower(50, canvas.height / 2); 
+        player.y = player.groundY - player.height;
+        player.facing = 1; 
         
-        updateUI(); 
-        requestAnimationFrame(gameLoop); 
-    </script>
+        bot.y = bot.groundY - bot.height;
+        bot.facing = -1; 
+        
+        ball.x = canvas.width / 2;
+        ball.y = ball.groundY - ball.radius;
+        ball.dx = 0;
+        ball.dy = 0;
+        ball.isMoving = false;
+        ball.owner = null;
+        player.hasBall = false;
+        bot.hasBall = false;
+        
+        player.stealTimer = 0;
+        bot.stealTimer = 0;
+
+        if (starter) {
+            starter.hasBall = true;
+            ball.owner = starter;
+            updatePlayer(starter);
+        } else {
+             ball.y = ball.groundY - ball.radius;
+        }
+    }
+
+    function updateScoreDisplay() {
+        scorePlayerEl.textContent = `SPELARE: ${player.score}`;
+        scoreBotEl.textContent = `${bot.name.toUpperCase()}: ${bot.score}`;
+        
+        gameModeInfoEl.textContent = `LÄGE: ${gameMode}`;
+        
+        const currentLevel = DIFFICULTY_MULTIPLIER.level.toUpperCase();
+
+        if (gameMode === 'TOURNAMENT') {
+             tournamentInfoEl.textContent = `RUNDA ${currentRound}/${totalRounds} (${currentLevel})`;
+        } else if (gameMode === 'CASUAL') {
+             tournamentInfoEl.textContent = `VÄNSKAP (${currentLevel})`;
+        } else {
+             tournamentInfoEl.textContent = ` `;
+        }
+    }
+
+    // --- KONTROLLER ---
+
+    function playerJump() {
+        if (!player.isJumping) {
+            player.isJumping = true;
+            player.dy = -player.jumpPower;
+        }
+    }
+    
+    function botJump() {
+        if (!bot.isJumping) {
+            bot.isJumping = true;
+            bot.dy = -bot.jumpPower;
+        }
+    }
+
+    window.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        
+        // Pausknapp fungerar alltid när spelet körs
+        if (key === 'l' && isGameRunning) {
+            if (isGamePaused) {
+                unpauseGame();
+            } else {
+                showPauseMenu();
+            }
+            return;
+        }
+        
+        if (!isGameRunning || isGamePaused) return;
+
+        if (key in keys) {
+            keys[key] = true;
+        }
+        
+        if (key === 'w' || key === ' ') {
+            e.preventDefault();
+            playerJump();
+        }
+        
+        if (key === 'f' && player.hasBall) {
+            e.preventDefault(); 
+            shootBall(player, hoops.bot);
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        const key = e.key.toLowerCase();
+        if (key in keys) {
+            keys[key] = false;
+        }
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // --- SPELENS HUVUDLÖP ---
+
+    function gameLoop(timestamp) {
+        if (!isGameRunning) {
+            if (gameLoopId !== null) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            return;
+        }
+        
+        // Stoppa loopen om spelet är pausat
+        if (isGamePaused) {
+             gameLoopId = requestAnimationFrame(gameLoop); // Håll requestAnimationFrame igång för att kolla pausstatus
+             return;
+        }
+        
+        // Rensa canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Rita scenen
+        drawCourt();
+        drawHoop(hoops.player);
+        drawHoop(hoops.bot);
+        
+        // Botens AI
+        botLogic();
+
+        // Uppdatera spelare
+        updatePlayer(player);
+        updatePlayer(bot);
+        
+        // Kontrollera stöld
+        checkSteal();
+        
+        // Uppdatera bollen
+        updateBall();
+        
+        // Hantera bollkontroll (plocka upp lös boll)
+        handleBallControl();
+
+        // Kontrollera poäng
+        checkScore();
+
+        // Rita element
+        drawBall();
+        drawPlayer(player);
+        drawPlayer(bot);
+
+
+        // Nästa frame
+        gameLoopId = requestAnimationFrame(gameLoop);
+    }
+    
+    // --- START ---
+    
+    window.onload = function () {
+        resizeCanvas(); 
+        showMainMenu();
+    };
+    
+</script>
 </body>
 </html>
 </div>
