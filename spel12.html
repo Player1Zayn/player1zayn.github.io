@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sten Sax Påse</title>
+
+<style>
+    body {
+        margin: 0;
+        background: black;
+        overflow: hidden;
+    }
+
+    #game-container {
+        width: 100vw;
+        height: 100vh;
+        background: black;
+    }
+
+    /* Flyttad till höger nedre hörn */
+    .back {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.5);
+        padding: 10px 16px;
+        border-radius: 8px;
+        color: white;
+        text-decoration: none;
+        border: 2px solid #666;
+        z-index: 9999;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .back:hover {
+        background: rgba(40,40,40,0.6);
+    }
+</style>
+</head>
+<body>
+
+<!-- Stäng-knapp som stänger fliken -->
+<button class="back" onclick="window.close()">✖ Stäng</button>
+
+<div id="game-container">
+    <!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sten Sax Påse - Online Battle</title>
+    <!-- Tailwind CSS för styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome för ikoner -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #1a1a2e;
+            color: #e94560;
+        }
+        
+        h1, h2, .retro-text {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .btn-retro {
+            background-color: #e94560;
+            color: #fff;
+            border-bottom: 4px solid #b52b41;
+            transition: all 0.1s;
+        }
+        .btn-retro:active {
+            transform: translateY(2px);
+            border-bottom: 2px solid #b52b41;
+        }
+        
+        .choice-btn {
+            transition: transform 0.2s;
+        }
+        .choice-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Animationer */
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(15deg); }
+            50% { transform: rotate(-15deg); }
+            75% { transform: rotate(15deg); }
+            100% { transform: rotate(0deg); }
+        }
+        .shaking {
+            animation: shake 0.5s infinite;
+        }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="h-screen flex flex-col items-center justify-center overflow-hidden bg-gray-900 text-white select-none">
+
+    <!-- SETUP VARNING -->
+    <div id="setup-warning" class="absolute top-0 w-full bg-yellow-600 text-white p-2 text-center text-xs font-bold hidden z-50">
+        OBS: Du måste fylla i SUPABASE_URL och SUPABASE_KEY i koden för att Multiplayer ska fungera!
+    </div>
+
+    <!-- MAIN MENU -->
+    <div id="menu-screen" class="w-full max-w-md p-6 text-center space-y-8">
+        <h1 class="text-4xl text-yellow-400 mb-4 leading-tight">STEN SAX<br>PÅSE<br>BATTLE</h1>
+        
+        <div class="space-y-4">
+            <button onclick="startGameAI()" class="btn-retro w-full py-4 rounded text-xl font-bold shadow-lg">
+                <i class="fas fa-robot mr-2"></i> SPELA MOT AI
+            </button>
+            <button onclick="showNameEntry()" class="btn-retro w-full py-4 rounded text-xl font-bold shadow-lg bg-blue-600 border-blue-800">
+                <i class="fas fa-users mr-2"></i> ONLINE BATTLE
+            </button>
+            <button onclick="showLeaderboard()" class="btn-retro w-full py-4 rounded text-xl font-bold shadow-lg bg-green-600 border-green-800">
+                <i class="fas fa-trophy mr-2"></i> LEADERBOARD
+            </button>
+        </div>
+    </div>
+
+    <!-- NAME ENTRY (MULTIPLAYER) -->
+    <div id="name-screen" class="hidden w-full max-w-md p-6 text-center space-y-6">
+        <h2 class="text-2xl text-blue-400">VEM ÄR DU?</h2>
+        <input type="text" id="player-name-input" placeholder="Ditt namn..." class="w-full p-4 rounded bg-gray-800 text-white border-2 border-blue-500 text-center text-xl outline-none focus:border-yellow-400">
+        <div class="flex gap-4">
+            <button onclick="showMenu()" class="flex-1 py-3 rounded bg-gray-600 hover:bg-gray-500">TILLBAKA</button>
+            <button onclick="enterLobbySystem()" class="flex-1 btn-retro py-3 rounded bg-blue-600 border-blue-800">FORTSÄTT</button>
+        </div>
+    </div>
+
+    <!-- LOBBY BROWSER -->
+    <div id="lobby-screen" class="hidden w-full max-w-lg p-4 flex flex-col h-[80vh]">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl text-yellow-400">ONLINE LOBBYS</h2>
+            <button onclick="showMenu()" class="text-sm bg-gray-700 px-3 py-1 rounded">MENY</button>
+        </div>
+
+        <div class="flex gap-2 mb-4">
+            <button onclick="refreshLobbies()" class="flex-1 bg-gray-700 p-2 rounded hover:bg-gray-600"><i class="fas fa-sync"></i> UPPDATERA</button>
+            <button onclick="createLobby()" class="flex-1 btn-retro bg-green-600 border-green-800 p-2 rounded"><i class="fas fa-plus"></i> SKAPA LOBBY</button>
+        </div>
+
+        <div id="lobby-list" class="flex-1 overflow-y-auto bg-gray-800 rounded p-4 space-y-2 border border-gray-700">
+            <!-- Lobbies genereras här -->
+            <p class="text-gray-500 text-center mt-10">Laddar lobbys...</p>
+        </div>
+    </div>
+
+    <!-- WAITING FOR OPPONENT -->
+    <div id="waiting-screen" class="hidden w-full max-w-md p-6 text-center">
+        <div class="animate-spin text-4xl text-blue-500 mb-4"><i class="fas fa-spinner"></i></div>
+        <h2 class="text-xl mb-2">VÄNTAR PÅ MOTSTÅNDARE...</h2>
+        <p id="lobby-code-display" class="text-gray-400 text-sm font-mono mb-6"></p>
+        <button onclick="leaveLobby()" class="px-6 py-2 bg-red-600 rounded hover:bg-red-500">AVBRYT</button>
+    </div>
+
+    <!-- COUNTDOWN -->
+    <div id="countdown-screen" class="hidden absolute inset-0 bg-black/90 z-40 flex items-center justify-center">
+        <h1 id="countdown-number" class="text-9xl text-yellow-400 font-bold animate-pulse">5</h1>
+    </div>
+
+    <!-- GAME UI -->
+    <div id="game-screen" class="hidden w-full max-w-md p-4 flex flex-col justify-between h-[90vh]">
+        <!-- Top Bar -->
+        <div class="flex justify-between items-end pb-4 border-b border-gray-700">
+            <div class="text-center">
+                <p id="p1-name" class="text-sm text-blue-400 font-bold">SPELARE</p>
+                <p id="p1-score" class="text-3xl font-bold">0</p>
+            </div>
+            <div class="text-xl text-gray-500 font-bold">VS</div>
+            <div class="text-center">
+                <p id="p2-name" class="text-sm text-red-400 font-bold">DATOR</p>
+                <p id="p2-score" class="text-3xl font-bold">0</p>
+            </div>
+        </div>
+
+        <!-- Battle Area -->
+        <div class="flex-1 flex items-center justify-center relative">
+            <div id="result-message" class="absolute top-10 text-xl font-bold text-yellow-400 z-10 hidden">OAVGJORT!</div>
+            
+            <div class="flex w-full justify-between px-4">
+                <!-- My Move Icon -->
+                <div class="text-center">
+                    <div id="my-move-display" class="text-6xl text-blue-500 transition-all">
+                        <i class="fas fa-fist-raised"></i>
+                    </div>
+                </div>
+                <!-- Opponent Move Icon -->
+                <div class="text-center">
+                    <div id="op-move-display" class="text-6xl text-red-500 transition-all">
+                        <i class="fas fa-fist-raised"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div id="controls-area" class="pb-4">
+            <p class="text-center mb-4 text-gray-400 text-sm">VÄLJ DITT DRAG</p>
+            <div class="flex justify-center gap-4">
+                <button onclick="makeMove('sten')" class="choice-btn w-20 h-20 rounded-full bg-gray-700 border-4 border-gray-500 flex items-center justify-center text-3xl shadow-lg">
+                    <i class="fas fa-hand-rock"></i>
+                </button>
+                <button onclick="makeMove('sax')" class="choice-btn w-20 h-20 rounded-full bg-gray-700 border-4 border-gray-500 flex items-center justify-center text-3xl shadow-lg">
+                    <i class="fas fa-hand-scissors"></i>
+                </button>
+                <button onclick="makeMove('pase')" class="choice-btn w-20 h-20 rounded-full bg-gray-700 border-4 border-gray-500 flex items-center justify-center text-3xl shadow-lg">
+                    <i class="fas fa-hand-paper"></i>
+                </button>
+            </div>
+            <p id="status-text" class="text-center mt-4 text-yellow-500 text-sm min-h-[20px]"></p>
+        </div>
+    </div>
+
+    <!-- WINNER SCREEN -->
+    <div id="winner-screen" class="hidden absolute inset-0 bg-gray-900/95 z-50 flex flex-col items-center justify-center space-y-6">
+        <h1 id="end-title" class="text-5xl text-yellow-400 retro-text text-center">YOU WIN!</h1>
+        <p id="end-reason" class="text-gray-300">Först till 10 poäng</p>
+        <button onclick="showMenu()" class="btn-retro px-8 py-4 rounded text-xl">TILLBAKA TILL MENYN</button>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div id="leaderboard-screen" class="hidden w-full max-w-md p-6 h-[80vh] flex flex-col">
+        <h2 class="text-2xl text-yellow-400 text-center mb-6 retro-text">TOPP 10</h2>
+        <div class="bg-gray-800 rounded p-4 flex-1 overflow-y-auto border border-gray-600">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-600">
+                        <th class="pb-2">#</th>
+                        <th class="pb-2">NAMN</th>
+                        <th class="pb-2 text-right">VINST</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <!-- Fylls med JS -->
+                </tbody>
+            </table>
+        </div>
+        <button onclick="showMenu()" class="mt-4 py-3 bg-gray-600 rounded w-full hover:bg-gray-500">TILLBAKA</button>
+    </div>
+
+    <script>
+        // --- KONFIGURATION (FYLL I DESSA FRÅN SUPABASE) ---
+        const SUPABASE_URL = 'https://veebcognrjvianxcpnnh.supabase.co'; // T.ex. https://xyz.supabase.co
+        const SUPABASE_KEY = 'sb_publishable_dmgqGdNwAVmN9YJKV6fikg_LOuUe2Ny'; // Din public anon key
+
+        // --- VARIABLER ---
+        // VIKTIGT: Vi döper variabeln till supabaseClient för att inte krocka med det globala 'supabase'-objektet från CDN
+        let supabaseClient = null; 
+        let gameMode = 'ai'; // 'ai' eller 'pvp'
+        let playerName = localStorage.getItem('rps_player_name') || '';
+        let deviceId = localStorage.getItem('rps_device_id');
+        let currentLobbyId = null;
+        let myScore = 0;
+        let opScore = 0;
+        let channel = null; // Realtime kanal
+        let isHost = false;
+        let myMove = null;
+        let opMove = null;
+        
+        // Generera Device ID om det saknas (för Leaderboard farming)
+        if (!deviceId) {
+            deviceId = crypto.randomUUID();
+            localStorage.setItem('rps_device_id', deviceId);
+        }
+
+        // Initiera Supabase om nycklar finns
+        if (SUPABASE_URL && SUPABASE_KEY) {
+            // Vi använder window.supabase för att komma åt biblioteket
+            if (typeof window.supabase !== 'undefined') {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            } else {
+                console.error("Supabase-biblioteket laddades inte korrekt.");
+            }
+        } else {
+            document.getElementById('setup-warning').classList.remove('hidden');
+        }
+
+        // --- NAVIGATION ---
+        function hideAll() {
+            const screens = ['menu-screen', 'name-screen', 'lobby-screen', 'waiting-screen', 'game-screen', 'winner-screen', 'leaderboard-screen', 'countdown-screen'];
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+        }
+
+        function showMenu() {
+            hideAll();
+            cleanupGame();
+            document.getElementById('menu-screen').classList.remove('hidden');
+        }
+
+        function showNameEntry() {
+            if (!supabaseClient) return alert("Supabase är inte konfigurerat! Fyll i URL och KEY i koden.");
+            hideAll();
+            document.getElementById('name-screen').classList.remove('hidden');
+            if (playerName) document.getElementById('player-name-input').value = playerName;
+        }
+
+        function startGameAI() {
+            gameMode = 'ai';
+            playerName = "Du";
+            startMatch("DATOR");
+        }
+
+        // --- SPEL LOGIK (AI & PVP) ---
+        function startMatch(opponentName) {
+            hideAll();
+            myScore = 0;
+            opScore = 0;
+            updateScoreUI();
+            
+            document.getElementById('p1-name').innerText = gameMode === 'pvp' ? playerName : "DU";
+            document.getElementById('p2-name').innerText = opponentName;
+            
+            // Återställ UI
+            document.getElementById('my-move-display').innerHTML = '<i class="fas fa-fist-raised"></i>';
+            document.getElementById('op-move-display').innerHTML = '<i class="fas fa-fist-raised"></i>';
+            document.getElementById('status-text').innerText = "";
+            document.getElementById('result-message').classList.add('hidden');
+
+            document.getElementById('game-screen').classList.remove('hidden');
+        }
+
+        function makeMove(move) {
+            if (myMove) return; // Redan valt
+
+            myMove = move;
+            
+            // Animera min hand
+            const icon = getIcon(move);
+            document.getElementById('my-move-display').innerHTML = `<i class="${icon}"></i>`;
+            document.getElementById('status-text').innerText = "Väntar på motståndare...";
+
+            if (gameMode === 'ai') {
+                setTimeout(aiResponse, 500);
+            } else {
+                // Skicka drag till motståndare via Supabase
+                sendPvPMove(move);
+            }
+        }
+
+        function aiResponse() {
+            const moves = ['sten', 'sax', 'pase'];
+            opMove = moves[Math.floor(Math.random() * moves.length)];
+            resolveRound();
+        }
+
+        function resolveRound() {
+            // Visa motståndarens drag
+            const opIcon = getIcon(opMove);
+            document.getElementById('op-move-display').innerHTML = `<i class="${opIcon}"></i>`;
+
+            // Avgör vinnare
+            let result = "";
+            if (myMove === opMove) {
+                result = "draw";
+                showRoundResult("OAVGJORT!", "text-yellow-400");
+            } else if (
+                (myMove === 'sten' && opMove === 'sax') ||
+                (myMove === 'sax' && opMove === 'pase') ||
+                (myMove === 'pase' && opMove === 'sten')
+            ) {
+                result = "win";
+                myScore++;
+                showRoundResult("RUNDA VUNNEN!", "text-green-500");
+            } else {
+                result = "lose";
+                opScore++;
+                showRoundResult("RUNDA FÖRLORAD!", "text-red-500");
+            }
+
+            updateScoreUI();
+
+            // Kolla om spelet är slut
+            if (myScore >= 10 || opScore >= 10) {
+                setTimeout(() => endGame(myScore >= 10), 2000);
+            } else {
+                // Reset för nästa runda
+                setTimeout(resetRound, 2000);
+            }
+        }
+
+        function showRoundResult(text, colorClass) {
+            const msg = document.getElementById('result-message');
+            msg.innerText = text;
+            msg.className = `absolute top-10 text-xl font-bold z-10 ${colorClass}`;
+            msg.classList.remove('hidden');
+        }
+
+        function resetRound() {
+            myMove = null;
+            opMove = null;
+            document.getElementById('my-move-display').innerHTML = '<i class="fas fa-fist-raised"></i>';
+            document.getElementById('op-move-display').innerHTML = '<i class="fas fa-fist-raised"></i>';
+            document.getElementById('status-text').innerText = "VÄLJ DITT DRAG";
+            document.getElementById('result-message').classList.add('hidden');
+        }
+
+        function getIcon(move) {
+            if (move === 'sten') return 'fas fa-hand-rock';
+            if (move === 'sax') return 'fas fa-hand-scissors';
+            return 'fas fa-hand-paper';
+        }
+
+        function updateScoreUI() {
+            document.getElementById('p1-score').innerText = myScore;
+            document.getElementById('p2-score').innerText = opScore;
+        }
+
+        async function endGame(won) {
+            document.getElementById('winner-screen').classList.remove('hidden');
+            document.getElementById('end-title').innerText = won ? "YOU WIN!" : "YOU LOSE!";
+            document.getElementById('end-title').className = won ? "text-5xl text-green-400 retro-text text-center" : "text-5xl text-red-500 retro-text text-center";
+            
+            if (won && gameMode === 'pvp') {
+                // Spara vinst till leaderboard
+                await saveWinToLeaderboard();
+            }
+            
+            if (gameMode === 'pvp') {
+                cleanupGame(); // Koppla från lobbyn
+            }
+        }
+
+        // --- MULTIPLAYER LOGIK (SUPABASE) ---
+
+        async function enterLobbySystem() {
+            const inputName = document.getElementById('player-name-input').value.trim();
+            if (!inputName) return alert("Ange ett namn!");
+            
+            playerName = inputName;
+            localStorage.setItem('rps_player_name', playerName);
+            
+            hideAll();
+            document.getElementById('lobby-screen').classList.remove('hidden');
+            refreshLobbies();
+        }
+
+        async function refreshLobbies() {
+            const list = document.getElementById('lobby-list');
+            list.innerHTML = '<p class="text-gray-400 text-center">Laddar...</p>';
+
+            const { data, error } = await supabaseClient
+                .from('lobbies')
+                .select('*')
+                .eq('status', 'waiting')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error(error);
+                list.innerHTML = '<p class="text-red-400">Kunde inte hämta lobbys.</p>';
+                return;
+            }
+
+            list.innerHTML = '';
+            if (data.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center">Inga öppna lobbys. Skapa en!</p>';
+            }
+
+            data.forEach(lobby => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center bg-gray-700 p-3 rounded";
+                div.innerHTML = `
+                    <span class="font-bold text-blue-300">${lobby.host_name}s Lobby</span>
+                    <button onclick="joinLobby('${lobby.id}', '${lobby.host_name}')" class="px-3 py-1 bg-green-600 rounded text-sm hover:bg-green-500">JOIN</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        async function createLobby() {
+            const { data, error } = await supabaseClient
+                .from('lobbies')
+                .insert([{ host_name: playerName, status: 'waiting' }])
+                .select()
+                .single();
+
+            if (error) return alert("Kunde inte skapa lobby: " + error.message);
+
+            currentLobbyId = data.id;
+            isHost = true;
+            
+            hideAll();
+            document.getElementById('waiting-screen').classList.remove('hidden');
+            document.getElementById('lobby-code-display').innerText = `Lobby ID: ${currentLobbyId}`;
+            
+            subscribeToLobby(currentLobbyId);
+        }
+
+        async function joinLobby(lobbyId, hostName) {
+            const { error } = await supabaseClient
+                .from('lobbies')
+                .update({ player2_name: playerName, status: 'playing' })
+                .eq('id', lobbyId);
+
+            if (error) return alert("Kunde inte gå med: " + error.message);
+
+            currentLobbyId = lobbyId;
+            isHost = false;
+            gameMode = 'pvp';
+            
+            subscribeToLobby(lobbyId);
+            startCountdown(hostName); 
+        }
+
+        function subscribeToLobby(lobbyId) {
+            channel = supabaseClient.channel(`game_${lobbyId}`);
+
+            channel
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lobbies', filter: `id=eq.${lobbyId}` }, (payload) => {
+                    const newRow = payload.new;
+                    if (isHost && newRow.status === 'playing') {
+                        gameMode = 'pvp';
+                        startCountdown(newRow.player2_name);
+                    }
+                })
+                .on('broadcast', { event: 'move' }, ({ payload }) => {
+                    if (payload.player !== playerName) {
+                        opMove = payload.move;
+                        if (myMove) {
+                            resolveRound();
+                        } else {
+                            document.getElementById('status-text').innerText = "Motståndaren har valt!";
+                        }
+                    }
+                })
+                .subscribe();
+        }
+
+        function startCountdown(opponentName) {
+            hideAll();
+            const countScreen = document.getElementById('countdown-screen');
+            const countNum = document.getElementById('countdown-number');
+            countScreen.classList.remove('hidden');
+            
+            let count = 5;
+            countNum.innerText = count;
+            
+            const timer = setInterval(() => {
+                count--;
+                countNum.innerText = count;
+                if (count <= 0) {
+                    clearInterval(timer);
+                    countScreen.classList.add('hidden');
+                    startMatch(opponentName);
+                }
+            }, 1000);
+        }
+
+        async function sendPvPMove(move) {
+            await channel.send({
+                type: 'broadcast',
+                event: 'move',
+                payload: { player: playerName, move: move }
+            });
+            
+            if (opMove) {
+                resolveRound();
+            }
+        }
+
+        async function leaveLobby() {
+            if (currentLobbyId) {
+                if (isHost) {
+                    await supabaseClient.from('lobbies').delete().eq('id', currentLobbyId);
+                }
+                cleanupGame();
+            }
+            showMenu();
+        }
+
+        function cleanupGame() {
+            if (channel) supabaseClient.removeChannel(channel);
+            channel = null;
+            currentLobbyId = null;
+        }
+
+        // --- LEADERBOARD ---
+
+        async function saveWinToLeaderboard() {
+            const { data: existing } = await supabaseClient
+                .from('leaderboard')
+                .select('wins')
+                .eq('device_id', deviceId)
+                .single();
+
+            const currentWins = existing ? existing.wins : 0;
+
+            const { error } = await supabaseClient
+                .from('leaderboard')
+                .upsert({ 
+                    device_id: deviceId, 
+                    name: playerName, 
+                    wins: currentWins + 1 
+                });
+
+            if (error) console.error("Kunde inte spara vinst:", error);
+        }
+
+        async function showLeaderboard() {
+            if (!supabaseClient) return alert("Supabase saknas!");
+            hideAll();
+            document.getElementById('leaderboard-screen').classList.remove('hidden');
+            
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center p-4">Laddar...</td></tr>';
+
+            const { data, error } = await supabaseClient
+                .from('leaderboard')
+                .select('name, wins')
+                .order('wins', { ascending: false })
+                .limit(10);
+
+            tbody.innerHTML = '';
+            if (error || !data) return;
+
+            data.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-700 text-gray-300";
+                tr.innerHTML = `
+                    <td class="py-3 text-yellow-500 font-bold">${index + 1}</td>
+                    <td class="py-3">${row.name}</td>
+                    <td class="py-3 text-right font-mono text-green-400">${row.wins}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
+</div>
+
+</body>
+</html>
