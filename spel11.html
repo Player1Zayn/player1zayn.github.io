@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Night Horror</title>
+
+<style>
+    body {
+        margin: 0;
+        background: black;
+        overflow: hidden;
+    }
+
+    #game-container {
+        width: 100vw;
+        height: 100vh;
+        background: black;
+    }
+
+    /* Flyttad till höger nedre hörn */
+    .back {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.5);
+        padding: 10px 16px;
+        border-radius: 8px;
+        color: white;
+        text-decoration: none;
+        border: 2px solid #666;
+        z-index: 9999;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .back:hover {
+        background: rgba(40,40,40,0.6);
+    }
+</style>
+</head>
+<body>
+
+<!-- Stäng-knapp som stänger fliken -->
+<button class="back" onclick="window.close()">✖ Close page</button>
+
+<div id="game-container">
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Night Horror</title>
+    <style>
+        /* --- CORE VISUALS --- */
+        :root {
+            --bg-color: #050505;
+            --ui-color: #33ff00;
+            --metal: #2a2a2a;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: black;
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            user-select: none;
+            -webkit-user-select: none;
+            width: 100vw;
+            height: 100vh;
+        }
+        #game-stage {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+        }
+
+        /* --- SCREENS --- */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #111;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+        .hidden { display: none !important; opacity: 0; pointer-events: none; }
+        
+        /* Start Menu Layout */
+        #start-screen {
+            background: #000;
+            flex-direction: row;
+            justify-content: space-around;
+            width: 100%; height: 100%;
+        }
+
+        /* Intro Letter Screen */
+        #intro-screen {
+            background: #000;
+            flex-direction: column;
+            padding: 50px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .letter-content {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            padding: 40px;
+            max-width: 800px;
+            width: 90%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            font-family: 'Courier New', Courier, monospace;
+            text-align: left;
+            line-height: 1.6;
+            color: #ddd;
+            position: relative;
+        }
+        .letter-content h2 { margin-top: 0; color: white; border-bottom: 1px solid #555; padding-bottom: 10px; }
+        .letter-content::before {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 2px);
+            pointer-events: none;
+        }
+        
+        /* Retro Monster Visual - Start Menu */
+        .pixel-monster-container {
+            width: 40vw;
+            height: 80vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .pixel-monster {
+            width: 10px; height: 10px;
+            background: transparent;
+            box-shadow: 
+                30px 0 #333, 40px 0 #333, 50px 0 #333, 60px 0 #333, 70px 0 #333, 80px 0 #333,
+                20px 10px #333, 90px 10px #333,
+                10px 20px #333, 100px 20px #333,
+                10px 30px #333, 30px 30px #f00, 40px 30px #333, 70px 30px #333, 80px 30px #f00, 100px 30px #333,
+                10px 40px #333, 30px 40px #f00, 40px 40px #333, 70px 40px #333, 80px 40px #f00, 100px 40px #333,
+                10px 50px #333, 50px 50px #000, 60px 50px #000, 100px 50px #333,
+                20px 60px #333, 50px 60px #000, 60px 60px #000, 90px 60px #333,
+                30px 70px #ccc, 50px 70px #ccc, 60px 70px #ccc, 80px 70px #ccc,
+                30px 80px #ccc, 40px 80px #000, 50px 80px #ccc, 60px 80px #ccc, 70px 80px #000, 80px 80px #ccc,
+                40px 90px #333, 50px 90px #333, 60px 90px #333, 70px 90px #333;
+            transform: scale(4); 
+            filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
+            animation: glitch-anim 2.5s infinite steps(2);
+        }
+        
+        @keyframes glitch-anim {
+            0% { transform: scale(4) translate(0,0); }
+            5% { transform: scale(4) translate(-2px, 2px); filter: drop-shadow(-2px 0 5px cyan); }
+            10% { transform: scale(4) translate(2px, -2px); filter: drop-shadow(2px 0 5px red); }
+            15% { transform: scale(4) translate(0,0); }
+            50% { transform: scale(4) translate(0,0); }
+            52% { transform: scale(4.1) translate(0,0); }
+            54% { transform: scale(4) translate(0,0); }
+            100% { transform: scale(4) translate(0,0); }
+        }
+
+        .menu-content { display: flex; flex-direction: column; align-items: flex-start; z-index: 10; }
+        h1 { font-size: 5rem; text-shadow: 4px 4px #500; margin: 0; letter-spacing: 5px; text-transform: uppercase; line-height: 1; }
+        .btn {
+            padding: 15px 40px; font-size: 1.5rem; background: transparent; border: 2px solid white;
+            color: white; cursor: pointer; font-family: inherit; margin-top: 20px; transition: all 0.2s; width: 250px; text-align: center;
+        }
+        .btn:hover { background: white; color: black; box-shadow: 0 0 15px white; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000;
+        }
+        input.code-input {
+            background: #111; border: 2px solid #33ff00; color: #33ff00;
+            font-family: 'Courier New', Courier, monospace; font-size: 1.5rem;
+            padding: 10px; text-align: center; width: 300px; margin-bottom: 20px; text-transform: uppercase;
+        }
+        .level-select-container { display: flex; gap: 10px; margin-top: 20px; }
+        .lvl-btn {
+            width: 50px; height: 50px; border: 1px solid white; background: #222; color: white;
+            cursor: pointer; font-size: 1.2rem; display: flex; justify-content: center; align-items: center;
+        }
+        .lvl-btn:hover { background: #33ff00; color: black; }
+
+        /* Game Over / Win */
+        #game-over-screen { background: #100; flex-direction: column; }
+        #game-over-screen h1 { color: red; }
+        #win-screen { flex-direction: column; }
+
+        /* --- HUD --- */
+        #hud { position: absolute; top: 20px; left: 20px; z-index: 500; pointer-events: none; font-size: 1.5rem; font-weight: bold; }
+        .power-bar-container { width: 200px; height: 20px; border: 2px solid #555; margin-top: 5px; background: #111; }
+        #power-fill { width: 100%; height: 100%; background: var(--ui-color); transition: width 0.2s; }
+        #regen-indicator { font-size: 0.8rem; color: #33ff00; display: none; margin-left: 10px; animation: pulse 1s infinite; }
+        @keyframes pulse { 50% { opacity: 0.5; } }
+        #cheat-indicator { font-size: 0.8rem; color: cyan; display: none; margin-top: 5px; text-shadow: 0 0 5px cyan; }
+        #time-display { font-size: 2rem; }
+        #night-display { font-size: 1rem; color: #888; margin-bottom: 5px; }
+
+        /* --- OFFICE VIEW --- */
+        #office-container {
+            width: 300vw; height: 100vh; position: absolute; left: -100vw;
+            display: flex; transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); 
+        }
+        .room-section {
+            width: 100vw; height: 100vh; position: relative;
+            background: linear-gradient(to bottom, #1a1a1a 0%, #050505 80%);
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        .floor {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 20vh;
+            background: repeating-linear-gradient(90deg, #111 0px, #111 40px, #222 41px, #222 80px);
+            perspective: 500px; transform-style: preserve-3d; box-shadow: inset 0 20px 50px black;
+        }
+        .nav-zone {
+            position: absolute; top: 0; width: 12vw; height: 100%; z-index: 100;
+            cursor: w-resize; background: rgba(255,255,255,0.02); opacity: 0; transition: opacity 0.3s;
+        }
+        .nav-zone:hover { opacity: 0.1; }
+        .nav-left { left: 0; cursor: w-resize; }
+        .nav-right { right: 0; cursor: e-resize; }
+
+        /* --- ROOM OBJECTS --- */
+        .door-frame {
+            width: 300px; height: 75vh; background: #111; border: 20px solid #222; border-bottom: none;
+            position: relative; z-index: 10; box-shadow: 0 0 30px black;
+        }
+        .door-panel { width: 100%; height: 100%; background: #080808; position: relative; overflow: hidden; }
+        .steel-door {
+            position: absolute; top: -100%; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(135deg, #333, #333 20px, #2a2a2a 20px, #2a2a2a 40px);
+            transition: top 0.2s ease-in; z-index: 10; border-bottom: 5px solid #555;
+        }
+        .steel-door.closed { top: 0; }
+        .button-panel {
+            position: absolute; top: 50%; width: 60px; height: 160px; background: #222; border: 2px solid #555;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; box-shadow: 5px 5px 15px black;
+        }
+        .btn-l { left: -90px; } .btn-r { right: -90px; }
+        .ctrl-btn { width: 45px; height: 45px; border-radius: 50%; border: 3px solid #111; cursor: pointer; transition: transform 0.1s; }
+        .ctrl-btn:active { transform: scale(0.95); }
+        .btn-door { background: #500; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.2); }
+        .btn-door.active { background: #f00; box-shadow: 0 0 15px red; }
+        .btn-light { background: #bbb; box-shadow: inset 2px 2px 5px white; }
+        .btn-light:active { background: #fff; box-shadow: 0 0 20px white; }
+
+        .vent-system {
+            position: absolute; top: 40px; width: 340px; height: 140px; background: #151515; border: 8px solid #333;
+            display: flex; flex-direction: column; align-items: center; z-index: 10; box-shadow: 0 10px 30px black;
+        }
+        .vent-cover {
+            width: 90%; height: 80%; background: repeating-linear-gradient(0deg, #000, #000 10px, #222 10px, #222 12px);
+            transition: background-color 0.2s;
+        }
+        .vent-cover.closed { background: #444; }
+
+        .monitor-prop {
+            width: 360px; height: 260px; background: #111; border: 12px solid #333; border-radius: 10px;
+            position: absolute; bottom: 40px; cursor: pointer; display: flex; justify-content: center; align-items: center;
+            color: #33ff00; font-size: 0.9rem; text-align: center; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        .monitor-prop:hover { border-color: #444; }
+
+        /* --- CAMERA SYSTEM --- */
+        #cam-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 800; display: none;
+        }
+        #cam-feed {
+            position: absolute; top: 5vh; left: 5vw; width: 60vw; height: 80vh;
+            border: 4px solid #333; background: #050505; overflow: hidden; box-shadow: 0 0 50px rgba(0,255,0,0.1);
+        }
+        .static-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.75" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.15"/></svg>');
+            pointer-events: none; animation: noise 0.2s steps(4) infinite; opacity: 0.1;
+        }
+        @keyframes noise { 0% { transform: translate(0,0) } 100% { transform: translate(10px, 10px) } }
+        
+        #cam-map {
+            position: absolute; right: 5vw; bottom: 5vh; width: 300px; height: 450px;
+            background: rgba(0, 15, 0, 0.9); border: 2px solid var(--ui-color); box-shadow: 0 0 20px var(--ui-color);
+        }
+        .office-rect {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 140px; height: 70px; border: 3px solid var(--ui-color); background: rgba(0, 255, 0, 0.1);
+            color: var(--ui-color); font-size: 10px; display: flex; justify-content: center; align-items: center;
+        }
+        .cam-btn {
+            position: absolute; width: 40px; height: 30px; background: #000; border: 1px solid var(--ui-color);
+            color: var(--ui-color); font-size: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer;
+            transition: background 0.1s;
+        }
+        .cam-btn:hover { background: #003300; }
+        .cam-btn.active { background: var(--ui-color); color: black; box-shadow: 0 0 10px var(--ui-color); }
+
+        /* --- MONSTER VISUALS --- */
+        .cam-monster {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; filter: drop-shadow(0 0 10px black);
+            font-size: 150px; line-height: 1;
+        }
+        
+        /* Rabbit (Left Path) - Blue/Black/Red */
+        .mon-rabbit { 
+            color: #222; 
+            text-shadow: 0 0 15px blue, 2px 2px 0 red, -2px -2px 0 blue;
+            font-size: 160px;
+            animation: breathe 3s infinite;
+        }
+        
+        /* Bear (Middle Path) - Brown/Black */
+        .mon-bear { 
+            color: #420; 
+            text-shadow: 0 0 10px #000, 2px 2px 0 black;
+            font-size: 150px;
+            animation: twitch 0.2s infinite paused;
+        }
+        
+        /* Fox (Right Path) - Red/Brown/Black */
+        .mon-fox { 
+            color: #d30; 
+            text-shadow: 0 0 15px orange, 2px 2px 0 black, 4px 0 0 brown;
+            font-size: 160px;
+            opacity: 0.9;
+            animation: float 4s infinite ease-in-out;
+        }
+
+        /* Door Visuals (Matched to Monsters) */
+        .door-monster-light { 
+            position: absolute; top: 20%; left: 30%; font-size: 180px; z-index: 5; display: none; 
+            filter: drop-shadow(0 0 20px black);
+        }
+        /* Specific door styles applied via JS classes */
+        .door-rabbit { color: #222; text-shadow: 0 0 20px blue, 4px 4px 0 red; }
+        .door-fox { color: #d30; text-shadow: 0 0 20px orange, 4px 4px 0 brown; }
+
+        .light-cone {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 10%, transparent 60%);
+            pointer-events: none; display: none; mix-blend-mode: hard-light;
+        }
+
+        /* Jumpscares */
+        #jumpscare-overlay { background: black; z-index: 2000; }
+        .scare-vis { width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .js-red { background: radial-gradient(circle, #500 0%, #000 90%); }
+        .face-red { width: 80vmin; height: 90vmin; background: #200; border-radius: 40%; position: relative; animation: shake 0.05s infinite; }
+        .eye-red { width: 25%; height: 25%; background: #f00; border-radius: 50%; position: absolute; top: 20%; box-shadow: 0 0 20px red; }
+        .mouth-red { width: 60%; height: 40%; background: black; border-radius: 10%; position: absolute; bottom: 10%; left: 20%; border: 5px solid #500; }
+
+        .js-blue { background: radial-gradient(circle, #002 0%, #000 90%); }
+        .face-blue { width: 90vmin; height: 60vmin; background: #113; border-radius: 10%; position: relative; animation: lunge 0.1s infinite; }
+        .eye-blue { width: 15%; height: 30%; background: #fff; border-radius: 50%; position: absolute; top: 10%; box-shadow: 0 0 10px white; }
+        .mouth-blue { width: 80%; height: 20%; background: black; position: absolute; bottom: 20%; left: 10%; overflow: hidden; }
+        .tooth { width: 10%; height: 100%; background: white; display: inline-block; clip-path: polygon(50% 100%, 0 0, 100% 0); }
+
+        .js-green { background: radial-gradient(circle, #020 0%, #000 90%); }
+        .face-green { width: 70vmin; height: 90vmin; background: transparent; border: 2px solid #0f0; border-radius: 50%; position: relative; animation: shake 0.1s infinite; filter: blur(1px); }
+        .eye-green { width: 30%; height: 30%; border: 5px solid #0f0; border-radius: 50%; position: absolute; top: 20%; }
+        .mouth-green { width: 40%; height: 40%; border: 5px solid #0f0; border-radius: 50%; position: absolute; bottom: 10%; left: 30%; }
+
+        @keyframes shake { 0% { transform: translate(5px, 5px) rotate(2deg); } 100% { transform: translate(-5px, -5px) rotate(-2deg); } }
+        @keyframes lunge { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        @keyframes twitch { 0% { transform: rotate(0deg) scaleY(0.6); } 20% { transform: rotate(5deg) scaleY(0.6); } 40% { transform: rotate(-5deg) scaleY(0.6); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+
+    </style>
+</head>
+<body>
+
+<div id="game-stage">
+    
+    <!-- START SCREEN -->
+    <div id="start-screen" class="screen">
+        <div class="pixel-monster-container">
+            <div class="pixel-monster"></div>
+        </div>
+        <div class="menu-content">
+            <h1>NIGHT<br>HORROR</h1>
+            <button class="btn" onclick="Game.init(1)">START GAME</button>
+            <button class="btn" onclick="document.getElementById('extras-modal').classList.remove('hidden')">EXTRAS</button>
+            <button class="btn" onclick="document.getElementById('credits-modal').classList.remove('hidden')">CREDITS</button>
+        </div>
+    </div>
+
+    <!-- INTRO LETTER (Night 1) -->
+    <div id="intro-screen" class="screen hidden">
+        <div class="letter-content">
+            <h2>MESSAGE FROM MANAGEMENT</h2>
+            <p>Hello Nightguard!</p>
+            <p>Welcome to your new job! Your shift starts at 12 AM and ends at 6 AM.</p>
+            <p>During the night, there might be some harmful entity trying to get in to your office. Use the lights and doors to keep it... or them... out.</p>
+            <p>Also keep an eye on the Cameras if something tries to get into the vent.</p>
+            <p>Have a safe shift!</p>
+            <br>
+            <p>- Bryngel Halvardson</p>
+        </div>
+        <button class="btn" onclick="Game.startNight(1)" style="margin-top: 30px;">CONTINUE TO NIGHTSHIFT</button>
+    </div>
+
+    <!-- EXTRAS MENU -->
+    <div id="extras-modal" class="modal-overlay hidden">
+        <h2 style="color:white; font-size:3rem; margin-bottom:20px;">EXTRAS</h2>
+        <p style="color:#aaa; margin-bottom: 20px;">Enter Redeem Code:</p>
+        <input type="text" id="redeem-input" class="code-input" maxlength="15" placeholder="ENTER CODE">
+        <button class="btn" onclick="Game.checkRedeemCode()" style="margin-top: 10px;">REDEEM</button>
+        
+        <div id="level-select-area" class="hidden">
+            <h3 style="color:#33ff00; margin-top:30px;">LEVEL SELECT UNLOCKED</h3>
+            <div class="level-select-container">
+                <div class="lvl-btn" onclick="Game.init(1); document.getElementById('extras-modal').classList.add('hidden')">1</div>
+                <div class="lvl-btn" onclick="Game.init(2); document.getElementById('extras-modal').classList.add('hidden')">2</div>
+                <div class="lvl-btn" onclick="Game.init(3); document.getElementById('extras-modal').classList.add('hidden')">3</div>
+                <div class="lvl-btn" onclick="Game.init(4); document.getElementById('extras-modal').classList.add('hidden')">4</div>
+                <div class="lvl-btn" onclick="Game.init(5); document.getElementById('extras-modal').classList.add('hidden')">5</div>
+            </div>
+        </div>
+        <button class="btn" onclick="document.getElementById('extras-modal').classList.add('hidden')" style="margin-top: 30px; border-color: #555;">BACK</button>
+    </div>
+
+    <!-- CREDITS -->
+    <div id="credits-modal" class="modal-overlay hidden">
+        <h2 style="color:white; font-size:3rem; margin-bottom:20px;">CREDITS</h2>
+        <p style="color:#aaa; font-size:1.5rem;">Created By: Zayn Lilak</p>
+        <p style="color:#666; font-size:1rem; margin-top:10px;">Music & Sounds: Generated via Web Audio API</p>
+        <button class="btn" onclick="document.getElementById('credits-modal').classList.add('hidden')">BACK</button>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="game-over-screen" class="screen hidden">
+        <h1>GAME OVER</h1>
+        <h3 style="color: #a00;">You didn't survive the night...</h3>
+        <button class="btn" onclick="Game.init(Game.state.night)">TRY AGAIN</button>
+        <button class="btn" onclick="location.reload()">RETURN TO MENU</button>
+    </div>
+
+    <!-- WIN SCREEN -->
+    <div id="win-screen" class="screen hidden">
+        <h1 style="color: #33ff00;">6:00 AM</h1>
+        <h3 id="win-text">Night Complete</h3>
+        <button id="next-night-btn" class="btn" onclick="Game.nextNight()">START NEXT NIGHT</button>
+        <button id="win-menu-btn" class="btn hidden" onclick="location.reload()">RETURN TO MENU</button>
+    </div>
+
+    <!-- JUMPSCARE OVERLAY -->
+    <div id="jumpscare-overlay" class="screen hidden">
+        <div id="js-red" class="scare-vis js-red">
+            <div class="face-red"><div class="eye-red" style="left: 15%"></div><div class="eye-red" style="right: 15%"></div><div class="mouth-red"></div></div>
+        </div>
+        <div id="js-blue" class="scare-vis js-blue">
+            <div class="face-blue"><div class="eye-blue" style="left: 20%"></div><div class="eye-blue" style="right: 20%"></div><div class="mouth-blue"><div class="tooth"></div><div class="tooth"></div><div class="tooth"></div></div></div>
+        </div>
+        <div id="js-green" class="scare-vis js-green">
+            <div class="face-green"><div class="eye-green" style="left: 15%"></div><div class="eye-green" style="right: 15%"></div><div class="mouth-green"></div></div>
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+        <div id="night-display">NIGHT 1</div>
+        <div id="time-display">12:00 AM</div>
+        <div class="power-bar-container"><div id="power-fill"></div></div>
+        <div style="display:flex; align-items:center; margin-top:5px;">
+            <div id="usage-text" style="font-size: 0.8rem;">Usage: Low</div>
+            <div id="regen-indicator">CHARGING...</div>
+            <div id="cheat-indicator">SYSTEM RESTORED</div>
+        </div>
+        <div style="font-size:0.7rem; color:#666; margin-top:5px;">Hold 'F' to Recharge</div>
+    </div>
+
+    <div id="office-container">
+        <!-- LEFT ROOM -->
+        <div class="room-section">
+            <div class="floor"></div>
+            <div class="door-frame">
+                <div class="door-panel">
+                    <div id="door-l" class="steel-door"></div>
+                    <div id="monster-l" class="door-monster-light"></div>
+                    <div id="light-beam-l" class="light-cone"></div>
+                </div>
+                <div class="button-panel btn-l">
+                    <div class="ctrl-btn btn-door" id="btn-door-l" onclick="Game.toggleDoor('left')"></div>
+                    <div class="ctrl-btn btn-light" onmousedown="Game.light('left', true)" onmouseup="Game.light('left', false)" onmouseleave="Game.light('left', false)"></div>
+                </div>
+            </div>
+            <div class="nav-zone nav-right" onmouseenter="Game.pan('mid')"></div>
+        </div>
+
+        <!-- MID ROOM -->
+        <div class="room-section">
+            <div class="floor"></div>
+            <div class="nav-zone nav-left" onmouseenter="Game.pan('left')"></div>
+            <div class="vent-system">
+                <div id="vent-cover" class="vent-cover"></div>
+                <div class="btn" id="vent-btn" style="padding: 5px 10px; font-size: 0.8rem; margin-top: 10px; border: 1px solid #555;" onclick="Game.toggleVent()">CLOSE VENT</div>
+            </div>
+            <div class="monitor-prop" onclick="Game.toggleMonitor(true)">SYSTEM ONLINE<br>CLICK TO OPEN</div>
+            <div class="nav-zone nav-right" onmouseenter="Game.pan('right')"></div>
+        </div>
+
+        <!-- RIGHT ROOM -->
+        <div class="room-section">
+            <div class="floor"></div>
+            <div class="door-frame">
+                <div class="door-panel">
+                    <div id="door-r" class="steel-door"></div>
+                    <div id="monster-r" class="door-monster-light"></div>
+                    <div id="light-beam-r" class="light-cone"></div>
+                </div>
+                <div class="button-panel btn-r">
+                    <div class="ctrl-btn btn-door" id="btn-door-r" onclick="Game.toggleDoor('right')"></div>
+                    <div class="ctrl-btn btn-light" onmousedown="Game.light('right', true)" onmouseup="Game.light('right', false)" onmouseleave="Game.light('right', false)"></div>
+                </div>
+            </div>
+            <div class="nav-zone nav-left" onmouseenter="Game.pan('mid')"></div>
+        </div>
+    </div>
+
+    <!-- CAMERAS -->
+    <div id="cam-overlay">
+        <div id="cam-feed">
+            <div id="cam-title" style="position:absolute; top:10px; left:10px; color:white; z-index:10; background:black; padding:2px;">CAM 10</div>
+            <div class="static-overlay"></div>
+            <!-- Monster Visuals -->
+            <div id="feed-mon-rabbit" class="cam-monster mon-rabbit">🐰</div>
+            <div id="feed-mon-bear" class="cam-monster mon-bear">🐻</div>
+            <div id="feed-mon-fox" class="cam-monster mon-fox">🦊</div>
+        </div>
+        
+        <div id="cam-map">
+            <div class="office-rect">YOU</div>
+            <!-- Path 1 (Left) -->
+            <div class="cam-btn" style="top: 240px; left: 20px;" onclick="Game.switchCam(1)">CAM 1</div>
+            <div class="cam-btn" style="top: 170px; left: 20px;" onclick="Game.switchCam(4)">CAM 4</div>
+            <div class="cam-btn" style="top: 100px; left: 20px;" onclick="Game.switchCam(7)">CAM 7</div>
+            <!-- Path 2 (Vent) -->
+            <div class="cam-btn" style="top: 280px; left: 50%; transform:translateX(-50%);" onclick="Game.switchCam(2)">CAM 2</div>
+            <div class="cam-btn" style="top: 210px; left: 50%; transform:translateX(-50%);" onclick="Game.switchCam(5)">CAM 5</div>
+            <div class="cam-btn" style="top: 140px; left: 50%; transform:translateX(-50%);" onclick="Game.switchCam(8)">CAM 8</div>
+            <!-- Path 3 (Right) -->
+            <div class="cam-btn" style="top: 240px; right: 20px;" onclick="Game.switchCam(3)">CAM 3</div>
+            <div class="cam-btn" style="top: 170px; right: 20px;" onclick="Game.switchCam(6)">CAM 6</div>
+            <div class="cam-btn" style="top: 100px; right: 20px;" onclick="Game.switchCam(9)">CAM 9</div>
+            <!-- Start -->
+            <div class="cam-btn" style="top: 20px; left: 50%; transform:translateX(-50%); width: 60px;" onclick="Game.switchCam(10)">CAM 10</div>
+        </div>
+        <button class="btn" style="position:absolute; bottom:20px; left:20px; margin:0; padding:10px 20px;" onclick="Game.toggleMonitor(false)">CLOSE</button>
+    </div>
+
+</div>
+
+<script>
+const AudioEngine = {
+    ctx: null,
+    ambienceOsc: null,
+    ambienceLfo: null,
+    init() { if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+    playTone(f, t, d, v=0.1) {
+        if(!this.ctx) return;
+        const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+        o.type = t; o.frequency.value = f; g.gain.value = v;
+        g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + d);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(); o.stop(this.ctx.currentTime + d);
+    },
+    startAmbience() {
+        if(this.ambienceOsc) return;
+        if(!this.ctx) this.init();
+        if(this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); const filter = this.ctx.createBiquadFilter();
+        osc.type = 'sawtooth'; osc.frequency.value = 50; 
+        const lfo = this.ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.1; 
+        const lfoGain = this.ctx.createGain(); lfoGain.gain.value = 20;
+        lfo.connect(lfoGain); lfoGain.connect(filter.frequency);
+        filter.type = 'lowpass'; filter.frequency.value = 200;
+        gain.gain.value = 0.1; 
+        osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); lfo.start();
+        this.ambienceOsc = osc; this.ambienceLfo = lfo;
+    },
+    sfx: {
+        click: () => AudioEngine.playTone(1000, 'sine', 0.05),
+        door: () => AudioEngine.playTone(100, 'square', 0.2),
+        vent: () => AudioEngine.playTone(150, 'sawtooth', 0.2),
+        blip: () => AudioEngine.playTone(600, 'sine', 0.1),
+        success: () => { AudioEngine.playTone(800, 'sine', 0.1); setTimeout(()=>AudioEngine.playTone(1200, 'sine', 0.2), 100); },
+        jumpscare: () => { 
+            AudioEngine.playTone(50, 'sawtooth', 2.0, 0.8); 
+            AudioEngine.playTone(150, 'square', 1.0, 0.5); 
+            AudioEngine.playTone(600, 'sawtooth', 0.5, 0.3);
+        }
+    }
+};
+
+const Game = {
+    state: {
+        active: false, power: 100, time: 0, view: 'mid', night: 1,
+        doors: { left: false, right: false }, vent: false,
+        lights: { left: false, right: false },
+        monitorOpen: false, currentCam: 10,
+        lastNav: 0, regen: false, regenTick: 0,
+        cheatBuffer: "", cheatUsed: false
+    },
+    paths: {
+        left: [10, 7, 4, 1, 'door-l'],
+        vent: [10, 8, 5, 2, 'vent'],
+        right: [10, 9, 6, 3, 'door-r']
+    },
+    monsters: [],
+    init(night) {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-over-screen').classList.add('hidden');
+        document.getElementById('win-screen').classList.add('hidden');
+        document.getElementById('intro-screen').classList.add('hidden');
+        AudioEngine.init();
+        if (night === 1) document.getElementById('intro-screen').classList.remove('hidden');
+        else this.startNight(night);
+    },
+    startNight(night) {
+        document.getElementById('intro-screen').classList.add('hidden');
+        document.getElementById('hud').classList.remove('hidden');
+        document.getElementById('office-container').style.left = '-100vw';
+        AudioEngine.startAmbience();
+        this.resetVariables(night);
+        this.setupNight(night);
+        this.state.active = true;
+        if(this.timer) clearInterval(this.timer);
+        this.timer = setInterval(() => this.tick(), 1000);
+    },
+    resetVariables(night) {
+        this.state = {
+            active: true, power: 100, time: 0, view: 'mid', night: night,
+            doors: { left: false, right: false }, vent: false,
+            lights: { left: false, right: false },
+            monitorOpen: false, currentCam: 10, lastNav: 0, 
+            regen: false, regenTick: 0, cheatBuffer: "", cheatUsed: false
+        };
+        document.getElementById('night-display').innerText = "NIGHT " + night;
+        document.getElementById('cheat-indicator').style.display = 'none';
+        document.querySelectorAll('.steel-door').forEach(d => d.classList.remove('closed'));
+        document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('vent-cover').classList.remove('closed');
+        document.getElementById('vent-btn').innerText = "CLOSE VENT";
+    },
+    setupNight(night) {
+        // Redesigned Monsters
+        const mRabbit = { name: 'Rabbit', active: false, type: 'left', cssId: 'feed-mon-rabbit', symbol: '🐰', doorClass: 'door-rabbit' };
+        const mBear = { name: 'Bear', active: false, type: 'vent', cssId: 'feed-mon-bear', symbol: '🐻', doorClass: '' };
+        const mFox = { name: 'Fox', active: false, type: 'right', cssId: 'feed-mon-fox', symbol: '🦊', doorClass: 'door-fox' };
+
+        mRabbit.path = [...this.paths.left];
+        mBear.path = [...this.paths.vent];
+        mFox.path = [...this.paths.right];
+        mRabbit.loc = 10; mBear.loc = 10; mFox.loc = 10;
+        mRabbit.wait = 0; mBear.wait = 0; mFox.wait = 0;
+
+        if (night === 1) { mRabbit.active = true; mRabbit.speed = 25; mRabbit.randomPath = true; } 
+        else if (night === 2) { mRabbit.active = true; mRabbit.speed = 20; mFox.active = true; mFox.speed = 20; } 
+        else if (night === 3) { mRabbit.active = true; mRabbit.speed = 15; mFox.active = true; mFox.speed = 15; mBear.active = true; mBear.speed = 15; } 
+        else if (night === 4) { mRabbit.active = true; mRabbit.speed = 12; mFox.active = true; mFox.speed = 12; mBear.active = true; mBear.speed = 15; } 
+        else if (night === 5) { mRabbit.active = true; mRabbit.speed = 12; mFox.active = true; mFox.speed = 12; mBear.active = true; mBear.speed = 12; }
+
+        this.monsters = [mRabbit, mFox, mBear].filter(m => m.active);
+    },
+    checkRedeemCode() {
+        const code = document.getElementById('redeem-input').value.toUpperCase().trim();
+        if(code === 'NIGHTGUARD') {
+            AudioEngine.sfx.success();
+            document.getElementById('level-select-area').classList.remove('hidden');
+        } else { alert("INVALID CODE"); }
+    },
+    handleInput(key) {
+        if(!this.state.active) return;
+        if(key.toLowerCase() === 'f') this.state.regen = true;
+        if(!this.state.cheatUsed) {
+            this.state.cheatBuffer += key;
+            if(this.state.cheatBuffer.length > 6) this.state.cheatBuffer = this.state.cheatBuffer.slice(-6);
+            if(this.state.cheatBuffer === "250925") {
+                this.state.power = 100;
+                this.state.cheatUsed = true;
+                AudioEngine.sfx.success();
+                document.getElementById('cheat-indicator').style.display = 'block';
+                setTimeout(() => document.getElementById('cheat-indicator').style.display = 'none', 3000);
+            }
+        }
+    },
+    pan(v) {
+        if(this.state.monitorOpen || !this.state.active) return;
+        const now = Date.now();
+        if (now - this.state.lastNav < 500) return;
+        this.state.lastNav = now;
+        this.state.view = v;
+        const c = document.getElementById('office-container');
+        c.style.left = (v === 'left' ? '0' : (v === 'mid' ? '-100vw' : '-200vw'));
+    },
+    toggleDoor(s) {
+        if(this.state.power <= 0) return;
+        AudioEngine.sfx.door();
+        this.state.doors[s] = !this.state.doors[s];
+        document.getElementById('door-' + (s === 'left' ? 'l' : 'r')).classList.toggle('closed', this.state.doors[s]);
+        document.getElementById('btn-door-' + (s === 'left' ? 'l' : 'r')).classList.toggle('active', this.state.doors[s]);
+    },
+    toggleVent() {
+        if(this.state.power <= 0) return;
+        AudioEngine.sfx.vent();
+        this.state.vent = !this.state.vent;
+        document.getElementById('vent-cover').classList.toggle('closed', this.state.vent);
+        document.getElementById('vent-btn').innerText = this.state.vent ? "OPEN VENT" : "CLOSE VENT";
+    },
+    light(s, on) {
+        if(this.state.power <= 0 || this.state.doors[s]) return;
+        this.state.lights[s] = on;
+        const sideChar = s === 'left' ? 'l' : 'r';
+        document.getElementById('light-beam-' + sideChar).style.display = on ? 'block' : 'none';
+        const monsterEl = document.getElementById('monster-' + sideChar);
+        monsterEl.style.display = 'none';
+        if (on) {
+            const m = this.monsters.find(mon => mon.loc === 'door-' + sideChar);
+            if(m) {
+                monsterEl.innerText = m.symbol; 
+                monsterEl.className = 'door-monster-light ' + m.doorClass; // Apply specific styles
+                monsterEl.style.display = 'block';
+            }
+        }
+    },
+    toggleMonitor(open) {
+        if(this.state.power <= 0) return;
+        AudioEngine.sfx.click();
+        this.state.monitorOpen = open;
+        document.getElementById('cam-overlay').style.display = open ? 'block' : 'none';
+        if(open) this.updateCamFeed();
+    },
+    switchCam(id) {
+        AudioEngine.sfx.blip();
+        this.state.currentCam = id;
+        document.querySelectorAll('.cam-btn').forEach(b => b.classList.toggle('active', parseInt(b.innerText.replace('CAM ', '')) === id));
+        document.getElementById('cam-title').innerText = "CAM " + id;
+        this.updateCamFeed();
+    },
+    updateCamFeed() {
+        document.querySelectorAll('.cam-monster').forEach(el => el.style.display = 'none');
+        const monstersHere = this.monsters.filter(mon => mon.loc === this.state.currentCam);
+        
+        monstersHere.forEach((m) => {
+            const el = document.getElementById(m.cssId);
+            el.style.display = 'block';
+            el.style.transform = 'translate(-50%, -50%)'; // Reset to center default
+
+            // Fixed Cam 10 Logic
+            if(this.state.currentCam === 10) {
+                if(m.type === 'left') { el.style.left = '25%'; }
+                else if(m.type === 'vent') { el.style.left = '50%'; }
+                else if(m.type === 'right') { el.style.left = '75%'; }
+            } else {
+                el.style.left = '50%'; // Re-center for normal cams
+                if(m.name === 'Bear') el.style.transform += ' scaleY(0.6)';
+            }
+        });
+    },
+    tick() {
+        if(!this.state.active) return;
+        this.state.time++;
+        const hour = Math.floor(this.state.time / 60);
+        document.getElementById('time-display').innerText = (hour === 0 ? 12 : hour) + ":00 AM";
+        if(hour === 6) { this.win(); return; }
+
+        let drain = 0;
+        if(this.state.doors.left) drain++;
+        if(this.state.doors.right) drain++;
+        if(this.state.vent) drain++;
+        if(this.state.monitorOpen) drain++;
+        if(this.state.lights.left || this.state.lights.right) drain += 2;
+
+        if(this.state.regen) {
+            this.state.regenTick++;
+            document.getElementById('regen-indicator').style.display = 'block';
+            if(this.state.regenTick >= 2) { this.state.power += 1; this.state.regenTick = 0; }
+        } else {
+            this.state.regenTick = 0;
+            document.getElementById('regen-indicator').style.display = 'none';
+        }
+
+        this.state.power -= (drain * 0.2 + 0.1);
+        if(this.state.power > 100) this.state.power = 100;
+        if(this.state.power <= 0) { this.state.power = 0; this.jumpscare('red'); }
+
+        document.getElementById('power-fill').style.width = this.state.power + '%';
+        document.getElementById('usage-text').innerText = "Usage: " + (drain > 2 ? "High" : drain > 0 ? "Med" : "Low");
+
+        this.monsters.forEach(m => {
+            m.wait++;
+            const threshold = m.speed + (Math.random() * 2); 
+            if(m.wait >= threshold) {
+                m.wait = 0;
+                if(typeof m.loc === 'string') {
+                    let blocked = false;
+                    if(m.loc === 'door-l' && this.state.doors.left) blocked = true;
+                    if(m.loc === 'door-r' && this.state.doors.right) blocked = true;
+                    if(m.loc === 'vent' && this.state.vent) blocked = true;
+                    if(blocked) {
+                        m.loc = 10;
+                        if(m.randomPath) m.path = [...this.paths.left];
+                    } else { this.jumpscare(m.type); }
+                } else {
+                    if(m.loc === 10) {
+                        if(m.randomPath) {
+                            const r = Math.floor(Math.random() * 3);
+                            if(r === 0) { m.path = [...this.paths.left]; m.type = 'left'; }
+                            if(r === 1) { m.path = [...this.paths.vent]; m.type = 'vent'; }
+                            if(r === 2) { m.path = [...this.paths.right]; m.type = 'right'; }
+                        }
+                        m.loc = m.path[1];
+                    } else {
+                        const idx = m.path.indexOf(m.loc);
+                        if (Math.random() < 0.6) m.loc = m.path[idx + 1];
+                        else m.loc = m.path[idx - 1];
+                    }
+                }
+            }
+        });
+        if(this.state.monitorOpen) this.updateCamFeed();
+    },
+    win() {
+        this.state.active = false;
+        clearInterval(this.timer);
+        document.getElementById('hud').classList.add('hidden');
+        document.getElementById('win-screen').classList.remove('hidden');
+        document.getElementById('win-text').innerText = "NIGHT " + this.state.night + " COMPLETE";
+        const nextBtn = document.getElementById('next-night-btn');
+        const menuBtn = document.getElementById('win-menu-btn');
+        if(this.state.night >= 5) { nextBtn.classList.add('hidden'); menuBtn.classList.remove('hidden'); document.getElementById('win-text').innerText = "ALL NIGHTS SURVIVED!"; } 
+        else { nextBtn.classList.remove('hidden'); nextBtn.innerText = "START NIGHT " + (this.state.night + 1); menuBtn.classList.add('hidden'); }
+    },
+    nextNight() {
+        if(this.state.night < 5) this.init(this.state.night + 1);
+        else location.reload();
+    },
+    jumpscare(type) {
+        if(!this.state.active) return;
+        this.state.active = false;
+        clearInterval(this.timer);
+        AudioEngine.sfx.jumpscare();
+        document.getElementById('jumpscare-overlay').classList.remove('hidden');
+        document.getElementById('hud').classList.add('hidden');
+        document.getElementById('cam-overlay').style.display = 'none';
+        document.querySelectorAll('.scare-vis').forEach(el => el.style.display = 'none');
+        if(type === 'left' || (this.state.night === 1 && type === 'random')) document.getElementById('js-red').style.display = 'flex';
+        else if(type === 'vent') document.getElementById('js-blue').style.display = 'flex';
+        else if(type === 'right') document.getElementById('js-green').style.display = 'flex';
+        else document.getElementById('js-red').style.display = 'flex';
+        setTimeout(() => {
+            document.getElementById('jumpscare-overlay').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.remove('hidden');
+        }, 3000);
+    }
+};
+
+window.addEventListener('keydown', (e) => Game.handleInput(e.key));
+window.addEventListener('keyup', (e) => { if(e.key.toLowerCase() === 'f') Game.state.regen = false; });
+</script>
+</body>
+</html>
+</div>
+
+</body>
+</html>
