@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Portal</title>
+    <title>Game Hub</title>
     <!-- Tailwind CSS for design -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts for gaming feel -->
@@ -14,18 +14,18 @@
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #0f172a; /* Dark blue background */
+            background-color: #0f172a; /* Mörkblå bakgrund */
             background-image: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
         }
         h1, h2, .game-font {
             font-family: 'Orbitron', sans-serif;
         }
-        /* Neon glow effect on hover */
+        /* Neon-effekt vid hovring */
         .game-card:hover {
             box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
             border-color: #60a5fa;
         }
-        /* Scrollbar for comments */
+        /* Scrollbar för kommentarer */
         .custom-scroll::-webkit-scrollbar {
             width: 8px;
         }
@@ -49,11 +49,11 @@
             <div class="flex items-center gap-2">
                 <i data-lucide="gamepad-2" class="text-blue-500 w-8 h-8"></i>
                 <h1 class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-                    Zayn's Super good Games
+                    GAME HUB
                 </h1>
             </div>
             <div class="text-sm text-slate-400 hidden sm:block">
-                Nothing to read here 
+                Nothing to read here
             </div>
         </div>
     </header>
@@ -62,11 +62,10 @@
     <main class="flex-grow container mx-auto px-4 py-10">
         
         <div class="text-center mb-12">
-            <h2 class="text-4xl font-bold mb-4">Welcome! (or not) </h2>
+            <h2 class="text-4xl font-bold mb-4">Welcome! (or not)</h2>
             <p class="text-slate-400 max-w-2xl mx-auto">
-                Click on a game below to open it in a new tab.
-                Have fun!
-                Chat rules: Only write bout bugs and what game u want. Nothing else or yall get banned.
+                Click on a game below to open it in a new tab. Have fun!
+                Chat rules: Only write 'bout bugs and what game u want. Nothing else or yall get banned.
             </p>
         </div>
 
@@ -79,20 +78,20 @@
                 <div>
                     <h3 class="text-lg font-bold text-blue-400 mb-2 game-font flex items-center gap-2">
                         <span class="sm:hidden"><i data-lucide="terminal" class="w-4 h-4 inline"></i></span>
-                        DEVELOPER UPDATE
+                        Update from Developer
                     </h3>
                     <div class="prose prose-invert text-slate-300 leading-relaxed">
                         <p>
-                            Hi and welcome to the game portal! 🎮 Enable F11 for best experience
+                            Sup and welcome to the Game Portal 🎮 Enable F11 for best experience.
                         </p>
                         <p class="mt-2">
-                            Right now I'm working on fixing the <strong>Geometry Dash Clone</strong> and fixing the first person games. 
-                            Unemployed activities is smth i do.
+                            I have added a "horror" game called Night Horror, and im working on adding more new games and fixing the Beta games.
+                            I will also make some multiplayer games soon. Stay tuned. 
                         </p>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 font-mono">
                         <i data-lucide="clock" class="w-3 h-3"></i>
-                        <span>Last updated: 7/12 2025</span>
+                        <span>Latest updated: 18/2 2026</span>
                     </div>
                 </div>
             </div>
@@ -101,28 +100,24 @@
         <!-- Comments Section -->
         <div class="max-w-4xl mx-auto mb-16">
             <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
-                <!-- Comments Header -->
                 <div class="p-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
                     <h3 class="text-lg font-bold text-slate-200 flex items-center gap-2">
                         <i data-lucide="message-square" class="w-5 h-5 text-purple-400"></i>
-                        Chat for everyone (except Burk the Jurk)
+                        Community-chat
                     </h3>
                     <span class="text-xs text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700">Live</span>
                 </div>
 
-                <!-- Comments List -->
                 <div id="comments-list" class="p-6 h-64 overflow-y-auto custom-scroll space-y-4 bg-slate-900/50">
-                    <div class="text-center text-slate-500 py-10 italic">Loading messages...</div>
+                    <div class="text-center text-slate-500 py-10 italic">Loading...</div>
                 </div>
 
-                <!-- Input Form -->
                 <div class="p-4 bg-slate-800 border-t border-slate-700">
                     <div class="flex flex-col gap-3">
                         <div class="flex gap-3">
-                            <input type="text" id="username-input" placeholder="Your name" class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-1/3 p-2.5" maxlength="15">
-                            <input type="text" id="comment-input" placeholder="Write a message..." class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">
+                            <input type="text" id="username-input" placeholder="Ditt namn" class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-1/3 p-2.5" maxlength="15">
+                            <input type="text" id="comment-input" placeholder="Skriv ett meddelande..." class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">
                         </div>
-                        <!-- Felet 'postComment is not defined' fixas här, eftersom funktionen nu är global -->
                         <button onclick="postComment()" id="send-btn" class="w-full sm:w-auto self-end bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2 justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                             <i data-lucide="send" class="w-4 h-4"></i> Send
                         </button>
@@ -133,7 +128,7 @@
 
         <!-- Game Grid -->
         <div id="game-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            <!-- Cards generated by JavaScript below -->
+            <!-- Kort genereras av JavaScript nedan -->
         </div>
 
     </main>
@@ -141,19 +136,17 @@
     <!-- Footer -->
     <footer class="bg-slate-900 py-6 mt-auto border-t border-slate-800">
         <div class="container mx-auto text-center text-slate-500 text-sm">
-            <p>&copy; 2025 Game Portal. Built by the one and only Zayn Lilak.</p>
+            <p>&copy; 2026 Game Portal. Build by the one and only Zayn.</p>
         </div>
     </footer>
 
-    <!-- Firebase SDKs: Global definition for postComment must be before the button is clicked -->
+    <!-- Firebase Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- HÄR SKA DU KLISTRA IN DIN EGEN KONFIGURATION ---
-        // OBS: Se till att du INTE har med "measurementId" i slutet!
-        // ERSÄTT TEXTEN INUTI CITATTTECKEN FÖR ALLA SEX FÄLT:
+        // KLISTRA IN DINA NYCKLAR HÄR IGEN:
         const firebaseConfig = {
             apiKey: "AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs",
             authDomain: "chat-for-website-67a6f.firebaseapp.com",
@@ -191,24 +184,21 @@
             onAuthStateChanged(auth, (currentUser) => {
                 user = currentUser;
                 if (user) {
-                    console.log("Connected to chat! User ID:", user.uid);
                     loadComments();
                 }
             });
 
         } catch (e) {
-            console.error("Firebase configuration missing or incorrect. Check console.", e);
+            console.error("Firebase config error:", e);
             document.getElementById('comments-list').innerHTML = `
                 <div class="text-center text-red-400 p-4">
-                    <p class="font-bold">Chatt-konfiguration saknas!</p>
-                    <p class="text-sm mt-2 text-slate-400">Fel: ${e.message}. Har du klistrat in nycklarna korrekt (runt rad 173)?</p>
+                    <p class="font-bold">Konfigurationsfel!</p>
+                    <p class="text-sm mt-2 text-slate-400">Har du klistrat in nycklarna korrekt?</p>
                 </div>`;
         }
 
-        // --- Load Comments (Realtime) ---
         function loadComments() {
             let commentsRef;
-            
             if (window.__app_id && !isUsingCustomConfig) {
                  commentsRef = collection(db, 'artifacts', window.__app_id, 'public', 'data', 'comments');
             } else {
@@ -220,23 +210,19 @@
             onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('comments-list');
                 const comments = [];
-                
-                snapshot.forEach(doc => {
-                    comments.push({ id: doc.id, ...doc.data() });
-                });
+                snapshot.forEach(doc => comments.push({ id: doc.id, ...doc.data() }));
 
                 if (comments.length === 0) {
-                    list.innerHTML = '<div class="text-center text-slate-600 py-4">Inga meddelanden än. Var den första!</div>';
+                    list.innerHTML = '<div class="text-center text-slate-600 py-4">Inga meddelanden än. Var först!</div>';
                     return;
                 }
 
                 list.innerHTML = '';
                 comments.forEach(msg => {
-                    const name = (msg.username || 'Anonymous').replace(/</g, "&lt;");
+                    const name = (msg.username || 'Anonym').replace(/</g, "&lt;");
                     const text = (msg.text || '').replace(/</g, "&lt;");
-                    
                     const msgDiv = document.createElement('div');
-                    msgDiv.className = 'bg-slate-800 p-3 rounded-lg border border-slate-700 flex gap-3 animate-in fade-in slide-in-from-bottom-2';
+                    msgDiv.className = 'bg-slate-800 p-3 rounded-lg border border-slate-700 flex gap-3';
                     msgDiv.innerHTML = `
                         <div class="w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center border border-purple-500/30 shrink-0">
                             <span class="text-xs font-bold text-purple-300">${name.charAt(0).toUpperCase()}</span>
@@ -244,46 +230,29 @@
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="font-bold text-purple-400 text-sm">${name}</span>
-                                <span class="text-xs text-slate-600">${msg.dateString || 'Precis nu'}</span>
+                                <span class="text-xs text-slate-600">${msg.dateString || 'Nu'}</span>
                             </div>
                             <p class="text-sm text-slate-300 break-all">${text}</p>
                         </div>
                     `;
                     list.appendChild(msgDiv);
                 });
-            }, (error) => {
-                console.error("Error fetching comments:", error);
-                if (error.code === 'permission-denied') {
-                     document.getElementById('comments-list').innerHTML = `
-                         <div class="text-center text-yellow-500 p-4">
-                             <p class="font-bold">Behörighet nekad (Permission Denied)!</p>
-                             <p class="text-sm mt-2 text-slate-400">Du måste ställa in Firestore-regler för samlingen <strong>'comments'</strong> i Firebase Console.</p>
-                         </div>`;
-                }
             });
         }
         
-        // Nu definierar vi funktionen globalt så att knappen kan hitta den.
         window.postComment = async function() {
-            if (!user) {
-                // Försök logga in om användaren inte är definierad
-                const initAuth = auth && auth.currentUser === null ? async () => { await signInAnonymously(auth); } : () => {};
-                await initAuth();
-                if (!user) return alert("Ansluter till chattservern... Försök igen om någon sekund.");
-            }
+            if (!user) return alert("Väntar på anslutning...");
             
             const nameInput = document.getElementById('username-input');
             const textInput = document.getElementById('comment-input');
             const btn = document.getElementById('send-btn');
 
-            const username = nameInput.value.trim() || 'Anonymous Player';
+            const username = nameInput.value.trim() || 'Anonym Spelare';
             const text = textInput.value.trim();
 
             if (!text) return;
 
             btn.disabled = true;
-            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Skickar...';
-
             try {
                 let commentsRef;
                 if (window.__app_id && !isUsingCustomConfig) {
@@ -299,46 +268,39 @@
                     userId: user.uid,
                     dateString: new Date().toLocaleDateString('sv-SE')
                 });
-                
                 textInput.value = '';
-                // Scrolla till botten efter skickat meddelande
-                const list = document.getElementById('comments-list');
-                list.scrollTop = list.scrollHeight; 
-
             } catch (error) {
-                console.error("Could not send:", error);
-                if (error.code === 'permission-denied') {
-                    alert("Kunde inte skicka: Behörighet nekad! Kontrollera dina Firestore-regler (allow write) i Firebase Console.");
-                } else {
-                    alert(`Kunde inte skicka meddelande. Fel: ${error.message}`);
-                }
+                alert("Kunde inte skicka: " + error.message);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Send';
-                lucide.createIcons();
             }
         }
-        
-        // Allow Enter key to send
-        document.getElementById('comment-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') window.postComment();
-        });
-        
     </script>
 
     <script>
-        // --- GAME CONFIGURATION ---
+        // --- SPEL-KONFIGURATION ---
         const games = [
             { id: 1, name: "Last Defence", color: "from-blue-500 to-cyan-400", icon: "skull" },
             { id: 2, name: "Tank Survival", color: "from-green-500 to-emerald-400", icon: "truck" },
-            { id: 3, name: "Basket Ball", color: "from-red-500 to-orange-400", icon: "crosshair" },
+            { id: 3, name: "Basketball", color: "from-red-500 to-orange-400", icon: "crosshair" },
             { id: 4, name: "Racing Pro", color: "from-purple-500 to-pink-400", icon: "car" },
-            { id: 5, name: "FPS BETA", color: "from-gray-600 to-gray-400", icon: "sword" },
+            { id: 5, name: "FPS (not working)", color: "from-gray-600 to-gray-400", icon: "sword" },
             { id: 6, name: "Snakey", color: "from-yellow-500 to-orange-400", icon: "activity" },
-            { id: 7, name: "The Backrooms beta", color: "from-indigo-500 to-purple-400", icon: "trees" },
+            { id: 7, name: "The Backrooms (not working)", color: "from-indigo-500 to-purple-400", icon: "trees" },
             { id: 8, name: "Geometry Dash Clone", color: "from-slate-500 to-zinc-400", icon: "bot" },
-            { id: 9, name: "Clanker Defence?", color: "from-rose-500 to-red-400", icon: "heart" },
-            { id: 10, name: "Clash Clone", color: "from-amber-500 to-yellow-300", icon: "crown" },
+            { id: 9, name: "Clanker Defence", color: "from-rose-500 to-red-400", icon: "heart" },
+            { id: 10, name: "Clash Royale Clone", color: "from-amber-500 to-yellow-300", icon: "crown" },
+            // Nya spel
+            { id: 11, name: "Night Horror", color: "from-yellow-400 to-yellow-600", icon: "flashlight" },
+            { id: 12, name: "Coming Soon", color: "from-blue-600 to-blue-800", icon: "anchor" },
+            { id: 13, name: "Coming Soon", color: "from-lime-400 to-lime-600", icon: "alien" },
+            { id: 14, name: "Coming Soon", color: "from-fuchsia-500 to-purple-600", icon: "zap" },
+            { id: 15, name: "Coming Soon", color: "from-slate-300 to-slate-500", icon: "ghost" },
+            { id: 16, name: "Coming Soon", color: "from-orange-300 to-orange-500", icon: "wind" },
+            { id: 17, name: "Coming Soon", color: "from-indigo-900 to-purple-900", icon: "milestone" },
+            { id: 18, name: "Coming Soon", color: "from-red-800 to-red-900", icon: "hammer" },
+            { id: 19, name: "Coming Soon", color: "from-sky-400 to-sky-200", icon: "cloud" },
+            { id: 20, name: "Coming Soon", color: "from-teal-400 to-emerald-500", icon: "layout" }
         ];
 
         const grid = document.getElementById('game-grid');
@@ -358,9 +320,9 @@
                     <i data-lucide="${game.icon}" class="w-8 h-8 text-gray-300 group-hover:text-white"></i>
                 </div>
                 <h3 class="text-xl font-bold mb-2 game-font text-center">${game.name}</h3>
-                <span class="text-xs text-slate-500 mb-6">Game ${game.id}</span>
+                <span class="text-xs text-slate-500 mb-6">Spel ${game.id}</span>
                 <button onclick="openGame(${game.id})" class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 transition-transform hover:opacity-90">
-                    PLAY NOW
+                    SPELA NU
                 </button>
             `;
             grid.appendChild(card);
@@ -370,15 +332,7 @@
 
         function openGame(id) {
             const url = `spel${id}.html`;
-            const newWindow = window.open(url, '_blank');
-            try {
-                window.close();
-                if (!newWindow.closed) {
-                    console.log("Browser did not allow closing this tab.");
-                }
-            } catch (e) {
-                console.log("Could not close window automatically.");
-            }
+            window.open(url, '_blank');
         }
     </script>
 </body>
