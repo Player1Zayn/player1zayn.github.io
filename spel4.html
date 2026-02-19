@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PRO Racing beta</title>
+<title>Escape Road</title>
 
 <style>
     body {
@@ -46,721 +46,288 @@
 
 <div id="game-container">
     <!DOCTYPE html>
-<html lang="sv">
+
+
+<!-- Ultimate Game Stash file--> 
+<!-- For the regularly updating doc go to https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/ -->
+
+
+<html lang="en-us">
+  <base href="https://cdn.jsdelivr.net/gh/abisdbest/classroom.google.com@45b2d69c626dc365753f6922d2c48c4075683ef5/drive.google.com/escape%20road/">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vägracing</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #1a1a1a; /* Mörk bakgrund */
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            max-height: 100vh; /* Förhindra scroll på mobil */
-            margin: 0;
-            overflow: hidden; /* Förhindra scrollbars */
-        }
-
-        h1 {
-            color: #4CAF50; /* Grön titel */
-            text-shadow: 0 0 10px #4CAF50;
-            margin: 10px 0; /* Justerat marginal */
-            padding: 0;
-        }
-
-        #game-container {
-            position: relative;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            background-color: #388E3C; /* Gräs-färg */
-            /* Ta bort fasta mått, gör den flexibel */
-            max-width: 1000px; /* Maxbredd för stora skärmar */
-            width: 95vw;   /* 95% av fönstrets bredd */
-            height: 85vh;  /* 85% av fönstrets höjd */
-            display: flex;
-            flex-direction: column;
-        }
-
-        #ui-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 25px;
-            background-color: #333;
-            border-radius: 12px 12px 0 0;
-            font-size: 1.2rem;
-            font-weight: 600;
-            width: 100%; /* Fyll sin container */
-            box-sizing: border-box; /* Inkludera padding i bredden */
-        }
-
-        #ui-bar div {
-            min-width: 150px;
-        }
-
-        #score {
-            color: #FFEB3B; /* Gul poäng */
-        }
-
-        #hearts {
-            color: #f44336; /* Röd färg för hjärtan */
-        }
-
-        #nitro {
-            color: #2196F3; /* Blå färg för nitro */
-        }
-
-        canvas {
-            display: block;
-            background-color: #388E3C; /* Fallback, men täcks av väg/gräs */
-            border-radius: 0 0 12px 12px;
-            width: 100%; /* Fyll återstående utrymme */
-            height: 100%; /* Fyll återstående utrymme */
-        }
-
-        #game-over-screen {
-            position: absolute;
-            /* Top/Left/Width/Height ställs in av JS */
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            display: none; /* Dold från början */
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            border-radius: 0 0 12px 12px; /* Matcha canvas */
-            z-index: 10;
-        }
-
-        /* NY: Gemensam stil för overlays */
-        .game-overlay {
-            position: absolute;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            display: flex; /* 'none' för game-over som standard */
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            border-radius: 0 0 12px 12px; /* Matcha canvas */
-            z-index: 10;
-        }
-
-        /* Ändrad: Använder nu .game-overlay */
-        #game-over-screen {
-            display: none; /* Dold från början */
-        }
-        
-        /* NY: Startmeny-specifika stilar */
-        #start-menu h2 {
-            font-size: 3.5rem;
-            color: #4CAF50;
-            text-shadow: 0 0 15px #4CAF50;
-            margin-bottom: 20px;
-        }
-        
-        #credits-text {
-            display: none; /* Dold från början */
-            margin-top: 20px;
-            font-size: 1.1rem;
-            color: #bdc3c7; /* Ljusgrå */
-        }
-
-        #game-over-screen h2 {
-            font-size: 3rem;
-            color: #f44336;
-            margin-bottom: 10px;
-        }
-
-        #game-over-screen p {
-            font-size: 1.5rem;
-            margin-bottom: 30px;
-        }
-
-        /* NY: Gemensam knappstil */
-        .menu-button {
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.2rem;
-            font-weight: 600;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-            min-width: 150px; /* Samma bredd */
-            margin-top: 10px;
-        }
-
-        .menu-button:active {
-            transform: scale(0.98);
-        }
-
-        /* Ändrad: Använder .menu-button */
-        #restart-button {
-            background-color: #4CAF50;
-        }
-        #restart-button:hover {
-            background-color: #45a049;
-        }
-
-        /* NYA knappar */
-        #start-button {
-            background-color: #4CAF50; /* Grön */
-        }
-        #start-button:hover {
-            background-color: #45a049;
-        }
-
-        #credits-button {
-            background-color: #7f8c8d; /* Grå */
-        }
-        #credits-button:hover {
-            background-color: #95a5a6;
-        }
-
-    </style>
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Escape Road</title>
+<link rel="shortcut icon" href="icon.png">
+<link rel="stylesheet" href="TemplateData/style.css">
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init()</script>
 </head>
-<body>
-
-    <h1>Vägracing</h1>
-
-    <div id="game-container">
-        <!-- UI-fält för poäng, hjärtan och nitro -->
-        <div id="ui-bar"> <!-- Ta bort inline style -->
-            <div id="score">Poäng: 0</div>
-            <div id="hearts">Hjärtan: ❤️❤️❤️</div>
-            <div id="nitro">Nitro: 0</div>
-        </div>
-
-        <!-- Spel-canvas - Ta bort fasta mått -->
-        <canvas id="gameCanvas"></canvas>
-
-        <!-- NY: Startmeny -->
-        <div id="start-menu" class="game-overlay">
-            <h2>PRO Racing</h2>
-            <button id="start-button" class="menu-button">Start</button>
-            <button id="credits-button" class="menu-button">Credits</button>
-            <p id="credits-text">Made by Zayn Lilak</p>
-        </div>
-
-        <!-- Game Over-skärm (laddas nu med overlay-klassen) -->
-        <div id="game-over-screen" class="game-overlay">
-            <h2>Spelet Är Slut</h2>
-            <p id="final-score">Slutpoäng: 0</p>
-            <button id="restart-button" class="menu-button">Börja Om</button>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Hämta canvas och kontext
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-
-            // Hämta UI-element
-            const scoreEl = document.getElementById('score');
-            const heartsEl = document.getElementById('hearts');
-            const nitroEl = document.getElementById('nitro');
-            const gameOverScreenEl = document.getElementById('game-over-screen');
-            const finalScoreEl = document.getElementById('final-score');
-            const restartButton = document.getElementById('restart-button');
-
-            // NYA: Hämta startmeny-element
-            const startMenuEl = document.getElementById('start-menu');
-            const startButton = document.getElementById('start-button');
-            const creditsButton = document.getElementById('credits-button');
-            const creditsTextEl = document.getElementById('credits-text');
-
-            // Ta bort fasta dimensioner från HTML
-            canvas.removeAttribute('width');
-            canvas.removeAttribute('height');
-
-            // Spel-variabler
-            let score = 0;
-            let hearts = 3;
-            let nitro = 0;
-            let gameRunning = false; // ÄNDRAD: Starta inte spelet direkt
-            let baseGameSpeed = 4; // Grundhastighet för scrollning
-            let gameSpeed = baseGameSpeed;
-            let keys = { a: false, d: false, space: false };
-
-            // Vägens dimensioner (blir variabler, inte konstanter)
-            let roadX, roadWidth, fenceWidth;
-
-            // Spelarbilen
-            const player = {
-                x: 0, // Ställs in av setupDimensions
-                y: 0, // Ställs in av setupDimensions
-                width: 50,
-                height: 90,
-                speed: 8, // Hur snabbt spelaren rör sig i sidled
-                isBoosting: false
-            };
-
-            // Arrays för att hålla reda på objekt
-            let obstacles = []; // Andra bilar
-            let nitros = []; // Nitroflaskor
-            let scenery = []; // Hus, träd, människor
-            let roadLines = []; // Väglinjer
-
-            // Intervall-ID:n för att kunna rensa dem
-            let scoreInterval, obstacleInterval, nitroInterval, sceneryInterval, difficultyInterval;
-
-            // --- DIMENSIONS-FUNKTION ---
-            function setupDimensions() {
-                // Sätt canvas-storlek till att fylla containern, minus UI-baren
-                const container = document.getElementById('game-container');
-                const uiBar = document.getElementById('ui-bar');
-                
-                // Behåll container-bredden
-                const containerWidth = container.clientWidth;
-                // Beräkna canvas-höjden
-                const containerHeight = container.clientHeight - uiBar.offsetHeight;
-
-                canvas.width = containerWidth;
-                canvas.height = containerHeight;
-
-                // Uppdatera Game Over-skärmens storlek och position
-                gameOverScreenEl.style.width = `${containerWidth}px`;
-                gameOverScreenEl.style.height = `${containerHeight}px`;
-                gameOverScreenEl.style.top = `${uiBar.offsetHeight}px`; // Positionera under UI
-                gameOverScreenEl.style.left = '0';
-
-                // NY: Uppdatera Startmenyns storlek och position
-                startMenuEl.style.width = `${containerWidth}px`;
-                startMenuEl.style.height = `${containerHeight}px`;
-                startMenuEl.style.top = `${uiBar.offsetHeight}px`; // Positionera under UI
-                startMenuEl.style.left = '0';
-
-                // Beräkna om vägens dimensioner
-                roadWidth = canvas.width * 0.6; // Vägen tar 60% av skärmen
-                if (roadWidth > 600) roadWidth = 600; // Maxbredd på vägen
-                roadX = (canvas.width - roadWidth) / 2; // Centrera vägen
-                fenceWidth = 10;
-
-                // Uppdatera spelarens startposition
-                player.x = canvas.width / 2 - player.width / 2;
-                player.y = canvas.height - player.height - 20; // 20px från botten
-
-                // Skapa om väglinjerna baserat på ny storlek
-                initRoadLines();
-            }
-
-
-            // --- RIT-FUNKTIONER ---
-
-            // Rita spelarbilen
-            function drawPlayer() {
-                // Bilens kaross (snygg röd)
-                ctx.fillStyle = '#e74c3c'; // Röd
-                ctx.fillRect(player.x, player.y, player.width, player.height);
-                // Tak
-                ctx.fillStyle = '#c0392b'; // Mörkare röd
-                ctx.fillRect(player.x + 5, player.y + 10, player.width - 10, player.height - 50);
-                // Framruta
-                ctx.fillStyle = '#a9cce3'; // Ljusblå
-                ctx.fillRect(player.x + 10, player.y + 15, player.width - 20, 15);
-                // Bakljus
-                ctx.fillStyle = '#f1c40f'; // Gula
-                ctx.fillRect(player.x + 5, player.y + player.height - 10, 10, 5);
-                ctx.fillRect(player.x + player.width - 15, player.y + player.height - 10, 10, 5);
-            }
-
-            // Rita en hinder-bil
-            function drawObstacle(car) {
-                // Kaross (slumpad färg)
-                ctx.fillStyle = car.color;
-                ctx.fillRect(car.x, car.y, car.width, car.height);
-                // Tak
-                ctx.fillStyle = '#555'; // Mörkt tak
-                ctx.fillRect(car.x + 5, car.y + 10, car.width - 10, car.height - 50);
-                // Fönster
-                ctx.fillStyle = '#bbb'; // Gråa rutor
-                ctx.fillRect(car.x + 10, car.y + 15, car.width - 20, 15);
-            }
-
-            // Rita en nitroflaska
-            function drawNitro(n) {
-                // Flaska (blå)
-                ctx.fillStyle = '#2196F3';
-                ctx.fillRect(n.x, n.y, n.width, n.height);
-                // Topp (silver)
-                ctx.fillStyle = '#bdc3c7';
-                ctx.fillRect(n.x + n.width / 2 - 5, n.y - 5, 10, 5);
-                // "N"
-                ctx.fillStyle = 'white';
-                ctx.font = 'bold 20px Poppins';
-                ctx.fillText('N', n.x + 7, n.y + 25);
-            }
-
-            // Rita vägen och omgivningen
-            function drawEnvironment() {
-                // Gräs (standard bakgrund)
-                ctx.fillStyle = '#388E3C';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Asfalt
-                ctx.fillStyle = '#424242';
-                ctx.fillRect(roadX, 0, roadWidth, canvas.height);
-
-                // Staket (Röda)
-                ctx.fillStyle = '#a93226';
-                // Vänster staket
-                ctx.fillRect(roadX - fenceWidth, 0, fenceWidth, canvas.height);
-                // Höger staket
-                ctx.fillRect(roadX + roadWidth, 0, fenceWidth, canvas.height);
-
-                // Rita väglinjer (BORTTAGEN HÄRIFRÅN - Ritas i gameLoop)
-                /*
-                ctx.fillStyle = '#ffffff';
-                roadLines.forEach(line => {
-                    ctx.fillRect(line.x, line.y, line.width, line.height);
-                });
-                */
-            }
-
-            // Rita scen-objekt (hus, träd, människor)
-            function drawScenery() {
-                scenery.forEach(obj => {
-                    if (obj.type === 'tree') {
-                        // Buske/Träd
-                        ctx.fillStyle = '#228B22'; // Mörkgrön
-                        ctx.beginPath();
-                        ctx.arc(obj.x, obj.y, obj.size, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.fillStyle = '#5F4534'; // Stamm
-                        ctx.fillRect(obj.x - obj.size / 4, obj.y + obj.size - 10, obj.size / 2, 15);
-                    } else if (obj.type === 'person') {
-                        // Människa
-                        ctx.fillStyle = obj.color; // Slumpad färg
-                        ctx.beginPath();
-                        ctx.arc(obj.x, obj.y, 7, 0, Math.PI * 2); // Huvud
-                        ctx.fill();
-                        ctx.fillRect(obj.x - 5, obj.y + 7, 10, 15); // Kropp
-                    } else if (obj.type === 'house') {
-                        // Hus
-                        ctx.fillStyle = obj.color; // Slumpad färg
-                        ctx.fillRect(obj.x, obj.y, 60, 40); // Husets bas
-                        // Tak
-                        ctx.fillStyle = '#8B4513'; // Brunt
-                        ctx.beginPath();
-                        ctx.moveTo(obj.x - 5, obj.y);
-                        ctx.lineTo(obj.x + 30, obj.y - 20);
-                        ctx.lineTo(obj.x + 65, obj.y);
-                        ctx.closePath();
-                        ctx.fill();
-                    }
-                });
-            }
-
-            // --- SPEL-LOGIK ---
-
-            // Skapa väglinjer från början
-            function initRoadLines() {
-                roadLines = [];
-                for (let i = 0; i < 10; i++) {
-                    roadLines.push({
-                        x: canvas.width / 2 - 5, // Centrera baserat på canvas bredd
-                        y: i * 70,
-                        width: 10,
-                        height: 40
-                    });
-                }
-            }
-
-            // Flytta väglinjerna
-            function updateRoadLines() {
-                roadLines.forEach(line => {
-                    line.y += gameSpeed;
-                    if (line.y > canvas.height) {
-                        line.y = -line.height;
-                    }
-                });
-            }
-
-            // Skapa ett nytt hinder (bil)
-            function spawnObstacle() {
-                const width = 50;
-                const height = 90;
-                const x = roadX + Math.random() * (roadWidth - width); // Använder nu variabeln roadX/roadWidth
-                const y = -height;
-                // Slumpa en färg
-                const colors = ['#3498db', '#9b59b6', '#f1c40f', '#1abc9c', '#ecf0f1'];
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                
-                obstacles.push({ x, y, width, height, color, speedOffset: Math.random() * 2 - 1 });
-            }
-
-            // Skapa en ny nitroflaska
-            function spawnNitro() {
-                const width = 30;
-                const height = 40;
-                const x = roadX + Math.random() * (roadWidth - width); // Använder nu variabeln roadX/roadWidth
-                const y = -height;
-                nitros.push({ x, y, width, height });
-            }
-
-            // Skapa nytt scen-objekt
-            function spawnScenery() {
-                const type = ['tree', 'person', 'house'][Math.floor(Math.random() * 3)];
-                const onLeft = Math.random() < 0.5;
-                const x = onLeft ? Math.random() * (roadX - 70) + 10 : (roadX + roadWidth + 20) + Math.random() * (canvas.width - (roadX + roadWidth) - 70); // Använder variabler
-                const y = -60;
-
-                let obj = { x, y, type };
-                if (type === 'tree') {
-                    obj.size = Math.random() * 15 + 15;
-                } else if (type === 'person') {
-                    obj.color = ['#FFC0CB', '#ADD8E6', '#90EE90'][Math.floor(Math.random() * 3)];
-                } else if (type === 'house') {
-                    obj.color = ['#DEB887', '#A52A2A', '#F5DEB3'][Math.floor(Math.random() * 3)];
-                }
-                scenery.push(obj);
-            }
-
-            // Uppdatera spelarbilens position
-            function updatePlayer() {
-                // Hantera nitro-boost
-                if (keys.space && nitro > 0 && !player.isBoosting) {
-                    player.isBoosting = true;
-                    gameSpeed = baseGameSpeed + 12; // Mycket snabbare
-                    nitro--;
-                    updateUI();
-                    setTimeout(() => {
-                        player.isBoosting = false;
-                        gameSpeed = baseGameSpeed; // Tillbaka till normal hastighet
-                    }, 2000); // 2 sekunders boost
-                }
-                
-                // Sätt scroll-hastigheten
-                gameSpeed = player.isBoosting ? gameSpeed : baseGameSpeed;
-
-                // Styrning
-                if (keys.a && player.x > roadX + fenceWidth) {
-                    player.x -= player.speed;
-                }
-                if (keys.d && player.x < roadX + roadWidth - player.width - fenceWidth) {
-                    player.x += player.speed;
-                }
-            }
-
-            // AABB Kollisionskontroll
-            function checkCollision(rect1, rect2) {
-                return rect1.x < rect2.x + rect2.width &&
-                       rect1.x + rect1.width > rect2.x &&
-                       rect1.y < rect2.y + rect2.height &&
-                       rect1.y + rect1.height > rect2.y;
-            }
-
-            // Uppdatera alla objekt och kolla kollisioner
-            function updateObjects() {
-                // Flytta hinder
-                for (let i = obstacles.length - 1; i >= 0; i--) {
-                    let car = obstacles[i];
-                    car.y += gameSpeed + car.speedOffset;
-
-                    // Kollision med spelare
-                    if (checkCollision(player, car)) {
-                        hearts--;
-                        updateUI();
-                        obstacles.splice(i, 1); // Ta bort bilen
-                        if (hearts <= 0) {
-                            gameOver();
-                        }
-                    }
-                    // Ta bort bilar som åkt förbi
-                    else if (car.y > canvas.height) {
-                        obstacles.splice(i, 1);
-                    }
-                }
-
-                // Flytta nitro
-                for (let i = nitros.length - 1; i >= 0; i--) {
-                    let n = nitros[i];
-                    n.y += gameSpeed;
-
-                    // Kollision med spelare
-                    if (checkCollision(player, n)) {
-                        nitro++;
-                        updateUI();
-                        nitros.splice(i, 1); // Ta bort flaskan
-                    }
-                    // Ta bort flaskor som åkt förbi
-                    else if (n.y > canvas.height) {
-                        nitros.splice(i, 1);
-                    }
-                }
-            }
-
-            // Flytta scen-objekt (separerad från updateObjects)
-            function updateScenery() {
-                for (let i = scenery.length - 1; i >= 0; i--) {
-                    let obj = scenery[i];
-                    obj.y += gameSpeed;
-                    if (obj.y > canvas.height + 60) {
-                        scenery.splice(i, 1);
-                    }
-                }
-            }
-
-            // Uppdatera UI (poäng, hjärtan, nitro)
-            function updateUI() {
-                scoreEl.textContent = `Poäng: ${score}`;
-                heartsEl.innerHTML = 'Hjärtan: ' + '❤️'.repeat(hearts);
-                nitroEl.textContent = `Nitro: ${nitro}`;
-            }
-
-            // --- HUVUD-LOOP OCH SPEL-STATUS ---
-
-            function startGame() {
-                // Återställ variabler
-                score = 0;
-                hearts = 3;
-                nitro = 0;
-                baseGameSpeed = 4;
-                gameSpeed = baseGameSpeed;
-                player.isBoosting = false;
-                player.x = canvas.width / 2 - player.width / 2; // Baserat på ny canvas-bredd
-                player.y = canvas.height - player.height - 20; // Baserat på ny canvas-höjd
-                
-                // Rensa objekt-arrays
-                obstacles = [];
-                nitros = [];
-                scenery = [];
-                initRoadLines();
-
-                // Nollställ UI
-                updateUI();
-
-                // Göm game over-skärmen OCH startmenyn
-                gameOverScreenEl.style.display = 'none';
-                startMenuEl.style.display = 'none'; // Göm startmenyn
-                gameRunning = true;
-
-                // Starta intervallen
-                scoreInterval = setInterval(() => {
-                    if (gameRunning) {
-                        score++;
-                        updateUI();
-                    }
-                }, 1000);
-                
-                // Öka svårighetsgraden (hastigheten) långsamt
-                difficultyInterval = setInterval(() => {
-                    if (gameRunning && baseGameSpeed < 10) { // Maxhastighet
-                        baseGameSpeed += 0.2;
-                    }
-                }, 5000);
-
-                obstacleInterval = setInterval(spawnObstacle, 1800); // Lite snabbare spawn
-                nitroInterval = setInterval(spawnNitro, 10000); // Mer sällan
-                sceneryInterval = setInterval(spawnScenery, 700);
-
-                // Starta spellopen
-                gameLoop();
-            }
-
-            function gameOver() {
-                gameRunning = false;
-
-                // Stoppa alla intervall
-                clearInterval(scoreInterval);
-                clearInterval(difficultyInterval);
-                clearInterval(obstacleInterval);
-                clearInterval(nitroInterval);
-                clearInterval(sceneryInterval);
-
-                // Visa game over-skärmen
-                finalScoreEl.textContent = `Slutpoäng: ${score}`;
-                gameOverScreenEl.style.display = 'flex';
-            }
-
-            // Huvud-spellopen (FIXAD RIT-ORDNING)
-            function gameLoop() {
-                if (!gameRunning) return; // Stoppar loopen om spelet inte körs
-
-                // Rensa canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // --- 1. UPPDATERA LOGIK ---
-                updatePlayer();
-                updateRoadLines();
-                updateObjects(); // Hinder och nitro
-                updateScenery(); // Hus, träd, etc.
-
-                // --- 2. RITA ALLT (I RÄTT ORDNING) ---
-
-                // Rita miljön (väg, gräs, staket)
-                drawEnvironment();
-
-                // Rita scen-objekten (bakom allt)
-                drawScenery();
-
-                // Rita väglinjerna (på vägen)
-                roadLines.forEach(line => ctx.fillRect(line.x, line.y, line.width, line.height));
-
-                // Rita nitros (på vägen)
-                nitros.forEach(drawNitro);
-                
-                // Rita hinder (på vägen)
-                obstacles.forEach(drawObstacle);
-
-                // Rita spelaren (SIST, så den är överst)
-                drawPlayer();
-
-                // Be om nästa frame
-                requestAnimationFrame(gameLoop);
-            }
-
-            // --- EVENT LISTENERS ---
-
-            // Lyssna på tangenttryckningar
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'a' || e.key === 'A') keys.a = true;
-                if (e.key === 'd' || e.key === 'D') keys.d = true;
-                if (e.key === ' ') keys.space = true;
-            });
-
-            document.addEventListener('keyup', (e) => {
-                if (e.key === 'a' || e.key === 'A') keys.a = false;
-                if (e.key === 'd' || e.key === 'D') keys.d = false;
-                if (e.key === ' ') keys.space = false;
-            });
-
-            // Lyssna på starta-om-knappen
-            restartButton.addEventListener('click', startGame);
-
-            // NY: Lyssna på start-knappen
-            startButton.addEventListener('click', startGame);
-
-            // NY: Lyssna på credits-knappen
-            creditsButton.addEventListener('click', () => {
-                // Växla synlighet för credit-texten
-                if (creditsTextEl.style.display === 'none' || creditsTextEl.style.display === '') {
-                    creditsTextEl.style.display = 'block';
-                } else {
-                    creditsTextEl.style.display = 'none';
-                }
-            });
-
-            // NY: Lyssna på fönster-storleksändring
-            window.addEventListener('resize', setupDimensions);
-
-            // --- STARTA SPELET ---
-            setupDimensions(); // Kör en gång för att ställa in storleken
-            // BORTTAGEN: startGame(); // Starta inte spelet direkt
-        });
-    </script>
-
+<style>
+  @font-face {
+  font-family: myFirstFont;
+  src: url(Chainwhacks.otf);
+  }
+  #logo-canvas, body
+  {
+    font-family: myFirstFont;
+  }
+</style>
+<body class="dark">
+<div id="unity-container" class="unity-desktop"><p style="opacity: 0;position: absolute;">_</p>
+<canvas id="unity-canvas"></canvas>
+</div>
+<div id="loading-cover" style="display:none;background: black;">
+<div id="unity-loading-bar">
+<canvas id="logo-canvas" style="position: absolute; background-color: black;">
+<img src="loading.png" id="ld_bg">
+<img src="car-icon.png" id="ld_car">
+</canvas>
+</div>
+</div>
+<!-- /0a502697b99e36d322eeb8daf23bc8b8.data.unityweb",
+      frameworkUrl: buildUrl + "/f9b96a5188376a54aba0e08c0ed35ba8.js.unityweb",
+      codeUrl: buildUrl + "/7b28c6f059eabf99b5ee87d37b2df90c.wasm.unityweb",
+      streamingAssetsUrl: " -->
+<img id="azlogo" class="az" src="az_logo.png">
+<script type="57480f3f31f76c75506c83a0-text/javascript">
+    const container = document.querySelector("#unity-container");
+    const canvas = document.querySelector("#unity-canvas");
+    const loadingCover = document.querySelector("#loading-cover");
+    const fullscreenButton = document.querySelector("#unity-fullscreen-button");
+
+
+
+    const buildUrl = "TemplateData";
+    const loaderUrl = buildUrl + "/loader.js";
+    const config = {
+      dataUrl: buildUrl + "/data.unityweb",
+      frameworkUrl: buildUrl + "/framework.js.unityweb",
+      codeUrl: buildUrl + "/wasm.unityweb",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "1games.io",
+      productName: "Escape Road",
+      productVersion: "2.0",
+    };
+
+    
+    
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      container.className = "unity-mobile";
+      config.devicePixelRatio = 1;
+    }
+    
+    function delay(ms) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          resolve();
+        }, ms);
+      });
+    }
+    async function load() {
+
+      var az_logo = document.getElementById('azlogo');
+      az_logo.style.opacity = 0;
+      logo_loaded = true;
+     /* var t = new Date().getTime();
+      while (az_logo.style.opacity < 1) {
+        var delta = new Date().getTime() - t;
+        az_logo.style.opacity = delta / 1000;
+        await delay(20);
+      }
+      await delay(1000);*/
+      az_logo.style.display = 'none';
+      logo_loaded = false;
+      
+      createUnityInstance(canvas, config, (progress) => {
+        logo_loading_percent = progress;
+        drawCanvas(progress);
+      }).then((unityInstance) => {
+        window.unityInstance = unityInstance;
+        setTimeout(() => {
+          loadingCover.style.display = "none";
+          logo_loaded = true;
+          window.focus();
+        }, 2000);
+      }).catch((message) => {
+        alert(message);
+      });
+    }
+
+    loadingCover.style.display = "";
+
+    var script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onload = () => {
+      load();
+    };
+
+    // setTimeout(() => {
+    //     var progress = 0.5;
+    //     logo_loading_percent = progress;
+    //     drawCanvas(progress);
+    //   }, 1000);
+
+    // var progress = 0;
+    // setInterval(() => {
+    //   logo_loading_percent = progress;
+    //   drawCanvas(progress);
+    //   progress += 0.01;
+    // }, 30);
+
+
+    var logo_loaded = false;
+    var logo_loading_percent = 0;
+
+    window.onresize = () => {
+      // console.log('onresize');
+      drawCanvas(logo_loading_percent);
+    }
+    window.onload = () => {
+      // console.log('onload');
+      drawCanvas(logo_loading_percent);
+    }
+
+    var logo_canvas = document.getElementById("logo-canvas");
+    function drawCanvas(_percent = 0) {
+      if (logo_loaded) {
+        return;
+      }
+      resizeLogoCanvas();
+      var ctx = logo_canvas.getContext("2d");
+      var ld_bg = document.getElementById("ld_bg");
+      var ld_car = document.getElementById("ld_car");
+
+      var _sw = logo_canvas.width / 1920;
+      var _sh = logo_canvas.height / 1080;
+
+      if (_percent > 1) {
+        _percent = 1;
+      }
+
+      //bgbar
+      var bgbar_H = 86;
+      var bgbar_W = 1383;
+      //fillbar
+      var fillbar_H = 55;
+      var fillbar_W = 1345;
+      //Mask
+      var maskbar_H = 55;
+      var maskbar_W = 1350;
+      //bg_bar_mask
+      var bgbar_mask_H = 86;
+      var bgbar_mask_W = 1383;
+
+      var posshowbar_Y = 200;   //position loadingbar 
+
+      var posbgbar_X = (1920 - bgbar_W) / 2; // center
+      var posbgbar_Y = posshowbar_Y;
+
+      var posfillbar_X = (1920 - fillbar_W) / 2;
+      var posfillbar_Y = posshowbar_Y - 15;
+
+      var posmaskbar_X = (1920 - maskbar_W) / 2;
+      var posmaskbar_Y = posshowbar_Y - 15;
+
+      var _fl = 0;
+      var _fl1 = posmaskbar_X + _percent * maskbar_W;
+
+      var _fw = maskbar_W - _percent * maskbar_W;
+
+      // console.log(`${logo_canvas.width} ${logo_canvas.height}`);
+      //background
+      ctx.drawImage(ld_bg, 0, 0, logo_canvas.width, logo_canvas.height);
+
+      //loading background
+      ctx.fillStyle = "#977e21";
+      var _lw = 700;
+      var _lh = 50;
+      ctx.fillRect((1920 - _lw) * 0.5 * _sw, (1080 - 150) * _sh, _lw * _sw, _lh * _sh);
+
+      //loading progress
+      ctx.fillStyle = "#fad234";
+      var _pad = 5;
+      var _pw = (_lw - _pad * 2);
+      var _ph = _lh - _pad * 2;
+      var _px = (1920 - _pw) * 0.5;
+      ctx.fillRect(_px * _sw, (1080 - 150 + _pad) * _sh, _pw * _percent * _sw, _ph * _sh);
+
+      //car
+      var _car_x = _px + _pw * _percent - 100;
+      if (_car_x < _px) {
+        _car_x = _px;
+      }
+     // ctx.drawImage(ld_car,  _car_x * _sw, (1080 - 190) * _sh, 100 * _sw, 42 * _sh);
+
+
+      ctx.font = "18px myFirstFont";
+      const match = /(?<value>\d+\.?\d*)/;
+      const setFontSize = (size) => ctx.font = ctx.font.replace(match, size);
+      setFontSize(35 * _sh);
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#fff";
+      ctx.shadowColor = "black";
+      ctx.shadowOffsetY = 2;
+      var new_per = parseInt(_percent * 100);
+      ctx.fillText("" + new_per + "%", logo_canvas.width / 2, logo_canvas.height / 2 + _sh * 425);
+    }
+    function resizeLogoCanvas() {
+      var _w = window.innerWidth;
+      var _h = window.innerHeight;
+      var _nw = _h * 16 / 9;
+      // console.log(`${_w} ${_h} ${_nw}`);
+      if (_nw <= _w) {
+        logo_canvas.width = _nw;
+        logo_canvas.height = _h;
+      }
+      else {
+        logo_canvas.width = _w;
+        logo_canvas.height = _w * 9 / 16;
+      }
+
+    }
+
+
+    document.body.appendChild(script);
+  </script>
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js" type="57480f3f31f76c75506c83a0-text/javascript"></script>
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js" type="57480f3f31f76c75506c83a0-text/javascript"></script>
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js" type="57480f3f31f76c75506c83a0-text/javascript"></script>
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-analytics-compat.js" type="57480f3f31f76c75506c83a0-text/javascript"></script>
+<script type="57480f3f31f76c75506c83a0-module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-analytics.js";
+  import { getAuth  } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+  apiKey: "AIzaSyC2RwMfh0GMuQMtQdijjUo-MEffB4N9xVY",
+  authDomain: "escape-road-gm1.firebaseapp.com",
+  projectId: "escape-road-gm1",
+  storageBucket: "escape-road-gm1.appspot.com",
+  messagingSenderId: "713881704715",
+  appId: "1:713881704715:web:615cc93a73d9814b24ea0e",
+  measurementId: "G-E8C3TNJE0S"
+};
+window.dataLayer = window.dataLayer || [];
+window.gtag = function(){dataLayer.push(arguments);}
+
+window.gtag("config", firebaseConfig.measurementId, {
+    cookie_domain: location.hostname,
+    cookie_flags: "SameSite=None;Secure",
+});
+  // Initialize Firebase
+
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+</script>
+<script src="rocket-loader.min.js" data-cf-settings="57480f3f31f76c75506c83a0-|49" defer>
+</script>
 </body>
 </html>
 </div>
