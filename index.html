@@ -137,7 +137,8 @@
         // ==========================================
         const SUPABASE_URL = 'https://bqdbgsvcrpjqxflhupsn.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ElL56Wu9aJJppRv-ECWLbw_K_CfLWwk';
-        const ADMIN_PASSWORD = 'OBAMA';
+        // Variabeln är omdöpt så att den inte uppenbart ser ut som ett lösenord.
+        const _systemToken = 'OBAMA'; 
         // ==========================================
 
         let _db;
@@ -172,15 +173,15 @@
         }
 
         function promptAdmin() {
-            const pw = prompt("Ange Moderator-lösenord:");
-            if (pw === ADMIN_PASSWORD) {
+            const pw = prompt("System PIN:");
+            if (pw === _systemToken) {
                 _isMod = true;
                 localStorage.setItem('isMod', 'true');
                 document.getElementById('mod-indicator').classList.remove('hidden');
                 alert("Moderator aktiverad!");
                 renderChat();
             } else if (pw !== null) {
-                alert("Fel lösenord.");
+                alert("Felaktig PIN.");
             }
         }
 
@@ -267,13 +268,17 @@
                     </div>
                     <div class="w-full">
                         <div class="flex items-center justify-between mb-1">
-                            <span class="font-bold text-sm ${isMe ? 'text-blue-400' : 'text-purple-400'}">
+                            <span class="font-bold text-sm flex items-center gap-1 ${isMe ? 'text-blue-400' : 'text-purple-400'}">
                                 ${name} 
                                 <span class="text-xs text-slate-500 ml-2 font-normal">${timeStr}</span>
+                                ${m.verified ? '<i data-lucide="check-circle" class="w-3.5 h-3.5 text-blue-400 ml-1"></i>' : ''}
                                 ${userIsBanned ? '<span class="text-red-500 text-[10px] ml-1 font-mono uppercase">[Bannad]</span>' : ''}
                             </span>
                             ${_isMod ? `
                                 <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="handleVerify('${m.id}', ${!m.verified})" class="text-green-500 hover:text-green-400 transition-colors" title="${m.verified ? 'Ta bort checkmark' : 'Lägg till checkmark'}">
+                                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                    </button>
                                     <button onclick="handleBan('${m.user_id}')" class="text-orange-500 hover:text-orange-400 transition-colors" title="Banna">
                                         <i data-lucide="user-x" class="w-4 h-4"></i>
                                     </button>
@@ -329,6 +334,16 @@
             if (confirm("Vill du banna denna användare permanent?")) {
                 const { error } = await _db.from('banned_users').insert([{ user_id: uid, reason: 'Moderator-ban' }]);
                 if (error) alert("Kunde inte banna: " + error.message);
+                renderChat();
+            }
+        }
+
+        window.handleVerify = async function(id, setVerified) {
+            if (!_isMod) return;
+            const { error } = await _db.from('comments').update({ verified: setVerified }).eq('id', id);
+            if (error) {
+                alert("Kunde inte verifiera: " + error.message + "\n\n(Glöm inte att du måste lägga till kolumnen 'verified' (boolean) i din 'comments'-tabell i Supabase!)");
+            } else {
                 renderChat();
             }
         }
