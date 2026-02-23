@@ -129,7 +129,7 @@
 
     <script>
         // ==========================================
-        // KONFIGURATION - KLISTRA IN DINA NYCKLAR!
+        // KONFIGURATION
         // ==========================================
         const SUPABASE_URL = 'https://bqdbgsvcrpjqxflhupsn.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ElL56Wu9aJJppRv-ECWLbw_K_CfLWwk';
@@ -138,21 +138,22 @@
 
         let _db;
         let _isMod = localStorage.getItem('isMod') === 'true';
-        let _myId = localStorage.getItem('myChatId') || ('u_' + Math.random().toString(36).substr(2, 9));
-        localStorage.setItem('myChatId', _myId);
+        let _myId = localStorage.getItem('myChatId');
+        
+        // Skapa ett unikt ID om det inte finns
+        if (!_myId) {
+            _myId = 'u_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('myChatId', _myId);
+        }
 
         if (_isMod) document.getElementById('mod-indicator').classList.remove('hidden');
 
         // Initiera Supabase
         try {
-            if (SUPABASE_URL.startsWith('http')) {
-                _db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                startChat();
-            } else {
-                document.getElementById('comments-list').innerHTML = '<div class="text-center text-orange-400 p-10">Väntar på API-nycklar i koden...</div>';
-            }
+            _db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            startChat();
         } catch (e) {
-            console.error("Supabase error:", e);
+            console.error("Supabase init error:", e);
         }
 
         function promptAdmin() {
@@ -174,7 +175,7 @@
             
             renderChat();
             
-            // Lyssna på ändringar (Realtid)
+            // Realtids-uppdatering
             _db.channel('chat-room')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => renderChat())
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'banned_users' }, () => renderChat())
@@ -184,18 +185,32 @@
         async function renderChat() {
             if (!_db) return;
 
-            // 1. Kolla bans
-            const { data: bans } = await _db.from('banned_users').select('user_id');
-            const bannedIds = bans ? bans.map(b => b.user_id) : [];
+            // 1. Kolla om JAG är bannad (tyst kontroll)
+            const { data: myBan } = await _db
+                .from('banned_users')
+                .select('user_id')
+                .eq('user_id', _myId)
+                .maybeSingle();
 
-            if (bannedIds.includes(_myId)) {
+            const isMeBanned = !!myBan;
+
+            if (isMeBanned) {
                 document.getElementById('comment-input').disabled = true;
-                document.getElementById('comment-input').placeholder = "Du är bannlyst.";
+                document.getElementById('comment-input').placeholder = "Du har blivit bannlyst.";
                 document.getElementById('send-btn').disabled = true;
                 document.getElementById('send-btn').classList.add('opacity-50');
+            } else {
+                document.getElementById('comment-input').disabled = false;
+                document.getElementById('comment-input').placeholder = "Skriv ett meddelande...";
+                document.getElementById('send-btn').disabled = false;
+                document.getElementById('send-btn').classList.remove('opacity-50');
             }
 
-            // 2. Hämta meddelanden
+            // 2. Hämta alla bans för att markera andra användare i chatten
+            const { data: allBans } = await _db.from('banned_users').select('user_id');
+            const bannedIds = allBans ? allBans.map(b => b.user_id) : [];
+
+            // 3. Hämta meddelanden
             const { data: msgs, error } = await _db.from('comments')
                 .select('*')
                 .order('created_at', { ascending: false })
@@ -203,26 +218,30 @@
 
             const list = document.getElementById('comments-list');
             if (error) {
-                list.innerHTML = `<div class="text-center text-red-500 p-4">Fel: ${error.message}</div>`;
+                console.error("Fetch error:", error);
+                list.innerHTML = `<div class="text-center text-red-500 p-4">Kunde inte hämta chatten. Kontrollera RLS-inställningar i Supabase.</div>`;
                 return;
             }
 
             if (!msgs || msgs.length === 0) {
-                list.innerHTML = '<div class="text-center text-slate-600 py-10 italic">Inga meddelanden än.</div>';
+                list.innerHTML = '<div class="text-center text-slate-600 py-10 italic">Inga meddelanden än. Skriv något!</div>';
                 return;
             }
 
             list.innerHTML = '';
-            msgs.reverse().forEach(m => {
-                const isBanned = bannedIds.includes(m.user_id);
-                if (isBanned && !_isMod) return;
+            // Vänd på ordningen för att visa senaste nederst
+            [...msgs].reverse().forEach(m => {
+                const userIsBanned = bannedIds.includes(m.user_id);
+                
+                // Om användaren är bannad, visa endast för moderatorer
+                if (userIsBanned && !_isMod) return;
 
                 const name = (m.username || 'Spelare').replace(/</g, "&lt;");
                 const text = (m.text || '').replace(/</g, "&lt;");
                 const isMe = m.user_id === _myId;
 
                 const div = document.createElement('div');
-                div.className = `p-3 rounded-lg border transition-all flex gap-3 group relative ${isBanned ? 'bg-red-900/20 border-red-900/50' : 'bg-slate-800 border-slate-700'}`;
+                div.className = `p-3 rounded-lg border transition-all flex gap-3 group relative ${userIsBanned ? 'bg-red-900/20 border-red-900/50' : 'bg-slate-800 border-slate-700'}`;
                 
                 div.innerHTML = `
                     <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 shrink-0">
@@ -231,7 +250,7 @@
                     <div class="w-full">
                         <div class="flex items-center justify-between mb-1">
                             <span class="font-bold text-sm ${isMe ? 'text-blue-400' : 'text-purple-400'}">
-                                ${name} ${isBanned ? '<span class="text-red-500 text-[10px] ml-1">[BANNAD]</span>' : ''}
+                                ${name} ${userIsBanned ? '<span class="text-red-500 text-[10px] ml-1 font-mono uppercase">[Bannad]</span>' : ''}
                             </span>
                             ${_isMod ? `
                                 <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -255,8 +274,10 @@
         }
 
         window.postComment = async function() {
-            const text = document.getElementById('comment-input').value.trim();
+            const input = document.getElementById('comment-input');
+            const text = input.value.trim();
             const user = document.getElementById('username-input').value.trim() || 'Spelare';
+            
             if (!text || !_db) return;
 
             const { error } = await _db.from('comments').insert([{ 
@@ -266,9 +287,11 @@
             }]);
 
             if (error) {
-                alert("Kunde inte skicka. Du kan vara bannad.");
+                console.error("Insert error:", error);
+                alert("Fel vid sändning: " + error.message);
             } else {
-                document.getElementById('comment-input').value = '';
+                input.value = '';
+                renderChat();
             }
         }
 
@@ -276,6 +299,7 @@
             if (!_isMod) return;
             if (confirm("Radera meddelande?")) {
                 await _db.from('comments').delete().eq('id', id);
+                renderChat();
             }
         }
 
@@ -283,7 +307,8 @@
             if (!_isMod) return;
             if (uid === _myId) return alert("Du kan inte banna dig själv!");
             if (confirm("Vill du banna denna användare permanent?")) {
-                await _db.from('banned_users').insert([{ user_id: uid, reason: 'Moderator-ban' }]);
+                const { error } = await _db.from('banned_users').insert([{ user_id: uid, reason: 'Moderator-ban' }]);
+                if (error) alert("Kunde inte banna: " + error.message);
                 renderChat();
             }
         }
