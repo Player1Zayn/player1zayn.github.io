@@ -4,46 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Hub</title>
-    <!-- Tailwind CSS for design -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for gaming feel -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #0f172a; /* Mörkblå bakgrund */
+            background-color: #0f172a;
             background-image: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
         }
-        h1, h2, .game-font {
-            font-family: 'Orbitron', sans-serif;
-        }
-        /* Neon-effekt vid hovring */
+        h1, h2, .game-font { font-family: 'Orbitron', sans-serif; }
         .game-card:hover {
             box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
             border-color: #60a5fa;
         }
-        /* Scrollbar för kommentarer */
-        .custom-scroll::-webkit-scrollbar {
-            width: 8px;
-        }
-        .custom-scroll::-webkit-scrollbar-track {
-            background: #1e293b; 
-        }
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background: #475569; 
-            border-radius: 4px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb:hover {
-            background: #64748b; 
-        }
+        .custom-scroll::-webkit-scrollbar { width: 8px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
 </head>
 <body class="text-gray-100 min-h-screen flex flex-col">
 
-    <!-- Header -->
     <header class="w-full p-6 bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-2">
@@ -52,289 +35,230 @@
                     GAME HUB
                 </h1>
             </div>
-            <div class="text-sm text-slate-400 hidden sm:block">
-                Nothing to read here
+            <div id="mod-indicator" class="hidden text-xs font-bold text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/50">
+                MODERATOR MODE
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="flex-grow container mx-auto px-4 py-10">
-        
         <div class="text-center mb-12">
-            <h2 class="text-4xl font-bold mb-4">Welcome! (or not)</h2>
-            <p class="text-slate-400 max-w-2xl mx-auto">
-                Click on a game below to open it in a new tab. Have fun!
-                Chat rules: Only write 'bout bugs and what game u want. Nothing else or yall get banned.
-            </p>
+            <h2 class="text-4xl font-bold mb-4 text-white">Welcome! (or not)</h2>
+            <p class="text-slate-400 max-w-2xl mx-auto">[DEVELOPER MESSAGE] I fixed the chat, so now i can moderate. Anyone who uses the chat to write bad stuf, gets banned. THERE IS ONE CHANCE FOR EVERYONE. Write anything stupid, and get banned from chat.</p>
         </div>
 
-        <!-- Developer Message Section -->
-        <div class="max-w-4xl mx-auto mb-8 p-6 bg-slate-800/50 border-l-4 border-blue-500 rounded-r-xl backdrop-blur-sm shadow-lg hover:bg-slate-800/70 transition-colors">
-            <div class="flex items-start gap-4">
-                <div class="p-3 bg-blue-500/10 rounded-lg hidden sm:block">
-                    <i data-lucide="terminal" class="w-6 h-6 text-blue-400"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-blue-400 mb-2 game-font flex items-center gap-2">
-                        <span class="sm:hidden"><i data-lucide="terminal" class="w-4 h-4 inline"></i></span>
-                        Update from Developer
-                    </h3>
-                    <div class="prose prose-invert text-slate-300 leading-relaxed">
-                        <p>
-                            Sup and welcome to the Game Portal 🎮 Enable F11 for best experience.
-                        </p>
-                        <p class="mt-2">
-                            To everyone reading this: STOP SPAMMING IN THE CHAT. OR ELSE I WILL ENABLE ACCOUNTS AND IP BAN USEWRS FROM CHATTING ON THEIR DEVICES. 
-                            I really hope it doesnt come to that. OCH SLUTA SKRIVA OM ERAN SNAP OCH ATT NI SÖKER POJKVÄNNER. Ni är fan GAY.
-                            Btw promote my website to other.
-                        </p>
-                    </div>
-                    <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 font-mono">
-                        <i data-lucide="clock" class="w-3 h-3"></i>
-                        <span>Latest updated: 20/2 2026</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Comments Section -->
+        <!-- Chat Section -->
         <div class="max-w-4xl mx-auto mb-16">
             <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
                 <div class="p-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-slate-200 flex items-center gap-2">
+                    <h3 onclick="promptAdmin()" class="text-lg font-bold text-slate-200 flex items-center gap-2 cursor-pointer select-none">
                         <i data-lucide="message-square" class="w-5 h-5 text-purple-400"></i>
                         Community-chat
                     </h3>
-                    <span class="text-xs text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700">Live</span>
+                    <div class="flex items-center gap-2">
+                        <span id="chat-status" class="text-xs text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700">Connecting...</span>
+                    </div>
                 </div>
 
-                <div id="comments-list" class="p-6 h-64 overflow-y-auto custom-scroll space-y-4 bg-slate-900/50">
-                    <div class="text-center text-slate-500 py-10 italic">Loading...</div>
+                <div id="comments-list" class="p-6 h-80 overflow-y-auto custom-scroll space-y-4 bg-slate-900/50">
+                    <div class="text-center text-slate-500 py-10 italic">Loading Messages...</div>
                 </div>
 
                 <div class="p-4 bg-slate-800 border-t border-slate-700">
                     <div class="flex flex-col gap-3">
                         <div class="flex gap-3">
-                            <input type="text" id="username-input" placeholder="Ditt namn" class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-1/3 p-2.5" maxlength="15">
-                            <input type="text" id="comment-input" placeholder="Skriv ett meddelande..." class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">
+                            <input type="text" id="username-input" placeholder="Name" class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg p-2.5 w-1/3 outline-none focus:border-blue-500">
+                            <input type="text" id="comment-input" placeholder="Skriv ett meddelande..." class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg p-2.5 w-full outline-none focus:border-blue-500">
                         </div>
-                        <button onclick="postComment()" id="send-btn" class="w-full sm:w-auto self-end bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2 justify-center disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i data-lucide="send" class="w-4 h-4"></i> Send
+                        <button onclick="postComment()" id="send-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-all flex items-center gap-2 justify-center">
+                            <i data-lucide="send" class="w-4 h-4"></i> Skicka
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Game Grid -->
-        <div id="game-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            <!-- Kort genereras av JavaScript nedan -->
-        </div>
-
+        <!-- Spel Grid -->
+        <div id="game-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6"></div>
     </main>
 
-    <!-- Footer -->
     <footer class="bg-slate-900 py-6 mt-auto border-t border-slate-800">
         <div class="container mx-auto text-center text-slate-500 text-sm">
-            <p>&copy; 2026 Game Portal. Build by the one and only Zayn.</p>
+            <p>&copy; 2026 Game Potal. Bulit by the one and only Zayn.</p>
         </div>
     </footer>
 
-    <!-- Firebase Scripts -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
+        // --- KONFIGURATION (Supabase & Moderator) ---
+        const supabaseUrl = 'https://bqdbgsvcrpjqxflhupsn.supabase.co';
+        const supabaseKey = 'sb_publishable_ElL56Wu9aJJppRv-ECWLbw_K_CfLWwk';
+        const ADMIN_PASSWORD = "DITT_HEMLIGA_LÖSENORD"; // ÄNDRA DETTA!
 
-        // KLISTRA IN DINA NYCKLAR HÄR IGEN:
-        const firebaseConfig = {
-            apiKey: "AIzaSyB03Yh337oFr2nwGvl9JVjtCXKMy9xagGs",
-            authDomain: "chat-for-website-67a6f.firebaseapp.com",
-            projectId: "chat-for-website-67a6f",
-            storageBucket: "chat-for-website-67a6f.firebasestorage.app",
-            messagingSenderId: "82109104044",
-            appId: "1:82109104044:web:b2715d7d0efed21f010409"
-        };
+        let db;
+        let isModerator = localStorage.getItem('isMod') === 'true';
+        let myId = localStorage.getItem('myChatId') || crypto.randomUUID();
+        localStorage.setItem('myChatId', myId);
 
-        const isUsingCustomConfig = firebaseConfig.apiKey !== "";
-        let app, auth, db, user;
+        if (isModerator) document.getElementById('mod-indicator').classList.remove('hidden');
 
         try {
-            const configToUse = isUsingCustomConfig 
-                ? firebaseConfig 
-                : JSON.parse(window.__firebase_config || '{}');
-
-            app = initializeApp(configToUse);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            
-            const initAuth = async () => {
-                try {
-                    if (!isUsingCustomConfig && window.__initial_auth_token) {
-                       await signInWithCustomToken(auth, window.__initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (error) {
-                    console.error("Auth error:", error);
-                }
-            };
-            initAuth();
-
-            onAuthStateChanged(auth, (currentUser) => {
-                user = currentUser;
-                if (user) {
-                    loadComments();
-                }
-            });
-
-        } catch (e) {
-            console.error("Firebase config error:", e);
-            document.getElementById('comments-list').innerHTML = `
-                <div class="text-center text-red-400 p-4">
-                    <p class="font-bold">Konfigurationsfel!</p>
-                    <p class="text-sm mt-2 text-slate-400">Har du klistrat in nycklarna korrekt?</p>
-                </div>`;
-        }
-
-        function loadComments() {
-            let commentsRef;
-            if (window.__app_id && !isUsingCustomConfig) {
-                 commentsRef = collection(db, 'artifacts', window.__app_id, 'public', 'data', 'comments');
-            } else {
-                commentsRef = collection(db, 'comments');
+            if(supabaseUrl !== 'DIN_SUPABASE_URL_HÄR') {
+                db = supabase.createClient(supabaseUrl, supabaseKey);
+                initChat();
             }
-            
-            const q = query(commentsRef, orderBy("timestamp", "desc"), limit(50));
+        } catch(e) { console.error("Anslutningsfel:", e); }
 
-            onSnapshot(q, (snapshot) => {
-                const list = document.getElementById('comments-list');
-                const comments = [];
-                snapshot.forEach(doc => comments.push({ id: doc.id, ...doc.data() }));
-
-                if (comments.length === 0) {
-                    list.innerHTML = '<div class="text-center text-slate-600 py-4">Inga meddelanden än. Var först!</div>';
-                    return;
-                }
-
-                list.innerHTML = '';
-                comments.forEach(msg => {
-                    const name = (msg.username || 'Anonym').replace(/</g, "&lt;");
-                    const text = (msg.text || '').replace(/</g, "&lt;");
-                    const msgDiv = document.createElement('div');
-                    msgDiv.className = 'bg-slate-800 p-3 rounded-lg border border-slate-700 flex gap-3';
-                    msgDiv.innerHTML = `
-                        <div class="w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center border border-purple-500/30 shrink-0">
-                            <span class="text-xs font-bold text-purple-300">${name.charAt(0).toUpperCase()}</span>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="font-bold text-purple-400 text-sm">${name}</span>
-                                <span class="text-xs text-slate-600">${msg.dateString || 'Nu'}</span>
-                            </div>
-                            <p class="text-sm text-slate-300 break-all">${text}</p>
-                        </div>
-                    `;
-                    list.appendChild(msgDiv);
-                });
-            });
+        function promptAdmin() {
+            const pw = prompt("Ange administratörslösenord:");
+            if (pw === ADMIN_PASSWORD) {
+                isModerator = true;
+                localStorage.setItem('isMod', 'true');
+                document.getElementById('mod-indicator').classList.remove('hidden');
+                alert("Moderator-läge aktiverat!");
+                fetchAndRenderComments();
+            } else if (pw !== null) {
+                alert("Fel lösenord.");
+            }
         }
-        
+
+        async function initChat() {
+            document.getElementById('chat-status').innerText = "Live";
+            fetchAndRenderComments();
+            // Lyssna på ändringar i realtid
+            db.channel('public:chat').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => fetchAndRenderComments()).subscribe();
+            db.channel('public:bans').on('postgres_changes', { event: '*', schema: 'public', table: 'banned_users' }, () => fetchAndRenderComments()).subscribe();
+        }
+
+        async function fetchAndRenderComments() {
+            if (!db) return;
+
+            // Hämta ban-lista
+            const { data: bans } = await db.from('banned_users').select('user_id');
+            const bannedIds = bans ? bans.map(b => b.user_id) : [];
+
+            // Kolla om aktuell användare är bannad
+            if (bannedIds.includes(myId)) {
+                document.getElementById('comment-input').disabled = true;
+                document.getElementById('comment-input').placeholder = "Du har blivit bannad.";
+                document.getElementById('send-btn').disabled = true;
+            }
+
+            const { data: comments, error } = await db.from('comments').select('*').order('created_at', { ascending: false }).limit(60);
+            const list = document.getElementById('comments-list');
+            if (error) return;
+
+            list.innerHTML = '';
+            comments.reverse().forEach(msg => {
+                const isBanned = bannedIds.includes(msg.user_id);
+                // Dölj bannade meddelanden för vanliga användare
+                if (isBanned && !isModerator) return;
+
+                const name = (msg.username || 'Anonym').replace(/</g, "&lt;");
+                const text = (msg.text || '').replace(/</g, "&lt;");
+                
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `p-3 rounded-lg border flex gap-3 relative group ${isBanned ? 'bg-red-900/20 border-red-900/50 opacity-60' : 'bg-slate-800 border-slate-700'}`;
+                
+                msgDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 shrink-0">
+                        <span class="text-xs font-bold text-slate-400">${name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div class="w-full">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-bold ${isBanned ? 'text-red-400' : 'text-purple-400'} text-sm">${name} ${isBanned ? '(BANNAD)' : ''}</span>
+                            
+                            ${isModerator ? `
+                                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="banUser('${msg.user_id}')" class="text-orange-500 hover:text-orange-400" title="Banna">
+                                        <i data-lucide="user-x" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="deleteComment('${msg.id}')" class="text-red-500 hover:text-red-400" title="Radera">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <p class="text-sm text-slate-300 break-all pr-4">${text}</p>
+                    </div>
+                `;
+                list.appendChild(msgDiv);
+            });
+            lucide.createIcons();
+            list.scrollTop = list.scrollHeight;
+        }
+
         window.postComment = async function() {
-            if (!user) return alert("Väntar på anslutning...");
-            
-            const nameInput = document.getElementById('username-input');
-            const textInput = document.getElementById('comment-input');
-            const btn = document.getElementById('send-btn');
+            const text = document.getElementById('comment-input').value.trim();
+            const username = document.getElementById('username-input').value.trim() || 'Spelare';
+            if (!text || !db) return;
 
-            const username = nameInput.value.trim() || 'Anonym Spelare';
-            const text = textInput.value.trim();
+            const { error } = await db.from('comments').insert([{ username, text, user_id: myId }]);
+            if (error) alert("Kunde inte skicka.");
+            else document.getElementById('comment-input').value = '';
+        }
 
-            if (!text) return;
-
-            btn.disabled = true;
-            try {
-                let commentsRef;
-                if (window.__app_id && !isUsingCustomConfig) {
-                     commentsRef = collection(db, 'artifacts', window.__app_id, 'public', 'data', 'comments');
-                } else {
-                    commentsRef = collection(db, 'comments');
-                }
-
-                await addDoc(commentsRef, {
-                    username: username,
-                    text: text,
-                    timestamp: serverTimestamp(),
-                    userId: user.uid,
-                    dateString: new Date().toLocaleDateString('sv-SE')
-                });
-                textInput.value = '';
-            } catch (error) {
-                alert("Kunde inte skicka: " + error.message);
-            } finally {
-                btn.disabled = false;
+        window.deleteComment = async function(id) {
+            if (!isModerator) return;
+            if (confirm("Radera detta meddelande?")) {
+                await db.from('comments').delete().eq('id', id);
             }
         }
-    </script>
 
-    <script>
-        // --- SPEL-KONFIGURATION ---
+        window.banUser = async function(userId) {
+            if (!isModerator) return;
+            if (userId === myId) return alert("Du kan inte banna dig själv!");
+            const reason = prompt("Anledning till ban:");
+            if (reason !== null) {
+                await db.from('banned_users').insert([{ user_id: userId, reason: reason }]);
+                alert("Användare bannad.");
+                fetchAndRenderComments();
+            }
+        }
+
+        // --- SPEL-KONFIGURATION (Alla 20 spel) ---
         const games = [
             { id: 1, name: "Last Defence", color: "from-blue-500 to-cyan-400", icon: "skull" },
             { id: 2, name: "Tank Survival", color: "from-green-500 to-emerald-400", icon: "truck" },
-            { id: 3, name: "Retro Bowl (new)", color: "from-red-500 to-orange-400", icon: "crosshair" },
-            { id: 4, name: "Escape Road", color: "from-purple-500 to-pink-400", icon: "car" },
+            { id: 3, name: "Retro Bowl", color: "from-red-500 to-orange-400", icon: "crosshair" },
+            { id: 4, name: "Escape road", color: "from-purple-500 to-pink-400", icon: "car" },
             { id: 5, name: "FPS (not working)", color: "from-gray-600 to-gray-400", icon: "sword" },
-            { id: 6, name: "Snakey", color: "from-yellow-500 to-orange-400", icon: "activity" },
+            { id: 6, name: "Snakey Beta", color: "from-yellow-500 to-orange-400", icon: "activity" },
             { id: 7, name: "The Backrooms (not working)", color: "from-indigo-500 to-purple-400", icon: "trees" },
-            { id: 8, name: "Zelda (new)", color: "from-slate-500 to-zinc-400", icon: "wind" },
+            { id: 8, name: "Zelda", color: "from-slate-500 to-zinc-400", icon: "wind" },
             { id: 9, name: "Clanker Defence", color: "from-rose-500 to-red-400", icon: "heart" },
             { id: 10, name: "Clash Royale Clone", color: "from-amber-500 to-yellow-300", icon: "crown" },
-            // Nya spel
             { id: 11, name: "Night Horror", color: "from-yellow-400 to-yellow-600", icon: "flashlight" },
-            { id: 12, name: "Rock Paper Scissors Online", color: "from-blue-600 to-blue-800", icon: "hammer" },
-            { id: 13, name: "!Geometry Dash Lite!", color: "from-lime-400 to-lime-600", icon: "alien" },
-            { id: 14, name: "Super Mario 64!", color: "from-fuchsia-500 to-purple-600", icon: "zap" },
-            { id: 15, name: "Monkey Mart (new)", color: "from-slate-300 to-slate-500", icon: "milestone" },
-            { id: 16, name: "Snow Rider (new)", color: "from-orange-300 to-orange-500", icon: "bot" },
+            { id: 12, name: "Rock Paper Scissors Online", color: "from-blue-600 to-blue-800", icon: "anchor" },
+            { id: 13, name: "Geometry Dash free", color: "from-lime-400 to-lime-600", icon: "alien" },
+            { id: 14, name: "Super Mario 64", color: "from-fuchsia-500 to-purple-600", icon: "zap" },
+            { id: 15, name: "Monkey Mart", color: "from-slate-300 to-slate-500", icon: "milestone" },
+            { id: 16, name: "Snow Rider", color: "from-orange-300 to-orange-500", icon: "bot" },
             { id: 17, name: "Coming Soon", color: "from-indigo-900 to-purple-900", icon: "ghost" },
-            { id: 18, name: "Coming Soon", color: "from-red-800 to-red-900", icon: "anchor" },
+            { id: 18, name: "Coming Soon", color: "from-red-800 to-red-900", icon: "hammer" },
             { id: 19, name: "Coming Soon", color: "from-sky-400 to-sky-200", icon: "cloud" },
             { id: 20, name: "Coming Soon", color: "from-teal-400 to-emerald-500", icon: "layout" }
         ];
 
         const grid = document.getElementById('game-grid');
-
         games.forEach(game => {
             const card = document.createElement('div');
-            card.className = `
-                game-card bg-slate-800 border border-slate-700 rounded-xl p-6 
-                flex flex-col items-center justify-between 
-                transition-all duration-300 transform hover:-translate-y-2 hover:bg-slate-750 cursor-pointer
-                group relative overflow-hidden
-            `;
-            
+            card.className = "game-card bg-slate-800 border border-slate-700 rounded-xl p-6 flex flex-col items-center justify-between transition-all duration-300 transform hover:-translate-y-2 hover:bg-slate-750 cursor-pointer group relative overflow-hidden";
             card.innerHTML = `
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${game.color}"></div>
                 <div class="w-16 h-16 mb-4 rounded-full bg-slate-900 flex items-center justify-center border border-slate-600 group-hover:border-white transition-colors">
                     <i data-lucide="${game.icon}" class="w-8 h-8 text-gray-300 group-hover:text-white"></i>
                 </div>
                 <h3 class="text-xl font-bold mb-2 game-font text-center">${game.name}</h3>
-                <span class="text-xs text-slate-500 mb-6">Spel ${game.id}</span>
-                <button onclick="openGame(${game.id})" class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 transition-transform hover:opacity-90">
-                    SPELA NU
+                <span class="text-xs text-slate-500 mb-6 font-mono">ID: ${game.id}</span>
+                <button onclick="window.open('spel${game.id}.html', '_blank')" class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 transition-transform hover:opacity-90">
+                    Play now!
                 </button>
             `;
             grid.appendChild(card);
         });
-
+        
+        // Aktivera ikoner
         lucide.createIcons();
-
-        function openGame(id) {
-            const url = `spel${id}.html`;
-            window.open(url, '_blank');
-        }
     </script>
 </body>
 </html>
