@@ -76,13 +76,13 @@
                     <div class="prose prose-invert text-slate-300 leading-relaxed text-sm">
                         <p>Sup and welcome to the Game Portal 🎮 Enable F11 for best experience.</p>
                         <p class="mt-2 text-red-400 font-bold">
-                            I've implemented a BAN and VERIFY system. I can ban people who misuses the chat will BE BANNED.
+                            I've implemented a BAN and VERIFY system. I can ban people who misuses the chat. People who write crap will BE BANNED.
                             I also added some new games.
                         </p>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 font-mono">
                         <i data-lucide="clock" class="w-3 h-3"></i>
-                        <span>Latest updated: 23/2 2026</span>
+                        <span>Latest updated: 24/2 2026</span>
                     </div>
                 </div>
             </div>
@@ -135,7 +135,7 @@
         
         const SUPABASE_URL = 'https://bqdbgsvcrpjqxflhupsn.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ElL56Wu9aJJppRv-ECWLbw_K_CfLWwk';
-        const _systemToken = 'TypeEnterNull'; 
+        const _systemToken = 'systemTokenNull'; 
         
         let _db;
         let _isMod = localStorage.getItem('isMod') === 'true';
@@ -208,12 +208,12 @@
 
             if (isMeBanned) {
                 document.getElementById('comment-input').disabled = true;
-                document.getElementById('comment-input').placeholder = "Du har blivit bannlyst.";
+                document.getElementById('comment-input').placeholder = "YOU GOT BANNED.";
                 document.getElementById('send-btn').disabled = true;
                 document.getElementById('send-btn').classList.add('opacity-50');
             } else {
                 document.getElementById('comment-input').disabled = false;
-                document.getElementById('comment-input').placeholder = "Skriv ett meddelande...";
+                document.getElementById('comment-input').placeholder = "Write a message...";
                 document.getElementById('send-btn').disabled = false;
                 document.getElementById('send-btn').classList.remove('opacity-50');
             }
