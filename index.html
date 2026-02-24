@@ -169,15 +169,15 @@
         }
 
         function promptAdmin() {
-            const pw = prompt("System PIN:");
+            const pw = prompt("System reboot code:");
             if (pw === _systemToken) {
                 _isMod = true;
                 localStorage.setItem('isMod', 'true');
                 document.getElementById('mod-indicator').classList.remove('hidden');
-                alert("Moderator aktiverad!");
+                alert("System reboot active!");
                 renderChat();
             } else if (pw !== null) {
-                alert("Felaktig PIN.");
+                alert("Wrong PIN.");
             }
         }
 
