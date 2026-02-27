@@ -441,10 +441,11 @@
         <div class="letter-content">
             <h2>MESSAGE FROM MANAGEMENT</h2>
             <p>Hello Nightguard! Welcome to your new job!</p>
-            <p>Your shift starts at 12 AM and ends at 6 AM.</p>
-            <p>During the night, there might be some harmful entity trying to get into your office. Use the doors and ventlock to keep it... or them... out.
-            Also keep an eye on the cameras to make sure nothing gets into the vent. In the doors, use light to see. That isnt the case for the vents however.</p>
-            <p>Just... Don't let them in. Stay safe. You'll get your paycheck after your last shift.</p>
+            <p>Your shift starts at 12 AM and ends at 6 AM. You work here for 5 nights</p>
+            <p>This building holds old experiments, which your job is to watch over. Yor office has doors and ventlocks to protect you.
+            During the night, there might be some harmful entity trying to get into your office. Keep it... or them out.
+            Also, keep an eye on the vent, since you have no way to look into it.</p>
+            <p>Just... Don't let anything in. Stay safe.You'll get your paycheck after your last shift.</p>
             <br>
             <p>- Bryngel Halvardson</p>
         </div>
@@ -488,17 +489,17 @@
     <!-- GAME OVER SCREEN -->
     <div id="game-over-screen" class="screen hidden">
         <h1>GAME OVER</h1>
-        <h3 style="color: #a00;">You didn't survive the night...</h3>
-        <button class="btn" onclick="Game.init(Game.state.night)">TRY AGAIN</button>
+        <h3 style="color: #a00;">You...Died...</h3>
+        <button class="btn" onclick="Game.init(Game.state.night)">TRY AGAIN...</button>
         <button class="btn" onclick="location.reload()">RETURN TO MENU</button>
     </div>
 
     <!-- WIN SCREEN -->
     <div id="win-screen" class="screen hidden">
         <h1 style="color: #33ff00;">6:00 AM</h1>
-        <h3 id="win-text">Night Complete</h3>
+        <h3 id="win-text">Night Complete!</h3>
         <button id="next-night-btn" class="btn" onclick="Game.nextNight()">START NEXT NIGHT</button>
-        <button id="win-menu-btn" class="btn hidden" onclick="location.reload()">RETURN TO MENU</button>
+        <button id="win-menu-btn" class="btn hidden" onclick="location.reload()">RETURN TO MENU... [NIGHTGUARD]</button>
     </div>
 
     <!-- JUMPSCARE OVERLAY -->
@@ -604,7 +605,7 @@
             <div class="cam-btn" style="top: 240px; right: 20px;" onclick="Game.switchCam(3)">CAM 3</div>
             <div class="cam-btn" style="top: 170px; right: 20px;" onclick="Game.switchCam(6)">CAM 6</div>
             <div class="cam-btn" style="top: 100px; right: 20px;" onclick="Game.switchCam(9)">CAM 9</div>
-            <div class="cam-btn" style="top: 20px; left: 50%; transform:translateX(-50%); width: 60px;" onclick="Game.switchCam(10)">CAM 10</div>
+            <div class="cam-btn active" style="top: 20px; left: 50%; transform:translateX(-50%); width: 60px;" onclick="Game.switchCam(10)">CAM 10</div>
         </div>
         <button class="btn" style="position:absolute; bottom:20px; left:20px; margin:0; padding:10px 20px;" onclick="Game.toggleMonitor(false)">CLOSE</button>
     </div>
@@ -801,6 +802,13 @@ const Game = {
         document.getElementById('pause-screen').classList.add('hidden');
         document.getElementById('cheat-indicator').style.display = 'none';
         
+        // Ensure buttons sync up visually
+        document.querySelectorAll('.cam-btn').forEach(btn => {
+            if(btn.innerText === "CAM 10") btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+        document.getElementById('cam-title').innerText = "CAM 10";
+
         // Reset power-down visual effect just in case
         document.getElementById('office-container').style.filter = 'none';
     },
@@ -902,6 +910,23 @@ const Game = {
         AudioEngine.updateAmbience(!open);
         
         if(open) this.updateCamFeed();
+    },
+    switchCam(camId) {
+        if(!this.state.active || this.state.power <= 0 || this.state.monitorFailed) return;
+        
+        this.state.currentCam = camId;
+        document.getElementById('cam-title').innerText = "CAM " + camId;
+        
+        document.querySelectorAll('.cam-btn').forEach(btn => {
+            if (btn.innerText === "CAM " + camId) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        if (AudioEngine.sfx.click) AudioEngine.sfx.click();
+        this.updateCamFeed();
     },
     rebootMonitor() {
         if(this.state.isRebooting || !this.state.monitorFailed) return;
@@ -1014,7 +1039,7 @@ const Game = {
         if (unitCount === 0) usageEl.innerText = "Usage: None";
         else if (unitCount === 1) usageEl.innerText = "Usage: Low";
         else if (unitCount === 2) usageEl.innerText = "Usage: Mid";
-        else usageEl.innerText = "Usage: HIGH";
+        else usageEl.innerText = "Usage: High";
 
         let drain = 0.1 + (unitCount * 1.0);
 
@@ -1079,7 +1104,7 @@ const Game = {
         document.getElementById('win-screen').classList.remove('hidden');
         
         if (this.state.night >= 5) {
-            document.getElementById('win-text').innerText = "YOU SURVIVED ALL 5 NIGHTS! Your paycheck includes 5000$ and free visits to a therapist.";
+            document.getElementById('win-text').innerText = "YOU SURVIVED ALL 5 NIGHTS!";
             document.getElementById('next-night-btn').classList.add('hidden');
             document.getElementById('win-menu-btn').classList.remove('hidden');
         } else {
