@@ -76,9 +76,8 @@
                     </h3>
                     <div class="prose prose-invert text-slate-300 leading-relaxed text-sm">
                         <p>Sup and welcome to the Game Portal 🎮 Enable F11 for best experience.</p>
-                        <p class="mt-2 text-red-400 font-bold">
-                            I've implemented a BAN and VERIFY system. I can ban people who misuses the chat. People who write crap will BE BANNED.
-                            I also added some new games.
+                        <p class="mt-2 text-red-400 font-bold italic">
+                            Network Fix: Om chatten laggar pga skolans nätverk har jag lagt till en "Polling-fallback" som uppdaterar meddelanden automatiskt var 5:e sekund.
                         </p>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 font-mono">
@@ -99,7 +98,7 @@
                     </h3>
                     <div class="flex items-center gap-2">
                         <div id="status-dot" class="w-2 h-2 rounded-full bg-red-500"></div>
-                        <span id="chat-status" class="text-xs text-slate-500">Loading...</span>
+                        <span id="chat-status" class="text-xs text-slate-500">Ansluter...</span>
                     </div>
                 </div>
 
@@ -141,6 +140,7 @@
         let _db;
         let _isMod = localStorage.getItem('isMod') === 'true';
         let _myId = localStorage.getItem('myChatId');
+        let _pollingActive = false;
         
         // Återställ sparat användarnamn
         const savedName = localStorage.getItem('chatUsername');
@@ -182,30 +182,52 @@
             }
         }
 
+        function enablePolling() {
+            if (_pollingActive) return;
+            _pollingActive = true;
+            document.getElementById('chat-status').innerText = "Live (Polling)";
+            document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-blue-500";
+            console.warn("WebSocket blockeras troligtvis. Startar polling...");
+            setInterval(renderChat, 5000); // Uppdatera var 5:e sekund
+        }
+
         async function startChat() {
-            document.getElementById('chat-status').innerText = "Live";
-            document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-green-500";
-            
             renderChat();
             
-            // Realtids-uppdatering
-            _db.channel('chat-room')
+            // Realtids-uppdatering via WebSockets
+            const channel = _db.channel('chat-room')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => renderChat())
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'banned_users' }, () => renderChat())
-                .subscribe();
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        document.getElementById('chat-status').innerText = "Live (WSS)";
+                        document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-green-500";
+                    } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                        enablePolling();
+                    }
+                });
+
+            // Fallback-check: Om vi inte är anslutna efter 4 sekunder, kör polling
+            setTimeout(() => {
+                if (document.getElementById('chat-status').innerText === "Ansluter...") {
+                    enablePolling();
+                }
+            }, 4000);
         }
 
         async function renderChat() {
             if (!_db) return;
 
-            // 1. Kolla om JAG är bannad (tyst kontroll)
-            const { data: myBan } = await _db
-                .from('banned_users')
-                .select('user_id')
-                .eq('user_id', _myId)
-                .maybeSingle();
-
-            const isMeBanned = !!myBan;
+            // 1. Kolla om JAG är bannad
+            let isMeBanned = false;
+            try {
+                const { data: myBan } = await _db
+                    .from('banned_users')
+                    .select('user_id')
+                    .eq('user_id', _myId)
+                    .maybeSingle();
+                isMeBanned = !!myBan;
+            } catch(e) {}
 
             if (isMeBanned) {
                 document.getElementById('comment-input').disabled = true;
@@ -214,14 +236,16 @@
                 document.getElementById('send-btn').classList.add('opacity-50');
             } else {
                 document.getElementById('comment-input').disabled = false;
-                document.getElementById('comment-input').placeholder = "Write a message...";
                 document.getElementById('send-btn').disabled = false;
                 document.getElementById('send-btn').classList.remove('opacity-50');
             }
 
-            // 2. Hämta alla bans för att markera andra användare i chatten
-            const { data: allBans } = await _db.from('banned_users').select('user_id');
-            const bannedIds = allBans ? allBans.map(b => b.user_id) : [];
+            // 2. Hämta alla bans
+            let bannedIds = [];
+            try {
+                const { data: allBans } = await _db.from('banned_users').select('user_id');
+                if (allBans) bannedIds = allBans.map(b => b.user_id);
+            } catch(e) {}
 
             // 3. Hämta meddelanden
             const { data: msgs, error } = await _db.from('comments')
@@ -231,29 +255,23 @@
 
             const list = document.getElementById('comments-list');
             if (error) {
-                console.error("Fetch error:", error);
-                list.innerHTML = `<div class="text-center text-red-500 p-4">Kunde inte hämta chatten. Kontrollera RLS-inställningar i Supabase.</div>`;
+                list.innerHTML = `<div class="text-center text-red-500 p-4">Fetch error. Check network.</div>`;
                 return;
             }
 
             if (!msgs || msgs.length === 0) {
-                list.innerHTML = '<div class="text-center text-slate-600 py-10 italic">Inga meddelanden än. Skriv något!</div>';
+                list.innerHTML = '<div class="text-center text-slate-600 py-10 italic">No messages yet. Say hi!</div>';
                 return;
             }
 
             list.innerHTML = '';
-            // Vänd på ordningen för att visa senaste nederst
             [...msgs].reverse().forEach(m => {
                 const userIsBanned = bannedIds.includes(m.user_id);
-                
-                // Om användaren är bannad, visa endast för moderatorer
                 if (userIsBanned && !_isMod) return;
 
                 const name = (m.username || 'Spelare').replace(/</g, "&lt;");
                 const text = (m.text || '').replace(/</g, "&lt;");
                 const isMe = m.user_id === _myId;
-                
-                // Formatera tidsstämpel
                 const timeStr = m.created_at ? new Date(m.created_at).toLocaleTimeString('sv-SE', {hour: '2-digit', minute:'2-digit'}) : '';
 
                 const div = document.createElement('div');
@@ -273,13 +291,13 @@
                             </span>
                             ${_isMod ? `
                                 <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onclick="handleVerify('${m.id}', ${!m.verified})" class="text-green-500 hover:text-green-400 transition-colors" title="${m.verified ? 'Ta bort checkmark' : 'Lägg till checkmark'}">
+                                    <button onclick="handleVerify('${m.id}', ${!m.verified})" class="text-green-500 hover:text-green-400 transition-colors">
                                         <i data-lucide="check-circle" class="w-4 h-4"></i>
                                     </button>
-                                    <button onclick="handleBan('${m.user_id}')" class="text-orange-500 hover:text-orange-400 transition-colors" title="Banna">
+                                    <button onclick="handleBan('${m.user_id}')" class="text-orange-500 hover:text-orange-400 transition-colors">
                                         <i data-lucide="user-x" class="w-4 h-4"></i>
                                     </button>
-                                    <button onclick="handleDelete('${m.id}')" class="text-red-500 hover:text-red-400 transition-colors" title="Radera">
+                                    <button onclick="handleDelete('${m.id}')" class="text-red-500 hover:text-red-400 transition-colors">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>
                                 </div>
@@ -310,7 +328,6 @@
 
             if (error) {
                 console.error("Insert error:", error);
-                alert("Fel vid sändning: " + error.message);
             } else {
                 input.value = '';
                 renderChat();
@@ -329,20 +346,15 @@
             if (!_isMod) return;
             if (uid === _myId) return alert("Du kan inte banna dig själv!");
             if (confirm("Vill du banna denna användare permanent?")) {
-                const { error } = await _db.from('banned_users').insert([{ user_id: uid, reason: 'Moderator-ban' }]);
-                if (error) alert("Kunde inte banna: " + error.message);
+                await _db.from('banned_users').insert([{ user_id: uid, reason: 'Moderator-ban' }]);
                 renderChat();
             }
         }
 
         window.handleVerify = async function(id, setVerified) {
             if (!_isMod) return;
-            const { error } = await _db.from('comments').update({ verified: setVerified }).eq('id', id);
-            if (error) {
-                alert("Kunde inte verifiera: " + error.message + "\n\n(Glöm inte att du måste lägga till kolumnen 'verified' (boolean) i din 'comments'-tabell i Supabase!)");
-            } else {
-                renderChat();
-            }
+            await _db.from('comments').update({ verified: setVerified }).eq('id', id);
+            renderChat();
         }
 
         // --- SPEL-GRID ---
