@@ -7,13 +7,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* Custom CSS to handle the wheel transition smoothly */
     #wheel {
       transition-property: transform;
       transition-duration: 4000ms;
       transition-timing-function: cubic-bezier(0.15, 0, 0.15, 1);
     }
-    /* Simple custom scrollbar for the leaderboard */
     #leaderboard-container::-webkit-scrollbar {
       width: 4px;
     }
@@ -28,12 +26,10 @@
 </head>
 <body class="fixed inset-0 bg-black text-white font-sans overflow-hidden select-none flex items-center justify-center">
 
-  <!-- Loading Screen -->
   <div id="loading-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center text-yellow-400 font-bold text-2xl z-50">
     Loading Casino...
   </div>
 
-  <!-- Main App Container -->
   <div id="app" class="w-full h-full max-w-[1600px] bg-emerald-950 relative shadow-2xl flex flex-col hidden">
     
     <!-- VIEW: MENU -->
@@ -46,7 +42,7 @@
           START
         </button>
         <button onclick="setView('credits')" class="bg-emerald-800 hover:bg-emerald-700 text-emerald-100 font-bold text-lg py-3 rounded-xl flex items-center justify-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x1="16" x2="12" y2="12"></line><line x1="12" x1="8" x2="12.01" y2="8"></line></svg>
           CREDITS
         </button>
       </div>
@@ -100,15 +96,13 @@
       <div class="flex-1 flex flex-col h-full bg-emerald-950 overflow-y-auto relative border-x border-emerald-800/30">
         <div class="p-4 flex justify-between items-center">
           <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-sm font-bold">← EXIT CASINO</button>
-          <div class="text-emerald-500 text-xs font-mono uppercase">V1.3 Persistence Enabled</div>
+          <div class="text-emerald-500 text-xs font-mono uppercase">V1.4 Fix Enabled</div>
         </div>
         
         <div class="flex-1 flex flex-col items-center justify-center p-4">
           <div class="relative w-72 h-72 sm:w-96 sm:h-96 rounded-full border-[12px] border-yellow-500 shadow-[0_0_60px_rgba(0,0,0,0.6)] flex items-center justify-center overflow-visible">
             <div id="wheel" class="w-full h-full rounded-full"></div>
-            <!-- Center Hub -->
             <div class="absolute w-12 h-12 bg-yellow-500 rounded-full border-4 border-yellow-600 shadow-xl z-10"></div>
-            <!-- Top Pointer -->
             <div class="absolute -top-6 left-1/2 -ml-4 w-8 h-10 bg-white shadow-lg z-20" style="clip-path: polygon(50% 100%, 0 0, 100% 0)"></div>
           </div>
           <div id="spin-result-msg" class="mt-8 h-10 text-2xl font-black text-center text-yellow-400 drop-shadow-md"></div>
@@ -164,9 +158,7 @@
             <span class="text-[10px] text-emerald-400 font-bold">+<span id="display-tree-income">1</span> 🍌/5s</span>
           </div>
           
-          <div id="tree-grid" class="grid grid-cols-2 gap-3 mb-8">
-            <!-- Trees injected here -->
-          </div>
+          <div id="tree-grid" class="grid grid-cols-2 gap-3 mb-8"></div>
           
           <button
             onclick="handleBuyTree()"
@@ -183,12 +175,10 @@
   </div>
 
   <script>
-    // --- Supabase Configuration ---
     const supabaseUrl = "https://yuwnnaavbegzbdfpxjok.supabase.co"; 
     const supabaseKey = "sb_publishable_dApo1jlVE15-s7RTzmnpOA_cBDuQy1W"; 
     let supabaseClient = null;
 
-    // --- State ---
     let view = 'menu';
     let playerName = '';
     let bananas = 0;
@@ -204,7 +194,6 @@
     let syncTimeout = null;
     let gameLoopInterval = null;
 
-    // --- DOM Elements ---
     const elApp = document.getElementById('app');
     const elLoading = document.getElementById('loading-screen');
     const views = {
@@ -223,10 +212,8 @@
     const elBuyTreeBtn = document.getElementById('buy-tree-btn');
     const elBuyTreeTitle = document.getElementById('buy-tree-title');
     const elBuyTreeSubtitle = document.getElementById('buy-tree-subtitle');
-    
     const elWheel = document.getElementById('wheel');
     const elSpinResultMsg = document.getElementById('spin-result-msg');
-    
     const elBetBtns = {
       red: document.getElementById('bet-btn-red'),
       green: document.getElementById('bet-btn-green'),
@@ -235,24 +222,15 @@
     const elBetAmountInput = document.getElementById('bet-amount-input');
     const elMaxBetBtn = document.getElementById('max-bet-btn');
     const elSpinBtn = document.getElementById('spin-btn');
-    
     const elLeaderboardContainer = document.getElementById('leaderboard-container');
 
-    // --- Initialize ---
     window.onload = () => {
-      // 1. Setup Wheel Background
       elWheel.style.background = getWheelBackground();
-
-      // 2. Load Robust Local Data
       loadPersistentData();
-
-      // 3. Init Supabase (if available via CDN)
       if (window.supabase && supabaseUrl && supabaseKey) {
         supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
         setupSupabaseListeners();
       }
-
-      // 4. Setup Input Listeners
       elBetAmountInput.addEventListener('input', (e) => {
         let val = parseInt(e.target.value) || 0;
         val = Math.max(0, Math.min(bananas, val));
@@ -260,18 +238,12 @@
         e.target.value = val || '';
         updateGameUI();
       });
-
-      // Show App
       elLoading.classList.add('hidden');
       elApp.classList.remove('hidden');
-      
-      // If player already has a name, we can skip the entry screen if we want, 
-      // but usually better to let them start from menu
       setView('menu');
       renderTreeGrid();
     };
 
-    // --- Persistence Management ---
     function loadPersistentData() {
       const saved = localStorage.getItem('bananaCasinoSave');
       if (saved) {
@@ -280,85 +252,45 @@
           playerName = data.name || '';
           bananas = typeof data.bananas === 'number' ? data.bananas : 0;
           trees = typeof data.trees === 'number' ? data.trees : 1;
-          
-          if (playerName) {
-            elPlayerNameInput.value = playerName;
-          }
-        } catch (e) {
-          console.error("Error parsing save data", e);
-        }
+          if (playerName) elPlayerNameInput.value = playerName;
+        } catch (e) { console.error(e); }
       }
     }
 
     async function syncData(currentBananas, currentTrees, nameToSave = playerName) {
-      // 1. Always save to Local Storage first for instant local persistence
       localStorage.setItem('bananaCasinoSave', JSON.stringify({
         name: nameToSave,
         bananas: currentBananas,
         trees: currentTrees
       }));
-
-      // 2. Sync to Supabase for the global scoreboard
       if (supabaseClient && nameToSave) {
         try {
-          await supabaseClient.from('leaderboard').upsert({
-            id: nameToSave, // Name as unique ID
-            name: nameToSave,
-            score: currentBananas
-          });
-        } catch (err) {
-          console.warn("Supabase sync failed (offline?), but local progress is saved.");
-        }
+          await supabaseClient.from('leaderboard').upsert({ id: nameToSave, name: nameToSave, score: currentBananas });
+        } catch (err) { console.warn("Sync failed"); }
       }
     }
 
-    // --- Core Logic ---
     function setView(newView) {
       view = newView;
-      Object.keys(views).forEach(k => {
-        if(views[k]) views[k].classList.add('hidden');
-      });
-      if(views[view]) views[view].classList.remove('hidden');
-
-      if (view === 'game') {
-        startGameLoop();
-        updateGameUI();
-      } else {
-        stopGameLoop();
-      }
+      Object.keys(views).forEach(k => views[k]?.classList.add('hidden'));
+      views[view]?.classList.remove('hidden');
+      if (view === 'game') { startGameLoop(); updateGameUI(); } else { stopGameLoop(); }
     }
 
     function enterCasino() {
-      let val = elPlayerNameInput.value.trim();
-      playerName = val || `Player_${Math.floor(Math.random() * 1000)}`;
+      playerName = elPlayerNameInput.value.trim() || `Player_${Math.floor(Math.random() * 1000)}`;
       syncData(bananas, trees, playerName);
       setView('game');
     }
 
     async function setupSupabaseListeners() {
       if (!supabaseClient) return;
-
       const fetchLeaderboard = async () => {
-        const { data, error } = await supabaseClient
-          .from('leaderboard')
-          .select('*')
-          .order('score', { ascending: false })
-          .limit(50);
-        
-        if (data) {
-          leaderboard = data;
-          renderLeaderboard();
-        }
+        const { data } = await supabaseClient.from('leaderboard').select('*').order('score', { ascending: false }).limit(50);
+        if (data) { leaderboard = data; renderLeaderboard(); }
       };
-
       await fetchLeaderboard();
-
-      // Subscription for real-time updates
-      supabaseClient.channel('leaderboard-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, () => {
-          fetchLeaderboard();
-        })
-        .subscribe();
+      supabaseClient.channel('leaderboard-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, fetchLeaderboard).subscribe();
     }
 
     function startGameLoop() {
@@ -366,24 +298,14 @@
       gameLoopInterval = setInterval(() => {
         if (!isSpinning) {
           bananas += trees;
-          
-          // Debounced sync to avoid hammering localstorage/database
           clearTimeout(syncTimeout);
-          syncTimeout = setTimeout(() => {
-            syncData(bananas, trees);
-          }, 2000);
-
+          syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
           updateGameUI();
         }
       }, 5000);
     }
 
-    function stopGameLoop() {
-      if (gameLoopInterval) {
-        clearInterval(gameLoopInterval);
-        gameLoopInterval = null;
-      }
-    }
+    function stopGameLoop() { if (gameLoopInterval) { clearInterval(gameLoopInterval); gameLoopInterval = null; } }
 
     function handleBuyTree() {
       if (bananas >= 100 && trees < 10) {
@@ -394,11 +316,7 @@
       }
     }
 
-    function setBetColor(color) {
-      if (isSpinning) return;
-      betColor = color;
-      updateGameUI();
-    }
+    function setBetColor(color) { if (!isSpinning) { betColor = color; updateGameUI(); } }
 
     function setMaxBet() {
       if (isSpinning) return;
@@ -410,23 +328,13 @@
     function handleSpin() {
       if (isSpinning || bananas <= 0 || !betColor || betAmount <= 0 || betAmount > bananas) return;
 
-      const preSpinBananas = bananas - betAmount;
-      bananas = preSpinBananas;
+      // DO NOT remove bananas yet. Just lock the state.
       isSpinning = true;
       spinResultMsg = "Spinning...";
-      
       updateGameUI();
 
-      // Probabilities: 49% Red, 49% Black, 2% Green
       const rand = Math.random();
-      let winningColor;
-      if (rand < 0.49) {
-        winningColor = 'red';
-      } else if (rand < 0.98) {
-        winningColor = 'black';
-      } else {
-        winningColor = 'green';
-      }
+      let winningColor = rand < 0.49 ? 'red' : (rand < 0.98 ? 'black' : 'green');
 
       const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
       const matchingIndices = WHEEL_COLORS.map((c, i) => c === winningColor ? i : -1).filter(i => i !== -1);
@@ -440,23 +348,23 @@
       elWheel.style.transform = `rotate(${wheelRotation}deg)`;
 
       setTimeout(() => {
-        let finalBananas = preSpinBananas;
         if (betColor === winningColor) {
-          // PAYOUT LOGIC
-          // Red/Black: Win what you betted (Total = Bet * 2)
-          // Green: Win 3x what you betted (Total = Bet * 4)
-          const multiplier = winningColor === 'green' ? 4 : 2;
-          const winnings = betAmount * multiplier;
-          finalBananas += winnings;
-          
-          spinResultMsg = `Landed on ${winningColor.toUpperCase()}! You won ${winnings - betAmount} 🍌!`;
+          // WIN: Bet stays in balance + Profit added
+          // Profit: Red/Black = 1x bet, Green = 3x bet
+          const profitMultiplier = winningColor === 'green' ? 3 : 1;
+          const winnings = betAmount * profitMultiplier;
+          bananas += winnings;
+          spinResultMsg = `Landed on ${winningColor.toUpperCase()}! You won ${winnings} 🍌!`;
         } else {
+          // LOSE: Bet is removed
+          bananas -= betAmount;
           spinResultMsg = `Landed on ${winningColor.toUpperCase()}! You lost ${betAmount} 🍌.`;
         }
 
-        bananas = finalBananas;
         isSpinning = false;
-        syncData(finalBananas, trees);
+        // Clamp bananas so we don't accidentally go negative
+        bananas = Math.max(0, bananas);
+        syncData(bananas, trees);
         updateGameUI();
       }, 4000);
     }
@@ -471,112 +379,58 @@
       return `conic-gradient(${gradient})`;
     }
 
-    // --- UI Updaters ---
     function updateGameUI() {
-      // Texts
       elDisplayPlayerName.innerText = playerName;
       elDisplayBananas.innerText = `${bananas.toLocaleString()} 🍌`;
       elDisplayTrees.innerText = trees;
       elDisplayTreeIncome.innerText = trees;
       elSpinResultMsg.innerText = spinResultMsg;
-
-      // Tree Grid
       renderTreeGrid();
-
-      // Buy Tree Button
       if (trees >= 10) {
         elBuyTreeBtn.disabled = true;
-        elBuyTreeBtn.className = "w-full py-4 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-slate-800 text-slate-500";
+        elBuyTreeBtn.className = "w-full py-4 rounded-xl font-black bg-slate-800 text-slate-500";
         elBuyTreeTitle.innerText = "FULL GROVE";
         elBuyTreeSubtitle.style.display = 'none';
-      } else if (bananas < 100) {
-        elBuyTreeBtn.disabled = true;
-        elBuyTreeBtn.className = "w-full py-4 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700";
-        elBuyTreeTitle.innerText = "BUY TREE";
-        elBuyTreeSubtitle.style.display = 'block';
       } else {
-        elBuyTreeBtn.disabled = false;
-        elBuyTreeBtn.className = "w-full py-4 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-emerald-500 hover:bg-emerald-400 text-emerald-950 active:scale-95";
+        const canAfford = bananas >= 100;
+        elBuyTreeBtn.disabled = !canAfford;
+        elBuyTreeBtn.className = canAfford ? "w-full py-4 rounded-xl font-black bg-emerald-500 hover:bg-emerald-400 text-emerald-950 active:scale-95" : "w-full py-4 rounded-xl font-black bg-emerald-800/50 text-emerald-700";
         elBuyTreeTitle.innerText = "BUY TREE";
         elBuyTreeSubtitle.style.display = 'block';
       }
-
-      // Bet Buttons
       ['red', 'green', 'black'].forEach(color => {
         const btn = elBetBtns[color];
-        if (betColor === color) {
-          btn.classList.remove('bg-opacity-30', 'border-transparent');
-          btn.classList.add('bg-opacity-100', 'ring-2', 'ring-white', 'border-white', 'scale-105');
-        } else {
-          btn.classList.add('bg-opacity-30', 'border-transparent');
-          btn.classList.remove('bg-opacity-100', 'ring-2', 'ring-white', 'border-white', 'scale-105');
-        }
+        if (betColor === color) { btn.classList.remove('bg-opacity-30', 'border-transparent'); btn.classList.add('bg-opacity-100', 'ring-2', 'ring-white', 'scale-105'); } 
+        else { btn.classList.add('bg-opacity-30', 'border-transparent'); btn.classList.remove('bg-opacity-100', 'ring-2', 'ring-white', 'scale-105'); }
       });
-
-      // Inputs & Spin Button
       elBetAmountInput.disabled = isSpinning;
       elMaxBetBtn.disabled = isSpinning;
-
       const canSpin = !isSpinning && bananas > 0 && betColor && betAmount > 0;
       elSpinBtn.disabled = !canSpin;
-      
-      if (!canSpin) {
-        elSpinBtn.className = "w-full py-5 rounded-2xl font-black text-3xl shadow-xl transition-all bg-emerald-800 text-emerald-900";
-        elSpinBtn.innerText = isSpinning ? "SPINNING..." : "SPIN";
-      } else {
-        elSpinBtn.className = "w-full py-5 rounded-2xl font-black text-3xl shadow-xl transition-all active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 hover:brightness-110";
-        elSpinBtn.innerText = "SPIN";
-      }
-
-      // Sync Bet Amount Input
-      if (betAmount > bananas) {
-          betAmount = bananas;
-          elBetAmountInput.value = bananas || '';
-      }
+      elSpinBtn.className = canSpin ? "w-full py-5 rounded-2xl font-black text-3xl shadow-xl bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 active:scale-95" : "w-full py-5 rounded-2xl font-black text-3xl shadow-xl bg-emerald-800 text-emerald-900";
+      elSpinBtn.innerText = isSpinning ? "SPINNING..." : "SPIN";
+      if (betAmount > bananas) { betAmount = bananas; elBetAmountInput.value = bananas || ''; }
     }
 
     function renderTreeGrid() {
       let html = '';
       const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 14 4-4 4 4"></path><path d="m7 19 5-5 5 5"></path><path d="m7 9 5-5 5 5"></path><path d="M12 19v3"></path></svg>`;
-      
       for(let i=0; i<10; i++) {
         const isOwned = i < trees;
-        const classes = isOwned 
-          ? "bg-emerald-800 border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.1)] text-emerald-400" 
-          : "bg-emerald-950/50 border-emerald-900/50 opacity-20 text-emerald-900";
-        
-        html += `<div class="aspect-square rounded-2xl flex items-center justify-center border-2 transition-all ${classes}">
-                  ${svgIcon}
-                 </div>`;
+        html += `<div class="aspect-square rounded-2xl flex items-center justify-center border-2 transition-all ${isOwned ? "bg-emerald-800 border-emerald-400 text-emerald-400" : "bg-emerald-950/50 border-emerald-900/50 opacity-20 text-emerald-900"}">${svgIcon}</div>`;
       }
       elTreeGrid.innerHTML = html;
     }
 
     function renderLeaderboard() {
-      if (leaderboard.length === 0) {
-        elLeaderboardContainer.innerHTML = `<div class="text-center text-emerald-600 text-xs py-10 italic">No rankings yet.</div>`;
-        return;
-      }
-
+      if (leaderboard.length === 0) { elLeaderboardContainer.innerHTML = `<div class="text-center text-emerald-600 text-xs py-10 italic">No rankings yet.</div>`; return; }
       let html = '';
       leaderboard.forEach((lbUser, index) => {
         const isMe = lbUser.name === playerName;
-        const borderClass = isMe ? 'border-yellow-400 ring-1 ring-yellow-400' : 'border-emerald-800/50';
-        const score = (lbUser.score || 0).toLocaleString();
-        
-        html += `
-          <div class="flex justify-between items-center p-3 rounded-lg bg-emerald-950 border ${borderClass}">
-            <div class="flex items-center gap-2">
-              <span class="text-emerald-500 font-mono text-xs">#${index + 1}</span>
-              <span class="font-medium text-emerald-100 truncate max-w-[80px]" title="${lbUser.name}">${lbUser.name}</span>
-            </div>
-            <span class="text-yellow-400 font-bold text-sm">${score} 🍌</span>
-          </div>
-        `;
+        html += `<div class="flex justify-between items-center p-3 rounded-lg bg-emerald-950 border ${isMe ? 'border-yellow-400 ring-1 ring-yellow-400' : 'border-emerald-800/50'}"><div class="flex items-center gap-2"><span class="text-emerald-500 font-mono text-xs">#${index + 1}</span><span class="font-medium text-emerald-100 truncate max-w-[80px]">${lbUser.name}</span></div><span class="text-yellow-400 font-bold text-sm">${(lbUser.score || 0).toLocaleString()} 🍌</span></div>`;
       });
       elLeaderboardContainer.innerHTML = html;
     }
-
   </script>
 </body>
 </html>
