@@ -182,6 +182,7 @@
     let supabaseClient = null;
 
     let view = 'menu';
+    let userId = '';
     let playerName = '';
     let bananas = 0;
     let trees = 1;
@@ -226,6 +227,10 @@
     const elSpinBtn = document.getElementById('spin-btn');
     const elLeaderboardContainer = document.getElementById('leaderboard-container');
 
+    function generateId() {
+      return 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
+    }
+
     window.onload = () => {
       elWheel.style.background = getWheelBackground();
       loadPersistentData();
@@ -251,23 +256,27 @@
       if (saved) {
         try {
           const data = JSON.parse(saved);
+          userId = data.userId || generateId();
           playerName = data.name || '';
           bananas = typeof data.bananas === 'number' ? data.bananas : 0;
           trees = typeof data.trees === 'number' ? data.trees : 1;
           if (playerName) elPlayerNameInput.value = playerName;
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error(e); userId = generateId(); }
+      } else {
+        userId = generateId();
       }
     }
 
     async function syncData(currentBananas, currentTrees, nameToSave = playerName) {
       localStorage.setItem('bananaCasinoSave', JSON.stringify({
+        userId: userId,
         name: nameToSave,
         bananas: currentBananas,
         trees: currentTrees
       }));
-      if (supabaseClient && nameToSave) {
+      if (supabaseClient && nameToSave && userId) {
         try {
-          await supabaseClient.from('leaderboard').upsert({ id: nameToSave, name: nameToSave, score: currentBananas });
+          await supabaseClient.from('leaderboard').upsert({ id: userId, name: nameToSave, score: currentBananas });
         } catch (err) { console.warn("Sync failed"); }
       }
     }
@@ -305,7 +314,6 @@
 
       const trimmedPwd = pwd.trim();
       
-      
       if (trimmedPwd === "SystemTestTrue") {
         openAdminPanel();
       } else {
@@ -328,25 +336,29 @@
 
       const { data, error } = await supabaseClient
         .from('leaderboard')
-        .select('score')
-        .eq('id', targetPlayer)
-        .single();
+        .select('id, score')
+        .eq('name', targetPlayer);
         
-      if (error) {
+      if (error || !data || data.length === 0) {
         alert(`Player '${targetPlayer}' not found on the leaderboard.`);
         return;
       }
 
-      const newScore = data.score + amount;
-      const { error: updateError } = await supabaseClient
-        .from('leaderboard')
-        .update({ score: newScore })
-        .eq('id', targetPlayer);
-        
-      if (updateError) {
+      let successCount = 0;
+      for (const player of data) {
+        const newScore = player.score + amount;
+        const { error: updateError } = await supabaseClient
+          .from('leaderboard')
+          .update({ score: newScore })
+          .eq('id', player.id);
+          
+        if (!updateError) successCount++;
+      }
+
+      if (successCount === 0) {
         alert("Failed to update bananas.");
       } else {
-        alert(`SUCCESS! Added ${amount.toLocaleString()} bananas to ${targetPlayer}.`);
+        alert(`SUCCESS! Added ${amount.toLocaleString()} bananas to ${successCount} player(s) named ${targetPlayer}.`);
       }
     }
 
@@ -360,7 +372,7 @@
       
       supabaseClient.channel('leaderboard-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, (payload) => {
         fetchLeaderboard();
-        if (payload.new && payload.new.id === playerName) {
+        if (payload.new && payload.new.id === userId) {
           if (payload.new.score > bananas) {
             bananas = payload.new.score;
             syncData(bananas, trees);
@@ -498,7 +510,7 @@
       if (leaderboard.length === 0) { elLeaderboardContainer.innerHTML = `<div class="text-center text-emerald-600 text-xs py-10 italic">No rankings yet.</div>`; return; }
       let html = '';
       leaderboard.forEach((lbUser, index) => {
-        const isMe = lbUser.name === playerName;
+        const isMe = lbUser.id === userId;
         html += `<div class="flex justify-between items-center p-3 rounded-lg bg-emerald-950 border ${isMe ? 'border-yellow-400 ring-1 ring-yellow-400' : 'border-emerald-800/50'}"><div class="flex items-center gap-2"><span class="text-emerald-500 font-mono text-xs">#${index + 1}</span><span class="font-medium text-emerald-100 truncate max-w-[80px]">${lbUser.name}</span></div><span class="text-yellow-400 font-bold text-sm">${(lbUser.score || 0).toLocaleString()} 🍌</span></div>`;
       });
       elLeaderboardContainer.innerHTML = html;
