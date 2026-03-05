@@ -1,368 +1,582 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Trophy, TreePine, Info, Play, Coins, RotateCcw, Plus, Minus } from 'lucide-react';
-
-// --- Supabase Configuration ---
-// Note: Using a dynamic script import to bypass bundle resolution errors in this environment
-const supabaseUrl = ""; 
-const supabaseKey = ""; 
-
-export default function App() {
-  const [supabase, setSupabase] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [view, setView] = useState('menu'); 
-  
-  const [playerName, setPlayerName] = useState('');
-  const [bananas, setBananas] = useState(0);
-  const [trees, setTrees] = useState(1);
-  const [leaderboard, setLeaderboard] = useState([]);
-  
-  const [betAmount, setBetAmount] = useState(0);
-  const [betColor, setBetColor] = useState(null); 
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [wheelRotation, setWheelRotation] = useState(0);
-  const [spinResultMsg, setSpinResultMsg] = useState('');
-
-  const syncTimeoutRef = useRef(null);
-
-  // --- Load Supabase Library & Local Data ---
-  useEffect(() => {
-    // 1. Load Local Data
-    const saved = localStorage.getItem('bananaCasinoSave');
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        setPlayerName(data.name || '');
-        setBananas(data.bananas || 0);
-        setTrees(data.trees || 1);
-      } catch (e) {
-        console.error("Error loading local save", e);
-      }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banana Casino</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Custom CSS to handle the wheel transition smoothly */
+    #wheel {
+      transition-property: transform;
+      transition-duration: 4000ms;
+      transition-timing-function: cubic-bezier(0.15, 0, 0.15, 1);
     }
-
-    // 2. Dynamically load Supabase from CDN to avoid build errors
-    const script = document.createElement('script');
-    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-    script.async = true;
-    script.onload = () => {
-      if (window.supabase && supabaseUrl && supabaseKey) {
-        const client = window.supabase.createClient(supabaseUrl, supabaseKey);
-        setSupabase(client);
-      }
-      setAuthChecked(true);
-    };
-    script.onerror = () => setAuthChecked(true);
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  // --- Supabase Leaderboard Subscription ---
-  useEffect(() => {
-    if (!supabase) return;
-
-    const fetchLeaderboard = async () => {
-      const { data, error } = await supabase
-        .from('leaderboard')
-        .select('*')
-        .order('score', { ascending: false })
-        .limit(50);
-      
-      if (data) setLeaderboard(data);
-    };
-
-    fetchLeaderboard();
-
-    // Real-time subscription
-    const channel = supabase.channel('leaderboard-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, () => {
-        fetchLeaderboard();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
-
-  // --- Sync Data ---
-  const syncData = async (currentBananas, currentTrees, nameToSave = playerName) => {
-    localStorage.setItem('bananaCasinoSave', JSON.stringify({
-      name: nameToSave,
-      bananas: currentBananas,
-      trees: currentTrees
-    }));
-
-    if (supabase && nameToSave) {
-      try {
-        await supabase.from('leaderboard').upsert({
-          id: nameToSave, 
-          name: nameToSave,
-          score: currentBananas
-        });
-      } catch (err) {
-        console.error("Supabase sync error:", err);
-      }
+    /* Simple custom scrollbar for the leaderboard */
+    #leaderboard-container::-webkit-scrollbar {
+      width: 4px;
     }
-  };
-
-  // --- Game Loop ---
-  useEffect(() => {
-    if (view !== 'game' || isSpinning) return;
-
-    const interval = setInterval(() => {
-      setBananas(prev => {
-        const newTotal = prev + trees;
-        clearTimeout(syncTimeoutRef.current);
-        syncTimeoutRef.current = setTimeout(() => {
-          syncData(newTotal, trees);
-        }, 5000);
-        return newTotal;
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [view, trees, isSpinning, playerName, supabase]);
-
-  const handleBuyTree = () => {
-    if (bananas >= 100 && trees < 10) {
-      const newBananas = bananas - 100;
-      const newTrees = trees + 1;
-      setBananas(newBananas);
-      setTrees(newTrees);
-      syncData(newBananas, newTrees);
+    #leaderboard-container::-webkit-scrollbar-track {
+      background: rgba(6, 78, 59, 0.1);
     }
-  };
+    #leaderboard-container::-webkit-scrollbar-thumb {
+      background: #facc15;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="fixed inset-0 bg-black text-white font-sans overflow-hidden select-none flex items-center justify-center">
 
-  const handleSpin = () => {
-    if (isSpinning || bananas <= 0 || !betColor || betAmount <= 0 || betAmount > bananas) return;
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center text-yellow-400 font-bold text-2xl z-50">
+    Loading Casino...
+  </div>
 
-    const preSpinBananas = bananas - betAmount;
-    setBananas(preSpinBananas);
-    setIsSpinning(true);
-    setSpinResultMsg("Spinning...");
-
-    const rand = Math.random();
-    let winningColor;
-    if (rand < 0.49) winningColor = 'red';
-    else if (rand < 0.98) winningColor = 'black';
-    else winningColor = 'green';
-
-    const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
-    const matchingIndices = WHEEL_COLORS.map((c, i) => c === winningColor ? i : -1).filter(i => i !== -1);
-    const targetIndex = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
-
-    const sliceCenterAngle = targetIndex * 18 + 9;
-    const baseTargetRotation = 360 - sliceCenterAngle;
-    const nextRotation = wheelRotation + (360 * 5) + (baseTargetRotation - (wheelRotation % 360));
+  <!-- Main App Container -->
+  <div id="app" class="w-full h-full max-w-[1600px] bg-emerald-950 relative shadow-2xl flex flex-col hidden">
     
-    setWheelRotation(nextRotation);
-
-    setTimeout(() => {
-      let finalBananas = preSpinBananas;
-      if (betColor === winningColor) {
-        const winMult = winningColor === 'green' ? 3 : 2;
-        finalBananas += (betAmount * winMult);
-        setSpinResultMsg(`Landed on ${winningColor.toUpperCase()}! You won ${betAmount * (winMult - 1)} 🍌!`);
-      } else {
-        setSpinResultMsg(`Landed on ${winningColor.toUpperCase()}! You lost ${betAmount} 🍌.`);
-      }
-
-      setBananas(finalBananas);
-      setIsSpinning(false);
-      syncData(finalBananas, trees);
-    }, 4000);
-  };
-
-  const getWheelBackground = () => {
-    const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
-    let gradient = '';
-    WHEEL_COLORS.forEach((color, i) => {
-      const cssColor = color === 'red' ? '#ef4444' : color === 'black' ? '#1e293b' : '#22c55e';
-      gradient += `${cssColor} ${i * 18}deg ${(i + 1) * 18}deg${i < 19 ? ',' : ''}`;
-    });
-    return `conic-gradient(${gradient})`;
-  };
-
-  if (!authChecked) {
-    return <div className="fixed inset-0 bg-slate-900 flex items-center justify-center text-yellow-400 font-bold text-2xl">Loading Casino...</div>;
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black text-white font-sans overflow-hidden select-none flex items-center justify-center">
-      <div className="w-full h-full max-w-[1600px] bg-emerald-950 relative shadow-2xl flex flex-col">
-      
-        {view === 'menu' && (
-          <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-emerald-900 to-emerald-950 text-center">
-            <h1 className="text-7xl font-black text-yellow-400 mb-2 drop-shadow-xl">BANANA<br/>CASINO</h1>
-            <p className="text-emerald-300 mb-12 text-xl font-medium">Spin the wheel. Grow the trees.</p>
-            <div className="flex flex-col gap-4 w-64">
-              <button onClick={() => setView('name_entry')} className="bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-2xl py-4 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95">
-                <Play fill="currentColor" size={24} /> START
-              </button>
-              <button onClick={() => setView('credits')} className="bg-emerald-800 hover:bg-emerald-700 text-emerald-100 font-bold text-lg py-3 rounded-xl flex items-center justify-center gap-2">
-                <Info size={20} /> CREDITS
-              </button>
-            </div>
-          </div>
-        )}
-
-        {view === 'credits' && (
-          <div className="flex-1 flex flex-col items-center justify-center bg-emerald-950 text-center p-6">
-            <h2 className="text-4xl font-bold text-yellow-400 mb-8 underline decoration-emerald-500">CREDITS</h2>
-            <div className="bg-emerald-900 p-8 rounded-2xl max-w-md border border-emerald-800 shadow-xl">
-              <p className="text-xl text-emerald-100 mb-4">Made by <span className="font-bold text-white">Zayn Lilak</span></p>
-              <p className="text-emerald-300/80 text-sm italic">Banana trademark from wilhelm.toverland.se</p>
-            </div>
-            <button onClick={() => setView('menu')} className="mt-8 bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-xl">Back to Menu</button>
-          </div>
-        )}
-
-        {view === 'name_entry' && (
-          <div className="flex-1 flex flex-col items-center justify-center bg-emerald-950 p-6">
-            <div className="bg-emerald-900 p-8 rounded-3xl max-w-md w-full shadow-2xl border border-emerald-800 text-center">
-              <h2 className="text-3xl font-bold text-yellow-400 mb-6">Casino ID</h2>
-              <input 
-                type="text" 
-                maxLength={15}
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Enter Your Name..."
-                className="w-full bg-emerald-950 border-2 border-emerald-700 text-white text-xl p-4 rounded-xl text-center mb-6 focus:border-yellow-400 outline-none"
-              />
-              <button 
-                onClick={() => {
-                  const finalName = playerName.trim() || `Player_${Math.floor(Math.random()*1000)}`;
-                  setPlayerName(finalName);
-                  syncData(bananas, trees, finalName);
-                  setView('game');
-                }}
-                className="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-xl py-4 rounded-xl transition-transform active:scale-95"
-              >
-                Enter Casino
-              </button>
-            </div>
-          </div>
-        )}
-
-        {view === 'game' && (
-          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-            {/* Left Sidebar: Scoreboard */}
-            <div className="md:w-1/4 bg-emerald-900/50 border-r border-emerald-800 flex flex-col h-full overflow-hidden">
-              <div className="p-4 bg-emerald-900 border-b border-emerald-800 flex items-center gap-2">
-                <Trophy className="text-yellow-400" />
-                <h2 className="font-bold text-yellow-400 text-sm uppercase tracking-widest">Global Scoreboard</h2>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                {leaderboard.map((lbUser, index) => (
-                  <div key={lbUser.id || index} className={`flex justify-between items-center p-3 rounded-lg bg-emerald-950 border ${lbUser.name === playerName ? 'border-yellow-400' : 'border-emerald-800/50'}`}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-emerald-500 font-mono text-xs">#{index + 1}</span>
-                      <span className="font-medium text-emerald-100 truncate max-w-[80px]">{lbUser.name}</span>
-                    </div>
-                    <span className="text-yellow-400 font-bold text-sm">{lbUser.score?.toLocaleString()} 🍌</span>
-                  </div>
-                ))}
-                {leaderboard.length === 0 && <div className="text-center text-emerald-600 text-xs py-10 italic">Connecting to Supabase...</div>}
-              </div>
-            </div>
-
-            {/* Middle: The Wheel */}
-            <div className="flex-1 flex flex-col h-full bg-emerald-950 overflow-y-auto relative border-x border-emerald-800/30">
-              <div className="p-4 flex justify-between items-center">
-                <button onClick={() => setView('menu')} className="text-emerald-500 hover:text-emerald-300 text-sm font-bold">← EXIT CASINO</button>
-                <div className="text-emerald-500 text-xs font-mono uppercase">V1.2 Optimized</div>
-              </div>
-              
-              <div className="flex-1 flex flex-col items-center justify-center p-4">
-                <div className="relative w-72 h-72 sm:w-96 sm:h-96 rounded-full border-[12px] border-yellow-500 shadow-[0_0_60px_rgba(0,0,0,0.6)] flex items-center justify-center overflow-visible">
-                  <div 
-                    className="w-full h-full rounded-full transition-transform duration-[4000ms]"
-                    style={{ 
-                      background: getWheelBackground(),
-                      transform: `rotate(${wheelRotation}deg)`,
-                      transitionTimingFunction: 'cubic-bezier(0.15, 0, 0.15, 1)'
-                    }}
-                  />
-                  {/* Center Hub */}
-                  <div className="absolute w-12 h-12 bg-yellow-500 rounded-full border-4 border-yellow-600 shadow-xl z-10" />
-                  {/* Top Pointer */}
-                  <div className="absolute -top-6 left-1/2 -ml-4 w-8 h-10 bg-white shadow-lg z-20" style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)' }} />
-                </div>
-                <div className="mt-8 h-10 text-2xl font-black text-center text-yellow-400 drop-shadow-md">{spinResultMsg}</div>
-              </div>
-
-              {/* Bottom: Betting */}
-              <div className="bg-emerald-900/80 backdrop-blur-md p-6 border-t-4 border-yellow-500/20">
-                <div className="max-w-md mx-auto space-y-4">
-                  <div className="flex gap-2 h-14">
-                    {['red', 'green', 'black'].map(color => (
-                      <button 
-                        key={color}
-                        onClick={() => setBetColor(color)}
-                        className={`flex-1 rounded-xl font-black uppercase transition-all border-2 text-sm ${betColor === color ? 'bg-opacity-100 ring-2 ring-white border-white scale-105' : 'bg-opacity-30 border-transparent'} ${color === 'red' ? 'bg-red-500' : color === 'green' ? 'bg-green-500' : 'bg-slate-900'}`}
-                      >
-                        {color}<br/><span className="text-[10px] opacity-70">{color === 'green' ? '3X PAY' : '1X PAY'}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <input 
-                      type="number" 
-                      value={betAmount || ''}
-                      onChange={(e) => setBetAmount(Math.max(0, Math.min(bananas, parseInt(e.target.value) || 0)))}
-                      className="flex-1 bg-emerald-950 border-2 border-emerald-800 text-yellow-400 text-xl font-mono p-3 rounded-xl focus:border-yellow-400 outline-none"
-                      placeholder="Bet Amount..."
-                      disabled={isSpinning}
-                    />
-                    <button onClick={() => setBetAmount(bananas)} className="bg-emerald-800 px-4 rounded-xl font-bold hover:bg-emerald-700 active:scale-95" disabled={isSpinning}>MAX</button>
-                  </div>
-                  <button 
-                    onClick={handleSpin}
-                    disabled={isSpinning || bananas <= 0 || !betColor || betAmount <= 0}
-                    className={`w-full py-5 rounded-2xl font-black text-3xl shadow-xl transition-all active:scale-95 ${isSpinning || bananas <= 0 || !betColor || betAmount <= 0 ? 'bg-emerald-800 text-emerald-900' : 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 hover:brightness-110'}`}
-                  >
-                    {isSpinning ? 'SPINNING...' : 'SPIN'}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Sidebar: Trees */}
-            <div className="md:w-1/4 bg-emerald-900/50 border-l border-emerald-800 flex flex-col h-full">
-              <div className="p-6 bg-emerald-900 text-center border-b border-emerald-800">
-                <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-1">{playerName}'s Balance</p>
-                <div className="text-5xl font-black text-yellow-400 drop-shadow-lg">{bananas.toLocaleString()} 🍌</div>
-              </div>
-              <div className="p-6 flex-1 overflow-y-auto">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-emerald-100 flex items-center gap-2">
-                    <TreePine size={18} className="text-emerald-400" />
-                    TREES ({trees}/10)
-                  </h3>
-                  <span className="text-[10px] text-emerald-400 font-bold">+{trees} 🍌/5s</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3 mb-8">
-                  {[...Array(10)].map((_, i) => (
-                    <div key={i} className={`aspect-square rounded-2xl flex items-center justify-center border-2 transition-all ${i < trees ? 'bg-emerald-800 border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.1)]' : 'bg-emerald-950/50 border-emerald-900/50 opacity-20'}`}>
-                      <TreePine size={32} className={i < trees ? "text-emerald-400" : "text-emerald-900"} />
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={handleBuyTree}
-                  disabled={bananas < 100 || trees >= 10}
-                  className={`w-full py-4 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg ${trees >= 10 ? 'bg-slate-800 text-slate-500' : bananas < 100 ? 'bg-emerald-800/50 text-emerald-700' : 'bg-emerald-500 hover:bg-emerald-400 text-emerald-950 active:scale-95'}`}
-                >
-                  <span className="text-lg">{trees >= 10 ? 'FULL GROVE' : 'BUY TREE'}</span>
-                  {trees < 10 && <span className="text-xs opacity-70">(-100 🍌)</span>}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+    <!-- VIEW: MENU -->
+    <div id="view-menu" class="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-emerald-900 to-emerald-950 text-center hidden">
+      <h1 class="text-7xl font-black text-yellow-400 mb-2 drop-shadow-xl">BANANA<br/>CASINO</h1>
+      <p class="text-emerald-300 mb-12 text-xl font-medium">Spin the wheel. Grow the trees.</p>
+      <div class="flex flex-col gap-4 w-64">
+        <button onclick="setView('name_entry')" class="bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-2xl py-4 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          START
+        </button>
+        <button onclick="setView('credits')" class="bg-emerald-800 hover:bg-emerald-700 text-emerald-100 font-bold text-lg py-3 rounded-xl flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          CREDITS
+        </button>
       </div>
     </div>
-  );
-}
+
+    <!-- VIEW: CREDITS -->
+    <div id="view-credits" class="flex-1 flex flex-col items-center justify-center bg-emerald-950 text-center p-6 hidden">
+      <h2 class="text-4xl font-bold text-yellow-400 mb-8 underline decoration-emerald-500">CREDITS</h2>
+      <div class="bg-emerald-900 p-8 rounded-2xl max-w-md border border-emerald-800 shadow-xl">
+        <p class="text-xl text-emerald-100 mb-4">Made by <span class="font-bold text-white">Zayn Lilak</span></p>
+        <p class="text-emerald-300/80 text-sm italic">Banana trademark from wilhelm.toverland.se</p>
+      </div>
+      <button onclick="setView('menu')" class="mt-8 bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-xl">Back to Menu</button>
+    </div>
+
+    <!-- VIEW: NAME ENTRY -->
+    <div id="view-name_entry" class="flex-1 flex flex-col items-center justify-center bg-emerald-950 p-6 hidden">
+      <div class="bg-emerald-900 p-8 rounded-3xl max-w-md w-full shadow-2xl border border-emerald-800 text-center">
+        <h2 class="text-3xl font-bold text-yellow-400 mb-6">Casino ID</h2>
+        <input 
+          type="text" 
+          id="player-name-input"
+          maxlength="15"
+          placeholder="Enter Your Name..."
+          class="w-full bg-emerald-950 border-2 border-emerald-700 text-white text-xl p-4 rounded-xl text-center mb-6 focus:border-yellow-400 outline-none"
+        />
+        <button 
+          onclick="enterCasino()"
+          class="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-xl py-4 rounded-xl transition-transform active:scale-95"
+        >
+          Enter Casino
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW: GAME -->
+    <div id="view-game" class="flex-1 flex flex-col md:flex-row overflow-hidden hidden">
+      
+      <!-- Left Sidebar: Scoreboard -->
+      <div class="md:w-1/4 bg-emerald-900/50 border-r border-emerald-800 flex flex-col h-full overflow-hidden">
+        <div class="p-4 bg-emerald-900 border-b border-emerald-800 flex items-center gap-2">
+          <svg class="text-yellow-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
+          <h2 class="font-bold text-yellow-400 text-sm uppercase tracking-widest">Global Scoreboard</h2>
+        </div>
+        <div id="leaderboard-container" class="flex-1 overflow-y-auto p-4 space-y-2">
+          <div class="text-center text-emerald-600 text-xs py-10 italic">Connecting...</div>
+        </div>
+      </div>
+
+      <!-- Middle: The Wheel -->
+      <div class="flex-1 flex flex-col h-full bg-emerald-950 overflow-y-auto relative border-x border-emerald-800/30">
+        <div class="p-4 flex justify-between items-center">
+          <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-sm font-bold">← EXIT CASINO</button>
+          <div class="text-emerald-500 text-xs font-mono uppercase">V1.3 Persistence Enabled</div>
+        </div>
+        
+        <div class="flex-1 flex flex-col items-center justify-center p-4">
+          <div class="relative w-72 h-72 sm:w-96 sm:h-96 rounded-full border-[12px] border-yellow-500 shadow-[0_0_60px_rgba(0,0,0,0.6)] flex items-center justify-center overflow-visible">
+            <div id="wheel" class="w-full h-full rounded-full"></div>
+            <!-- Center Hub -->
+            <div class="absolute w-12 h-12 bg-yellow-500 rounded-full border-4 border-yellow-600 shadow-xl z-10"></div>
+            <!-- Top Pointer -->
+            <div class="absolute -top-6 left-1/2 -ml-4 w-8 h-10 bg-white shadow-lg z-20" style="clip-path: polygon(50% 100%, 0 0, 100% 0)"></div>
+          </div>
+          <div id="spin-result-msg" class="mt-8 h-10 text-2xl font-black text-center text-yellow-400 drop-shadow-md"></div>
+        </div>
+
+        <!-- Bottom: Betting -->
+        <div class="bg-emerald-900/80 backdrop-blur-md p-6 border-t-4 border-yellow-500/20">
+          <div class="max-w-md mx-auto space-y-4">
+            <div class="flex gap-2 h-14">
+              <button onclick="setBetColor('red')" id="bet-btn-red" class="flex-1 rounded-xl font-black uppercase transition-all border-2 text-sm bg-red-500 bg-opacity-30 border-transparent">
+                RED<br/><span class="text-[10px] opacity-70">1X PAY</span>
+              </button>
+              <button onclick="setBetColor('green')" id="bet-btn-green" class="flex-1 rounded-xl font-black uppercase transition-all border-2 text-sm bg-green-500 bg-opacity-30 border-transparent">
+                GREEN<br/><span class="text-[10px] opacity-70">3X PAY</span>
+              </button>
+              <button onclick="setBetColor('black')" id="bet-btn-black" class="flex-1 rounded-xl font-black uppercase transition-all border-2 text-sm bg-slate-900 bg-opacity-30 border-transparent">
+                BLACK<br/><span class="text-[10px] opacity-70">1X PAY</span>
+              </button>
+            </div>
+            <div class="flex gap-2">
+              <input 
+                type="number" 
+                id="bet-amount-input"
+                class="flex-1 bg-emerald-950 border-2 border-emerald-800 text-yellow-400 text-xl font-mono p-3 rounded-xl focus:border-yellow-400 outline-none"
+                placeholder="Bet Amount..."
+              />
+              <button onclick="setMaxBet()" id="max-bet-btn" class="bg-emerald-800 px-4 rounded-xl font-bold hover:bg-emerald-700 active:scale-95">MAX</button>
+            </div>
+            <button 
+              onclick="handleSpin()"
+              id="spin-btn"
+              class="w-full py-5 rounded-2xl font-black text-3xl shadow-xl transition-all active:scale-95 bg-emerald-800 text-emerald-900"
+              disabled
+            >
+              SPIN
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Sidebar: Trees -->
+      <div class="md:w-1/4 bg-emerald-900/50 border-l border-emerald-800 flex flex-col h-full">
+        <div class="p-6 bg-emerald-900 text-center border-b border-emerald-800">
+          <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-1"><span id="display-player-name">Player</span>'s Balance</p>
+          <div id="display-bananas" class="text-5xl font-black text-yellow-400 drop-shadow-lg">0 🍌</div>
+        </div>
+        <div class="p-6 flex-1 overflow-y-auto">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="font-bold text-emerald-100 flex items-center gap-2">
+              <svg class="text-emerald-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 14 4-4 4 4"></path><path d="m7 19 5-5 5 5"></path><path d="m7 9 5-5 5 5"></path><path d="M12 19v3"></path></svg>
+              TREES (<span id="display-trees">1</span>/10)
+            </h3>
+            <span class="text-[10px] text-emerald-400 font-bold">+<span id="display-tree-income">1</span> 🍌/5s</span>
+          </div>
+          
+          <div id="tree-grid" class="grid grid-cols-2 gap-3 mb-8">
+            <!-- Trees injected here -->
+          </div>
+          
+          <button
+            onclick="handleBuyTree()"
+            id="buy-tree-btn"
+            class="w-full py-4 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700"
+            disabled
+          >
+            <span id="buy-tree-title" class="text-lg">BUY TREE</span>
+            <span id="buy-tree-subtitle" class="text-xs opacity-70">(-100 🍌)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Supabase Configuration ---
+    const supabaseUrl = "https://yuwnnaavbegzbdfpxjok.supabase.co"; 
+    const supabaseKey = "sb_publishable_dApo1jlVE15-s7RTzmnpOA_cBDuQy1W"; 
+    let supabaseClient = null;
+
+    // --- State ---
+    let view = 'menu';
+    let playerName = '';
+    let bananas = 0;
+    let trees = 1;
+    let leaderboard = [];
+    
+    let betAmount = 0;
+    let betColor = null; 
+    let isSpinning = false;
+    let wheelRotation = 0;
+    let spinResultMsg = '';
+
+    let syncTimeout = null;
+    let gameLoopInterval = null;
+
+    // --- DOM Elements ---
+    const elApp = document.getElementById('app');
+    const elLoading = document.getElementById('loading-screen');
+    const views = {
+      menu: document.getElementById('view-menu'),
+      credits: document.getElementById('view-credits'),
+      name_entry: document.getElementById('view-name_entry'),
+      game: document.getElementById('view-game')
+    };
+    
+    const elPlayerNameInput = document.getElementById('player-name-input');
+    const elDisplayPlayerName = document.getElementById('display-player-name');
+    const elDisplayBananas = document.getElementById('display-bananas');
+    const elDisplayTrees = document.getElementById('display-trees');
+    const elDisplayTreeIncome = document.getElementById('display-tree-income');
+    const elTreeGrid = document.getElementById('tree-grid');
+    const elBuyTreeBtn = document.getElementById('buy-tree-btn');
+    const elBuyTreeTitle = document.getElementById('buy-tree-title');
+    const elBuyTreeSubtitle = document.getElementById('buy-tree-subtitle');
+    
+    const elWheel = document.getElementById('wheel');
+    const elSpinResultMsg = document.getElementById('spin-result-msg');
+    
+    const elBetBtns = {
+      red: document.getElementById('bet-btn-red'),
+      green: document.getElementById('bet-btn-green'),
+      black: document.getElementById('bet-btn-black')
+    };
+    const elBetAmountInput = document.getElementById('bet-amount-input');
+    const elMaxBetBtn = document.getElementById('max-bet-btn');
+    const elSpinBtn = document.getElementById('spin-btn');
+    
+    const elLeaderboardContainer = document.getElementById('leaderboard-container');
+
+    // --- Initialize ---
+    window.onload = () => {
+      // 1. Setup Wheel Background
+      elWheel.style.background = getWheelBackground();
+
+      // 2. Load Robust Local Data
+      loadPersistentData();
+
+      // 3. Init Supabase (if available via CDN)
+      if (window.supabase && supabaseUrl && supabaseKey) {
+        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        setupSupabaseListeners();
+      }
+
+      // 4. Setup Input Listeners
+      elBetAmountInput.addEventListener('input', (e) => {
+        let val = parseInt(e.target.value) || 0;
+        val = Math.max(0, Math.min(bananas, val));
+        betAmount = val;
+        e.target.value = val || '';
+        updateGameUI();
+      });
+
+      // Show App
+      elLoading.classList.add('hidden');
+      elApp.classList.remove('hidden');
+      
+      // If player already has a name, we can skip the entry screen if we want, 
+      // but usually better to let them start from menu
+      setView('menu');
+      renderTreeGrid();
+    };
+
+    // --- Persistence Management ---
+    function loadPersistentData() {
+      const saved = localStorage.getItem('bananaCasinoSave');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          playerName = data.name || '';
+          bananas = typeof data.bananas === 'number' ? data.bananas : 0;
+          trees = typeof data.trees === 'number' ? data.trees : 1;
+          
+          if (playerName) {
+            elPlayerNameInput.value = playerName;
+          }
+        } catch (e) {
+          console.error("Error parsing save data", e);
+        }
+      }
+    }
+
+    async function syncData(currentBananas, currentTrees, nameToSave = playerName) {
+      // 1. Always save to Local Storage first for instant local persistence
+      localStorage.setItem('bananaCasinoSave', JSON.stringify({
+        name: nameToSave,
+        bananas: currentBananas,
+        trees: currentTrees
+      }));
+
+      // 2. Sync to Supabase for the global scoreboard
+      if (supabaseClient && nameToSave) {
+        try {
+          await supabaseClient.from('leaderboard').upsert({
+            id: nameToSave, // Name as unique ID
+            name: nameToSave,
+            score: currentBananas
+          });
+        } catch (err) {
+          console.warn("Supabase sync failed (offline?), but local progress is saved.");
+        }
+      }
+    }
+
+    // --- Core Logic ---
+    function setView(newView) {
+      view = newView;
+      Object.keys(views).forEach(k => {
+        if(views[k]) views[k].classList.add('hidden');
+      });
+      if(views[view]) views[view].classList.remove('hidden');
+
+      if (view === 'game') {
+        startGameLoop();
+        updateGameUI();
+      } else {
+        stopGameLoop();
+      }
+    }
+
+    function enterCasino() {
+      let val = elPlayerNameInput.value.trim();
+      playerName = val || `Player_${Math.floor(Math.random() * 1000)}`;
+      syncData(bananas, trees, playerName);
+      setView('game');
+    }
+
+    async function setupSupabaseListeners() {
+      if (!supabaseClient) return;
+
+      const fetchLeaderboard = async () => {
+        const { data, error } = await supabaseClient
+          .from('leaderboard')
+          .select('*')
+          .order('score', { ascending: false })
+          .limit(50);
+        
+        if (data) {
+          leaderboard = data;
+          renderLeaderboard();
+        }
+      };
+
+      await fetchLeaderboard();
+
+      // Subscription for real-time updates
+      supabaseClient.channel('leaderboard-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, () => {
+          fetchLeaderboard();
+        })
+        .subscribe();
+    }
+
+    function startGameLoop() {
+      if (gameLoopInterval) clearInterval(gameLoopInterval);
+      gameLoopInterval = setInterval(() => {
+        if (!isSpinning) {
+          bananas += trees;
+          
+          // Debounced sync to avoid hammering localstorage/database
+          clearTimeout(syncTimeout);
+          syncTimeout = setTimeout(() => {
+            syncData(bananas, trees);
+          }, 2000);
+
+          updateGameUI();
+        }
+      }, 5000);
+    }
+
+    function stopGameLoop() {
+      if (gameLoopInterval) {
+        clearInterval(gameLoopInterval);
+        gameLoopInterval = null;
+      }
+    }
+
+    function handleBuyTree() {
+      if (bananas >= 100 && trees < 10) {
+        bananas -= 100;
+        trees += 1;
+        syncData(bananas, trees);
+        updateGameUI();
+      }
+    }
+
+    function setBetColor(color) {
+      if (isSpinning) return;
+      betColor = color;
+      updateGameUI();
+    }
+
+    function setMaxBet() {
+      if (isSpinning) return;
+      betAmount = bananas;
+      elBetAmountInput.value = bananas;
+      updateGameUI();
+    }
+
+    function handleSpin() {
+      if (isSpinning || bananas <= 0 || !betColor || betAmount <= 0 || betAmount > bananas) return;
+
+      const preSpinBananas = bananas - betAmount;
+      bananas = preSpinBananas;
+      isSpinning = true;
+      spinResultMsg = "Spinning...";
+      
+      updateGameUI();
+
+      // Probabilities: 49% Red, 49% Black, 2% Green
+      const rand = Math.random();
+      let winningColor;
+      if (rand < 0.49) {
+        winningColor = 'red';
+      } else if (rand < 0.98) {
+        winningColor = 'black';
+      } else {
+        winningColor = 'green';
+      }
+
+      const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
+      const matchingIndices = WHEEL_COLORS.map((c, i) => c === winningColor ? i : -1).filter(i => i !== -1);
+      const targetIndex = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
+
+      const sliceCenterAngle = targetIndex * 18 + 9;
+      const baseTargetRotation = 360 - sliceCenterAngle;
+      const nextRotation = wheelRotation + (360 * 5) + (baseTargetRotation - (wheelRotation % 360));
+      
+      wheelRotation = nextRotation;
+      elWheel.style.transform = `rotate(${wheelRotation}deg)`;
+
+      setTimeout(() => {
+        let finalBananas = preSpinBananas;
+        if (betColor === winningColor) {
+          // PAYOUT LOGIC
+          // Red/Black: Win what you betted (Total = Bet * 2)
+          // Green: Win 3x what you betted (Total = Bet * 4)
+          const multiplier = winningColor === 'green' ? 4 : 2;
+          const winnings = betAmount * multiplier;
+          finalBananas += winnings;
+          
+          spinResultMsg = `Landed on ${winningColor.toUpperCase()}! You won ${winnings - betAmount} 🍌!`;
+        } else {
+          spinResultMsg = `Landed on ${winningColor.toUpperCase()}! You lost ${betAmount} 🍌.`;
+        }
+
+        bananas = finalBananas;
+        isSpinning = false;
+        syncData(finalBananas, trees);
+        updateGameUI();
+      }, 4000);
+    }
+
+    function getWheelBackground() {
+      const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
+      let gradient = '';
+      WHEEL_COLORS.forEach((color, i) => {
+        const cssColor = color === 'red' ? '#ef4444' : color === 'black' ? '#1e293b' : '#22c55e';
+        gradient += `${cssColor} ${i * 18}deg ${(i + 1) * 18}deg${i < 19 ? ',' : ''}`;
+      });
+      return `conic-gradient(${gradient})`;
+    }
+
+    // --- UI Updaters ---
+    function updateGameUI() {
+      // Texts
+      elDisplayPlayerName.innerText = playerName;
+      elDisplayBananas.innerText = `${bananas.toLocaleString()} 🍌`;
+      elDisplayTrees.innerText = trees;
+      elDisplayTreeIncome.innerText = trees;
+      elSpinResultMsg.innerText = spinResultMsg;
+
+      // Tree Grid
+      renderTreeGrid();
+
+      // Buy Tree Button
+      if (trees >= 10) {
+        elBuyTreeBtn.disabled = true;
+        elBuyTreeBtn.className = "w-full py-4 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-slate-800 text-slate-500";
+        elBuyTreeTitle.innerText = "FULL GROVE";
+        elBuyTreeSubtitle.style.display = 'none';
+      } else if (bananas < 100) {
+        elBuyTreeBtn.disabled = true;
+        elBuyTreeBtn.className = "w-full py-4 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700";
+        elBuyTreeTitle.innerText = "BUY TREE";
+        elBuyTreeSubtitle.style.display = 'block';
+      } else {
+        elBuyTreeBtn.disabled = false;
+        elBuyTreeBtn.className = "w-full py-4 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-emerald-500 hover:bg-emerald-400 text-emerald-950 active:scale-95";
+        elBuyTreeTitle.innerText = "BUY TREE";
+        elBuyTreeSubtitle.style.display = 'block';
+      }
+
+      // Bet Buttons
+      ['red', 'green', 'black'].forEach(color => {
+        const btn = elBetBtns[color];
+        if (betColor === color) {
+          btn.classList.remove('bg-opacity-30', 'border-transparent');
+          btn.classList.add('bg-opacity-100', 'ring-2', 'ring-white', 'border-white', 'scale-105');
+        } else {
+          btn.classList.add('bg-opacity-30', 'border-transparent');
+          btn.classList.remove('bg-opacity-100', 'ring-2', 'ring-white', 'border-white', 'scale-105');
+        }
+      });
+
+      // Inputs & Spin Button
+      elBetAmountInput.disabled = isSpinning;
+      elMaxBetBtn.disabled = isSpinning;
+
+      const canSpin = !isSpinning && bananas > 0 && betColor && betAmount > 0;
+      elSpinBtn.disabled = !canSpin;
+      
+      if (!canSpin) {
+        elSpinBtn.className = "w-full py-5 rounded-2xl font-black text-3xl shadow-xl transition-all bg-emerald-800 text-emerald-900";
+        elSpinBtn.innerText = isSpinning ? "SPINNING..." : "SPIN";
+      } else {
+        elSpinBtn.className = "w-full py-5 rounded-2xl font-black text-3xl shadow-xl transition-all active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 hover:brightness-110";
+        elSpinBtn.innerText = "SPIN";
+      }
+
+      // Sync Bet Amount Input
+      if (betAmount > bananas) {
+          betAmount = bananas;
+          elBetAmountInput.value = bananas || '';
+      }
+    }
+
+    function renderTreeGrid() {
+      let html = '';
+      const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 14 4-4 4 4"></path><path d="m7 19 5-5 5 5"></path><path d="m7 9 5-5 5 5"></path><path d="M12 19v3"></path></svg>`;
+      
+      for(let i=0; i<10; i++) {
+        const isOwned = i < trees;
+        const classes = isOwned 
+          ? "bg-emerald-800 border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.1)] text-emerald-400" 
+          : "bg-emerald-950/50 border-emerald-900/50 opacity-20 text-emerald-900";
+        
+        html += `<div class="aspect-square rounded-2xl flex items-center justify-center border-2 transition-all ${classes}">
+                  ${svgIcon}
+                 </div>`;
+      }
+      elTreeGrid.innerHTML = html;
+    }
+
+    function renderLeaderboard() {
+      if (leaderboard.length === 0) {
+        elLeaderboardContainer.innerHTML = `<div class="text-center text-emerald-600 text-xs py-10 italic">No rankings yet.</div>`;
+        return;
+      }
+
+      let html = '';
+      leaderboard.forEach((lbUser, index) => {
+        const isMe = lbUser.name === playerName;
+        const borderClass = isMe ? 'border-yellow-400 ring-1 ring-yellow-400' : 'border-emerald-800/50';
+        const score = (lbUser.score || 0).toLocaleString();
+        
+        html += `
+          <div class="flex justify-between items-center p-3 rounded-lg bg-emerald-950 border ${borderClass}">
+            <div class="flex items-center gap-2">
+              <span class="text-emerald-500 font-mono text-xs">#${index + 1}</span>
+              <span class="font-medium text-emerald-100 truncate max-w-[80px]" title="${lbUser.name}">${lbUser.name}</span>
+            </div>
+            <span class="text-yellow-400 font-bold text-sm">${score} 🍌</span>
+          </div>
+        `;
+      });
+      elLeaderboardContainer.innerHTML = html;
+    }
+
+  </script>
+</body>
+</html>
