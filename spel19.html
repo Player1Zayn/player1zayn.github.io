@@ -96,7 +96,9 @@
       <div class="flex-1 flex flex-col h-full bg-emerald-950 overflow-y-auto relative border-x border-emerald-800/30">
         <div class="p-4 flex justify-between items-center">
           <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-sm font-bold">← EXIT CASINO</button>
-          <div class="text-emerald-500 text-xs font-mono uppercase">V1.4 Fix Enabled</div>
+          <div class="flex items-center gap-4">
+            <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-xs font-mono uppercase py-1 select-none" title="Game Version">V1.5 Fix Enabled</div>
+          </div>
         </div>
         
         <div class="flex-1 flex flex-col items-center justify-center p-4">
@@ -283,6 +285,71 @@
       setView('game');
     }
 
+    let adminClickCount = 0;
+    let adminClickTimer = null;
+
+    function handleVersionClick() {
+      adminClickCount++;
+      clearTimeout(adminClickTimer);
+      adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 2000);
+      
+      if (adminClickCount >= 5) {
+        adminClickCount = 0;
+        verifyAndOpenAdmin();
+      }
+    }
+
+    function verifyAndOpenAdmin() {
+      const pwd = prompt("Authentication Required:");
+      if (!pwd) return;
+
+      const trimmedPwd = pwd.trim();
+      
+      
+      if (trimmedPwd === "SystemTestTrue") {
+        openAdminPanel();
+      } else {
+        alert("Access Denied.");
+      }
+    }
+
+    async function openAdminPanel() {
+      const targetPlayer = prompt("🍌 OP! 🍌\n\nEnter the exact name of the player you want to give bananas to:");
+      if (!targetPlayer) return;
+      
+      const amountStr = prompt(`How many bananas do you want to give to ${targetPlayer}?`);
+      const amount = parseInt(amountStr);
+      if (isNaN(amount) || amount <= 0) return;
+
+      if (!supabaseClient) {
+        alert("Cloud connection not established.");
+        return;
+      }
+
+      const { data, error } = await supabaseClient
+        .from('leaderboard')
+        .select('score')
+        .eq('id', targetPlayer)
+        .single();
+        
+      if (error) {
+        alert(`Player '${targetPlayer}' not found on the leaderboard.`);
+        return;
+      }
+
+      const newScore = data.score + amount;
+      const { error: updateError } = await supabaseClient
+        .from('leaderboard')
+        .update({ score: newScore })
+        .eq('id', targetPlayer);
+        
+      if (updateError) {
+        alert("Failed to update bananas.");
+      } else {
+        alert(`SUCCESS! Added ${amount.toLocaleString()} bananas to ${targetPlayer}.`);
+      }
+    }
+
     async function setupSupabaseListeners() {
       if (!supabaseClient) return;
       const fetchLeaderboard = async () => {
@@ -290,7 +357,17 @@
         if (data) { leaderboard = data; renderLeaderboard(); }
       };
       await fetchLeaderboard();
-      supabaseClient.channel('leaderboard-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, fetchLeaderboard).subscribe();
+      
+      supabaseClient.channel('leaderboard-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, (payload) => {
+        fetchLeaderboard();
+        if (payload.new && payload.new.id === playerName) {
+          if (payload.new.score > bananas) {
+            bananas = payload.new.score;
+            syncData(bananas, trees);
+            updateGameUI();
+          }
+        }
+      }).subscribe();
     }
 
     function startGameLoop() {
@@ -328,7 +405,6 @@
     function handleSpin() {
       if (isSpinning || bananas <= 0 || !betColor || betAmount <= 0 || betAmount > bananas) return;
 
-      // DO NOT remove bananas yet. Just lock the state.
       isSpinning = true;
       spinResultMsg = "Spinning...";
       updateGameUI();
@@ -349,20 +425,16 @@
 
       setTimeout(() => {
         if (betColor === winningColor) {
-          // WIN: Bet stays in balance + Profit added
-          // Profit: Red/Black = 1x bet, Green = 3x bet
           const profitMultiplier = winningColor === 'green' ? 3 : 1;
           const winnings = betAmount * profitMultiplier;
           bananas += winnings;
           spinResultMsg = `Landed on ${winningColor.toUpperCase()}! You won ${winnings} 🍌!`;
         } else {
-          // LOSE: Bet is removed
           bananas -= betAmount;
           spinResultMsg = `Landed on ${winningColor.toUpperCase()}! You lost ${betAmount} 🍌.`;
         }
 
         isSpinning = false;
-        // Clamp bananas so we don't accidentally go negative
         bananas = Math.max(0, bananas);
         syncData(bananas, trees);
         updateGameUI();
