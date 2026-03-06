@@ -42,6 +42,32 @@
     Loading Casino...
   </div>
 
+  <!-- ADMIN MODAL -->
+  <div id="admin-modal" class="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center hidden">
+    <div class="bg-emerald-900 border-2 border-yellow-400 p-6 rounded-2xl w-[90%] max-w-md flex flex-col gap-4 shadow-2xl">
+      <h2 class="text-2xl font-black text-yellow-400 text-center tracking-widest drop-shadow-md">ADMIN PANEL</h2>
+      
+      <div>
+        <label class="text-emerald-200 text-sm font-bold block mb-1">Select Player</label>
+        <select id="admin-user-select" class="w-full bg-emerald-950 border border-emerald-700 p-3 rounded-lg text-white outline-none focus:border-yellow-400"></select>
+      </div>
+      
+      <div>
+        <label class="text-emerald-200 text-sm font-bold block mb-1">Amount (🍌)</label>
+        <input type="number" id="admin-amount-input" class="w-full bg-emerald-950 border border-emerald-700 p-3 rounded-lg text-yellow-400 font-mono text-lg outline-none focus:border-yellow-400" placeholder="Enter amount..." />
+      </div>
+      
+      <div id="admin-msg" class="h-6 text-center font-bold text-sm"></div>
+
+      <div class="flex gap-2">
+        <button onclick="adminAction('add')" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-black py-3 rounded-lg transition-transform active:scale-95 shadow-lg">GIVE 🍌</button>
+        <button onclick="adminAction('remove')" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-lg transition-transform active:scale-95 shadow-lg">TAKE 🍌</button>
+      </div>
+      
+      <button onclick="closeAdminPanel()" class="w-full bg-emerald-950 border border-emerald-800 hover:bg-emerald-800 text-emerald-400 font-bold py-3 rounded-lg mt-2 transition-colors">CLOSE PANEL</button>
+    </div>
+  </div>
+
   <div id="app" class="w-full h-full max-w-[1600px] bg-emerald-950 relative shadow-2xl flex flex-col hidden">
     
     <!-- VIEW: MENU -->
@@ -49,7 +75,7 @@
       <h1 class="text-5xl md:text-7xl font-black text-yellow-400 mb-2 drop-shadow-xl">BANANA<br/>CASINO</h1>
       <p class="text-emerald-300 mb-8 md:mb-12 text-lg md:text-xl font-medium">Spin the wheel. Grow the trees.</p>
       <div class="flex flex-col gap-4 w-full max-w-[250px]">
-        <button onclick="setView('name_entry')" class="bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-xl md:text-2xl py-3 md:py-4 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95">
+        <button onclick="setView('name_entry')" class="bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-xl md:text-2xl py-3 md:py-4 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-[0_0_15px_rgba(250,204,21,0.5)]">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           START
         </button>
@@ -132,7 +158,7 @@
             <div class="flex justify-between items-center px-2 py-1 md:px-4 md:py-2 bg-black/20">
               <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-bold rounded">← EXIT</button>
               <div class="text-emerald-500 text-[10px] md:text-xs font-bold uppercase select-none">GAMEMODE</div>
-              <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded" title="Game Version">V2.0</div>
+              <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-mono uppercase rounded transition-colors" title="Game Version">V2.0</div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
               <button onclick="setGameMode('roulette')" id="tab-roulette" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-800 text-white font-black text-xs md:text-sm border-2 border-transparent transition-all">ROULETTE</button>
@@ -282,7 +308,7 @@
     let leaderboard = [];
     
     // Core Game State
-    let gameMode = 'roulette'; // 'roulette', 'slots', 'blackjack'
+    let gameMode = 'roulette'; 
     let betAmount = 0;
     let isPlaying = false; 
     let spinResultMsg = 'Select a Gamemode & Bet!';
@@ -297,7 +323,7 @@
     const JACKPOT_ICON = '💰';
 
     // Blackjack State
-    let bjState = 'betting'; // 'betting', 'playing', 'dealerTurn', 'gameOver'
+    let bjState = 'betting'; 
     let bjDeck = [];
     let bjPlayer = [];
     let bjDealer = [];
@@ -322,7 +348,6 @@
     const elDisplayTreeIncome = document.getElementById('display-tree-income');
     const elTreeGrid = document.getElementById('tree-grid');
     
-    // UI specific sections
     const elWheel = document.getElementById('wheel');
     const elSpinResultMsg = document.getElementById('spin-result-msg');
     const elBetAmountInput = document.getElementById('bet-amount-input');
@@ -330,7 +355,6 @@
     const elMainActionBtn = document.getElementById('main-action-btn');
     const elLeaderboardContainer = document.getElementById('leaderboard-container');
     
-    // Gamemode areas
     const areaRoulette = document.getElementById('area-roulette');
     const areaSlots = document.getElementById('area-slots');
     const areaBlackjack = document.getElementById('area-blackjack');
@@ -338,7 +362,6 @@
     const tabSlots = document.getElementById('tab-slots');
     const tabBlackjack = document.getElementById('tab-blackjack');
 
-    // Controls areas
     const controlColors = document.getElementById('bet-color-picker');
     const controlBonus = document.getElementById('bonus-bet-container');
     const controlAmount = document.getElementById('bet-amount-container');
@@ -417,15 +440,88 @@
       setView('game');
     }
 
+    // --- ADMIN PANEL LOGIC ---
     let adminClickCount = 0;
     let adminClickTimer = null;
     function handleVersionClick() {
       adminClickCount++;
       clearTimeout(adminClickTimer);
       adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 2000);
-      if (adminClickCount >= 5) { adminClickCount = 0; verifyAndOpenAdmin(); }
+      if (adminClickCount >= 5) { 
+        adminClickCount = 0; 
+        verifyAndOpenAdmin(); 
+      }
     }
-    async function verifyAndOpenAdmin() { /* admin logic unchanged */ }
+    
+    function verifyAndOpenAdmin() {
+      if (userId === 'user_yfp52u8ux_mmdt3pb7') {
+        document.getElementById('admin-modal').classList.remove('hidden');
+        populateAdminDropdown();
+      } else {
+        console.warn("Unauthorized access attempt. Your ID is: " + userId);
+      }
+    }
+
+    function closeAdminPanel() {
+      document.getElementById('admin-modal').classList.add('hidden');
+      document.getElementById('admin-msg').innerText = '';
+    }
+
+    function populateAdminDropdown() {
+      const select = document.getElementById('admin-user-select');
+      // Sort leaderboard alphabetically by name for the dropdown to make it easier to find
+      const sortedLeaderboard = [...leaderboard].sort((a,b) => a.name.localeCompare(b.name));
+      select.innerHTML = sortedLeaderboard.map(u => 
+        `<option value="${u.id}">${u.name} - ${u.score.toLocaleString()} 🍌</option>`
+      ).join('');
+    }
+
+    function showAdminMsg(msg, isError = false) {
+      const el = document.getElementById('admin-msg');
+      el.innerText = msg;
+      el.className = isError ? "h-6 text-center font-bold text-sm text-red-400" : "h-6 text-center font-bold text-sm text-green-400";
+      setTimeout(() => { el.innerText = ''; }, 4000);
+    }
+
+    async function adminAction(action) {
+      if (!supabaseClient) {
+        showAdminMsg("Database not connected.", true);
+        return;
+      }
+      
+      const targetId = document.getElementById('admin-user-select').value;
+      const amountStr = document.getElementById('admin-amount-input').value;
+      const amount = parseInt(amountStr);
+      
+      if (isNaN(amount) || amount <= 0) {
+        showAdminMsg('Please enter a valid amount greater than 0.', true);
+        return;
+      }
+
+      const targetUser = leaderboard.find(u => u.id === targetId);
+      if (!targetUser) {
+        showAdminMsg('Selected user not found.', true);
+        return;
+      }
+
+      let newScore = targetUser.score || 0;
+      if (action === 'add') {
+        newScore += amount;
+      } else if (action === 'remove') {
+        newScore = Math.max(0, newScore - amount);
+      }
+
+      try {
+        await supabaseClient.from('leaderboard').update({ score: newScore }).eq('id', targetId);
+        showAdminMsg(`Successfully ${action === 'add' ? 'gave' : 'took'} ${amount} 🍌 ${action === 'add' ? 'to' : 'from'} ${targetUser.name}!`);
+        // The realtime subscription will update the leaderboard array shortly
+        setTimeout(populateAdminDropdown, 500); 
+      } catch (e) {
+        console.error(e);
+        showAdminMsg('Error updating score.', true);
+      }
+    }
+    // --- END ADMIN PANEL LOGIC ---
 
     async function setupSupabaseListeners() {
       if (!supabaseClient) return;
@@ -436,6 +532,7 @@
       await fetchLeaderboard();
       supabaseClient.channel('leaderboard-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, (payload) => {
         fetchLeaderboard();
+        // Automatically sync own bananas if updated by admin or outside process
         if (payload.new && payload.new.id === userId && payload.new.score !== bananas) {
           bananas = payload.new.score;
           localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees }));
@@ -469,7 +566,7 @@
     // --- GAME MODES ---
     
     function setGameMode(mode) {
-      if (isPlaying || bjState === 'playing' || bjState === 'dealerTurn') return; // block switching mid-game
+      if (isPlaying || bjState === 'playing' || bjState === 'dealerTurn') return; 
       gameMode = mode;
       spinResultMsg = `Ready to play ${mode.toUpperCase()}`;
       if (mode === 'blackjack') bjState = 'betting';
@@ -504,7 +601,9 @@
       updateGameUI();
 
       const rand = Math.random();
-      let winningColor = rand < 0.49 ? 'red' : (rand < 0.98 ? 'black' : 'green');
+      // UPDATED ODDS: 46% Red, 46% Black, 8% Green
+      let winningColor = rand < 0.46 ? 'red' : (rand < 0.92 ? 'black' : 'green');
+      
       const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
       const matchingIndices = WHEEL_COLORS.map((c, i) => c === winningColor ? i : -1).filter(i => i !== -1);
       const targetIndex = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
@@ -526,6 +625,7 @@
         endGameTurn();
       }, 4000);
     }
+    
     function getWheelBackground() {
       const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
       let gradient = '';
@@ -559,25 +659,24 @@
     }
     
     function finalizeSlots(actualBet) {
-      // Logic: Total points = 105. Draw 0 to 105.
       let r = Math.random() * 105;
       let outcome, resultSlots = [];
       
-      if (r < 40) { // 3 diff
+      if (r < 40) { 
         outcome = 'lose';
         let temp = [...SLOT_ICONS].sort(() => Math.random() - 0.5);
         resultSlots = [temp[0], temp[1], temp[2]];
-      } else if (r < 70) { // 2 same
+      } else if (r < 70) { 
         outcome = 'partial';
         let icon = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
         let other = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
         while (other === icon) other = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
         resultSlots = [icon, icon, other].sort(() => Math.random() - 0.5);
-      } else if (r < 95) { // 3 same
+      } else if (r < 95) { 
         outcome = 'win';
         let icon = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
         resultSlots = [icon, icon, icon];
-      } else { // jackpot
+      } else { 
         outcome = 'jackpot';
         resultSlots = [JACKPOT_ICON, JACKPOT_ICON, JACKPOT_ICON];
       }
@@ -594,10 +693,10 @@
         bananas -= (actualBet - returnAmount);
         spinResultMsg = `Got 2! Won back ${returnAmount} 🍌.`;
       } else if (outcome === 'win') {
-        bananas += actualBet; // effectively pays 2x original bet back
+        bananas += actualBet; 
         spinResultMsg = `3 of a Kind! Won ${actualBet * 2} 🍌!`;
       } else if (outcome === 'jackpot') {
-        bananas += (actualBet * 9); // effectively pays 10x original bet back
+        bananas += (actualBet * 9); 
         spinResultMsg = `🎰 JACKPOT! 🎰 Won ${actualBet * 10} 🍌!`;
       }
 
@@ -683,7 +782,7 @@
       else if (reason === 'blackjack') { spinResultMsg = `Blackjack! Won ${change} 🍌!`; bananas += change; }
       else if (reason === 'win') { spinResultMsg = `You win! Won ${change} 🍌!`; bananas += change; }
       else if (reason === 'lose') { spinResultMsg = `Dealer wins. Lost ${betAmount} 🍌.`; bananas -= betAmount; }
-      else if (reason === 'push') { spinResultMsg = `Push! Returned bet.`; } // no change to bananas
+      else if (reason === 'push') { spinResultMsg = `Push! Returned bet.`; } 
       
       bjState = 'gameOver';
       endGameTurn();
@@ -694,7 +793,7 @@
       bananas = Math.max(0, bananas);
       syncData(bananas, trees);
       isPlaying = false;
-      if (betAmount > bananas) betAmount = bananas; // autoscale down if they lost
+      if (betAmount > bananas) betAmount = bananas; 
       updateGameUI();
     }
 
@@ -706,13 +805,11 @@
       elSpinResultMsg.innerText = spinResultMsg;
       renderTreeGrid();
       
-      // Update Tab Styling
       [tabRoulette, tabSlots, tabBlackjack].forEach(t => { t.classList.remove('bg-emerald-800', 'text-white', 'border-transparent'); t.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); });
       if (gameMode === 'roulette') { tabRoulette.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabRoulette.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'slots') { tabSlots.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabSlots.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'blackjack') { tabBlackjack.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabBlackjack.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       
-      // Toggle Areas
       areaRoulette.classList.toggle('hidden', gameMode !== 'roulette');
       areaSlots.classList.toggle('hidden', gameMode !== 'slots');
       areaBlackjack.classList.toggle('hidden', gameMode !== 'blackjack');
@@ -720,23 +817,20 @@
       controlColors.classList.toggle('hidden', gameMode !== 'roulette');
       controlBonus.classList.toggle('hidden', gameMode !== 'slots');
       
-      // Bonus Bet styling
       document.getElementById('bonus-bet-check').style.display = isBonusBet ? 'block' : 'none';
       
-      // Roulette Bet Colors
       ['red', 'green', 'black'].forEach(color => {
         const btn = document.getElementById(`bet-btn-${color}`);
         if (betColor === color) { btn.classList.remove('bg-opacity-30', 'border-transparent'); btn.classList.add('bg-opacity-100', 'ring-2', 'ring-white', 'scale-105'); } 
         else { btn.classList.add('bg-opacity-30', 'border-transparent'); btn.classList.remove('bg-opacity-100', 'ring-2', 'ring-white', 'scale-105'); }
       });
 
-      // Inputs & Buttons state
       elBetAmountInput.disabled = isPlaying;
       elMaxBetBtn.disabled = isPlaying;
       
       let canAction = !isPlaying && bananas > 0 && betAmount > 0;
       if (gameMode === 'roulette' && !betColor) canAction = false;
-      if (gameMode === 'blackjack' && bjState === 'playing') canAction = false; // hiding button anyway
+      if (gameMode === 'blackjack' && bjState === 'playing') canAction = false; 
       if (gameMode === 'slots' && isBonusBet && (betAmount * 2) > bananas) canAction = false;
 
       elMainActionBtn.disabled = !canAction;
@@ -746,7 +840,6 @@
       else if (gameMode === 'blackjack') { elMainActionBtn.innerText = (bjState === 'gameOver') ? "DEAL AGAIN" : "DEAL"; }
       else { elMainActionBtn.innerText = "SPIN"; }
 
-      // Blackjack specifics logic
       if (gameMode === 'blackjack') {
         const showBjActions = bjState === 'playing';
         controlBjActions.classList.toggle('hidden', !showBjActions);
@@ -764,7 +857,6 @@
         controlAmount.classList.remove('hidden');
       }
 
-      // Update buy tree buttons
       const handleTreeBtnUpdate = (btn, title, subtitle, isDesktop) => {
         if (trees >= 10) {
           btn.disabled = true;
