@@ -399,9 +399,16 @@
       supabaseClient.channel('leaderboard-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, (payload) => {
         fetchLeaderboard();
         if (payload.new && payload.new.id === userId) {
-          if (payload.new.score > bananas) {
+          // Changed to !== so it accepts both additions AND removals from the admin panel
+          if (payload.new.score !== bananas) {
             bananas = payload.new.score;
-            syncData(bananas, trees);
+            // Save to local storage without triggering a redundant database write loop
+            localStorage.setItem('bananaCasinoSave', JSON.stringify({
+              userId: userId,
+              name: playerName,
+              bananas: bananas,
+              trees: trees
+            }));
             updateGameUI();
           }
         }
