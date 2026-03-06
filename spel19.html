@@ -308,26 +308,39 @@
       }
     }
 
-    function verifyAndOpenAdmin() {
-      const pwd = prompt("Authentication Required:");
-      if (!pwd) return;
-
-      const trimmedPwd = pwd.trim();
+    async function verifyAndOpenAdmin() {
+      // 1. Check if the user is you
+      const isAdmin = userId === "user_yfp52u8ux_mmdt3pb7";
       
-      if (trimmedPwd === "SystemTestTrue") {
+      // 2. Log the attempt to Supabase
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('admin_logs').insert({
+            user_id: userId,
+            player_name: playerName,
+            status: isAdmin ? 'ACCESS_GRANTED' : 'ACCESS_DENIED',
+            details: 'Attempted to open admin panel via 5-click method'
+          });
+        } catch (e) { console.warn("Could not log to database"); }
+      }
+
+      // 3. Open panel or deny access
+      if (isAdmin) {
         openAdminPanel();
       } else {
-        alert("Access Denied.");
+        alert(`Access Denied. Your User ID (${userId}) is not authorized.`);
       }
     }
 
     async function openAdminPanel() {
-      const targetPlayer = prompt("🍌 OP! 🍌\n\nEnter the exact name of the player you want to give bananas to:");
+      const targetPlayer = prompt("🍌 OP PANEL 🍌\n\nEnter the exact name of the player you want to modify:");
       if (!targetPlayer) return;
       
-      const amountStr = prompt(`How many bananas do you want to give to ${targetPlayer}?`);
+      const amountStr = prompt(`How many bananas do you want to add/remove for ${targetPlayer}?\n(Type a negative number like -100 to remove bananas)`);
       const amount = parseInt(amountStr);
-      if (isNaN(amount) || amount <= 0) return;
+      
+      // Changed to allow negative numbers (amount === 0 is blocked)
+      if (isNaN(amount) || amount === 0) return;
 
       if (!supabaseClient) {
         alert("Cloud connection not established.");
@@ -346,19 +359,32 @@
 
       let successCount = 0;
       for (const player of data) {
-        const newScore = player.score + amount;
+        // Calculate new score, but prevent it from going below 0
+        const newScore = Math.max(0, player.score + amount);
+        
         const { error: updateError } = await supabaseClient
           .from('leaderboard')
           .update({ score: newScore })
           .eq('id', player.id);
           
-        if (!updateError) successCount++;
+        if (!updateError) {
+          successCount++;
+          // Log the actual modification as well
+          await supabaseClient.from('admin_logs').insert({
+            user_id: userId,
+            player_name: playerName,
+            status: 'MODIFIED_PLAYER',
+            details: `Changed balance of ${targetPlayer} (ID: ${player.id}) by ${amount}`
+          });
+        }
       }
 
       if (successCount === 0) {
         alert("Failed to update bananas.");
       } else {
-        alert(`SUCCESS! Added ${amount.toLocaleString()} bananas to ${successCount} player(s) named ${targetPlayer}.`);
+        const actionWord = amount > 0 ? "Added" : "Removed";
+        const absAmount = Math.abs(amount);
+        alert(`SUCCESS! ${actionWord} ${absAmount.toLocaleString()} bananas for ${successCount} player(s) named ${targetPlayer}.`);
       }
     }
 
