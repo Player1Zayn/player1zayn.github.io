@@ -97,7 +97,7 @@
         <div class="p-4 flex justify-between items-center">
           <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-sm font-bold">← EXIT CASINO</button>
           <div class="flex items-center gap-4">
-            <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-xs font-mono uppercase py-1 select-none" title="Game Version">V1.5 Fix Enabled</div>
+            <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-xs font-mono uppercase py-1 select-none" title="Game Version">V1.6 Fix Enabled</div>
           </div>
         </div>
         
@@ -231,11 +231,12 @@
       return 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
     }
 
-    window.onload = () => {
+    window.onload = async () => {
       elWheel.style.background = getWheelBackground();
       loadPersistentData();
       if (window.supabase && supabaseUrl && supabaseKey) {
         supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        await fetchServerState(); // Make sure server overrides local before starting
         setupSupabaseListeners();
       }
       elBetAmountInput.addEventListener('input', (e) => {
@@ -264,6 +265,31 @@
         } catch (e) { console.error(e); userId = generateId(); }
       } else {
         userId = generateId();
+      }
+    }
+
+    async function fetchServerState() {
+      if (!supabaseClient) return;
+      try {
+        // Look up the exact true score currently held on the server
+        const { data, error } = await supabaseClient
+          .from('leaderboard')
+          .select('score')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (data && data.score !== undefined) {
+          bananas = data.score;
+          // Force overwrite local storage with the server's truth
+          localStorage.setItem('bananaCasinoSave', JSON.stringify({
+            userId: userId,
+            name: playerName,
+            bananas: bananas,
+            trees: trees
+          }));
+        }
+      } catch (e) {
+        console.warn("Could not fetch server state", e);
       }
     }
 
