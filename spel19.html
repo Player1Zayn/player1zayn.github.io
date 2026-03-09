@@ -42,29 +42,39 @@
     Loading Casino...
   </div>
 
-  <!-- ADMIN MODAL -->
-  <div id="admin-modal" class="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center hidden">
-    <div class="bg-emerald-900 border-2 border-yellow-400 p-6 rounded-2xl w-[90%] max-w-md flex flex-col gap-4 shadow-2xl">
-      <h2 class="text-2xl font-black text-yellow-400 text-center tracking-widest drop-shadow-md">ADMIN PANEL</h2>
+  <!-- Tree Upgrade Modal -->
+  <div id="tree-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden backdrop-blur-sm p-4 transition-opacity" onclick="if(event.target===this) closeTreeModal()">
+    <div class="bg-emerald-900 border-2 border-yellow-500 rounded-2xl p-6 w-full max-w-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
+      <button onclick="closeTreeModal()" class="absolute top-4 right-4 text-emerald-300 hover:text-white text-2xl leading-none">&times;</button>
       
-      <div>
-        <label class="text-emerald-200 text-sm font-bold block mb-1">Select Player</label>
-        <select id="admin-user-select" class="w-full bg-emerald-950 border border-emerald-700 p-3 rounded-lg text-white outline-none focus:border-yellow-400"></select>
+      <div class="mb-6">
+        <h3 id="tree-modal-title" class="text-2xl font-black text-yellow-400 uppercase tracking-wide">Tree Level 1</h3>
+        <p class="text-emerald-400 text-xs">Upgrade your grove to generate more bananas.</p>
       </div>
       
-      <div>
-        <label class="text-emerald-200 text-sm font-bold block mb-1">Amount (🍌)</label>
-        <input type="number" id="admin-amount-input" class="w-full bg-emerald-950 border border-emerald-700 p-3 rounded-lg text-yellow-400 font-mono text-lg outline-none focus:border-yellow-400" placeholder="Enter amount..." />
+      <div class="space-y-4">
+        <!-- Current Stats -->
+        <div class="bg-emerald-950 p-4 rounded-xl border border-emerald-800 shadow-inner">
+          <p class="text-emerald-500 text-[10px] font-bold mb-1 uppercase tracking-widest">Current Yield</p>
+          <p id="tree-modal-current" class="text-white text-xl font-medium">1 🍌 <span class="text-sm text-emerald-300">/ 5s</span></p>
+        </div>
+        
+        <!-- Next Level Stats -->
+        <div id="tree-modal-next-container" class="bg-emerald-950 p-4 rounded-xl border border-yellow-500/50 relative overflow-hidden shadow-inner">
+          <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent pointer-events-none"></div>
+          <p class="text-yellow-500 text-[10px] font-bold mb-1 uppercase tracking-widest">Next Level Yield</p>
+          <p id="tree-modal-next" class="text-white text-xl font-medium mb-3">10 🍌 <span class="text-sm text-yellow-200/50">/ 5s</span></p>
+          
+          <div class="pt-3 border-t border-yellow-500/20">
+            <p id="tree-modal-cost" class="text-yellow-400 font-black text-xl drop-shadow-md">Cost: 500 🍌</p>
+          </div>
+          <p id="tree-modal-warning" class="text-red-400 text-xs font-bold mt-2 hidden bg-red-950/50 p-2 rounded border border-red-900/50">Requires all 20 tree slots unlocked!</p>
+        </div>
       </div>
-      
-      <div id="admin-msg" class="h-6 text-center font-bold text-sm"></div>
 
-      <div class="flex gap-2">
-        <button onclick="adminAction('add')" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-black py-3 rounded-lg transition-transform active:scale-95 shadow-lg">GIVE 🍌</button>
-        <button onclick="adminAction('remove')" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-lg transition-transform active:scale-95 shadow-lg">TAKE 🍌</button>
-      </div>
-      
-      <button onclick="closeAdminPanel()" class="w-full bg-emerald-950 border border-emerald-800 hover:bg-emerald-800 text-emerald-400 font-bold py-3 rounded-lg mt-2 transition-colors">CLOSE PANEL</button>
+      <button id="tree-modal-btn" onclick="upgradeTree()" class="w-full mt-6 py-4 rounded-xl font-black text-xl shadow-xl transition-transform active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-b-4 border-yellow-600">
+        UPGRADE
+      </button>
     </div>
   </div>
 
@@ -75,7 +85,7 @@
       <h1 class="text-5xl md:text-7xl font-black text-yellow-400 mb-2 drop-shadow-xl">BANANA<br/>CASINO</h1>
       <p class="text-emerald-300 mb-8 md:mb-12 text-lg md:text-xl font-medium">Spin the wheel. Grow the trees.</p>
       <div class="flex flex-col gap-4 w-full max-w-[250px]">
-        <button onclick="setView('name_entry')" class="bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-xl md:text-2xl py-3 md:py-4 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-[0_0_15px_rgba(250,204,21,0.5)]">
+        <button onclick="setView('name_entry')" class="bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-xl md:text-2xl py-3 md:py-4 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           START
         </button>
@@ -96,76 +106,75 @@
       <button onclick="setView('menu')" class="mt-8 bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-xl">Back to Menu</button>
     </div>
 
-    <!-- VIEW: NAME ENTRY (ACCOUNTS) -->
+    <!-- VIEW: NAME ENTRY -->
     <div id="view-name_entry" class="flex-1 flex flex-col items-center justify-center bg-emerald-950 p-4 md:p-6 hidden">
-      <div class="bg-emerald-900 p-6 md:p-8 rounded-3xl w-full max-w-[90%] md:max-w-md shadow-2xl border border-emerald-800 text-center relative">
-        <h2 class="text-2xl md:text-3xl font-bold text-yellow-400 mb-6 drop-shadow-md">Casino Account</h2>
-        
-        <!-- Tabs -->
-        <div class="flex gap-2 mb-6">
-          <button id="tab-new" onclick="setLoginMode('new')" class="flex-1 py-2 font-black rounded-lg bg-yellow-400 text-yellow-900 transition-colors shadow-lg">NEW PLAYER</button>
-          <button id="tab-load" onclick="setLoginMode('load')" class="flex-1 py-2 font-black rounded-lg bg-emerald-800 hover:bg-emerald-700 text-emerald-200 transition-colors shadow-lg">LOAD ID</button>
-        </div>
-
-        <!-- Content: New -->
-        <div id="content-new">
-          <input type="text" id="player-name-input" maxlength="15" placeholder="Enter Your Name..." class="w-full bg-emerald-950 border-2 border-emerald-700 text-white text-lg p-3 md:p-4 rounded-xl text-center mb-4 focus:border-yellow-400 outline-none transition-colors" />
-          <button onclick="handleNewAccount()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-lg md:text-xl py-3 md:py-4 rounded-xl transition-transform active:scale-95 shadow-[0_0_15px_rgba(250,204,21,0.3)]">Create & Play</button>
-        </div>
-
-        <!-- Content: Load -->
-        <div id="content-load" class="hidden">
-          <input type="text" id="player-id-input" placeholder="Paste ID (user_...)" class="w-full bg-emerald-950 border-2 border-emerald-700 text-emerald-400 text-sm md:text-base font-mono p-3 md:p-4 rounded-xl text-center mb-4 focus:border-yellow-400 outline-none transition-colors" />
-          <button id="btn-load-acc" onclick="handleLoadAccount()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-lg md:text-xl py-3 md:py-4 rounded-xl transition-transform active:scale-95 shadow-lg">Load Account</button>
-        </div>
-        
-        <div id="login-msg" class="text-sm font-bold mt-4 h-5"></div>
-
-        <!-- Continue Section -->
-        <div id="sec-continue" class="mt-6 pt-6 border-t-2 border-emerald-800/50 hidden">
-          <p class="text-emerald-400 text-xs mb-2 font-bold uppercase tracking-wider">Saved Session Found</p>
-          <button onclick="handleContinue()" class="w-full bg-emerald-800 hover:bg-emerald-700 text-emerald-100 font-bold text-lg py-3 rounded-xl transition-transform active:scale-95 shadow-lg flex items-center justify-center gap-2">
-            Continue as <span id="continue-name" class="text-yellow-400 truncate max-w-[120px]"></span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-          </button>
-        </div>
+      <div class="bg-emerald-900 p-6 md:p-8 rounded-3xl w-full max-w-[90%] md:max-w-md shadow-2xl border border-emerald-800 text-center">
+        <h2 class="text-2xl md:text-3xl font-bold text-yellow-400 mb-6">Casino ID</h2>
+        <input 
+          type="text" 
+          id="player-name-input"
+          maxlength="15"
+          placeholder="Enter Your Name..."
+          class="w-full bg-emerald-950 border-2 border-emerald-700 text-white text-lg md:text-xl p-3 md:p-4 rounded-xl text-center mb-6 focus:border-yellow-400 outline-none"
+        />
+        <button 
+          onclick="enterCasino()"
+          class="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-lg md:text-xl py-3 md:py-4 rounded-xl transition-transform active:scale-95 border-b-4 border-yellow-600"
+        >
+          Enter Casino
+        </button>
       </div>
     </div>
 
     <!-- VIEW: GAME -->
     <div id="view-game" class="flex-1 flex flex-col md:flex-row overflow-hidden hidden">
       
-      <!-- Right Sidebar (Moved to Top on Mobile): Trees & Stats -->
-      <div class="order-1 md:order-3 md:w-1/4 bg-emerald-900/50 border-b md:border-b-0 md:border-l border-emerald-800 flex flex-col shrink-0 z-20">
-        <div class="p-3 md:p-6 bg-emerald-900 border-b border-emerald-800 flex flex-row md:flex-col items-center justify-between md:justify-center">
+      <!-- Right Sidebar (Moved to Top on Mobile): Trees & Gadgets -->
+      <div class="order-1 md:order-3 md:w-[28%] bg-emerald-900/50 border-b md:border-b-0 md:border-l border-emerald-800 flex flex-col max-h-[35vh] md:max-h-none shrink-0 z-20">
+        <div class="p-3 md:p-6 bg-emerald-900 flex flex-row md:flex-col items-center justify-between md:justify-center shrink-0">
           <div class="text-left md:text-center">
-            <div class="flex items-center justify-start md:justify-center gap-2 md:mb-1">
-              <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-widest"><span id="display-player-name">Player</span>'s Balance</p>
-              <button id="btn-copy-id" onclick="copyUserId()" class="text-[8px] bg-emerald-800/80 hover:bg-emerald-700 text-yellow-400 px-1.5 py-0.5 rounded cursor-pointer transition-colors shadow-sm font-mono border border-emerald-700">COPY ID</button>
-            </div>
-            <div id="display-bananas" class="text-2xl sm:text-3xl md:text-5xl font-black text-yellow-400 drop-shadow-lg leading-none mt-1 md:mt-0">0 🍌</div>
+            <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-widest md:mb-1"><span id="display-player-name">Player</span>'s Balance</p>
+            <div id="display-bananas" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-yellow-400 drop-shadow-lg leading-none">0 🍌</div>
           </div>
-          <button onclick="handleBuyTree()" id="buy-tree-btn-mobile" class="md:hidden px-4 py-2 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700 ml-4 h-full" disabled>
+          <button onclick="handleBuyTree()" id="buy-tree-btn-mobile" class="md:hidden px-4 py-2 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700 ml-4 h-full shrink-0" disabled>
             <span id="buy-tree-title-mobile" class="text-sm">BUY TREE</span>
             <span id="buy-tree-subtitle-mobile" class="text-[10px] opacity-70">(-100 🍌)</span>
           </button>
         </div>
         
-        <div class="p-3 md:p-6 md:flex-1 md:overflow-y-auto custom-scroll flex flex-col">
-          <div class="flex justify-between items-center mb-2 md:mb-6">
-            <h3 class="font-bold text-emerald-100 flex items-center gap-1 md:gap-2 text-xs md:text-base">
+        <!-- Upgrades Tabs -->
+        <div class="flex w-full bg-emerald-950 border-b border-emerald-800 text-[10px] md:text-xs font-bold uppercase select-none shrink-0">
+            <button onclick="setSidebarView('trees')" id="tab-sb-trees" class="flex-1 py-2 md:py-3 text-emerald-400 border-b-2 border-emerald-400 bg-emerald-900 transition-all shadow-inner">TREES</button>
+            <button onclick="setSidebarView('gadgets')" id="tab-sb-gadgets" class="flex-1 py-2 md:py-3 text-emerald-600 border-b-2 border-transparent hover:bg-emerald-900/50 transition-all">GADGETS</button>
+        </div>
+
+        <!-- Trees Content -->
+        <div id="sidebar-trees" class="p-3 md:p-6 flex-1 overflow-y-auto custom-scroll flex flex-col">
+          <div class="flex justify-between items-center mb-2 md:mb-4 shrink-0">
+            <h3 class="font-bold text-emerald-100 flex items-center gap-1 md:gap-2 text-xs md:text-sm lg:text-base">
               <svg class="text-emerald-400 w-4 h-4 md:w-5 md:h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 14 4-4 4 4"></path><path d="m7 19 5-5 5 5"></path><path d="m7 9 5-5 5 5"></path><path d="M12 19v3"></path></svg>
-              TREES (<span id="display-trees">1</span>/10)
+              TREES (<span id="display-trees">1</span>/20)
             </h3>
-            <span class="text-[10px] text-emerald-400 font-bold">+<span id="display-tree-income">1</span> 🍌/5s</span>
+            <span class="text-[10px] text-emerald-400 font-bold bg-emerald-950 px-2 py-1 rounded border border-emerald-800">+<span id="display-tree-income">0.2</span> 🍌/s (Avg)</span>
           </div>
           
-          <div id="tree-grid" class="grid grid-cols-5 md:grid-cols-2 gap-1.5 md:gap-3 mb-0 md:mb-8 shrink-0"></div>
+          <div id="tree-grid" class="grid grid-cols-5 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-2 lg:gap-3 mb-0 md:mb-6 shrink-0 pb-4 md:pb-0"></div>
           
-          <button onclick="handleBuyTree()" id="buy-tree-btn" class="hidden md:flex w-full py-4 rounded-xl font-black transition-all flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700 mt-auto" disabled>
+          <button onclick="handleBuyTree()" id="buy-tree-btn" class="hidden md:flex w-full py-4 rounded-xl font-black transition-all flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700 mt-auto shrink-0" disabled>
             <span id="buy-tree-title" class="text-lg">BUY TREE</span>
             <span id="buy-tree-subtitle" class="text-xs opacity-70">(-100 🍌)</span>
           </button>
+        </div>
+
+        <!-- Gadgets Content -->
+        <div id="sidebar-gadgets" class="hidden p-3 md:p-6 flex-1 overflow-y-auto custom-scroll flex flex-col">
+           <div class="flex justify-between items-center mb-3 shrink-0">
+            <h3 class="font-bold text-emerald-100 flex items-center gap-1 md:gap-2 text-xs md:text-sm lg:text-base">
+              <svg class="text-emerald-400 w-4 h-4 md:w-5 md:h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              UPGRADES
+            </h3>
+          </div>
+          <div id="gadgets-list" class="space-y-2 pb-4"></div>
         </div>
       </div>
 
@@ -177,7 +186,7 @@
             <div class="flex justify-between items-center px-2 py-1 md:px-4 md:py-2 bg-black/20">
               <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-bold rounded">← EXIT</button>
               <div class="text-emerald-500 text-[10px] md:text-xs font-bold uppercase select-none">GAMEMODE</div>
-              <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-mono uppercase rounded transition-colors" title="Game Version">V2.1</div>
+              <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded" title="Game Version">V2.2</div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
               <button onclick="setGameMode('roulette')" id="tab-roulette" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-800 text-white font-black text-xs md:text-sm border-2 border-transparent transition-all">ROULETTE</button>
@@ -207,7 +216,7 @@
                 <div id="slot-3" class="w-20 h-24 md:w-28 md:h-32 bg-emerald-900 rounded-lg flex items-center justify-center text-5xl md:text-7xl shadow-inner border-y-4 border-black/30 slot-icon">🥝</div>
               </div>
             </div>
-            <div class="text-emerald-200 text-xs md:text-sm font-medium mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-center bg-emerald-900/50 p-3 rounded-xl">
+            <div class="text-emerald-200 text-[10px] md:text-sm font-medium mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-center bg-emerald-900/50 p-3 rounded-xl">
               <div>3 Diff: <span class="text-red-400">Lose</span></div>
               <div>2 Same: <span class="text-emerald-400">25% Win</span></div>
               <div>3 Same: <span class="text-yellow-400">2x Bet</span></div>
@@ -244,14 +253,14 @@
             
             <!-- Roulette Specific Bets -->
             <div id="bet-color-picker" class="flex gap-1.5 md:gap-2 h-12 md:h-14">
-              <button onclick="setBetColor('red')" id="bet-btn-red" class="flex-1 rounded-lg md:rounded-xl font-black uppercase transition-all border-2 text-xs md:text-sm bg-red-500 bg-opacity-30 border-transparent leading-tight">
-                RED<br/><span class="text-[8px] md:text-[10px] opacity-70">1X PAY</span>
+              <button onclick="setBetColor('red')" id="bet-btn-red" class="flex-1 rounded-lg md:rounded-xl font-black uppercase transition-all border-2 text-xs md:text-sm bg-red-500 bg-opacity-30 border-transparent leading-tight flex flex-col items-center justify-center">
+                <span>RED</span><span id="label-red-chance" class="text-[8px] md:text-[10px] opacity-70">46% CHANCE</span>
               </button>
-              <button onclick="setBetColor('green')" id="bet-btn-green" class="flex-1 rounded-lg md:rounded-xl font-black uppercase transition-all border-2 text-xs md:text-sm bg-green-500 bg-opacity-30 border-transparent leading-tight">
-                GREEN<br/><span class="text-[8px] md:text-[10px] opacity-70">3X PAY</span>
+              <button onclick="setBetColor('green')" id="bet-btn-green" class="flex-1 rounded-lg md:rounded-xl font-black uppercase transition-all border-2 text-xs md:text-sm bg-green-500 bg-opacity-30 border-transparent leading-tight flex flex-col items-center justify-center">
+                <span>GREEN</span><span id="label-green-chance" class="text-[8px] md:text-[10px] opacity-70">8% CHANCE</span>
               </button>
-              <button onclick="setBetColor('black')" id="bet-btn-black" class="flex-1 rounded-lg md:rounded-xl font-black uppercase transition-all border-2 text-xs md:text-sm bg-slate-900 bg-opacity-30 border-transparent leading-tight">
-                BLACK<br/><span class="text-[8px] md:text-[10px] opacity-70">1X PAY</span>
+              <button onclick="setBetColor('black')" id="bet-btn-black" class="flex-1 rounded-lg md:rounded-xl font-black uppercase transition-all border-2 text-xs md:text-sm bg-slate-900 bg-opacity-30 border-transparent leading-tight flex flex-col items-center justify-center">
+                <span>BLACK</span><span id="label-black-chance" class="text-[8px] md:text-[10px] opacity-70">46% CHANCE</span>
               </button>
             </div>
 
@@ -271,7 +280,7 @@
                 class="flex-1 bg-emerald-950 border border-emerald-800 text-yellow-400 text-base md:text-xl font-mono p-2 md:p-3 rounded-lg md:rounded-xl focus:border-yellow-400 outline-none"
                 placeholder="Bet Amount..."
               />
-              <button onclick="setMaxBet()" id="max-bet-btn" class="bg-emerald-800 px-3 md:px-4 rounded-lg md:rounded-xl font-bold text-xs md:text-base hover:bg-emerald-700 active:scale-95">MAX</button>
+              <button onclick="setMaxBet()" id="max-bet-btn" class="bg-emerald-800 px-3 md:px-4 rounded-lg md:rounded-xl font-bold text-xs md:text-base hover:bg-emerald-700 active:scale-95 text-white">MAX</button>
             </div>
             
             <!-- Main Action Buttons -->
@@ -301,10 +310,10 @@
       </div>
 
       <!-- Left Sidebar (Moved to Bottom on Mobile): Scoreboard -->
-      <div class="order-3 md:order-1 md:w-1/4 bg-emerald-900/50 border-t md:border-t-0 md:border-r border-emerald-800 flex flex-col h-[20vh] md:h-full shrink-0">
+      <div class="order-3 md:order-1 md:w-[22%] bg-emerald-900/50 border-t md:border-t-0 md:border-r border-emerald-800 flex flex-col h-[20vh] md:h-full shrink-0 z-20">
         <div class="p-2 md:p-4 bg-emerald-900 border-b border-emerald-800 flex items-center justify-center md:justify-start gap-2">
           <svg class="text-yellow-400 w-4 h-4 md:w-6 md:h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
-          <h2 class="font-bold text-yellow-400 text-xs md:text-sm uppercase tracking-widest">Global Scoreboard</h2>
+          <h2 class="font-bold text-yellow-400 text-[10px] md:text-sm uppercase tracking-widest">Global Scoreboard</h2>
         </div>
         <div id="leaderboard-container" class="flex-1 overflow-y-auto p-2 md:p-4 space-y-1.5 md:space-y-2 custom-scroll">
           <div class="text-center text-emerald-600 text-xs py-10 italic">Connecting...</div>
@@ -320,10 +329,33 @@
     let supabaseClient = null;
 
     let view = 'menu';
+    let sidebarView = 'trees';
     let userId = '';
     let playerName = '';
     let bananas = 0;
-    let trees = 1;
+    
+    // Trees Data Structure
+    let trees = [1, ...Array(19).fill(0)]; 
+    let treeProgress = Array(20).fill(0); 
+    let lastTickTime = Date.now();
+    let selectedTreeIndex = -1;
+
+    const TREE_DATA = {
+        1: { cost: 100,    reward: 1,     ticks: 5,   reqAllTrees: false }, 
+        2: { cost: 500,    reward: 10,    ticks: 5,   reqAllTrees: false },
+        3: { cost: 1000,   reward: 100,   ticks: 10,  reqAllTrees: true  },
+        4: { cost: 10000,  reward: 1000,  ticks: 60,  reqAllTrees: true  }, 
+        5: { cost: 100000, reward: 10000, ticks: 120, reqAllTrees: true  }
+    };
+
+    // Gadgets Data Structure
+    let unlockedGadgets = Array(10).fill(false);
+    const GADGET_DATA = [
+        { title: 'Failsafe', cost: 500, desc: 'Bet 100+: 25% chance to not lose bananas on a loss.' },
+        { title: 'Increased Chance', cost: 1000, desc: 'Roulette Green chance increased to 16%.' },
+        ...Array(8).fill({ title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true })
+    ];
+
     let leaderboard = [];
     
     // Core Game State
@@ -360,12 +392,14 @@
       game: document.getElementById('view-game')
     };
     
+    const elPlayerNameInput = document.getElementById('player-name-input');
     const elDisplayPlayerName = document.getElementById('display-player-name');
     const elDisplayBananas = document.getElementById('display-bananas');
     const elDisplayTrees = document.getElementById('display-trees');
     const elDisplayTreeIncome = document.getElementById('display-tree-income');
     const elTreeGrid = document.getElementById('tree-grid');
     
+    // UI specific sections
     const elWheel = document.getElementById('wheel');
     const elSpinResultMsg = document.getElementById('spin-result-msg');
     const elBetAmountInput = document.getElementById('bet-amount-input');
@@ -373,6 +407,7 @@
     const elMainActionBtn = document.getElementById('main-action-btn');
     const elLeaderboardContainer = document.getElementById('leaderboard-container');
     
+    // Gamemode areas
     const areaRoulette = document.getElementById('area-roulette');
     const areaSlots = document.getElementById('area-slots');
     const areaBlackjack = document.getElementById('area-blackjack');
@@ -380,6 +415,7 @@
     const tabSlots = document.getElementById('tab-slots');
     const tabBlackjack = document.getElementById('tab-blackjack');
 
+    // Controls areas
     const controlColors = document.getElementById('bet-color-picker');
     const controlBonus = document.getElementById('bonus-bet-container');
     const controlAmount = document.getElementById('bet-amount-container');
@@ -419,7 +455,21 @@
           userId = data.userId || generateId();
           playerName = data.name || '';
           bananas = typeof data.bananas === 'number' ? data.bananas : 0;
-          trees = typeof data.trees === 'number' ? data.trees : 1;
+          
+          let savedTrees = data.trees;
+          if (typeof savedTrees === 'number') {
+              trees = Array(20).fill(0).map((_, i) => i < savedTrees ? 1 : 0);
+          } else if (Array.isArray(savedTrees)) {
+              trees = savedTrees;
+              while(trees.length < 20) trees.push(0);
+          }
+          
+          if (Array.isArray(data.gadgets)) {
+              unlockedGadgets = data.gadgets;
+              while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+          }
+          
+          if (playerName) elPlayerNameInput.value = playerName;
         } catch (e) { console.error(e); userId = generateId(); }
       } else {
         userId = generateId();
@@ -429,28 +479,18 @@
     async function fetchServerState() {
       if (!supabaseClient) return;
       try {
-        // Fetching both score and trees from database
-        const { data } = await supabaseClient.from('leaderboard').select('score, trees').eq('id', userId).maybeSingle();
-        if (data) {
-          if (data.score !== undefined) bananas = data.score;
-          if (data.trees !== undefined && data.trees !== null) trees = data.trees;
-          localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees }));
+        const { data } = await supabaseClient.from('leaderboard').select('score').eq('id', userId).maybeSingle();
+        if (data && data.score !== undefined) {
+          bananas = data.score;
+          localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets }));
         }
       } catch (e) {}
     }
 
-    async function syncData(currentBananas, currentTrees, nameToSave = playerName) {
-      localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: nameToSave, bananas: currentBananas, trees: currentTrees }));
+    async function syncData(currentBananas, currentTreesArray, nameToSave = playerName) {
+      localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: nameToSave, bananas: currentBananas, trees: currentTreesArray, gadgets: unlockedGadgets }));
       if (supabaseClient && nameToSave && userId) {
-        try { 
-          // Upserting both score and trees to ensure synchronization across devices
-          await supabaseClient.from('leaderboard').upsert({ 
-            id: userId, 
-            name: nameToSave, 
-            score: currentBananas,
-            trees: currentTrees
-          }); 
-        } catch (err) {}
+        try { await supabaseClient.from('leaderboard').upsert({ id: userId, name: nameToSave, score: currentBananas }); } catch (err) {}
       }
     }
 
@@ -458,210 +498,22 @@
       view = newView;
       Object.keys(views).forEach(k => views[k]?.classList.add('hidden'));
       views[view]?.classList.remove('hidden');
-      
-      if (view === 'name_entry') {
-        prepareLoginScreen();
-      } else if (view === 'game') { 
-        startGameLoop(); 
-        updateGameUI(); 
-      } else { 
-        stopGameLoop(); 
-      }
-    }
-
-    // --- ACCOUNT & LOGIN LOGIC ---
-    function prepareLoginScreen() {
-      if (playerName && userId) {
-        document.getElementById('sec-continue').classList.remove('hidden');
-        document.getElementById('continue-name').innerText = playerName;
-      } else {
-        document.getElementById('sec-continue').classList.add('hidden');
-      }
-    }
-
-    function setLoginMode(mode) {
-      const tabNew = document.getElementById('tab-new');
-      const tabLoad = document.getElementById('tab-load');
-      const contentNew = document.getElementById('content-new');
-      const contentLoad = document.getElementById('content-load');
-      
-      if (mode === 'new') {
-        tabNew.className = "flex-1 py-2 font-black rounded-lg bg-yellow-400 text-yellow-900 transition-colors shadow-lg";
-        tabLoad.className = "flex-1 py-2 font-black rounded-lg bg-emerald-800 hover:bg-emerald-700 text-emerald-200 transition-colors shadow-lg";
-        contentNew.classList.remove('hidden');
-        contentLoad.classList.add('hidden');
-      } else {
-        tabLoad.className = "flex-1 py-2 font-black rounded-lg bg-yellow-400 text-yellow-900 transition-colors shadow-lg";
-        tabNew.className = "flex-1 py-2 font-black rounded-lg bg-emerald-800 hover:bg-emerald-700 text-emerald-200 transition-colors shadow-lg";
-        contentLoad.classList.remove('hidden');
-        contentNew.classList.add('hidden');
-      }
-      document.getElementById('login-msg').innerText = "";
-    }
-
-    function showLoginMsg(msg, isError) {
-      const el = document.getElementById('login-msg');
-      el.innerText = msg;
-      el.className = `text-sm font-bold mt-4 h-5 ${isError ? 'text-red-400' : 'text-green-400'}`;
-    }
-
-    function handleNewAccount() {
-      const name = document.getElementById('player-name-input').value.trim();
-      if (!name) return showLoginMsg("Please enter a name!", true);
-      
-      userId = generateId();
-      playerName = name;
-      bananas = 0;
-      trees = 1;
-      
-      syncData(bananas, trees, playerName);
-      enterCasino();
-    }
-
-    async function handleLoadAccount() {
-      const id = document.getElementById('player-id-input').value.trim();
-      if (!id) return showLoginMsg("Please enter an ID!", true);
-      if (!supabaseClient) return showLoginMsg("Database not connected!", true);
-      
-      const btn = document.getElementById('btn-load-acc');
-      const origText = btn.innerText;
-      btn.innerText = "Loading...";
-      btn.disabled = true;
-
-      try {
-        const { data, error } = await supabaseClient.from('leaderboard').select('*').eq('id', id).maybeSingle();
-        if (error) throw error;
-        
-        if (data) {
-          userId = data.id;
-          playerName = data.name;
-          bananas = data.score !== undefined ? data.score : 0;
-          trees = data.trees !== undefined && data.trees !== null ? data.trees : 1; 
-          
-          showLoginMsg("Account loaded! Entering...", false);
-          syncData(bananas, trees, playerName);
-          setTimeout(() => enterCasino(), 800);
-        } else {
-          showLoginMsg("Account not found! Check your ID.", true);
-        }
-      } catch (err) {
-        showLoginMsg("Error loading account.", true);
-        console.error(err);
-      } finally {
-        btn.innerText = origText;
-        btn.disabled = false;
-      }
-    }
-
-    function handleContinue() {
-      enterCasino();
+      if (view === 'game') { startGameLoop(); updateGameUI(); } else { stopGameLoop(); }
     }
 
     function enterCasino() {
+      playerName = elPlayerNameInput.value.trim() || `Player_${Math.floor(Math.random() * 1000)}`;
+      syncData(bananas, trees, playerName);
       setView('game');
     }
 
-    function copyUserId() {
-      const tempInput = document.createElement('input');
-      tempInput.value = userId;
-      document.body.appendChild(tempInput);
-      tempInput.select();
-      document.execCommand('copy');
-      document.body.removeChild(tempInput);
-      
-      const btn = document.getElementById('btn-copy-id');
-      if (btn) {
-        const old = btn.innerHTML;
-        btn.innerHTML = "COPIED!";
-        btn.classList.add('text-green-400', 'border-green-400');
-        setTimeout(() => { 
-            btn.innerHTML = "COPY ID"; 
-            btn.classList.remove('text-green-400', 'border-green-400');
-        }, 2000);
-      }
-    }
-    // --- END ACCOUNT LOGIC ---
-
-    // --- ADMIN PANEL LOGIC ---
     let adminClickCount = 0;
     let adminClickTimer = null;
     function handleVersionClick() {
       adminClickCount++;
       clearTimeout(adminClickTimer);
       adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 2000);
-      if (adminClickCount >= 5) { 
-        adminClickCount = 0; 
-        verifyAndOpenAdmin(); 
-      }
     }
-    
-    function verifyAndOpenAdmin() {
-      if (userId === 'user_yfp52u8ux_mmdt3pb7') {
-        document.getElementById('admin-modal').classList.remove('hidden');
-        populateAdminDropdown();
-      } else {
-        console.warn("Unauthorized access attempt.");
-      }
-    }
-
-    function closeAdminPanel() {
-      document.getElementById('admin-modal').classList.add('hidden');
-      document.getElementById('admin-msg').innerText = '';
-    }
-
-    function populateAdminDropdown() {
-      const select = document.getElementById('admin-user-select');
-      const sortedLeaderboard = [...leaderboard].sort((a,b) => a.name.localeCompare(b.name));
-      select.innerHTML = sortedLeaderboard.map(u => 
-        `<option value="${u.id}">${u.name} - ${u.score.toLocaleString()} 🍌</option>`
-      ).join('');
-    }
-
-    function showAdminMsg(msg, isError = false) {
-      const el = document.getElementById('admin-msg');
-      el.innerText = msg;
-      el.className = isError ? "h-6 text-center font-bold text-sm text-red-400" : "h-6 text-center font-bold text-sm text-green-400";
-      setTimeout(() => { el.innerText = ''; }, 4000);
-    }
-
-    async function adminAction(action) {
-      if (!supabaseClient) {
-        showAdminMsg("Database not connected.", true);
-        return;
-      }
-      
-      const targetId = document.getElementById('admin-user-select').value;
-      const amountStr = document.getElementById('admin-amount-input').value;
-      const amount = parseInt(amountStr);
-      
-      if (isNaN(amount) || amount <= 0) {
-        showAdminMsg('Please enter a valid amount greater than 0.', true);
-        return;
-      }
-
-      const targetUser = leaderboard.find(u => u.id === targetId);
-      if (!targetUser) {
-        showAdminMsg('Selected user not found.', true);
-        return;
-      }
-
-      let newScore = targetUser.score || 0;
-      if (action === 'add') {
-        newScore += amount;
-      } else if (action === 'remove') {
-        newScore = Math.max(0, newScore - amount);
-      }
-
-      try {
-        await supabaseClient.from('leaderboard').update({ score: newScore }).eq('id', targetId);
-        showAdminMsg(`Successfully ${action === 'add' ? 'gave' : 'took'} ${amount} 🍌 ${action === 'add' ? 'to' : 'from'} ${targetUser.name}!`);
-        setTimeout(populateAdminDropdown, 500); 
-      } catch (e) {
-        console.error(e);
-        showAdminMsg('Error updating score.', true);
-      }
-    }
-    // --- END ADMIN PANEL LOGIC ---
 
     async function setupSupabaseListeners() {
       if (!supabaseClient) return;
@@ -672,48 +524,202 @@
       await fetchLeaderboard();
       supabaseClient.channel('leaderboard-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, (payload) => {
         fetchLeaderboard();
-        // Automatically sync own bananas & trees if updated by admin or outside process on matching ID
-        if (payload.new && payload.new.id === userId) {
-          let hasChanges = false;
-          
-          if (payload.new.score !== undefined && payload.new.score !== bananas) {
-            bananas = payload.new.score;
-            hasChanges = true;
-          }
-          if (payload.new.trees !== undefined && payload.new.trees !== null && payload.new.trees !== trees) {
-            trees = payload.new.trees;
-            hasChanges = true;
-          }
-
-          if (hasChanges) {
-            localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees }));
-            updateGameUI();
-          }
+        if (payload.new && payload.new.id === userId && payload.new.score !== bananas) {
+          bananas = payload.new.score;
+          localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets }));
+          updateGameUI();
         }
       }).subscribe();
     }
 
+    // --- IDLE PROGRESSION LOGIC ---
     function startGameLoop() {
       if (gameLoopInterval) clearInterval(gameLoopInterval);
+      lastTickTime = Date.now();
+      
       gameLoopInterval = setInterval(() => {
+        const now = Date.now();
+        const dt = (now - lastTickTime) / 1000;
+        lastTickTime = now;
+        
+        let incomeGenerated = 0;
+        
         if (!isPlaying) {
-          bananas += trees;
-          clearTimeout(syncTimeout);
-          syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
-          updateGameUI();
+          for (let i = 0; i < 20; i++) {
+              const level = trees[i];
+              if (level > 0) {
+                  treeProgress[i] += dt;
+                  const data = TREE_DATA[level];
+                  if (treeProgress[i] >= data.ticks) {
+                      const payouts = Math.floor(treeProgress[i] / data.ticks);
+                      incomeGenerated += payouts * data.reward;
+                      treeProgress[i] -= payouts * data.ticks; 
+                  }
+              }
+          }
         }
-      }, 5000);
+        
+        if (incomeGenerated > 0) {
+            bananas += incomeGenerated;
+            updateGameUI();
+            clearTimeout(syncTimeout);
+            syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
+        }
+      }, 1000);
     }
+    
     function stopGameLoop() { if (gameLoopInterval) clearInterval(gameLoopInterval); gameLoopInterval = null; }
 
+    // --- RIGHT SIDEBAR VIEW TABS ---
+    function setSidebarView(newView) {
+        sidebarView = newView;
+        
+        const tabTrees = document.getElementById('tab-sb-trees');
+        const tabGadgets = document.getElementById('tab-sb-gadgets');
+        const viewTrees = document.getElementById('sidebar-trees');
+        const viewGadgets = document.getElementById('sidebar-gadgets');
+        const btnTreeMobile = document.getElementById('buy-tree-btn-mobile');
+
+        if (sidebarView === 'trees') {
+            tabTrees.classList.replace('text-emerald-600', 'text-emerald-400');
+            tabTrees.classList.replace('border-transparent', 'border-emerald-400');
+            tabTrees.classList.add('bg-emerald-900', 'shadow-inner');
+            tabTrees.classList.remove('hover:bg-emerald-900/50');
+            
+            tabGadgets.classList.replace('text-emerald-400', 'text-emerald-600');
+            tabGadgets.classList.replace('border-emerald-400', 'border-transparent');
+            tabGadgets.classList.remove('bg-emerald-900', 'shadow-inner');
+            tabGadgets.classList.add('hover:bg-emerald-900/50');
+
+            viewTrees.classList.remove('hidden');
+            viewGadgets.classList.add('hidden');
+            btnTreeMobile.style.display = 'flex';
+        } else {
+            tabGadgets.classList.replace('text-emerald-600', 'text-emerald-400');
+            tabGadgets.classList.replace('border-transparent', 'border-emerald-400');
+            tabGadgets.classList.add('bg-emerald-900', 'shadow-inner');
+            tabGadgets.classList.remove('hover:bg-emerald-900/50');
+            
+            tabTrees.classList.replace('text-emerald-400', 'text-emerald-600');
+            tabTrees.classList.replace('border-emerald-400', 'border-transparent');
+            tabTrees.classList.remove('bg-emerald-900', 'shadow-inner');
+            tabTrees.classList.add('hover:bg-emerald-900/50');
+
+            viewGadgets.classList.remove('hidden');
+            viewTrees.classList.add('hidden');
+            btnTreeMobile.style.display = 'none';
+        }
+    }
+
+    // --- GADGET SYSTEM LOGIC ---
+    function buyGadget(index) {
+        const gadget = GADGET_DATA[index];
+        if (!gadget || gadget.locked || unlockedGadgets[index]) return;
+
+        if (bananas >= gadget.cost) {
+            bananas -= gadget.cost;
+            unlockedGadgets[index] = true;
+            syncData(bananas, trees);
+            updateGameUI();
+        }
+    }
+
+    // Core function to check Failsafe on a loss
+    function processLoss(lossAmount, originalBet, defaultMessage) {
+        // Gadget 1 (Index 0): Failsafe
+        if (originalBet >= 100 && unlockedGadgets[0] && Math.random() < 0.25) {
+            // Player keeps their bananas instead of losing
+            return `Failsafe: Saved ${lossAmount} bananas.`;
+        }
+        bananas -= lossAmount;
+        return defaultMessage;
+    }
+
+
+    // --- TREE SYSTEM LOGIC ---
     function handleBuyTree() {
-      if (bananas >= 100 && trees < 10) {
-        bananas -= 100;
-        trees += 1;
+      const firstEmpty = trees.indexOf(0);
+      const data = TREE_DATA[1];
+      
+      if (firstEmpty !== -1 && bananas >= data.cost) {
+        bananas -= data.cost;
+        trees[firstEmpty] = 1;
         syncData(bananas, trees);
         updateGameUI();
       }
     }
+
+    function handleTreeClick(index) {
+        const level = trees[index];
+        if (level === 0) {
+            const firstEmpty = trees.indexOf(0);
+            if (index === firstEmpty) handleBuyTree();
+            return;
+        }
+        
+        selectedTreeIndex = index;
+        const currentData = TREE_DATA[level];
+        const nextData = TREE_DATA[level + 1];
+        const treesOwned = trees.filter(l => l > 0).length;
+        
+        document.getElementById('tree-modal-title').innerText = `Tree Level ${level}`;
+        document.getElementById('tree-modal-current').innerHTML = `${currentData.reward.toLocaleString()} 🍌 <span class="text-sm text-emerald-300">/ ${currentData.ticks}s</span>`;
+        
+        const btn = document.getElementById('tree-modal-btn');
+        const nextContainer = document.getElementById('tree-modal-next-container');
+        const warningEl = document.getElementById('tree-modal-warning');
+        
+        if (!nextData) {
+            nextContainer.classList.add('hidden');
+            btn.classList.add('hidden');
+        } else {
+            nextContainer.classList.remove('hidden');
+            btn.classList.remove('hidden');
+            document.getElementById('tree-modal-next').innerHTML = `${nextData.reward.toLocaleString()} 🍌 <span class="text-sm text-yellow-200/50">/ ${nextData.ticks}s</span>`;
+            document.getElementById('tree-modal-cost').innerText = `Cost: ${nextData.cost.toLocaleString()} 🍌`;
+            
+            const conditionMet = !nextData.reqAllTrees || treesOwned === 20;
+            const canAfford = bananas >= nextData.cost;
+            
+            if (!conditionMet) {
+                warningEl.classList.remove('hidden');
+                btn.disabled = true;
+                btn.className = "w-full mt-6 py-4 rounded-xl font-black text-xl shadow-lg bg-emerald-800 text-emerald-950 cursor-not-allowed opacity-80 border-b-4 border-emerald-900";
+            } else {
+                warningEl.classList.add('hidden');
+                btn.disabled = !canAfford;
+                btn.className = canAfford 
+                    ? "w-full mt-6 py-4 rounded-xl font-black text-xl shadow-xl transition-transform active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-b-4 border-yellow-600"
+                    : "w-full mt-6 py-4 rounded-xl font-black text-xl shadow-lg bg-emerald-800 text-emerald-950 cursor-not-allowed opacity-80 border-b-4 border-emerald-900";
+            }
+        }
+        
+        document.getElementById('tree-modal').classList.remove('hidden');
+    }
+
+    function closeTreeModal() {
+        document.getElementById('tree-modal').classList.add('hidden');
+        selectedTreeIndex = -1;
+    }
+
+    function upgradeTree() {
+        if (selectedTreeIndex === -1) return;
+        const level = trees[selectedTreeIndex];
+        const nextData = TREE_DATA[level + 1];
+        if (!nextData) return;
+        
+        const treesOwned = trees.filter(l => l > 0).length;
+        const conditionMet = !nextData.reqAllTrees || treesOwned === 20;
+        
+        if (bananas >= nextData.cost && conditionMet) {
+            bananas -= nextData.cost;
+            trees[selectedTreeIndex]++;
+            syncData(bananas, trees);
+            updateGameUI();
+            handleTreeClick(selectedTreeIndex); 
+        }
+    }
+
 
     // --- GAME MODES ---
     
@@ -747,17 +753,27 @@
 
     // --- ROULETTE LOGIC ---
     function setBetColor(color) { if (!isPlaying) { betColor = color; updateGameUI(); } }
+    
     function playRoulette() {
       isPlaying = true;
       spinResultMsg = "Spinning...";
       updateGameUI();
 
       const rand = Math.random();
-      let winningColor = rand < 0.46 ? 'red' : (rand < 0.92 ? 'black' : 'green');
       
+      // Gadget 2 (Index 1): Increased Chance 
+      const pRed = unlockedGadgets[1] ? 0.42 : 0.46;
+      const pBlack = unlockedGadgets[1] ? 0.42 : 0.46;
+      
+      let winningColor;
+      if (rand < pRed) winningColor = 'red';
+      else if (rand < pRed + pBlack) winningColor = 'black';
+      else winningColor = 'green';
+
       const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
       const matchingIndices = WHEEL_COLORS.map((c, i) => c === winningColor ? i : -1).filter(i => i !== -1);
       const targetIndex = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
+      
       const sliceCenterAngle = targetIndex * 18 + 9;
       const baseTargetRotation = 360 - sliceCenterAngle;
       const nextRotation = wheelRotation + (360 * 5) + (baseTargetRotation - (wheelRotation % 360));
@@ -770,8 +786,7 @@
           bananas += betAmount * mult;
           spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${betAmount * mult} 🍌!`;
         } else {
-          bananas -= betAmount;
-          spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Lost ${betAmount} 🍌.`;
+          spinResultMsg = processLoss(betAmount, betAmount, `Landed on ${winningColor.toUpperCase()}! Lost ${betAmount} 🍌.`);
         }
         endGameTurn();
       }, 4000);
@@ -837,12 +852,11 @@
       document.getElementById('slot-3').innerText = resultSlots[2];
 
       if (outcome === 'lose') {
-        bananas -= actualBet;
-        spinResultMsg = `No match. Lost ${actualBet} 🍌.`;
+        spinResultMsg = processLoss(actualBet, actualBet, `No match. Lost ${actualBet} 🍌.`);
       } else if (outcome === 'partial') {
         let returnAmount = Math.round(actualBet * 0.25);
-        bananas -= (actualBet - returnAmount);
-        spinResultMsg = `Got 2! Won back ${returnAmount} 🍌.`;
+        let netLoss = actualBet - returnAmount;
+        spinResultMsg = processLoss(netLoss, actualBet, `Got 2! Won back ${returnAmount} 🍌.`);
       } else if (outcome === 'win') {
         bananas += actualBet; 
         spinResultMsg = `3 of a Kind! Won ${actualBet * 2} 🍌!`;
@@ -928,11 +942,11 @@
     }
     function bjEndGame(reason, multiplier) {
       let change = Math.round(betAmount * multiplier);
-      if (reason === 'bust') { spinResultMsg = `Bust! Lost ${betAmount} 🍌.`; bananas -= betAmount; }
+      if (reason === 'bust') { spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${betAmount} 🍌.`); }
       else if (reason === 'dealerBust') { spinResultMsg = `Dealer bust! Won ${change} 🍌!`; bananas += change; }
       else if (reason === 'blackjack') { spinResultMsg = `Blackjack! Won ${change} 🍌!`; bananas += change; }
       else if (reason === 'win') { spinResultMsg = `You win! Won ${change} 🍌!`; bananas += change; }
-      else if (reason === 'lose') { spinResultMsg = `Dealer wins. Lost ${betAmount} 🍌.`; bananas -= betAmount; }
+      else if (reason === 'lose') { spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${betAmount} 🍌.`); }
       else if (reason === 'push') { spinResultMsg = `Push! Returned bet.`; } 
       
       bjState = 'gameOver';
@@ -951,16 +965,27 @@
     function updateGameUI() {
       elDisplayPlayerName.innerText = playerName;
       elDisplayBananas.innerText = `${bananas.toLocaleString()} 🍌`;
-      elDisplayTrees.innerText = trees;
-      elDisplayTreeIncome.innerText = trees;
+      
+      const treesOwned = trees.filter(l => l > 0).length;
+      elDisplayTrees.innerText = treesOwned;
+      
+      let avgBps = 0;
+      trees.forEach(l => {
+          if (l > 0) avgBps += (TREE_DATA[l].reward / TREE_DATA[l].ticks);
+      });
+      elDisplayTreeIncome.innerText = parseFloat(avgBps.toFixed(2));
+      
       elSpinResultMsg.innerText = spinResultMsg;
       renderTreeGrid();
+      renderGadgets();
       
+      // Update Tab Styling
       [tabRoulette, tabSlots, tabBlackjack].forEach(t => { t.classList.remove('bg-emerald-800', 'text-white', 'border-transparent'); t.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); });
       if (gameMode === 'roulette') { tabRoulette.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabRoulette.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'slots') { tabSlots.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabSlots.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'blackjack') { tabBlackjack.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabBlackjack.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       
+      // Toggle Areas
       areaRoulette.classList.toggle('hidden', gameMode !== 'roulette');
       areaSlots.classList.toggle('hidden', gameMode !== 'slots');
       areaBlackjack.classList.toggle('hidden', gameMode !== 'blackjack');
@@ -968,14 +993,22 @@
       controlColors.classList.toggle('hidden', gameMode !== 'roulette');
       controlBonus.classList.toggle('hidden', gameMode !== 'slots');
       
+      // Bonus Bet styling
       document.getElementById('bonus-bet-check').style.display = isBonusBet ? 'block' : 'none';
       
+      // Update Roulette labels dynamically based on Gadget 2
+      document.getElementById('label-red-chance').innerText = unlockedGadgets[1] ? '42% CHANCE' : '46% CHANCE';
+      document.getElementById('label-black-chance').innerText = unlockedGadgets[1] ? '42% CHANCE' : '46% CHANCE';
+      document.getElementById('label-green-chance').innerText = unlockedGadgets[1] ? '16% CHANCE' : '8% CHANCE';
+
+      // Roulette Bet Colors
       ['red', 'green', 'black'].forEach(color => {
         const btn = document.getElementById(`bet-btn-${color}`);
         if (betColor === color) { btn.classList.remove('bg-opacity-30', 'border-transparent'); btn.classList.add('bg-opacity-100', 'ring-2', 'ring-white', 'scale-105'); } 
         else { btn.classList.add('bg-opacity-30', 'border-transparent'); btn.classList.remove('bg-opacity-100', 'ring-2', 'ring-white', 'scale-105'); }
       });
 
+      // Inputs & Buttons state
       elBetAmountInput.disabled = isPlaying;
       elMaxBetBtn.disabled = isPlaying;
       
@@ -985,12 +1018,13 @@
       if (gameMode === 'slots' && isBonusBet && (betAmount * 2) > bananas) canAction = false;
 
       elMainActionBtn.disabled = !canAction;
-      elMainActionBtn.className = canAction ? "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl transition-all active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900" : "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl bg-emerald-800 text-emerald-900 cursor-not-allowed opacity-80";
+      elMainActionBtn.className = canAction ? "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl transition-all active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-b-4 border-yellow-600" : "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl bg-emerald-800 text-emerald-900 cursor-not-allowed opacity-80 border-b-4 border-emerald-900";
       
       if (isPlaying) { elMainActionBtn.innerText = "PLAYING..."; }
       else if (gameMode === 'blackjack') { elMainActionBtn.innerText = (bjState === 'gameOver') ? "DEAL AGAIN" : "DEAL"; }
       else { elMainActionBtn.innerText = "SPIN"; }
 
+      // Blackjack specifics logic
       if (gameMode === 'blackjack') {
         const showBjActions = bjState === 'playing';
         controlBjActions.classList.toggle('hidden', !showBjActions);
@@ -1008,17 +1042,18 @@
         controlAmount.classList.remove('hidden');
       }
 
+      // Update buy tree buttons
       const handleTreeBtnUpdate = (btn, title, subtitle, isDesktop) => {
-        if (trees >= 10) {
+        if (treesOwned >= 20) {
           btn.disabled = true;
-          btn.className = isDesktop ? "hidden md:flex w-full py-4 rounded-xl font-black bg-slate-800 text-slate-500 mt-auto flex-col items-center justify-center" : "md:hidden px-4 py-2 rounded-xl font-black bg-slate-800 text-slate-500 flex flex-col items-center justify-center h-full ml-4";
+          btn.className = isDesktop ? "hidden md:flex w-full py-4 rounded-xl font-black bg-slate-800 text-slate-500 mt-auto flex-col items-center justify-center shrink-0 border-b-4 border-slate-900" : "md:hidden px-4 py-2 rounded-xl font-black bg-slate-800 text-slate-500 flex flex-col items-center justify-center h-full ml-4 shrink-0 border-b-4 border-slate-900";
           title.innerText = "FULL GROVE"; subtitle.style.display = 'none';
         } else {
-          const canAfford = bananas >= 100;
+          const canAfford = bananas >= TREE_DATA[1].cost;
           btn.disabled = !canAfford;
           btn.className = canAfford 
-            ? (isDesktop ? "hidden md:flex w-full py-4 rounded-xl font-black bg-emerald-500 hover:bg-emerald-400 text-emerald-950 active:scale-95 mt-auto flex-col items-center justify-center shadow-lg" : "md:hidden px-4 py-2 rounded-xl font-black bg-emerald-500 hover:bg-emerald-400 text-emerald-950 active:scale-95 flex flex-col items-center justify-center h-full shadow-lg ml-4")
-            : (isDesktop ? "hidden md:flex w-full py-4 rounded-xl font-black bg-emerald-800/50 text-emerald-700 mt-auto flex-col items-center justify-center" : "md:hidden px-4 py-2 rounded-xl font-black bg-emerald-800/50 text-emerald-700 flex flex-col items-center justify-center h-full ml-4");
+            ? (isDesktop ? "hidden md:flex w-full py-4 rounded-xl font-black bg-emerald-500 hover:bg-emerald-400 text-emerald-950 active:scale-95 mt-auto flex-col items-center justify-center shadow-lg shrink-0 border-b-4 border-emerald-700" : "md:hidden px-4 py-2 rounded-xl font-black bg-emerald-500 hover:bg-emerald-400 text-emerald-950 active:scale-95 flex flex-col items-center justify-center h-full shadow-lg ml-4 shrink-0 border-b-4 border-emerald-700")
+            : (isDesktop ? "hidden md:flex w-full py-4 rounded-xl font-black bg-emerald-800/50 text-emerald-700 mt-auto flex-col items-center justify-center shrink-0 border-b-4 border-emerald-900" : "md:hidden px-4 py-2 rounded-xl font-black bg-emerald-800/50 text-emerald-700 flex flex-col items-center justify-center h-full ml-4 shrink-0 border-b-4 border-emerald-900");
           title.innerText = "BUY TREE"; subtitle.style.display = 'block';
         }
       };
@@ -1028,12 +1063,74 @@
 
     function renderTreeGrid() {
       let html = '';
-      const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-8 md:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 14 4-4 4 4"></path><path d="m7 19 5-5 5 5"></path><path d="m7 9 5-5 5 5"></path><path d="M12 19v3"></path></svg>`;
-      for(let i=0; i<10; i++) {
-        const isOwned = i < trees;
-        html += `<div class="aspect-square rounded-xl md:rounded-2xl flex items-center justify-center border md:border-2 transition-all ${isOwned ? "bg-emerald-800 border-emerald-400 text-emerald-400" : "bg-emerald-950/50 border-emerald-900/50 opacity-20 text-emerald-900"}">${svgIcon}</div>`;
+      const firstEmpty = trees.indexOf(0);
+      const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-6 md:h-6 lg:w-8 lg:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 14 4-4 4 4"></path><path d="m7 19 5-5 5 5"></path><path d="m7 9 5-5 5 5"></path><path d="M12 19v3"></path></svg>`;
+      
+      for(let i=0; i<20; i++) {
+        const level = trees[i];
+        let bgClass = "bg-emerald-950/50 border-emerald-900/50 text-emerald-900";
+        let content = svgIcon;
+        let cursor = "cursor-default";
+        let animation = "";
+        
+        if (level > 0) {
+            cursor = "cursor-pointer hover:scale-105 active:scale-95 hover:z-10 shadow-sm";
+            if (level === 1) bgClass = "bg-emerald-800 border-emerald-400 text-emerald-400";
+            if (level === 2) bgClass = "bg-yellow-900/80 border-yellow-400 text-yellow-400";
+            if (level === 3) bgClass = "bg-blue-900/80 border-blue-400 text-blue-400";
+            if (level === 4) bgClass = "bg-purple-900/80 border-purple-400 text-purple-400";
+            if (level === 5) {
+                bgClass = "bg-red-900/80 border-red-400 text-red-400 shadow-[0_0_15px_rgba(248,113,113,0.6)] z-0";
+                animation = "animate-pulse";
+            }
+            content = `<div class="relative flex items-center justify-center w-full h-full">
+                         ${svgIcon}
+                         <div class="absolute -bottom-1 -right-1 bg-black/80 text-[8px] lg:text-[10px] font-black px-1 rounded border border-emerald-800 text-white z-10 leading-none py-[2px]">L${level}</div>
+                       </div>`;
+        } else if (i === firstEmpty) {
+            cursor = "cursor-pointer hover:bg-emerald-800/50 transition-colors";
+            bgClass = "bg-emerald-900/40 border-emerald-600 border-dashed text-emerald-600";
+            content = `<span class="text-xl md:text-2xl font-black">+</span>`;
+        }
+        
+        html += `<div onclick="handleTreeClick(${i})" class="aspect-square rounded-xl md:rounded-2xl flex items-center justify-center border-2 transition-transform ${bgClass} ${cursor} ${animation} relative">${content}</div>`;
       }
       elTreeGrid.innerHTML = html;
+    }
+
+    function renderGadgets() {
+        let html = '';
+        GADGET_DATA.forEach((g, i) => {
+            const isOwned = unlockedGadgets[i];
+            const canAfford = bananas >= g.cost;
+            let btnHtml = '';
+            
+            if (g.locked) {
+                btnHtml = `<button disabled class="px-3 py-1.5 rounded bg-slate-800/50 text-slate-500 font-bold text-[10px] cursor-not-allowed border-b-2 border-slate-900/50">LOCKED</button>`;
+            } else if (isOwned) {
+                btnHtml = `<button disabled class="px-3 py-1.5 rounded bg-emerald-800 text-emerald-300 font-bold text-[10px] border-b-2 border-emerald-900">ACTIVE</button>`;
+            } else {
+                btnHtml = `<button onclick="buyGadget(${i})" class="px-3 py-1.5 rounded font-bold text-[10px] transition-transform active:scale-95 border-b-2 ${canAfford ? 'bg-yellow-400 text-yellow-900 border-yellow-600 hover:bg-yellow-300' : 'bg-emerald-800/50 text-emerald-700 border-emerald-900 cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>BUY (${g.cost} 🍌)</button>`;
+            }
+
+            html += `
+            <div class="bg-emerald-950 border ${isOwned ? 'border-yellow-500/50' : 'border-emerald-800'} rounded-lg p-3 flex flex-col gap-2 shadow-sm relative overflow-hidden">
+                ${isOwned ? '<div class="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent pointer-events-none"></div>' : ''}
+                <div class="flex justify-between items-start z-10">
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs bg-emerald-900 text-emerald-400 px-1.5 py-0.5 rounded font-mono border border-emerald-800">#${i + 1}</span>
+                            <h4 class="font-bold text-emerald-100 text-sm ${g.locked ? 'opacity-50' : ''}">${g.title}</h4>
+                        </div>
+                        <p class="text-emerald-400/70 text-[10px] leading-snug mt-1.5 ${g.locked ? 'opacity-50' : ''}">${g.desc}</p>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-0.5 z-10">
+                    ${btnHtml}
+                </div>
+            </div>`;
+        });
+        document.getElementById('gadgets-list').innerHTML = html;
     }
 
     function renderLeaderboard() {
