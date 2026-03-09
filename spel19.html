@@ -177,7 +177,7 @@
             <div class="flex justify-between items-center px-2 py-1 md:px-4 md:py-2 bg-black/20">
               <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-bold rounded">← EXIT</button>
               <div class="text-emerald-500 text-[10px] md:text-xs font-bold uppercase select-none">GAMEMODE</div>
-              <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-mono uppercase rounded transition-colors" title="Game Version">V2.0</div>
+              <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-mono uppercase rounded transition-colors" title="Game Version">V2.1</div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
               <button onclick="setGameMode('roulette')" id="tab-roulette" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-800 text-white font-black text-xs md:text-sm border-2 border-transparent transition-all">ROULETTE</button>
@@ -429,9 +429,11 @@
     async function fetchServerState() {
       if (!supabaseClient) return;
       try {
-        const { data } = await supabaseClient.from('leaderboard').select('score').eq('id', userId).maybeSingle();
-        if (data && data.score !== undefined) {
-          bananas = data.score;
+        // Fetching both score and trees from database
+        const { data } = await supabaseClient.from('leaderboard').select('score, trees').eq('id', userId).maybeSingle();
+        if (data) {
+          if (data.score !== undefined) bananas = data.score;
+          if (data.trees !== undefined && data.trees !== null) trees = data.trees;
           localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees }));
         }
       } catch (e) {}
@@ -440,7 +442,15 @@
     async function syncData(currentBananas, currentTrees, nameToSave = playerName) {
       localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: nameToSave, bananas: currentBananas, trees: currentTrees }));
       if (supabaseClient && nameToSave && userId) {
-        try { await supabaseClient.from('leaderboard').upsert({ id: userId, name: nameToSave, score: currentBananas }); } catch (err) {}
+        try { 
+          // Upserting both score and trees to ensure synchronization across devices
+          await supabaseClient.from('leaderboard').upsert({ 
+            id: userId, 
+            name: nameToSave, 
+            score: currentBananas,
+            trees: currentTrees
+          }); 
+        } catch (err) {}
       }
     }
 
@@ -525,8 +535,8 @@
         if (data) {
           userId = data.id;
           playerName = data.name;
-          bananas = data.score;
-          trees = data.trees || 1; 
+          bananas = data.score !== undefined ? data.score : 0;
+          trees = data.trees !== undefined && data.trees !== null ? data.trees : 1; 
           
           showLoginMsg("Account loaded! Entering...", false);
           syncData(bananas, trees, playerName);
@@ -662,11 +672,23 @@
       await fetchLeaderboard();
       supabaseClient.channel('leaderboard-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, (payload) => {
         fetchLeaderboard();
-        // Automatically sync own bananas if updated by admin or outside process on matching ID
-        if (payload.new && payload.new.id === userId && payload.new.score !== bananas) {
-          bananas = payload.new.score;
-          localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees }));
-          updateGameUI();
+        // Automatically sync own bananas & trees if updated by admin or outside process on matching ID
+        if (payload.new && payload.new.id === userId) {
+          let hasChanges = false;
+          
+          if (payload.new.score !== undefined && payload.new.score !== bananas) {
+            bananas = payload.new.score;
+            hasChanges = true;
+          }
+          if (payload.new.trees !== undefined && payload.new.trees !== null && payload.new.trees !== trees) {
+            trees = payload.new.trees;
+            hasChanges = true;
+          }
+
+          if (hasChanges) {
+            localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees }));
+            updateGameUI();
+          }
         }
       }).subscribe();
     }
