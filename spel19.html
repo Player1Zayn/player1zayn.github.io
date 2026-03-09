@@ -38,8 +38,9 @@
 </head>
 <body class="fixed inset-0 bg-black text-white font-sans overflow-hidden select-none flex items-center justify-center">
 
-  <div id="loading-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center text-yellow-400 font-bold text-2xl z-50">
-    Loading Casino...
+  <div id="loading-screen" class="fixed inset-0 bg-slate-900 flex flex-col items-center justify-center z-50">
+    <div class="text-yellow-400 font-bold text-2xl mb-4" id="loading-text">Loading Casino...</div>
+    <div class="w-12 h-12 border-4 border-emerald-800 border-t-yellow-400 rounded-full animate-spin"></div>
   </div>
 
   <!-- Admin Modal -->
@@ -147,23 +148,53 @@
       <button onclick="setView('menu')" class="mt-8 bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-xl">Back to Menu</button>
     </div>
 
-    <!-- VIEW: NAME ENTRY -->
-    <div id="view-name_entry" class="flex-1 flex flex-col items-center justify-center bg-emerald-950 p-4 md:p-6 hidden">
-      <div class="bg-emerald-900 p-6 md:p-8 rounded-3xl w-full max-w-[90%] md:max-w-md shadow-2xl border border-emerald-800 text-center">
-        <h2 class="text-2xl md:text-3xl font-bold text-yellow-400 mb-6">Casino ID</h2>
+    <!-- VIEW: NAME ENTRY / ACCOUNT LOGIN -->
+    <div id="view-name_entry" class="flex-1 flex flex-col items-center justify-center bg-emerald-950 p-4 md:p-6 hidden overflow-y-auto">
+      <div class="bg-emerald-900 p-6 md:p-8 rounded-3xl w-full max-w-[90%] md:max-w-md shadow-2xl border border-emerald-800 text-center relative">
+        <button onclick="setView('menu')" class="absolute top-4 left-4 text-emerald-500 hover:text-emerald-300">
+          <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+        </button>
+
+        <!-- New Player Section -->
+        <h2 class="text-xl md:text-2xl font-bold text-yellow-400 mb-2 mt-4">Play Casino</h2>
+        <p class="text-emerald-400 text-xs mb-4">Enter a name to start playing.</p>
         <input 
           type="text" 
           id="player-name-input"
           maxlength="15"
           placeholder="Enter Your Name..."
-          class="w-full bg-emerald-950 border-2 border-emerald-700 text-white text-lg md:text-xl p-3 md:p-4 rounded-xl text-center mb-6 focus:border-yellow-400 outline-none"
+          class="w-full bg-emerald-950 border-2 border-emerald-700 text-white text-lg md:text-xl p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors"
         />
+
+        <div class="my-6 flex items-center justify-center gap-3">
+            <div class="h-px bg-emerald-800 flex-1"></div>
+            <span class="text-emerald-600 font-black text-xs uppercase tracking-widest">OR</span>
+            <div class="h-px bg-emerald-800 flex-1"></div>
+        </div>
+
+        <!-- Existing Account Section -->
+        <h2 class="text-xl md:text-2xl font-bold text-yellow-400 mb-2">Load Account</h2>
+        <p class="text-emerald-400 text-xs mb-4">Paste your unique ID to load your progress.</p>
+        <input 
+          type="text" 
+          id="player-id-input"
+          placeholder="Enter Account ID (user_...)"
+          class="w-full bg-emerald-950 border-2 border-emerald-700 text-emerald-300 text-sm p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors font-mono"
+        />
+
+        <!-- Action Button -->
         <button 
           onclick="enterCasino()"
-          class="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-lg md:text-xl py-3 md:py-4 rounded-xl transition-transform active:scale-95 border-b-4 border-yellow-600"
+          class="w-full mt-8 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-lg md:text-xl py-3 md:py-4 rounded-xl transition-transform active:scale-95 border-b-4 border-yellow-600 flex items-center justify-center gap-2"
         >
-          Enter Casino
+          ENTER CASINO
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
         </button>
+
+        <div class="mt-6 p-3 bg-emerald-950/50 rounded-lg border border-emerald-800/50">
+            <p class="text-[10px] text-emerald-500 uppercase tracking-widest font-bold mb-1">Current Device ID</p>
+            <p class="text-xs text-emerald-300 font-mono break-all" id="menu-current-id"></p>
+        </div>
       </div>
     </div>
 
@@ -225,9 +256,9 @@
         <!-- Gamemode Tabs Overlay -->
         <div class="absolute top-0 left-0 right-0 z-30 pointer-events-auto bg-emerald-900/90 backdrop-blur-sm border-b border-emerald-800 flex flex-col">
             <div class="flex justify-between items-center px-2 py-1 md:px-4 md:py-2 bg-black/20">
-              <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-bold rounded">← EXIT</button>
+              <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-bold rounded flex items-center gap-1"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg> MENU</button>
               <div class="text-emerald-500 text-[10px] md:text-xs font-bold uppercase select-none">GAMEMODE</div>
-              <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded" title="Game Version">V2.2</div>
+              <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded" title="Game Version">V2.3</div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
               <button onclick="setGameMode('roulette')" id="tab-roulette" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-800 text-white font-black text-xs md:text-sm border-2 border-transparent transition-all">ROULETTE</button>
@@ -352,12 +383,20 @@
 
       <!-- Left Sidebar (Moved to Bottom on Mobile): Scoreboard -->
       <div class="order-3 md:order-1 md:w-[22%] bg-emerald-900/50 border-t md:border-t-0 md:border-r border-emerald-800 flex flex-col h-[20vh] md:h-full shrink-0 z-20">
-        <div class="p-2 md:p-4 bg-emerald-900 border-b border-emerald-800 flex items-center justify-center md:justify-start gap-2">
+        <div class="p-2 md:p-4 bg-emerald-900 border-b border-emerald-800 flex items-center justify-center md:justify-start gap-2 shrink-0">
           <svg class="text-yellow-400 w-4 h-4 md:w-6 md:h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
           <h2 class="font-bold text-yellow-400 text-[10px] md:text-sm uppercase tracking-widest">Global Scoreboard</h2>
         </div>
         <div id="leaderboard-container" class="flex-1 overflow-y-auto p-2 md:p-4 space-y-1.5 md:space-y-2 custom-scroll">
           <div class="text-center text-emerald-600 text-xs py-10 italic">Connecting...</div>
+        </div>
+        <!-- Sticky Account ID Footer -->
+        <div class="p-2 md:p-3 bg-emerald-950 border-t border-emerald-800 flex flex-col gap-1 shrink-0 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
+          <label class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest pl-1">Your Account ID</label>
+          <div class="flex gap-2">
+            <input type="text" id="display-user-id" readonly class="flex-1 bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs px-2 py-1.5 rounded outline-none font-mono" />
+            <button onclick="copyUserId()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold transition-colors shadow-sm active:scale-95">COPY</button>
+          </div>
         </div>
       </div>
 
@@ -429,6 +468,7 @@
     // DOM Elements
     const elApp = document.getElementById('app');
     const elLoading = document.getElementById('loading-screen');
+    const elLoadingText = document.getElementById('loading-text');
     const views = {
       menu: document.getElementById('view-menu'),
       credits: document.getElementById('view-credits'),
@@ -437,7 +477,10 @@
     };
     
     const elPlayerNameInput = document.getElementById('player-name-input');
+    const elPlayerIdInput = document.getElementById('player-id-input');
+    const elMenuCurrentId = document.getElementById('menu-current-id');
     const elDisplayPlayerName = document.getElementById('display-player-name');
+    const elDisplayUserId = document.getElementById('display-user-id');
     const elDisplayBananas = document.getElementById('display-bananas');
     const elDisplayTrees = document.getElementById('display-trees');
     const elDisplayTreeIncome = document.getElementById('display-tree-income');
@@ -518,15 +561,26 @@
       } else {
         userId = generateId();
       }
+      elMenuCurrentId.innerText = userId;
     }
 
     async function fetchServerState() {
       if (!supabaseClient) return;
       try {
-        const { data } = await supabaseClient.from('leaderboard').select('score').eq('id', userId).maybeSingle();
+        const { data } = await supabaseClient.from('leaderboard').select('*').eq('id', userId).maybeSingle();
         if (data && data.score !== undefined) {
           bananas = data.score;
-          expectedDbBananas = bananas; // Mark as our baseline truth
+          expectedDbBananas = bananas; 
+          
+          if (data.trees) {
+              trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
+              while(trees.length < 20) trees.push(0);
+          }
+          if (data.gadgets) {
+              unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
+              while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+          }
+          
           localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets }));
         }
       } catch (e) {}
@@ -536,8 +590,24 @@
       localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: nameToSave, bananas: currentBananas, trees: currentTreesArray, gadgets: unlockedGadgets }));
       if (supabaseClient && nameToSave && userId) {
         try { 
-            expectedDbBananas = currentBananas; // Record what we intend to send
-            await supabaseClient.from('leaderboard').upsert({ id: userId, name: nameToSave, score: currentBananas }); 
+            expectedDbBananas = currentBananas; 
+            const payload = { 
+                id: userId, 
+                name: nameToSave, 
+                score: currentBananas, 
+                trees: currentTreesArray, 
+                gadgets: unlockedGadgets 
+            };
+            
+            // Try to save everything (requires trees & gadgets columns to exist as JSONB/Array)
+            const { error } = await supabaseClient.from('leaderboard').upsert(payload);
+            
+            if (error) {
+                // Failsafe: If the database schema hasn't been updated to include trees/gadgets columns yet,
+                // we fall back to just saving the score so the game doesn't break for users.
+                console.warn("Full sync failed (likely missing columns). Falling back to basic score sync.", error);
+                await supabaseClient.from('leaderboard').upsert({ id: userId, name: nameToSave, score: currentBananas });
+            }
         } catch (err) {}
       }
     }
@@ -546,13 +616,81 @@
       view = newView;
       Object.keys(views).forEach(k => views[k]?.classList.add('hidden'));
       views[view]?.classList.remove('hidden');
+      
+      if (view === 'name_entry') elMenuCurrentId.innerText = userId;
+      
       if (view === 'game') { startGameLoop(); updateGameUI(); } else { stopGameLoop(); }
     }
 
-    function enterCasino() {
-      playerName = elPlayerNameInput.value.trim() || `Player_${Math.floor(Math.random() * 1000)}`;
-      syncData(bananas, trees, playerName);
+    // --- ACCOUNT LOGIN & CREATION ---
+    async function enterCasino() {
+      const idInput = elPlayerIdInput.value.trim();
+      const nameInput = elPlayerNameInput.value.trim();
+
+      if (idInput) {
+          // Attempt to load existing account
+          if (!supabaseClient) {
+              alert("Database connection required to load accounts.");
+              return;
+          }
+          
+          elLoadingText.innerText = "Locating Account...";
+          elLoading.classList.remove('hidden');
+          
+          try {
+              const { data, error } = await supabaseClient.from('leaderboard').select('*').eq('id', idInput).maybeSingle();
+              if (data) {
+                  // Found account! Overwrite local data
+                  userId = data.id;
+                  playerName = data.name;
+                  bananas = data.score;
+                  expectedDbBananas = bananas;
+                  
+                  if (data.trees) {
+                      trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
+                      while(trees.length < 20) trees.push(0);
+                  }
+                  if (data.gadgets) {
+                      unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
+                      while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+                  }
+                  
+                  syncData(bananas, trees, playerName);
+                  finalizeEntry();
+              } else {
+                  alert("Account ID not found!");
+                  elLoading.classList.add('hidden');
+              }
+          } catch (err) {
+              alert("Error contacting server.");
+              elLoading.classList.add('hidden');
+          }
+      } else {
+          // Standard / New entry via Name
+          playerName = nameInput || `Player_${Math.floor(Math.random() * 1000)}`;
+          syncData(bananas, trees, playerName);
+          finalizeEntry();
+      }
+    }
+
+    function finalizeEntry() {
+      elLoading.classList.add('hidden');
+      elDisplayUserId.value = userId;
+      elPlayerIdInput.value = ''; // clear for next time
       setView('game');
+    }
+
+    function copyUserId() {
+        elDisplayUserId.select();
+        document.execCommand('copy');
+        const btn = elDisplayUserId.nextElementSibling;
+        const originalText = btn.innerText;
+        btn.innerText = "COPIED!";
+        btn.classList.add('bg-green-600');
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.classList.remove('bg-green-600');
+        }, 1500);
     }
 
     // --- ADMIN PANEL LOGIC ---
@@ -615,7 +753,6 @@
         if (supabaseClient) {
             try {
                 await supabaseClient.from('leaderboard').update({ score: newScore }).eq('id', uid);
-                // The realtime listener will update the local variables across the network, including ours if we target ourselves.
                 closeAdminModal();
                 alert(`Admin Override Applied!\nUser: ${targetUser.name}\nNew Balance: ${newScore.toLocaleString()} 🍌`);
             } catch (e) {
@@ -635,15 +772,37 @@
       supabaseClient.channel('leaderboard-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, (payload) => {
         fetchLeaderboard();
         
-        // Check if the update affects us
+        // Deep Sync if the payload targets our user
         if (payload.new && payload.new.id === userId) {
-            // Is it an external modification? (i.e. It's not matching what we last deliberately pushed to the DB)
+            let stateChanged = false;
+            
             if (expectedDbBananas !== -1 && payload.new.score !== expectedDbBananas) {
                 bananas = payload.new.score;
-                expectedDbBananas = bananas; // Adopt the override as our new baseline
-                
+                expectedDbBananas = bananas;
+                stateChanged = true;
+            }
+            
+            if (payload.new.trees) {
+                const newTrees = typeof payload.new.trees === 'string' ? JSON.parse(payload.new.trees) : payload.new.trees;
+                if (JSON.stringify(trees) !== JSON.stringify(newTrees)) {
+                    trees = newTrees;
+                    while(trees.length < 20) trees.push(0);
+                    stateChanged = true;
+                }
+            }
+            
+            if (payload.new.gadgets) {
+                const newGadgets = typeof payload.new.gadgets === 'string' ? JSON.parse(payload.new.gadgets) : payload.new.gadgets;
+                if (JSON.stringify(unlockedGadgets) !== JSON.stringify(newGadgets)) {
+                    unlockedGadgets = newGadgets;
+                    while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+                    stateChanged = true;
+                }
+            }
+
+            if (stateChanged) {
                 localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets }));
-                updateGameUI();
+                if(view === 'game') updateGameUI();
             }
         }
       }).subscribe();
@@ -711,7 +870,6 @@
             viewTrees.classList.remove('hidden');
             viewGadgets.classList.add('hidden');
             
-            // Clean inline display to restore native stylesheet control (solves the sticky mobile button bug)
             btnTreeMobile.style.display = ''; 
         } else {
             tabGadgets.classList.replace('text-emerald-600', 'text-emerald-400');
@@ -727,7 +885,6 @@
             viewGadgets.classList.remove('hidden');
             viewTrees.classList.add('hidden');
             
-            // Force hide regardless of screen width
             btnTreeMobile.style.display = 'none';
         }
     }
