@@ -354,7 +354,7 @@
               />
               <button onclick="setMaxBet()" id="max-bet-btn" class="bg-emerald-800 px-3 md:px-4 rounded-lg md:rounded-xl font-bold text-xs md:text-base hover:bg-emerald-700 active:scale-95 text-white">MAX</button>
             </div>
-            
+            <button id="insurance-btn" onclick="useInsurance()" class="hidden w-full py-2 mb-2 rounded-xl bg-blue-600 text-white font-bold">RELOAD INSURANCE (25%)</button>
             <!-- Main Action Buttons -->
             <div id="main-actions-container" class="relative">
               <button 
@@ -413,6 +413,9 @@
     let userId = '';
     let playerName = '';
     let bananas = 0;
+    let winStreak = 0;
+    let insuranceActive = false;
+    let lastLostBetAmount = 0;
     
     // DB Sync State Protection
     let expectedDbBananas = -1; 
@@ -436,10 +439,27 @@
     const GADGET_DATA = [
         { title: 'Failsafe', cost: 500, desc: 'Bet 100+: 25% chance to not lose bananas on a loss.' },
         { title: 'Increased Chance', cost: 1000, desc: 'Roulette Green chance increased to 16%.' },
-        ...Array(8).fill({ title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true })
+      { title: 'Banana Streak', cost: 5000, desc 'Win Streak gives 2x multiplier on wins.' },
+      { title: 'Speed Reload', cost: 10000, desc 'Get 25% insurance for 2s after a loss (20s cooldown).' },
+        ...Array(6).fill({ title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true })
     ];
 
     let leaderboard = [];
+    function useInsurance() {
+        if (Date.now() - lastInsuranceUsed < 20000) { 
+            alert("Cooldown: " + Math.ceil((20000 - (Date.now() - lastInsuranceUsed)) / 1000) + "s"); 
+            return; 
+        }
+        bananas += Math.round(lastLostBetAmount * 0.25);
+        lastInsuranceUsed = Date.now();
+        insuranceActive = false;
+        updateGameUI();
+        syncData(bananas, trees);
+    }
+
+    function applyWinMultiplier(amount) {
+        return (unlockedGadgets[2] && winStreak > 0) ? amount * 2 : amount;
+    }
     
     // Core Game State
     let gameMode = 'roulette'; 
@@ -907,6 +927,13 @@
             return `Failsafe: Saved ${lossAmount} bananas.`;
         }
         bananas -= lossAmount;
+        winStreak = 0; // Reset streak on loss
+        
+        if (unlockedGadgets[3]) { // Speed Reload
+            lastLostBetAmount = lossAmount;
+            insuranceActive = true;
+            setTimeout(() => { insuranceActive = false; updateGameUI(); }, 2000);
+        }
         return defaultMessage;
     }
 
@@ -1056,7 +1083,8 @@
       setTimeout(() => {
         if (betColor === winningColor) {
           const mult = winningColor === 'green' ? 3 : 1;
-          bananas += betAmount * mult;
+          bananas += applyWinMultiplier(betAmount * mult);
+          winStreak++;
           spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${betAmount * mult} 🍌!`;
         } else {
           spinResultMsg = processLoss(betAmount, betAmount, `Landed on ${winningColor.toUpperCase()}! Lost ${betAmount} 🍌.`);
@@ -1131,10 +1159,10 @@
         let netLoss = actualBet - returnAmount;
         spinResultMsg = processLoss(netLoss, actualBet, `Got 2! Won back ${returnAmount} 🍌.`);
       } else if (outcome === 'win') {
-        bananas += actualBet; 
+        bananas += applyWinMultiplier(actualBet); winstreak++; 
         spinResultMsg = `3 of a Kind! Won ${actualBet * 2} 🍌!`;
       } else if (outcome === 'jackpot') {
-        bananas += (actualBet * 9); 
+        bananas += applyWinMultiplier(actualBet * 9); winstreak++; 
         spinResultMsg = `🎰 JACKPOT! 🎰 Won ${actualBet * 10} 🍌!`;
       }
 
@@ -1216,9 +1244,9 @@
     function bjEndGame(reason, multiplier) {
       let change = Math.round(betAmount * multiplier);
       if (reason === 'bust') { spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${betAmount} 🍌.`); }
-      else if (reason === 'dealerBust') { spinResultMsg = `Dealer bust! Won ${change} 🍌!`; bananas += change; }
-      else if (reason === 'blackjack') { spinResultMsg = `Blackjack! Won ${change} 🍌!`; bananas += change; }
-      else if (reason === 'win') { spinResultMsg = `You win! Won ${change} 🍌!`; bananas += change; }
+      else if (reason === 'dealerBust') { spinResultMsg = `Dealer bust! Won ${change} 🍌!`; bananas += applyWinMultiplier(change); winStreak++; }
+      else if (reason === 'blackjack') { spinResultMsg = `Blackjack! Won ${change} 🍌!`; bananas += applyWinMultiplier(change); winStreak++; }
+      else if (reason === 'win') { spinResultMsg = `You win! Won ${change} 🍌!`; bananas += applyWinMultiplier(change); winStreak++; }
       else if (reason === 'lose') { spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${betAmount} 🍌.`); }
       else if (reason === 'push') { spinResultMsg = `Push! Returned bet.`; } 
       
@@ -1248,7 +1276,12 @@
       });
       elDisplayTreeIncome.innerText = parseFloat(avgBps.toFixed(2));
       
-      elSpinResultMsg.innerText = spinResultMsg;
+      // Streak Display
+      elSpinResultMsg.innerHTML = `${spinResultMsg} <span class="text-yellow-500 font-bold"> (Streak: ${winStreak})</span>`;
+
+      // Insurance Button
+      const insuranceBtn = document.getElementById('insurance-btn');
+      if (insuranceBtn) insuranceBtn.classList.toggle('hidden', !insuranceActive);
       renderTreeGrid();
       renderGadgets();
       
@@ -1332,6 +1365,7 @@
       };
       handleTreeBtnUpdate(document.getElementById('buy-tree-btn'), document.getElementById('buy-tree-title'), document.getElementById('buy-tree-subtitle'), true);
       handleTreeBtnUpdate(document.getElementById('buy-tree-btn-mobile'), document.getElementById('buy-tree-title-mobile'), document.getElementById('buy-tree-subtitle-mobile'), false);
+      
     }
 
     function renderTreeGrid() {
