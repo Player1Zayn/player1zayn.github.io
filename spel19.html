@@ -266,9 +266,10 @@
               <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded" title="Game Version">V2.3</div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
-              <button onclick="setGameMode('roulette')" id="tab-roulette" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-800 text-white font-black text-xs md:text-sm border-2 border-transparent transition-all">ROULETTE</button>
-              <button onclick="setGameMode('slots')" id="tab-slots" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-xs md:text-sm border-2 border-emerald-800 transition-all">SLOTS</button>
-              <button onclick="setGameMode('blackjack')" id="tab-blackjack" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-xs md:text-sm border-2 border-emerald-800 transition-all">BLACKJACK</button>
+              <button onclick="setGameMode('roulette')" id="tab-roulette" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-800 text-white font-black text-[10px] md:text-sm border-2 border-transparent transition-all">ROULETTE</button>
+              <button onclick="setGameMode('slots')" id="tab-slots" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">SLOTS</button>
+              <button onclick="setGameMode('blackjack')" id="tab-blackjack" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">BLACKJACK</button>
+              <button onclick="setGameMode('plinko')" id="tab-plinko" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">PLINKO</button>
             </div>
         </div>
         
@@ -318,6 +319,24 @@
                 <div class="w-8 h-8 rounded-full bg-yellow-600 flex items-center justify-center text-xs">🍌</div>
               </div>
               <div id="player-cards" class="flex gap-2 h-20 md:h-28"></div>
+            </div>
+          </div>
+
+          <!-- Game: PLINKO -->
+          <div id="area-plinko" class="w-full h-full flex flex-col items-center justify-center hidden">
+            <div class="relative bg-emerald-900/30 p-2 rounded-2xl border-2 border-emerald-800 shadow-inner flex flex-col items-center">
+              <canvas id="plinko-canvas" width="300" height="350" class="max-w-full h-auto"></canvas>
+              <div id="plinko-buckets" class="flex w-[220px] mt-1 px-0.5 gap-0.5">
+                <div class="flex-1 bg-red-600 text-[8px] font-bold text-center rounded py-1">10x</div>
+                <div class="flex-1 bg-orange-600 text-[8px] font-bold text-center rounded py-1">2x</div>
+                <div class="flex-1 bg-yellow-600 text-[8px] font-bold text-center rounded py-1">1.5x</div>
+                <div class="flex-1 bg-emerald-600 text-[8px] font-bold text-center rounded py-1">0.5x</div>
+                <div class="flex-1 bg-emerald-800 text-[8px] font-bold text-center rounded py-1">0.2x</div>
+                <div class="flex-1 bg-emerald-600 text-[8px] font-bold text-center rounded py-1">0.5x</div>
+                <div class="flex-1 bg-yellow-600 text-[8px] font-bold text-center rounded py-1">1.5x</div>
+                <div class="flex-1 bg-orange-600 text-[8px] font-bold text-center rounded py-1">2x</div>
+                <div class="flex-1 bg-red-600 text-[8px] font-bold text-center rounded py-1">10x</div>
+              </div>
             </div>
           </div>
 
@@ -415,6 +434,38 @@
   </div>
 
   <script>
+    // Anti-Cheat Guard
+    if (localStorage.getItem('isBanned') === 'true') {
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.innerHTML = `
+                <div style="height:100vh; background:#064e3b; color:#facc15; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px;">
+                    <svg style="width:80px; height:80px; margin-bottom:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <h1 style="font-size:3rem; font-weight:900; margin:0;">YOU GOT BANNED</h1>
+                    <p style="font-size:1.2rem; opacity:0.8; margin-top:10px;">Cheat detection triggered. Your account has been locked.</p>
+                    <p style="font-size:0.9rem; opacity:0.5; margin-top:20px;">Contact support on the Supabase server to appeal.</p>
+                </div>
+            `;
+        });
+        throw new Error("Banned");
+    }
+
+    async function addCheatTicket() {
+        let tickets = JSON.parse(localStorage.getItem('cheatTickets') || '[]');
+        const now = Date.now();
+        tickets.push(now);
+        // Filter tickets older than 1 hour
+        tickets = tickets.filter(t => now - t < 3600000);
+        localStorage.setItem('cheatTickets', JSON.stringify(tickets));
+        
+        if (tickets.length >= 3) {
+            localStorage.setItem('isBanned', 'true');
+            if (supabaseClient && userId) {
+                await supabaseClient.from('leaderboard').update({ banned: true }).eq('id', userId);
+            }
+            location.reload();
+        }
+    }
+
     const supabaseUrl = "https://yuwnnaavbegzbdfpxjok.supabase.co"; 
     const supabaseKey = "sb_publishable_dApo1jlVE15-s7RTzmnpOA_cBDuQy1W"; 
     let supabaseClient = null;
@@ -423,7 +474,24 @@
     let sidebarView = 'trees';
     let userId = '';
     let playerName = '';
-    let bananas = 0;
+    
+    let _bananas = 0;
+    let isInternalUpdate = false;
+    Object.defineProperty(window, 'bananas', {
+        get() { return _bananas; },
+        set(newVal) {
+            if (!isInternalUpdate && newVal > _bananas && !isPlaying && bjState !== 'playing' && bjState !== 'dealerTurn') {
+                const diff = newVal - _bananas;
+                // Max possible income from 20 trees at level 5 is 40,000
+                // If they add more than 40,000 at once without being in a game or internal update, it's a ticket.
+                if (diff > 40000) {
+                    addCheatTicket();
+                }
+            }
+            _bananas = newVal;
+            if (typeof updateGameUI === 'function') updateGameUI();
+        }
+    });
     
     // DB Sync State Protection
     let expectedDbBananas = -1; 
@@ -476,6 +544,15 @@
     let bjPlayer = [];
     let bjDealer = [];
 
+    // Plinko State
+    let plinkoBalls = [];
+    const PLINKO_MULTIPLIERS = [10, 2, 1.5, 0.5, 0.2, 0.5, 1.5, 2, 10];
+    const PLINKO_ROWS = 10;
+    const PLINKO_PIN_RADIUS = 3;
+    const PLINKO_BALL_RADIUS = 5;
+    const PLINKO_ROW_SPACING = 26;
+    const PLINKO_PIN_X_SPACING = 24;
+
     let syncTimeout = null;
     let gameLoopInterval = null;
     let lastLossAmount = 0;
@@ -512,14 +589,18 @@
     const elMaxBetBtn = document.getElementById('max-bet-btn');
     const elMainActionBtn = document.getElementById('main-action-btn');
     const elLeaderboardContainer = document.getElementById('leaderboard-container');
+    const elPlinkoCanvas = document.getElementById('plinko-canvas');
+    const plinkoCtx = elPlinkoCanvas ? elPlinkoCanvas.getContext('2d') : null;
     
     // Gamemode areas
     const areaRoulette = document.getElementById('area-roulette');
     const areaSlots = document.getElementById('area-slots');
     const areaBlackjack = document.getElementById('area-blackjack');
+    const areaPlinko = document.getElementById('area-plinko');
     const tabRoulette = document.getElementById('tab-roulette');
     const tabSlots = document.getElementById('tab-slots');
     const tabBlackjack = document.getElementById('tab-blackjack');
+    const tabPlinko = document.getElementById('tab-plinko');
 
     // Controls areas
     const controlColors = document.getElementById('bet-color-picker');
@@ -560,7 +641,9 @@
           const data = JSON.parse(saved);
           userId = data.userId || generateId();
           playerName = data.name || '';
+          isInternalUpdate = true;
           bananas = typeof data.bananas === 'number' ? data.bananas : 0;
+          isInternalUpdate = false;
           
           let savedTrees = data.trees;
           if (typeof savedTrees === 'number') {
@@ -591,24 +674,34 @@
       if (!supabaseClient) return;
       try {
         const { data } = await supabaseClient.from('leaderboard').select('*').eq('id', userId).maybeSingle();
-        if (data && data.score !== undefined) {
-          bananas = data.score;
-          expectedDbBananas = bananas; 
-          
-          if (data.trees) {
-              trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
-              while(trees.length < 20) trees.push(0);
-          }
-          if (data.gadgets) {
-              unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
-              while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
-          }
-          if (data.active_gadgets) {
-              activeGadgets = typeof data.active_gadgets === 'string' ? JSON.parse(data.active_gadgets) : data.active_gadgets;
-              while(activeGadgets.length < 10) activeGadgets.push(false);
+        if (data) {
+          if (data.banned) {
+              localStorage.setItem('isBanned', 'true');
+              location.reload();
+              return;
           }
           
-          localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, activeGadgets }));
+          if (data.score !== undefined) {
+            isInternalUpdate = true;
+            bananas = data.score;
+            isInternalUpdate = false;
+            expectedDbBananas = bananas; 
+            
+            if (data.trees) {
+                trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
+                while(trees.length < 20) trees.push(0);
+            }
+            if (data.gadgets) {
+                unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
+                while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+            }
+            if (data.active_gadgets) {
+                activeGadgets = typeof data.active_gadgets === 'string' ? JSON.parse(data.active_gadgets) : data.active_gadgets;
+                while(activeGadgets.length < 10) activeGadgets.push(false);
+            }
+            
+            localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, activeGadgets }));
+          }
         }
       } catch (e) {}
     }
@@ -624,18 +717,11 @@
                 score: currentBananas, 
                 trees: currentTreesArray, 
                 gadgets: unlockedGadgets,
-                active_gadgets: activeGadgets
+                active_gadgets: activeGadgets,
+                banned: localStorage.getItem('isBanned') === 'true'
             };
             
-            // Try to save everything (requires trees & gadgets columns to exist as JSONB/Array)
-            const { error } = await supabaseClient.from('leaderboard').upsert(payload);
-            
-            if (error) {
-                // Failsafe: If the database schema hasn't been updated to include trees/gadgets columns yet,
-                // we fall back to just saving the score so the game doesn't break for users.
-                console.warn("Full sync failed (likely missing columns). Falling back to basic score sync.", error);
-                await supabaseClient.from('leaderboard').upsert({ id: userId, name: nameToSave, score: currentBananas });
-            }
+            await supabaseClient.from('leaderboard').upsert(payload);
         } catch (err) {}
       }
     }
@@ -864,7 +950,9 @@
         }
         
         if (incomeGenerated > 0) {
+            isInternalUpdate = true;
             bananas += incomeGenerated;
+            isInternalUpdate = false;
             updateGameUI();
             clearTimeout(syncTimeout);
             syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
@@ -923,7 +1011,9 @@
         if (!gadget || gadget.locked || unlockedGadgets[index]) return;
 
         if (bananas >= gadget.cost) {
+            isInternalUpdate = true;
             bananas -= gadget.cost;
+            isInternalUpdate = false;
             unlockedGadgets[index] = true;
             
             // Auto-equip if space
@@ -967,7 +1057,9 @@
     function claimInsurance() {
         if (lastLossAmount <= 0) return;
         const refund = Math.round(lastLossAmount * 0.25);
+        isInternalUpdate = true;
         bananas += refund;
+        isInternalUpdate = false;
         spinResultMsg = `Insurance Claimed! Refunded ${refund} 🍌.`;
         lastLossAmount = 0;
         document.getElementById('insurance-btn').classList.add('hidden');
@@ -981,7 +1073,9 @@
         if (originalBet >= 100 && activeGadgets[0] && Math.random() < 0.25) {
             return `Failsafe: Saved ${lossAmount} bananas.`;
         }
+        isInternalUpdate = true;
         bananas -= lossAmount;
+        isInternalUpdate = false;
         if (activeGadgets[2]) {
             showInsuranceButton(lossAmount);
         }
@@ -994,7 +1088,9 @@
             multiplier = 2;
         }
         const finalAmount = amount * multiplier;
+        isInternalUpdate = true;
         bananas += finalAmount;
+        isInternalUpdate = false;
         winStreak++;
         return finalAmount;
     }
@@ -1005,7 +1101,9 @@
       const data = TREE_DATA[1];
       
       if (firstEmpty !== -1 && bananas >= data.cost) {
+        isInternalUpdate = true;
         bananas -= data.cost;
+        isInternalUpdate = false;
         trees[firstEmpty] = 1;
         syncData(bananas, trees);
         updateGameUI();
@@ -1075,7 +1173,9 @@
         const conditionMet = !nextData.reqAllTrees || treesOwned === 20;
         
         if (bananas >= nextData.cost && conditionMet) {
+            isInternalUpdate = true;
             bananas -= nextData.cost;
+            isInternalUpdate = false;
             trees[selectedTreeIndex]++;
             syncData(bananas, trees);
             updateGameUI();
@@ -1114,7 +1214,7 @@
     function startAutoBetLoop() {
         if (!isAutoBetting) return;
         
-        if (!isPlaying && (gameMode === 'roulette' || gameMode === 'slots')) {
+        if (!isPlaying && (gameMode === 'roulette' || gameMode === 'slots' || gameMode === 'plinko')) {
             const actualBet = gameMode === 'slots' && isBonusBet ? betAmount * 2 : betAmount;
             let canBet = bananas >= actualBet && betAmount > 0;
             if (gameMode === 'roulette' && !betColor) canBet = false;
@@ -1141,7 +1241,169 @@
         playSlots();
       } else if (gameMode === 'blackjack') {
         if (bjState === 'betting' || bjState === 'gameOver') playBlackjack();
+      } else if (gameMode === 'plinko') {
+        playPlinko();
       }
+    }
+
+    // --- PLINKO LOGIC ---
+    function playPlinko() {
+      if (isPlaying) return;
+      isPlaying = true;
+      spinResultMsg = "Dropping ball...";
+      updateGameUI();
+
+      const ball = {
+        x: 150,
+        y: 20,
+        vx: (Math.random() - 0.5) * 2,
+        vy: 2,
+        row: 0
+      };
+
+      plinkoBalls.push(ball);
+      requestAnimationFrame(animatePlinko);
+    }
+
+    function animatePlinko() {
+      if (plinkoBalls.length === 0) {
+        isPlaying = false;
+        updateGameUI();
+        return;
+      }
+
+      if (!plinkoCtx) return;
+
+      plinkoCtx.clearRect(0, 0, 300, 350);
+      drawPlinkoBoard();
+
+      for (let i = plinkoBalls.length - 1; i >= 0; i--) {
+        const ball = plinkoBalls[i];
+        ball.y += ball.vy;
+        ball.x += ball.vx;
+        ball.vy += 0.15; // Gravity
+        ball.vx *= 0.99; // Air resistance
+
+        // Check collision with pins
+        const currentRow = Math.floor((ball.y - 50) / PLINKO_ROW_SPACING);
+        if (currentRow >= 0 && currentRow > ball.row && currentRow < PLINKO_ROWS) {
+          ball.row = currentRow;
+          const pinsInRow = currentRow + 1;
+          const rowWidth = pinsInRow * PLINKO_PIN_X_SPACING;
+          const startX = 150 - rowWidth / 2 + PLINKO_PIN_X_SPACING / 2;
+          
+          let closestPinX = startX;
+          let minDist = Math.abs(ball.x - startX);
+          for (let p = 1; p < pinsInRow; p++) {
+            const px = startX + p * PLINKO_PIN_X_SPACING;
+            const d = Math.abs(ball.x - px);
+            if (d < minDist) {
+              minDist = d;
+              closestPinX = px;
+            }
+          }
+
+          if (minDist < 15) {
+            ball.vx = (ball.x > closestPinX ? 1 : -1) * (1 + Math.random() * 2);
+            ball.vy = 1.5;
+          }
+        }
+
+        // Extra blocker pins collision
+        const extraPinY = 315;
+        const leftExtraX = 40 + (220 / 18);
+        const rightExtraX = 260 - (220 / 18);
+        [leftExtraX, rightExtraX].forEach(px => {
+          const dx = ball.x - px;
+          const dy = ball.y - extraPinY;
+          if (Math.sqrt(dx*dx + dy*dy) < (PLINKO_PIN_RADIUS + PLINKO_BALL_RADIUS + 2)) {
+            if (ball.y < extraPinY + 5) { // Only bounce if hitting top/side
+              ball.vx = (ball.x > px ? 1 : -1) * (1 + Math.random() * 2);
+              ball.vy = 1.5;
+              ball.y = extraPinY - 5; // Prevent getting stuck
+            }
+          }
+        });
+
+        // Keep in bounds (Tighter walls)
+        if (ball.x < 40) { ball.x = 40; ball.vx *= -0.5; }
+        if (ball.x > 260) { ball.x = 260; ball.vx *= -0.5; }
+
+        // Draw ball
+        plinkoCtx.beginPath();
+        plinkoCtx.arc(ball.x, ball.y, PLINKO_BALL_RADIUS, 0, Math.PI * 2);
+        plinkoCtx.fillStyle = '#facc15';
+        plinkoCtx.shadowBlur = 10;
+        plinkoCtx.shadowColor = 'rgba(250, 204, 21, 0.5)';
+        plinkoCtx.fill();
+        plinkoCtx.closePath();
+        plinkoCtx.shadowBlur = 0;
+
+        // Check if reached bottom
+        if (ball.y > 335) {
+          const bucketAreaWidth = 220; // 260 - 40
+          const bucketWidth = bucketAreaWidth / 9;
+          const bucketIndex = Math.floor((ball.x - 40) / bucketWidth);
+          const clampedIndex = Math.max(0, Math.min(8, bucketIndex));
+          const mult = PLINKO_MULTIPLIERS[clampedIndex];
+          
+          if (mult > 1) {
+            const profit = Math.round(betAmount * (mult - 1));
+            const finalProfit = applyWin(profit);
+            spinResultMsg = `Landed on ${mult}x! Won ${finalProfit + betAmount} 🍌!`;
+          } else if (mult < 1) {
+            const loss = Math.round(betAmount * (1 - mult));
+            spinResultMsg = processLoss(loss, betAmount, `Landed on ${mult}x. Lost ${loss} 🍌.`);
+          } else {
+            spinResultMsg = `Landed on 1x. Push!`;
+          }
+          
+          plinkoBalls.splice(i, 1);
+          endGameTurn();
+        }
+      }
+
+      if (plinkoBalls.length > 0) {
+        requestAnimationFrame(animatePlinko);
+      }
+    }
+
+    function drawPlinkoBoard() {
+      // Draw side walls
+      plinkoCtx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
+      plinkoCtx.lineWidth = 2;
+      plinkoCtx.beginPath();
+      plinkoCtx.moveTo(40, 0);
+      plinkoCtx.lineTo(40, 350);
+      plinkoCtx.moveTo(260, 0);
+      plinkoCtx.lineTo(260, 350);
+      plinkoCtx.stroke();
+
+      plinkoCtx.fillStyle = '#10b981';
+      for (let row = 0; row < PLINKO_ROWS; row++) {
+        const pinsInRow = row + 1;
+        const rowY = 50 + row * PLINKO_ROW_SPACING;
+        const rowWidth = pinsInRow * PLINKO_PIN_X_SPACING;
+        const startX = 150 - rowWidth / 2 + PLINKO_PIN_X_SPACING / 2;
+        for (let pin = 0; pin < pinsInRow; pin++) {
+          const pinX = startX + pin * PLINKO_PIN_X_SPACING;
+          plinkoCtx.beginPath();
+          plinkoCtx.arc(pinX, rowY, PLINKO_PIN_RADIUS, 0, Math.PI * 2);
+          plinkoCtx.fill();
+          plinkoCtx.closePath();
+        }
+      }
+
+      // Draw extra blocker pins
+      const extraPinY = 315;
+      const leftExtraX = 40 + (220 / 18);
+      const rightExtraX = 260 - (220 / 18);
+      [leftExtraX, rightExtraX].forEach(px => {
+        plinkoCtx.beginPath();
+        plinkoCtx.arc(px, extraPinY, PLINKO_PIN_RADIUS, 0, Math.PI * 2);
+        plinkoCtx.fill();
+        plinkoCtx.closePath();
+      });
     }
 
     // --- ROULETTE LOGIC ---
@@ -1391,15 +1653,17 @@
       renderGadgets();
       
       // Update Tab Styling
-      [tabRoulette, tabSlots, tabBlackjack].forEach(t => { t.classList.remove('bg-emerald-800', 'text-white', 'border-transparent'); t.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); });
+      [tabRoulette, tabSlots, tabBlackjack, tabPlinko].forEach(t => { t.classList.remove('bg-emerald-800', 'text-white', 'border-transparent'); t.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); });
       if (gameMode === 'roulette') { tabRoulette.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabRoulette.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'slots') { tabSlots.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabSlots.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'blackjack') { tabBlackjack.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabBlackjack.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
+      if (gameMode === 'plinko') { tabPlinko.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabPlinko.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       
       // Toggle Areas
       areaRoulette.classList.toggle('hidden', gameMode !== 'roulette');
       areaSlots.classList.toggle('hidden', gameMode !== 'slots');
       areaBlackjack.classList.toggle('hidden', gameMode !== 'blackjack');
+      areaPlinko.classList.toggle('hidden', gameMode !== 'plinko');
       
       controlColors.classList.toggle('hidden', gameMode !== 'roulette');
       controlBonus.classList.toggle('hidden', gameMode !== 'slots');
