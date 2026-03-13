@@ -681,39 +681,56 @@
               return;
           }
           
+          if (data.name) playerName = data.name;
+          
           if (data.score !== undefined) {
             isInternalUpdate = true;
-            bananas = data.score;
+            bananas = Number(data.score);
             isInternalUpdate = false;
             expectedDbBananas = bananas; 
             
             if (data.trees) {
                 trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
+                if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
                 while(trees.length < 20) trees.push(0);
             }
             if (data.gadgets) {
                 unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
+                if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
                 while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
             }
             if (data.active_gadgets) {
                 activeGadgets = typeof data.active_gadgets === 'string' ? JSON.parse(data.active_gadgets) : data.active_gadgets;
+                if (!Array.isArray(activeGadgets)) activeGadgets = Array(10).fill(false);
                 while(activeGadgets.length < 10) activeGadgets.push(false);
             }
             
             localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, activeGadgets }));
+            updateGameUI();
           }
         }
-      } catch (e) {}
+      } catch (e) { console.error("Fetch error:", e); }
     }
 
     async function syncData(currentBananas, currentTreesArray, nameToSave = playerName) {
-      localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: nameToSave, bananas: currentBananas, trees: currentTreesArray, gadgets: unlockedGadgets, activeGadgets }));
-      if (supabaseClient && nameToSave && userId) {
+      // Always ensure we have a name before syncing to DB
+      const finalName = nameToSave || playerName || 'Unknown Monkey';
+      
+      localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
+          userId, 
+          name: finalName, 
+          bananas: currentBananas, 
+          trees: currentTreesArray, 
+          gadgets: unlockedGadgets, 
+          activeGadgets 
+      }));
+
+      if (supabaseClient && userId) {
         try { 
             expectedDbBananas = currentBananas; 
             const payload = { 
                 id: userId, 
-                name: nameToSave, 
+                name: finalName, 
                 score: currentBananas, 
                 trees: currentTreesArray, 
                 gadgets: unlockedGadgets,
@@ -721,8 +738,9 @@
                 banned: localStorage.getItem('isBanned') === 'true'
             };
             
-            await supabaseClient.from('leaderboard').upsert(payload);
-        } catch (err) {}
+            const { error } = await supabaseClient.from('leaderboard').upsert(payload);
+            if (error) console.error("Sync error:", error);
+        } catch (err) { console.error("Sync exception:", err); }
       }
     }
 
@@ -890,15 +908,18 @@
         if (payload.new && payload.new.id === userId) {
             let stateChanged = false;
             
-            if (expectedDbBananas !== -1 && payload.new.score !== expectedDbBananas) {
-                bananas = payload.new.score;
+            const newScore = Number(payload.new.score);
+            if (expectedDbBananas !== -1 && newScore !== expectedDbBananas) {
+                isInternalUpdate = true;
+                bananas = newScore;
+                isInternalUpdate = false;
                 expectedDbBananas = bananas;
                 stateChanged = true;
             }
             
             if (payload.new.trees) {
                 const newTrees = typeof payload.new.trees === 'string' ? JSON.parse(payload.new.trees) : payload.new.trees;
-                if (JSON.stringify(trees) !== JSON.stringify(newTrees)) {
+                if (Array.isArray(newTrees) && JSON.stringify(trees) !== JSON.stringify(newTrees)) {
                     trees = newTrees;
                     while(trees.length < 20) trees.push(0);
                     stateChanged = true;
@@ -907,13 +928,18 @@
             
             if (payload.new.gadgets) {
                 const newGadgets = typeof payload.new.gadgets === 'string' ? JSON.parse(payload.new.gadgets) : payload.new.gadgets;
-                if (JSON.stringify(unlockedGadgets) !== JSON.stringify(newGadgets)) {
+                if (Array.isArray(newGadgets) && JSON.stringify(unlockedGadgets) !== JSON.stringify(newGadgets)) {
                     unlockedGadgets = newGadgets;
                     while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
                     stateChanged = true;
                 }
             }
 
+            if (payload.new.banned && localStorage.getItem('isBanned') !== 'true') {
+                localStorage.setItem('isBanned', 'true');
+                location.reload();
+            }
+            
             if (stateChanged) {
                 localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets }));
                 if(view === 'game') updateGameUI();
