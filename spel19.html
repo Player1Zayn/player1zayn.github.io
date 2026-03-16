@@ -292,6 +292,9 @@
               <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-bold rounded flex items-center gap-1"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg> MENU</button>
               <div class="text-emerald-500 text-[10px] md:text-xs font-bold uppercase select-none">GAMEMODE</div>
               <div class="flex items-center gap-2">
+                <button id="mute-btn" onclick="toggleMute()" class="bg-emerald-800/50 hover:bg-emerald-700/50 text-emerald-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-emerald-700/50 transition-colors flex items-center gap-1">
+                  <span id="mute-icon">🔊</span> SOUND
+                </button>
                 <button onclick="openHistoryModal()" class="bg-emerald-800/50 hover:bg-emerald-700/50 text-emerald-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-emerald-700/50 transition-colors">HISTORY LOG</button>
                 <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded" title="Game Version">V2.3</div>
               </div>
@@ -488,6 +491,16 @@
         document.addEventListener('DOMContentLoaded', showBanScreen);
     }
 
+    async function banUser() {
+        localStorage.setItem('isBanned', 'true');
+        if (supabaseClient && userId) {
+            try {
+                await supabaseClient.from('leaderboard').update({ banned: true }).eq('id', userId);
+            } catch (e) { console.error(e); }
+        }
+        location.reload();
+    }
+
     async function addCheatTicket() {
         let tickets = JSON.parse(localStorage.getItem('cheatTickets') || '[]');
         const now = Date.now();
@@ -497,11 +510,7 @@
         localStorage.setItem('cheatTickets', JSON.stringify(tickets));
         
         if (tickets.length >= 3) {
-            localStorage.setItem('isBanned', 'true');
-            if (supabaseClient && userId) {
-                await supabaseClient.from('leaderboard').update({ banned: true }).eq('id', userId);
-            }
-            location.reload();
+            banUser();
         }
     }
 
@@ -514,21 +523,34 @@
     let userId = '';
     let playerName = '';
     let level = 1;
-    let xp = 0;
-    
+    let _xp = 0;
+    let _bananas = 0;
+    let isInternalUpdate = false;
+
     function getXpForLevel(l) {
         return Math.floor(100 * Math.pow(1.25, l - 1));
     }
-    let isInternalUpdate = false;
+
+    Object.defineProperty(window, 'xp', {
+        get() { return _xp; },
+        set(newVal) {
+            if (!isInternalUpdate && newVal !== _xp && !isPlaying && bjState !== 'playing' && bjState !== 'dealerTurn') {
+                banUser();
+            }
+            _xp = newVal;
+            if (typeof updateGameUI === 'function') updateGameUI();
+        }
+    });
+
     Object.defineProperty(window, 'bananas', {
         get() { return _bananas; },
         set(newVal) {
             if (!isInternalUpdate && newVal > _bananas && !isPlaying && bjState !== 'playing' && bjState !== 'dealerTurn') {
                 const diff = newVal - _bananas;
-                // Max possible income from 20 trees at level 5 is 40,000
-                // If they add more than 40,000 at once without being in a game or internal update, it's a ticket.
-                if (diff > 40000) {
-                    addCheatTicket();
+                // Max possible income from 20 trees at level 5 is 400 per tick (20 * 2000/100)
+                // If they add more than 400 at once without being in a game or internal update, it's an immediate ban.
+                if (diff > 400) {
+                    banUser();
                 }
             }
             _bananas = newVal;
@@ -604,6 +626,40 @@
     let winStreak = 0;
     let isAutoBetting = false;
     let autoBetTimer = null;
+
+    // --- SOUND SYSTEM ---
+    const SOUNDS = {
+        bgm: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'),
+        win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
+        spin: new Audio('https://assets.mixkit.co/active_storage/sfx/1470/1470-preview.mp3'),
+        card: new Audio('https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3'),
+        plinko: new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3'),
+        purchase: new Audio('https://assets.mixkit.co/active_storage/sfx/2015/2015-preview.mp3'),
+        click: new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'),
+        loss: new Audio('https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3')
+    };
+    SOUNDS.bgm.loop = true;
+    SOUNDS.bgm.volume = 0.3;
+    let isMuted = localStorage.getItem('isMuted') === 'true';
+
+    function playSound(name) {
+        if (isMuted || !SOUNDS[name]) return;
+        const s = SOUNDS[name].cloneNode();
+        s.volume = SOUNDS[name].volume;
+        s.play().catch(e => {});
+    }
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        localStorage.setItem('isMuted', isMuted);
+        const icon = document.getElementById('mute-icon');
+        icon.innerText = isMuted ? '🔇' : '🔊';
+        if (isMuted) {
+            SOUNDS.bgm.pause();
+        } else if (view === 'game') {
+            SOUNDS.bgm.play().catch(e => {});
+        }
+    }
 
     // DOM Elements
     const elApp = document.getElementById('app');
@@ -736,11 +792,10 @@
           if (data.score !== undefined) {
             isInternalUpdate = true;
             bananas = Number(data.score);
-            isInternalUpdate = false;
-            expectedDbBananas = bananas; 
-            
             level = data.level || 1;
             xp = data.xp || 0;
+            isInternalUpdate = false;
+            expectedDbBananas = bananas; 
             
             if (data.trees) {
                 trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
@@ -808,7 +863,15 @@
       
       if (view === 'name_entry') elMenuCurrentId.innerText = userId;
       
-      if (view === 'game') { startGameLoop(); updateGameUI(); } else { stopGameLoop(); }
+      if (view === 'game') { 
+          startGameLoop(); 
+          updateGameUI(); 
+          if (!isMuted) SOUNDS.bgm.play().catch(e => {});
+      } else { 
+          stopGameLoop(); 
+          SOUNDS.bgm.pause();
+      }
+      playSound('click');
     }
 
     // --- ACCOUNT LOGIN & CREATION ---
@@ -1079,8 +1142,10 @@
                 location.reload();
             }
 
+            isInternalUpdate = true;
             if (payload.new.level !== undefined) level = payload.new.level;
             if (payload.new.xp !== undefined) xp = payload.new.xp;
+            isInternalUpdate = false;
             
             if (stateChanged) {
                 localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, level, xp }));
@@ -1194,12 +1259,13 @@
             syncData(bananas, trees);
             updateGameUI();
             addLog('purchase', gadget.cost, bananas, `Buy Gadget: ${gadget.name}`);
+            playSound('purchase');
         }
     }
 
     function toggleGadget(index) {
         if (!unlockedGadgets[index]) return;
-        
+        playSound('click');
         if (activeGadgets[index]) {
             activeGadgets[index] = false;
         } else {
@@ -1250,6 +1316,7 @@
         if (activeGadgets[2]) {
             showInsuranceButton(lossAmount);
         }
+        playSound('loss');
         return defaultMessage;
     }
 
@@ -1271,6 +1338,7 @@
             level++;
         }
 
+        playSound('win');
         return finalAmount;
     }
 
@@ -1287,11 +1355,13 @@
         syncData(bananas, trees);
         updateGameUI();
         addLog('purchase', data.cost, bananas, 'Buy New Tree');
+        playSound('purchase');
       }
     }
 
     function handleTreeClick(index) {
         const level = trees[index];
+        playSound('click');
         if (level === 0) {
             const firstEmpty = trees.indexOf(0);
             if (index === firstEmpty) handleBuyTree();
@@ -1361,6 +1431,7 @@
             updateGameUI();
             handleTreeClick(selectedTreeIndex); 
             addLog('purchase', nextData.cost, bananas, `Upgrade Tree to Lvl ${trees[selectedTreeIndex]}`);
+            playSound('purchase');
         }
     }
 
@@ -1373,6 +1444,7 @@
       spinResultMsg = `Ready to play ${mode.toUpperCase()}`;
       if (mode === 'blackjack') bjState = 'betting';
       updateGameUI();
+      playSound('click');
     }
 
     function setMaxBet() {
@@ -1418,12 +1490,18 @@
       if (gameMode === 'roulette') {
         if (!betColor) return;
         playRoulette();
+        playSound('spin');
       } else if (gameMode === 'slots') {
         playSlots();
+        playSound('spin');
       } else if (gameMode === 'blackjack') {
-        if (bjState === 'betting' || bjState === 'gameOver') playBlackjack();
+        if (bjState === 'betting' || bjState === 'gameOver') {
+            playBlackjack();
+            playSound('card');
+        }
       } else if (gameMode === 'plinko') {
         playPlinko();
+        playSound('click');
       }
     }
 
@@ -1487,6 +1565,7 @@
           if (minDist < 15) {
             ball.vx = (ball.x > closestPinX ? 1 : -1) * (1 + Math.random() * 2);
             ball.vy = 1.5;
+            playSound('plinko');
           }
         }
 
@@ -1502,6 +1581,7 @@
               ball.vx = (ball.x > px ? 1 : -1) * (1 + Math.random() * 2);
               ball.vy = 1.5;
               ball.y = extraPinY - 5; // Prevent getting stuck
+              playSound('plinko');
             }
           }
         });
@@ -1771,18 +1851,21 @@
     function bjHit() {
       if (bjState !== 'playing') return;
       bjPlayer.push(drawCard());
+      playSound('card');
       if (calcScore(bjPlayer) > 21) bjEndGame('bust', -1);
       else updateGameUI();
     }
     function bjStand() {
       if (bjState !== 'playing') return;
       bjState = 'dealerTurn';
+      playSound('click');
       updateGameUI();
 
       const runDealer = setInterval(() => {
         let dScore = calcScore(bjDealer);
         if (dScore < 17) {
           bjDealer.push(drawCard());
+          playSound('card');
           updateGameUI();
         } else {
           clearInterval(runDealer);
