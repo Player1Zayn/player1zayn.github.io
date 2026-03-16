@@ -2132,7 +2132,7 @@
             } else if (!isOwned) {
                 btnHtml = `<button onclick="buyGadget(${i})" class="px-3 py-1.5 rounded font-bold text-[10px] transition-transform active:scale-95 border-b-2 ${canAfford ? 'bg-yellow-400 text-yellow-900 border-yellow-600 hover:bg-yellow-300' : 'bg-emerald-800/50 text-emerald-700 border-emerald-900 cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>BUY (${g.cost} 🍌)</button>`;
             } else if (isActive) {
-                btnHtml = `<button onclick="toggleGadget(${i})" class="px-3 py-1.5 rounded bg-emerald-500 text-emerald-950 font-bold text-[10px] border-b-2 border-emerald-700 hover:bg-emerald-400">ACTIVE</button>`;
+                btnHtml = `<button onclick="toggleGadget(${i})" class="px-3 py-1.5 rounded bg-emerald-500 text-emerald-950 font-bold text-[10px] border-b-2 border-emerald-700 hover:bg-emerald-400">UNEQUIP</button>`;
             } else {
                 const canEquip = activeCount < 2;
                 btnHtml = `<button onclick="toggleGadget(${i})" class="px-3 py-1.5 rounded font-bold text-[10px] border-b-2 ${canEquip ? 'bg-emerald-800 text-emerald-300 border-emerald-900 hover:bg-emerald-700' : 'bg-slate-800 text-slate-500 border-slate-900 cursor-not-allowed'}" ${canEquip ? '' : 'disabled'}>EQUIP</button>`;
