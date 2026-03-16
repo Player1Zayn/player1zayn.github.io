@@ -43,6 +43,27 @@
     <div class="w-12 h-12 border-4 border-emerald-800 border-t-yellow-400 rounded-full animate-spin"></div>
   </div>
 
+  <!-- History Modal -->
+  <div id="history-modal" class="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center hidden backdrop-blur-sm p-4 transition-opacity" onclick="if(event.target===this) closeHistoryModal()">
+    <div class="bg-emerald-950 border-2 border-emerald-500 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+      <div class="p-4 border-b border-emerald-800 flex justify-between items-center bg-emerald-900/30">
+        <h3 class="text-xl font-black text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>
+          History Log
+        </h3>
+        <button onclick="closeHistoryModal()" class="text-emerald-500 hover:text-white transition-colors">
+          <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+      <div id="history-content" class="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-xs">
+        <div class="text-center text-emerald-600 py-10 italic">Loading history...</div>
+      </div>
+      <div class="p-4 border-t border-emerald-800 bg-emerald-900/10 text-center">
+        <p class="text-[10px] text-emerald-600 uppercase font-bold tracking-widest">Showing last 50 transactions</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Admin Modal -->
   <div id="admin-modal" class="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center hidden backdrop-blur-sm p-4 transition-opacity" onclick="if(event.target===this) closeAdminModal()">
     <div class="bg-slate-900 border-2 border-red-500 rounded-2xl p-6 w-full max-w-md shadow-[0_0_30px_rgba(239,68,68,0.3)] relative">
@@ -211,6 +232,13 @@
               <div id="win-streak-badge" class="hidden mt-1 bg-yellow-500 text-yellow-950 px-2 py-0.5 rounded-full text-[10px] md:text-xs font-black animate-pulse shadow-lg border border-yellow-600">
                 STREAK: <span id="win-streak-count">0</span> 🔥
               </div>
+              <!-- Level Bar -->
+              <div class="w-full mt-2 bg-emerald-950 rounded-full h-4 border border-emerald-800 overflow-hidden relative shadow-inner">
+                <div id="level-bar-progress" class="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 transition-all duration-500" style="width: 0%"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-[8px] md:text-[10px] font-black text-white drop-shadow-md uppercase tracking-tighter">
+                  LVL <span id="display-level">1</span> • <span id="display-xp-percent">0</span>%
+                </div>
+              </div>
             </div>
           </div>
           <button onclick="handleBuyTree()" id="buy-tree-btn-mobile" class="md:hidden px-4 py-2 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700 ml-4 h-full shrink-0" disabled>
@@ -263,7 +291,10 @@
             <div class="flex justify-between items-center px-2 py-1 md:px-4 md:py-2 bg-black/20">
               <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-bold rounded flex items-center gap-1"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg> MENU</button>
               <div class="text-emerald-500 text-[10px] md:text-xs font-bold uppercase select-none">GAMEMODE</div>
-              <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded" title="Game Version">V2.3</div>
+              <div class="flex items-center gap-2">
+                <button onclick="openHistoryModal()" class="bg-emerald-800/50 hover:bg-emerald-700/50 text-emerald-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-emerald-700/50 transition-colors">HISTORY LOG</button>
+                <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded" title="Game Version">V2.3</div>
+              </div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
               <button onclick="setGameMode('roulette')" id="tab-roulette" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-800 text-white font-black text-[10px] md:text-sm border-2 border-transparent transition-all">ROULETTE</button>
@@ -327,15 +358,19 @@
             <div class="relative bg-emerald-900/30 p-2 rounded-2xl border-2 border-emerald-800 shadow-inner flex flex-col items-center">
               <canvas id="plinko-canvas" width="300" height="350" class="max-w-full h-auto"></canvas>
               <div id="plinko-buckets" class="flex w-[220px] mt-1 px-0.5 gap-0.5">
-                <div class="flex-1 bg-red-600 text-[8px] font-bold text-center rounded py-1">10x</div>
-                <div class="flex-1 bg-orange-600 text-[8px] font-bold text-center rounded py-1">2x</div>
-                <div class="flex-1 bg-yellow-600 text-[8px] font-bold text-center rounded py-1">1.5x</div>
+                <div class="flex-[0.5] bg-red-600 text-[8px] font-bold text-center rounded py-1">10x</div>
+                <div class="flex-1 bg-orange-600 text-[8px] font-bold text-center rounded py-1">1.5x</div>
+                <div class="flex-1 bg-yellow-600 text-[8px] font-bold text-center rounded py-1">1.1x</div>
+                <div class="flex-1 bg-emerald-500 text-[8px] font-bold text-center rounded py-1">1x</div>
                 <div class="flex-1 bg-emerald-600 text-[8px] font-bold text-center rounded py-1">0.5x</div>
-                <div class="flex-1 bg-emerald-800 text-[8px] font-bold text-center rounded py-1">0.2x</div>
+                <div class="flex-1 bg-emerald-800 text-[8px] font-bold text-center rounded py-1">0.3x</div>
+                <div class="flex-1 bg-emerald-950 text-[8px] font-bold text-center rounded py-1">0.2x</div>
+                <div class="flex-1 bg-emerald-800 text-[8px] font-bold text-center rounded py-1">0.3x</div>
                 <div class="flex-1 bg-emerald-600 text-[8px] font-bold text-center rounded py-1">0.5x</div>
-                <div class="flex-1 bg-yellow-600 text-[8px] font-bold text-center rounded py-1">1.5x</div>
-                <div class="flex-1 bg-orange-600 text-[8px] font-bold text-center rounded py-1">2x</div>
-                <div class="flex-1 bg-red-600 text-[8px] font-bold text-center rounded py-1">10x</div>
+                <div class="flex-1 bg-emerald-500 text-[8px] font-bold text-center rounded py-1">1x</div>
+                <div class="flex-1 bg-yellow-600 text-[8px] font-bold text-center rounded py-1">1.1x</div>
+                <div class="flex-1 bg-orange-600 text-[8px] font-bold text-center rounded py-1">1.5x</div>
+                <div class="flex-[0.5] bg-red-600 text-[8px] font-bold text-center rounded py-1">10x</div>
               </div>
             </div>
           </div>
@@ -435,18 +470,22 @@
 
   <script>
     // Anti-Cheat Guard
+    function showBanScreen() {
+        if (document.getElementById('ban-overlay')) return;
+        const banOverlay = document.createElement('div');
+        banOverlay.id = 'ban-overlay';
+        banOverlay.style = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:#064e3b; color:#facc15; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px; z-index:9999;";
+        banOverlay.innerHTML = `
+            <svg style="width:80px; height:80px; margin-bottom:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <h1 style="font-size:3rem; font-weight:900; margin:0;">YOU GOT BANNED</h1>
+            <p style="font-size:1.2rem; opacity:0.8; margin-top:10px;">Cheat detection triggered. Your account has been locked.</p>
+            <p style="font-size:0.9rem; opacity:0.5; margin-top:20px;">Contact support on the Supabase server to appeal.</p>
+        `;
+        document.body.appendChild(banOverlay);
+    }
+
     if (localStorage.getItem('isBanned') === 'true') {
-        document.addEventListener('DOMContentLoaded', () => {
-            document.body.innerHTML = `
-                <div style="height:100vh; background:#064e3b; color:#facc15; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px;">
-                    <svg style="width:80px; height:80px; margin-bottom:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                    <h1 style="font-size:3rem; font-weight:900; margin:0;">YOU GOT BANNED</h1>
-                    <p style="font-size:1.2rem; opacity:0.8; margin-top:10px;">Cheat detection triggered. Your account/device has been locked.</p>
-                    <p style="font-size:0.9rem; opacity:0.5; margin-top:20px;">Contact support on the Supabase server to appeal.</p>
-                </div>
-            `;
-        });
-        throw new Error("Banned");
+        document.addEventListener('DOMContentLoaded', showBanScreen);
     }
 
     async function addCheatTicket() {
@@ -474,8 +513,12 @@
     let sidebarView = 'trees';
     let userId = '';
     let playerName = '';
+    let level = 1;
+    let xp = 0;
     
-    let _bananas = 0;
+    function getXpForLevel(l) {
+        return Math.floor(100 * Math.pow(1.25, l - 1));
+    }
     let isInternalUpdate = false;
     Object.defineProperty(window, 'bananas', {
         get() { return _bananas; },
@@ -546,7 +589,8 @@
 
     // Plinko State
     let plinkoBalls = [];
-    const PLINKO_MULTIPLIERS = [10, 2, 1.5, 0.5, 0.2, 0.5, 1.5, 2, 10];
+    const PLINKO_MULTIPLIERS = [10, 1.5, 1.1, 1.0, 0.5, 0.3, 0.2, 0.3, 0.5, 1.0, 1.1, 1.5, 10];
+    const PLINKO_BUCKET_WEIGHTS = [0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5];
     const PLINKO_ROWS = 10;
     const PLINKO_PIN_RADIUS = 3;
     const PLINKO_BALL_RADIUS = 5;
@@ -676,7 +720,13 @@
         const { data } = await supabaseClient.from('leaderboard').select('*').eq('id', userId).maybeSingle();
         if (data) {
           if (data.banned) {
-              localStorage.setItem('isBanned', 'true');
+              if (localStorage.getItem('isBanned') !== 'true') {
+                  localStorage.setItem('isBanned', 'true');
+                  location.reload();
+              }
+              return;
+          } else if (localStorage.getItem('isBanned') === 'true') {
+              localStorage.removeItem('isBanned');
               location.reload();
               return;
           }
@@ -688,6 +738,9 @@
             bananas = Number(data.score);
             isInternalUpdate = false;
             expectedDbBananas = bananas; 
+            
+            level = data.level || 1;
+            xp = data.xp || 0;
             
             if (data.trees) {
                 trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
@@ -722,7 +775,9 @@
           bananas: currentBananas, 
           trees: currentTreesArray, 
           gadgets: unlockedGadgets, 
-          activeGadgets 
+          activeGadgets,
+          level,
+          xp
       }));
 
       if (supabaseClient && userId) {
@@ -735,7 +790,9 @@
                 trees: currentTreesArray, 
                 gadgets: unlockedGadgets,
                 active_gadgets: activeGadgets,
-                banned: localStorage.getItem('isBanned') === 'true'
+                banned: localStorage.getItem('isBanned') === 'true',
+                level,
+                xp
             };
             
             const { error } = await supabaseClient.from('leaderboard').upsert(payload);
@@ -777,6 +834,8 @@
                   playerName = data.name;
                   bananas = data.score;
                   expectedDbBananas = bananas;
+                  level = data.level || 1;
+                  xp = data.xp || 0;
                   
                   if (data.trees) {
                       trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
@@ -837,7 +896,7 @@
       
       if (adminClickCount >= 5) {
           adminClickCount = 0;
-          if (userId === "Du trodde... Sluta fuska!") {
+          if (userId === "user_ss1ecm0ls_mmiy48xe") {
               openAdminModal();
           }
       }
@@ -851,6 +910,81 @@
 
     function closeAdminModal() {
         document.getElementById('admin-modal').classList.add('hidden');
+    }
+
+    async function addLog(action, amount, balanceAfter, details = '') {
+        if (!supabaseClient || !userId) return;
+        try {
+            await supabaseClient.from('logs').insert({
+                user_id: userId,
+                action,
+                amount,
+                balance_after: balanceAfter,
+                details
+            });
+        } catch (e) {
+            console.error('Failed to add log:', e);
+        }
+    }
+
+    async function openHistoryModal() {
+        const modal = document.getElementById('history-modal');
+        const content = document.getElementById('history-content');
+        modal.classList.remove('hidden');
+        content.innerHTML = '<div class="text-center text-emerald-600 py-10 animate-pulse">Fetching transactions...</div>';
+
+        if (!supabaseClient || !userId) {
+            content.innerHTML = '<div class="text-center text-red-500 py-10">Supabase not connected.</div>';
+            return;
+        }
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('logs')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                content.innerHTML = '<div class="text-center text-emerald-600 py-10 italic">No transactions found.</div>';
+                return;
+            }
+
+            let html = '';
+            data.forEach(log => {
+                const date = new Date(log.created_at).toLocaleString();
+                const isPositive = ['win', 'income', 'refund'].includes(log.action);
+                const isNegative = ['loss', 'bet', 'purchase'].includes(log.action);
+                const colorClass = isPositive ? 'text-emerald-400' : (isNegative ? 'text-red-400' : 'text-emerald-200');
+                const prefix = isPositive ? '+' : (isNegative ? '-' : '');
+
+                html += `
+                    <div class="bg-emerald-900/20 border border-emerald-800/50 p-2 rounded flex flex-col gap-1">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold uppercase text-emerald-500">${log.action}</span>
+                            <span class="text-[10px] text-emerald-700">${date}</span>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <div class="text-[10px] text-emerald-600 italic max-w-[70%] truncate">${log.details || '-'}</div>
+                            <div class="flex flex-col items-end">
+                                <span class="${colorClass} font-bold">${prefix}${log.amount.toLocaleString()} 🍌</span>
+                                <span class="text-[9px] text-emerald-700">Bal: ${log.balance_after.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            content.innerHTML = html;
+        } catch (e) {
+            content.innerHTML = `<div class="text-center text-red-500 py-10">Error: ${e.message}</div>`;
+        }
+    }
+
+    function closeHistoryModal() {
+        document.getElementById('history-modal').classList.add('hidden');
     }
 
     function setAdminAction(action) {
@@ -935,13 +1069,21 @@
                 }
             }
 
-            if (payload.new.banned && localStorage.getItem('isBanned') !== 'true') {
-                localStorage.setItem('isBanned', 'true');
+            if (payload.new.banned) {
+                if (localStorage.getItem('isBanned') !== 'true') {
+                    localStorage.setItem('isBanned', 'true');
+                    location.reload();
+                }
+            } else if (localStorage.getItem('isBanned') === 'true') {
+                localStorage.removeItem('isBanned');
                 location.reload();
             }
+
+            if (payload.new.level !== undefined) level = payload.new.level;
+            if (payload.new.xp !== undefined) xp = payload.new.xp;
             
             if (stateChanged) {
-                localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets }));
+                localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, level, xp }));
                 if(view === 'game') updateGameUI();
             }
         }
@@ -982,6 +1124,7 @@
             updateGameUI();
             clearTimeout(syncTimeout);
             syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
+            addLog('income', incomeGenerated, bananas, 'Tree Harvest');
         }
       }, 1000);
     }
@@ -1050,6 +1193,7 @@
             
             syncData(bananas, trees);
             updateGameUI();
+            addLog('purchase', gadget.cost, bananas, `Buy Gadget: ${gadget.name}`);
         }
     }
 
@@ -1092,6 +1236,7 @@
         clearTimeout(insuranceTimer);
         updateGameUI();
         syncData(bananas, trees);
+        addLog('refund', refund, bananas, 'Insurance Claim');
     }
 
     function processLoss(lossAmount, originalBet, defaultMessage) {
@@ -1118,6 +1263,14 @@
         bananas += finalAmount;
         isInternalUpdate = false;
         winStreak++;
+
+        // Level System: 25 XP per win
+        xp += 25;
+        while (xp >= getXpForLevel(level)) {
+            xp -= getXpForLevel(level);
+            level++;
+        }
+
         return finalAmount;
     }
 
@@ -1133,6 +1286,7 @@
         trees[firstEmpty] = 1;
         syncData(bananas, trees);
         updateGameUI();
+        addLog('purchase', data.cost, bananas, 'Buy New Tree');
       }
     }
 
@@ -1206,6 +1360,7 @@
             syncData(bananas, trees);
             updateGameUI();
             handleTreeClick(selectedTreeIndex); 
+            addLog('purchase', nextData.cost, bananas, `Upgrade Tree to Lvl ${trees[selectedTreeIndex]}`);
         }
     }
 
@@ -1368,20 +1523,32 @@
         // Check if reached bottom
         if (ball.y > 335) {
           const bucketAreaWidth = 220; // 260 - 40
-          const bucketWidth = bucketAreaWidth / 9;
-          const bucketIndex = Math.floor((ball.x - 40) / bucketWidth);
-          const clampedIndex = Math.max(0, Math.min(8, bucketIndex));
-          const mult = PLINKO_MULTIPLIERS[clampedIndex];
+          const relativeX = (ball.x - 40) / bucketAreaWidth;
+          const totalWeight = PLINKO_BUCKET_WEIGHTS.reduce((a, b) => a + b, 0);
+          let accumulatedWeight = 0;
+          let bucketIndex = 0;
+          for (let k = 0; k < PLINKO_BUCKET_WEIGHTS.length; k++) {
+            accumulatedWeight += PLINKO_BUCKET_WEIGHTS[k] / totalWeight;
+            if (relativeX <= accumulatedWeight) {
+              bucketIndex = k;
+              break;
+            }
+            if (k === PLINKO_BUCKET_WEIGHTS.length - 1) bucketIndex = k;
+          }
+          const mult = PLINKO_MULTIPLIERS[bucketIndex];
           
           if (mult > 1) {
             const profit = Math.round(betAmount * (mult - 1));
             const finalProfit = applyWin(profit);
             spinResultMsg = `Landed on ${mult}x! Won ${finalProfit + betAmount} 🍌!`;
+            addLog('win', finalProfit + betAmount, bananas, `Plinko: ${mult}x`);
           } else if (mult < 1) {
             const loss = Math.round(betAmount * (1 - mult));
             spinResultMsg = processLoss(loss, betAmount, `Landed on ${mult}x. Lost ${loss} 🍌.`);
+            addLog('loss', loss, bananas, `Plinko: ${mult}x`);
           } else {
             spinResultMsg = `Landed on 1x. Push!`;
+            addLog('push', 0, bananas, 'Plinko: 1x');
           }
           
           plinkoBalls.splice(i, 1);
@@ -1466,8 +1633,10 @@
           const winAmount = betAmount * mult;
           const finalWin = applyWin(winAmount);
           spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${finalWin} 🍌!`;
+          addLog('win', finalWin, bananas, `Roulette ${winningColor.toUpperCase()}`);
         } else {
           spinResultMsg = processLoss(betAmount, betAmount, `Landed on ${winningColor.toUpperCase()}! Lost ${betAmount} 🍌.`);
+          addLog('loss', betAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
         }
         endGameTurn();
       }, 4000);
@@ -1534,16 +1703,20 @@
 
       if (outcome === 'lose') {
         spinResultMsg = processLoss(actualBet, actualBet, `No match. Lost ${actualBet} 🍌.`);
+        addLog('loss', actualBet, bananas, 'Slots: No match');
       } else if (outcome === 'partial') {
         let returnAmount = Math.round(actualBet * 0.25);
         let netLoss = actualBet - returnAmount;
         spinResultMsg = processLoss(netLoss, actualBet, `Got 2! Won back ${returnAmount} 🍌.`);
+        addLog('loss', netLoss, bananas, 'Slots: 2 matches');
       } else if (outcome === 'win') {
         const finalWin = applyWin(actualBet);
         spinResultMsg = `3 of a Kind! Won ${finalWin + actualBet} 🍌!`;
+        addLog('win', finalWin + actualBet, bananas, 'Slots: 3 of a Kind');
       } else if (outcome === 'jackpot') {
         const finalWin = applyWin(actualBet * 9);
         spinResultMsg = `🎰 JACKPOT! 🎰 Won ${finalWin + actualBet} 🍌!`;
+        addLog('win', finalWin + actualBet, bananas, 'Slots: JACKPOT');
       }
 
       endGameTurn();
@@ -1623,21 +1796,33 @@
     }
     function bjEndGame(reason, multiplier) {
       let change = Math.round(betAmount * multiplier);
-      if (reason === 'bust') { spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${betAmount} 🍌.`); }
+      if (reason === 'bust') { 
+          spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${betAmount} 🍌.`); 
+          addLog('loss', betAmount, bananas, 'Blackjack: Bust');
+      }
       else if (reason === 'dealerBust') { 
         const finalWin = applyWin(change);
         spinResultMsg = `Dealer bust! Won ${finalWin} 🍌!`; 
+        addLog('win', finalWin, bananas, 'Blackjack: Dealer Bust');
       }
       else if (reason === 'blackjack') { 
         const finalWin = applyWin(change);
         spinResultMsg = `Blackjack! Won ${finalWin} 🍌!`; 
+        addLog('win', finalWin, bananas, 'Blackjack: BLACKJACK');
       }
       else if (reason === 'win') { 
         const finalWin = applyWin(change);
         spinResultMsg = `You win! Won ${finalWin} 🍌!`; 
+        addLog('win', finalWin, bananas, 'Blackjack: Win');
       }
-      else if (reason === 'lose') { spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${betAmount} 🍌.`); }
-      else if (reason === 'push') { spinResultMsg = `Push! Returned bet.`; } 
+      else if (reason === 'lose') { 
+          spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${betAmount} 🍌.`); 
+          addLog('loss', betAmount, bananas, 'Blackjack: Dealer Wins');
+      }
+      else if (reason === 'push') { 
+          spinResultMsg = `Push! Returned bet.`; 
+          addLog('push', 0, bananas, 'Blackjack: Push');
+      } 
       
       bjState = 'gameOver';
       endGameTurn();
@@ -1656,6 +1841,13 @@
       elDisplayPlayerName.innerText = playerName;
       elDisplayBananas.innerText = `${bananas.toLocaleString()} 🍌`;
       
+      // Update Level UI
+      document.getElementById('display-level').innerText = level;
+      const xpNeeded = getXpForLevel(level);
+      const xpPercent = Math.floor((xp / xpNeeded) * 100);
+      document.getElementById('level-bar-progress').style.width = `${xpPercent}%`;
+      document.getElementById('display-xp-percent').innerText = xpPercent;
+
       const streakBadge = document.getElementById('win-streak-badge');
       const streakCount = document.getElementById('win-streak-count');
       if (winStreak > 0) {
@@ -1859,7 +2051,17 @@
       let html = '';
       leaderboard.forEach((lbUser, index) => {
         const isMe = lbUser.id === userId;
-        html += `<div class="flex justify-between items-center p-2 md:p-3 rounded-lg bg-emerald-950 border ${isMe ? 'border-yellow-400 ring-1 ring-yellow-400' : 'border-emerald-800/50'}"><div class="flex items-center gap-1 md:gap-2"><span class="text-emerald-500 font-mono text-[10px] md:text-xs">#${index + 1}</span><span class="font-medium text-emerald-100 text-xs md:text-sm truncate max-w-[60px] md:max-w-[80px]">${lbUser.name}</span></div><span class="text-yellow-400 font-bold text-xs md:text-sm">${(lbUser.score || 0).toLocaleString()} 🍌</span></div>`;
+        const userLevel = lbUser.level || 1;
+        html += `<div class="flex justify-between items-center p-2 md:p-3 rounded-lg bg-emerald-950 border ${isMe ? 'border-yellow-400 ring-1 ring-yellow-400' : 'border-emerald-800/50'}">
+            <div class="flex items-center gap-1 md:gap-2">
+                <span class="text-emerald-500 font-mono text-[10px] md:text-xs">#${index + 1}</span>
+                <div class="flex flex-col">
+                    <span class="font-medium text-emerald-100 text-xs md:text-sm truncate max-w-[60px] md:max-w-[80px]">${lbUser.name}</span>
+                    <span class="text-[8px] md:text-[10px] text-emerald-500 font-black uppercase">LVL ${userLevel}</span>
+                </div>
+            </div>
+            <span class="text-yellow-400 font-bold text-xs md:text-sm">${(lbUser.score || 0).toLocaleString()} 🍌</span>
+        </div>`;
       });
       elLeaderboardContainer.innerHTML = html;
     }
