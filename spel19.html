@@ -140,45 +140,39 @@
           <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
         </button>
 
-        <!-- New Player Section -->
-        <h2 class="text-xl md:text-2xl font-bold text-yellow-400 mb-2 mt-4">Play Casino</h2>
-        <p class="text-emerald-400 text-xs mb-4">Enter a name to start playing.</p>
-        <input 
-          type="text" 
-          id="player-name-input"
-          maxlength="15"
-          placeholder="Enter Your Name..."
-          class="w-full bg-emerald-950 border-2 border-emerald-700 text-white text-lg md:text-xl p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors"
-        />
-
-        <div class="my-6 flex items-center justify-center gap-3">
-            <div class="h-px bg-emerald-800 flex-1"></div>
-            <span class="text-emerald-600 font-black text-xs uppercase tracking-widest">OR</span>
-            <div class="h-px bg-emerald-800 flex-1"></div>
+        <!-- Auth Choice -->
+        <div id="auth-choice">
+            <h2 class="text-2xl md:text-3xl font-black text-yellow-400 mb-6 mt-4 uppercase tracking-tighter">Welcome</h2>
+            <div class="flex flex-col gap-4">
+                <button id="auth-continue-btn" onclick="setView('game')" class="hidden bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl transition-transform active:scale-95 border-b-4 border-emerald-700 mb-2">CONTINUE AS <span id="auth-continue-name"></span></button>
+                <button onclick="showAuthStep('register')" class="bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold py-4 rounded-xl transition-transform active:scale-95 border-b-4 border-yellow-600">NEW ACCOUNT</button>
+                <button onclick="showAuthStep('login')" class="bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-transform active:scale-95 border-b-4 border-emerald-950">LOGIN</button>
+            </div>
         </div>
 
-        <!-- Existing Account Section -->
-        <h2 class="text-xl md:text-2xl font-bold text-yellow-400 mb-2">Load Account</h2>
-        <p class="text-emerald-400 text-xs mb-4">Paste your unique ID to load your progress.</p>
-        <input 
-          type="text" 
-          id="player-id-input"
-          placeholder="Enter Account ID (user_...)"
-          class="w-full bg-emerald-950 border-2 border-emerald-700 text-emerald-300 text-sm p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors font-mono"
-        />
+        <!-- Register Step -->
+        <div id="auth-register" class="hidden">
+            <h2 class="text-xl md:text-2xl font-bold text-yellow-400 mb-2 mt-4">Create Account</h2>
+            <p class="text-emerald-400 text-xs mb-6">Choose a name and a secure password.</p>
+            <div class="space-y-4">
+                <input type="text" id="reg-name" maxlength="15" placeholder="Username" class="w-full bg-emerald-950 border-2 border-emerald-700 text-white p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors" />
+                <input type="password" id="reg-pass" placeholder="Password" class="w-full bg-emerald-950 border-2 border-emerald-700 text-white p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors" />
+                <button onclick="handleRegister()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold py-3 rounded-xl transition-transform active:scale-95 border-b-4 border-yellow-600">CREATE & ENTER</button>
+                <button onclick="showAuthStep('choice')" class="text-emerald-500 text-xs font-bold uppercase tracking-widest hover:text-emerald-300 mt-2">Back</button>
+            </div>
+        </div>
 
-        <!-- Action Button -->
-        <button 
-          onclick="enterCasino()"
-          class="w-full mt-8 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold text-lg md:text-xl py-3 md:py-4 rounded-xl transition-transform active:scale-95 border-b-4 border-yellow-600 flex items-center justify-center gap-2"
-        >
-          ENTER CASINO
-          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-        </button>
-
-        <div class="mt-6 p-3 bg-emerald-950/50 rounded-lg border border-emerald-800/50">
-            <p class="text-[10px] text-emerald-500 uppercase tracking-widest font-bold mb-1">Current Device ID</p>
-            <p class="text-xs text-emerald-300 font-mono break-all" id="menu-current-id"></p>
+        <!-- Login Step -->
+        <div id="auth-login" class="hidden">
+            <h2 class="text-xl md:text-2xl font-bold text-yellow-400 mb-2 mt-4">Login</h2>
+            <p class="text-emerald-400 text-xs mb-6">Enter your details to load progress.</p>
+            <div class="space-y-3">
+                <input type="text" id="login-name" placeholder="Username" class="w-full bg-emerald-950 border-2 border-emerald-700 text-white p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors" />
+                <input type="text" id="login-id" placeholder="Account ID (user_...)" class="w-full bg-emerald-950 border-2 border-emerald-700 text-emerald-300 text-xs p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors font-mono" />
+                <input type="password" id="login-pass" placeholder="Password" class="w-full bg-emerald-950 border-2 border-emerald-700 text-white p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors" />
+                <button onclick="handleLogin()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold py-3 rounded-xl transition-transform active:scale-95 border-b-4 border-yellow-600">LOGIN & ENTER</button>
+                <button onclick="showAuthStep('choice')" class="text-emerald-500 text-xs font-bold uppercase tracking-widest hover:text-emerald-300 mt-2">Back</button>
+            </div>
         </div>
       </div>
     </div>
@@ -259,6 +253,7 @@
                 <button id="mute-btn" onclick="toggleMute()" class="bg-emerald-800/50 hover:bg-emerald-700/50 text-emerald-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-emerald-700/50 transition-colors flex items-center gap-1">
                   <span id="mute-icon">🔊</span> SOUND
                 </button>
+                <button onclick="handleLogout()" class="bg-red-900/50 hover:bg-red-800/50 text-red-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-red-700/50 transition-colors">LOGOUT</button>
                 <button onclick="openHistoryModal()" class="bg-emerald-800/50 hover:bg-emerald-700/50 text-emerald-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-emerald-700/50 transition-colors">HISTORY LOG</button>
                 <div class="text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded">V2.3</div>
               </div>
@@ -685,12 +680,19 @@
       game: document.getElementById('view-game')
     };
     
-    const elPlayerNameInput = document.getElementById('player-name-input');
-    const elPlayerIdInput = document.getElementById('player-id-input');
-    const elMenuCurrentId = document.getElementById('menu-current-id');
     const elDisplayPlayerName = document.getElementById('display-player-name');
     const elDisplayUserId = document.getElementById('display-user-id');
     const elDisplayBananas = document.getElementById('display-bananas');
+    
+    // Auth Elements
+    const elAuthChoice = document.getElementById('auth-choice');
+    const elAuthRegister = document.getElementById('auth-register');
+    const elAuthLogin = document.getElementById('auth-login');
+    const elRegName = document.getElementById('reg-name');
+    const elRegPass = document.getElementById('reg-pass');
+    const elLoginName = document.getElementById('login-name');
+    const elLoginId = document.getElementById('login-id');
+    const elLoginPass = document.getElementById('login-pass');
     const elDisplayTrees = document.getElementById('display-trees');
     const elDisplayTreeIncome = document.getElementById('display-tree-income');
     const elTreeGrid = document.getElementById('tree-grid');
@@ -775,12 +777,11 @@
               while(activeGadgets.length < 10) activeGadgets.push(false);
           }
           
-          if (playerName) elPlayerNameInput.value = playerName;
+          // Data loaded
         } catch (e) { console.error(e); userId = generateId(); }
       } else {
         userId = generateId();
       }
-      elMenuCurrentId.innerText = userId;
     }
 
     async function fetchServerState() {
@@ -874,7 +875,9 @@
       Object.keys(views).forEach(k => views[k]?.classList.add('hidden'));
       views[view]?.classList.remove('hidden');
       
-      if (view === 'name_entry') elMenuCurrentId.innerText = userId;
+      if (view === 'name_entry') {
+          showAuthStep('choice');
+      }
       
       if (view === 'game') { 
           startGameLoop(); 
@@ -887,62 +890,179 @@
       playSound('click');
     }
 
-    // --- ACCOUNT LOGIN & CREATION ---
-    async function enterCasino() {
-      const idInput = elPlayerIdInput.value.trim();
-      const nameInput = elPlayerNameInput.value.trim();
+    // --- AUTH SYSTEM ---
+    function showAuthStep(step) {
+        elAuthChoice.classList.add('hidden');
+        elAuthRegister.classList.add('hidden');
+        elAuthLogin.classList.add('hidden');
+        
+        if (step === 'choice') {
+            elAuthChoice.classList.remove('hidden');
+            const btnContinue = document.getElementById('auth-continue-btn');
+            const spanName = document.getElementById('auth-continue-name');
+            if (playerName) {
+                btnContinue.classList.remove('hidden');
+                spanName.innerText = playerName;
+            } else {
+                btnContinue.classList.add('hidden');
+            }
+        }
+        if (step === 'register') elAuthRegister.classList.remove('hidden');
+        if (step === 'login') elAuthLogin.classList.remove('hidden');
+        playSound('click');
+    }
 
-      if (idInput) {
-          // Attempt to load existing account
-          if (!supabaseClient) {
-              alert("Database connection required to load accounts.");
-              return;
-          }
-          
-          elLoadingText.innerText = "Locating Account...";
-          elLoading.classList.remove('hidden');
-          
-          try {
-              const { data, error } = await supabaseClient.from('leaderboard').select('*').eq('id', idInput).maybeSingle();
-              if (data) {
-                  // Found account! Overwrite local data
-                  isInternalUpdate = true;
-                  updateBananas(data.score);
-                  level = data.level || 1;
-                  updateXp(data.xp || 0);
-                  isInternalUpdate = false;
-                  
-                  if (data.trees) {
-                      trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
-                      while(trees.length < 20) trees.push(0);
-                  }
-                  if (data.gadgets) {
-                      unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
-                      while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
-                  }
-                  
-                  syncData(bananas, trees, playerName);
-                  finalizeEntry();
-              } else {
-                  alert("Account ID not found!");
-                  elLoading.classList.add('hidden');
-              }
-          } catch (err) {
-              alert("Error contacting server.");
-              elLoading.classList.add('hidden');
-          }
-      } else {
-          // Standard / New entry via Name
-          playerName = nameInput || `Player_${Math.floor(Math.random() * 1000)}`;
-          syncData(bananas, trees, playerName);
-          finalizeEntry();
-      }
+    async function handleRegister() {
+        const name = elRegName.value.trim();
+        const pass = elRegPass.value.trim();
+
+        if (!name || !pass) {
+            alert("Please enter both name and password.");
+            return;
+        }
+
+        if (!supabaseClient) {
+            alert("Database connection error.");
+            return;
+        }
+
+        elLoadingText.innerText = "Creating Account...";
+        elLoading.classList.remove('hidden');
+
+        try {
+            // Check if name already exists (optional but recommended)
+            const { data: existing } = await supabaseClient.from('leaderboard').select('id').eq('name', name).maybeSingle();
+            if (existing) {
+                alert("Username already taken!");
+                elLoading.classList.add('hidden');
+                return;
+            }
+
+            const newId = generateId();
+            const payload = {
+                id: newId,
+                name: name,
+                password: pass, // User requested password in Supabase
+                score: 0,
+                trees: [1, ...Array(19).fill(0)],
+                gadgets: Array(10).fill(false),
+                active_gadgets: Array(10).fill(false),
+                level: 1,
+                xp: 0
+            };
+
+            const { error } = await supabaseClient.from('leaderboard').insert(payload);
+            if (error) throw error;
+
+            userId = newId;
+            playerName = name;
+            bananas = 0;
+            trees = payload.trees;
+            unlockedGadgets = payload.gadgets;
+            activeGadgets = payload.active_gadgets;
+            level = 1;
+            xp = 0;
+
+            finalizeEntry();
+        } catch (err) {
+            console.error(err);
+            alert("Registration failed. Try again.");
+            elLoading.classList.add('hidden');
+        }
+    }
+
+    async function handleLogin() {
+        const name = elLoginName.value.trim();
+        const id = elLoginId.value.trim();
+        const pass = elLoginPass.value.trim();
+
+        if (!name || !id || !pass) {
+            alert("Please fill in all fields (Name, ID, Password).");
+            return;
+        }
+
+        if (!supabaseClient) {
+            alert("Database connection error.");
+            return;
+        }
+
+        elLoadingText.innerText = "Verifying Credentials...";
+        elLoading.classList.remove('hidden');
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('leaderboard')
+                .select('*')
+                .eq('id', id)
+                .eq('name', name)
+                .eq('password', pass)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (data) {
+                if (data.banned) {
+                    localStorage.setItem('isBanned', 'true');
+                    location.reload();
+                    return;
+                }
+
+                userId = data.id;
+                playerName = data.name;
+                isInternalUpdate = true;
+                updateBananas(data.score);
+                level = data.level || 1;
+                updateXp(data.xp || 0);
+                isInternalUpdate = false;
+                
+                if (data.trees) {
+                    trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
+                    while(trees.length < 20) trees.push(0);
+                }
+                if (data.gadgets) {
+                    unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
+                    while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+                }
+                if (data.active_gadgets) {
+                    activeGadgets = typeof data.active_gadgets === 'string' ? JSON.parse(data.active_gadgets) : data.active_gadgets;
+                    while(activeGadgets.length < 10) activeGadgets.push(false);
+                }
+
+                finalizeEntry();
+            } else {
+                alert("Invalid Name, ID, or Password!");
+                elLoading.classList.add('hidden');
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Login failed.");
+            elLoading.classList.add('hidden');
+        }
+    }
+
+    function handleLogout() {
+        if (confirm("Are you sure you want to logout? Progress is saved to your account ID.")) {
+            localStorage.removeItem('bananaCasinoSave');
+            userId = '';
+            playerName = '';
+            bananas = 0;
+            trees = [1, ...Array(19).fill(0)];
+            unlockedGadgets = Array(10).fill(false);
+            activeGadgets = Array(10).fill(false);
+            level = 1;
+            xp = 0;
+            location.reload();
+        }
     }
 
     function finalizeEntry() {
       elLoading.classList.add('hidden');
       elDisplayUserId.value = userId;
-      elPlayerIdInput.value = ''; // clear for next time
+      // Clear inputs
+      elRegName.value = ''; elRegPass.value = '';
+      elLoginName.value = ''; elLoginId.value = ''; elLoginPass.value = '';
+      
+      localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, activeGadgets, level, xp }));
       setView('game');
     }
 
@@ -2130,10 +2250,12 @@
     // Expose necessary functions to window for HTML event handlers (Read-only to prevent console modification)
     const exposedFunctions = {
         closeHistoryModal, closeTreeModal, upgradeTree, handleSellTree, setView,
-        enterCasino, handleBuyTree, setSidebarView, toggleMute, openHistoryModal,
+        enterCasino: () => {}, // Deprecated but kept for safety
+        handleBuyTree, setSidebarView, toggleMute, openHistoryModal,
         setGameMode, setBetColor, setMaxBet, toggleAutoBet, handleMainAction,
         claimInsurance, bjHit, bjStand, copyUserId, handleTreeClick, buyGadget,
-        toggleGadget, toggleBonusBet
+        toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
+        handleLogout
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
