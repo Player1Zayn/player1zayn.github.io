@@ -441,21 +441,21 @@
 
   <script>
     (function() {
-    // Anti-Cheat: Disable Right Click and common console shortcuts
-    document.addEventListener('contextmenu', (e) => {
+    // Anti-Cheat: Disable Right Click and common console shortcuts (Capture phase for maximum protection)
+    window.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         const warning = document.getElementById('cheat-warning');
         if (warning) {
             warning.classList.remove('hidden');
             setTimeout(() => warning.classList.add('hidden'), 500);
         }
-    });
+    }, true);
 
-    document.addEventListener('keydown', (e) => {
-        // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
+    window.addEventListener('keydown', (e) => {
+        // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K, Ctrl+U
         if (
             e.key === 'F12' ||
-            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K')) ||
             (e.ctrlKey && e.key === 'u')
         ) {
             e.preventDefault();
@@ -465,7 +465,7 @@
                 setTimeout(() => warning.classList.add('hidden'), 500);
             }
         }
-    });
+    }, true);
 
     // Anti-Cheat Guard
     function showBanScreen() {
