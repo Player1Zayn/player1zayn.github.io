@@ -449,14 +449,16 @@
             warning.classList.remove('hidden');
             setTimeout(() => warning.classList.add('hidden'), 500);
         }
+        addCheatTicket();
     }, true);
 
     window.addEventListener('keydown', (e) => {
-        // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K, Ctrl+U
+        // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K, Ctrl+U, Alt+F
         if (
             e.key === 'F12' ||
             (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K')) ||
-            (e.ctrlKey && e.key === 'u')
+            (e.ctrlKey && e.key === 'u') ||
+            (e.altKey && (e.key === 'f' || e.key === 'F'))
         ) {
             e.preventDefault();
             const warning = document.getElementById('cheat-warning');
@@ -464,8 +466,32 @@
                 warning.classList.remove('hidden');
                 setTimeout(() => warning.classList.add('hidden'), 500);
             }
+            addCheatTicket();
         }
     }, true);
+
+    // Console Trap: Use debugger to hinder console usage
+    setInterval(() => {
+        const startTime = performance.now();
+        debugger;
+        const endTime = performance.now();
+        if (endTime - startTime > 100) {
+            // If debugger paused execution, it likely means DevTools is open
+            addCheatTicket();
+        }
+    }, 1000);
+
+    // Window Resize Detection: Often happens when DevTools is opened/docked
+    let lastWidth = window.outerWidth;
+    let lastHeight = window.outerHeight;
+    window.addEventListener('resize', () => {
+        const threshold = 160;
+        if (Math.abs(window.outerWidth - lastWidth) > threshold || Math.abs(window.outerHeight - lastHeight) > threshold) {
+            addCheatTicket();
+        }
+        lastWidth = window.outerWidth;
+        lastHeight = window.outerHeight;
+    });
 
     // Anti-Cheat Guard
     function showBanScreen() {
@@ -504,7 +530,7 @@
         tickets = tickets.filter(t => now - t < 3600000);
         localStorage.setItem('cheatTickets', JSON.stringify(tickets));
         
-        if (tickets.length >= 3) {
+        if (tickets.length >= 1) {
             banUser();
         }
     }
@@ -2101,30 +2127,22 @@
       elLeaderboardContainer.innerHTML = html;
     }
 
-    // Expose necessary functions to window for HTML event handlers
-    window.closeHistoryModal = closeHistoryModal;
-    window.closeTreeModal = closeTreeModal;
-    window.upgradeTree = upgradeTree;
-    window.handleSellTree = handleSellTree;
-    window.setView = setView;
-    window.enterCasino = enterCasino;
-    window.handleBuyTree = handleBuyTree;
-    window.setSidebarView = setSidebarView;
-    window.toggleMute = toggleMute;
-    window.openHistoryModal = openHistoryModal;
-    window.setGameMode = setGameMode;
-    window.setBetColor = setBetColor;
-    window.setMaxBet = setMaxBet;
-    window.toggleAutoBet = toggleAutoBet;
-    window.handleMainAction = handleMainAction;
-    window.claimInsurance = claimInsurance;
-    window.bjHit = bjHit;
-    window.bjStand = bjStand;
-    window.copyUserId = copyUserId;
-    window.handleTreeClick = handleTreeClick;
-    window.buyGadget = buyGadget;
-    window.toggleGadget = toggleGadget;
-    window.toggleBonusBet = toggleBonusBet;
+    // Expose necessary functions to window for HTML event handlers (Read-only to prevent console modification)
+    const exposedFunctions = {
+        closeHistoryModal, closeTreeModal, upgradeTree, handleSellTree, setView,
+        enterCasino, handleBuyTree, setSidebarView, toggleMute, openHistoryModal,
+        setGameMode, setBetColor, setMaxBet, toggleAutoBet, handleMainAction,
+        claimInsurance, bjHit, bjStand, copyUserId, handleTreeClick, buyGadget,
+        toggleGadget, toggleBonusBet
+    };
+
+    for (const [name, fn] of Object.entries(exposedFunctions)) {
+        Object.defineProperty(window, name, {
+            value: fn,
+            writable: false,
+            configurable: false
+        });
+    }
 
     })();
   </script>
