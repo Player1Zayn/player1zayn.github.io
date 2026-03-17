@@ -298,6 +298,12 @@
             </button>
         </div>
 
+        <!-- Active Boosts Indicator -->
+        <div id="active-boosts-container" class="hidden px-3 md:px-6 py-2 bg-emerald-900/30 border-b border-emerald-800 shrink-0">
+          <p class="text-[8px] md:text-[10px] text-emerald-500 font-bold uppercase tracking-widest mb-1">Active Boosts</p>
+          <div id="active-boosts-list" class="flex flex-wrap gap-2"></div>
+        </div>
+
         <!-- Trees Content -->
         <div id="sidebar-trees" class="p-3 md:p-6 flex-1 overflow-y-auto custom-scroll flex flex-col">
           <div class="flex justify-between items-center mb-2 md:mb-4 shrink-0">
@@ -835,6 +841,8 @@
     const elMainActionBtn = document.getElementById('main-action-btn');
     const elLeaderboardContainer = document.getElementById('leaderboard-container');
     const elPlinkoCanvas = document.getElementById('plinko-canvas');
+    const elActiveBoostsContainer = document.getElementById('active-boosts-container');
+    const elActiveBoostsList = document.getElementById('active-boosts-list');
     const plinkoCtx = elPlinkoCanvas ? elPlinkoCanvas.getContext('2d') : null;
     
     // Gamemode areas
@@ -965,7 +973,12 @@
                 while(activeGadgets.length < 10) activeGadgets.push(false);
             }
             
-            localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, activeGadgets }));
+            if (data.active_boosts) {
+                activeBoosts = typeof data.active_boosts === 'string' ? JSON.parse(data.active_boosts) : data.active_boosts;
+                if (typeof activeBoosts !== 'object' || activeBoosts === null) activeBoosts = { xp: 0, speed: 0 };
+            }
+            
+            localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, activeGadgets, activeBoosts }));
             updateGameUI();
           }
         }
@@ -1004,6 +1017,7 @@
                 trees: currentTreesArray, 
                 gadgets: unlockedGadgets,
                 active_gadgets: activeGadgets,
+                active_boosts: activeBoosts,
                 banned: localStorage.getItem('isBanned') === 'true',
                 level,
                 xp
@@ -1438,6 +1452,37 @@
             activeBoosts.speed = 0;
             changed = true;
         }
+        
+        // Update UI Indicators
+        if (elActiveBoostsContainer && elActiveBoostsList) {
+            let html = '';
+            if (activeBoosts.xp > now) {
+                const rem = Math.ceil((activeBoosts.xp - now) / 1000);
+                const min = Math.floor(rem / 60);
+                const sec = rem % 60;
+                html += `<div class="bg-yellow-500/20 border border-yellow-500/50 px-2 py-1 rounded flex items-center gap-1">
+                    <span class="text-xs">⚡</span>
+                    <span class="text-[9px] font-black text-yellow-400 uppercase">XP x2 (${min}:${sec.toString().padStart(2, '0')})</span>
+                </div>`;
+            }
+            if (activeBoosts.speed > now) {
+                const rem = Math.ceil((activeBoosts.speed - now) / 1000);
+                const min = Math.floor(rem / 60);
+                const sec = rem % 60;
+                html += `<div class="bg-emerald-500/20 border border-emerald-500/50 px-2 py-1 rounded flex items-center gap-1">
+                    <span class="text-xs">🌪️</span>
+                    <span class="text-[9px] font-black text-emerald-400 uppercase">SPEED x2 (${min}:${sec.toString().padStart(2, '0')})</span>
+                </div>`;
+            }
+            
+            if (html) {
+                elActiveBoostsList.innerHTML = html;
+                elActiveBoostsContainer.classList.remove('hidden');
+            } else {
+                elActiveBoostsContainer.classList.add('hidden');
+            }
+        }
+
         if (changed && view === 'shop') renderShop();
     }
 
