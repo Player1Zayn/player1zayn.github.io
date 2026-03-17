@@ -64,46 +64,6 @@
     </div>
   </div>
 
-  <!-- Admin Modal -->
-  <div id="admin-modal" class="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center hidden backdrop-blur-sm p-4 transition-opacity" onclick="if(event.target===this) closeAdminModal()">
-    <div class="bg-slate-900 border-2 border-red-500 rounded-2xl p-6 w-full max-w-md shadow-[0_0_30px_rgba(239,68,68,0.3)] relative">
-      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
-      
-      <div class="mb-6">
-        <h3 class="text-2xl font-black text-red-500 uppercase tracking-wide flex items-center gap-2">
-            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-            Admin Override
-        </h3>
-        <p class="text-slate-400 text-xs mt-1">Directly modify global player balances.</p>
-      </div>
-      
-      <div class="space-y-4">
-        <div>
-            <label class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1 block">Select Player</label>
-            <select id="admin-user-select" class="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg outline-none focus:border-red-500 transition-colors"></select>
-        </div>
-        
-        <div>
-            <label class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1 block">Operation</label>
-            <div class="flex gap-2">
-                <button onclick="setAdminAction('add')" id="admin-btn-add" class="flex-1 py-2.5 bg-green-600/20 text-green-500 border border-green-600 rounded-lg font-bold text-sm transition-colors">ADD</button>
-                <button onclick="setAdminAction('set')" id="admin-btn-set" class="flex-1 py-2.5 bg-slate-800 text-slate-400 border border-slate-700 rounded-lg font-bold text-sm transition-colors">SET</button>
-                <button onclick="setAdminAction('sub')" id="admin-btn-sub" class="flex-1 py-2.5 bg-slate-800 text-slate-400 border border-slate-700 rounded-lg font-bold text-sm transition-colors">SUBTRACT</button>
-            </div>
-        </div>
-
-        <div>
-            <label class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1 block">Amount</label>
-            <input type="number" id="admin-amount" class="w-full bg-slate-950 border border-slate-700 text-white p-3 rounded-lg outline-none focus:border-red-500 transition-colors font-mono text-lg" placeholder="0">
-        </div>
-      </div>
-
-      <button onclick="executeAdminAction()" class="w-full mt-6 py-4 rounded-xl font-black text-xl shadow-xl transition-transform active:scale-95 bg-red-600 hover:bg-red-500 text-white border-b-4 border-red-800 flex items-center justify-center gap-2">
-        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-        EXECUTE OVERRIDE
-      </button>
-    </div>
-  </div>
 
   <!-- Tree Upgrade Modal -->
   <div id="tree-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden backdrop-blur-sm p-4 transition-opacity" onclick="if(event.target===this) closeTreeModal()">
@@ -300,7 +260,7 @@
                   <span id="mute-icon">🔊</span> SOUND
                 </button>
                 <button onclick="openHistoryModal()" class="bg-emerald-800/50 hover:bg-emerald-700/50 text-emerald-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-emerald-700/50 transition-colors">HISTORY LOG</button>
-                <div onclick="handleVersionClick()" class="cursor-pointer text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded" title="Game Version">V2.3</div>
+                <div class="text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded">V2.3</div>
               </div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
@@ -475,7 +435,38 @@
     </div>
   </div>
 
+  <div id="cheat-warning" class="fixed inset-0 bg-red-600/90 flex items-center justify-center z-[9999] hidden pointer-events-none">
+    <div class="text-white font-black text-4xl md:text-6xl uppercase tracking-tighter animate-bounce">Stop cheating</div>
+  </div>
+
   <script>
+    (function() {
+    // Anti-Cheat: Disable Right Click and common console shortcuts
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const warning = document.getElementById('cheat-warning');
+        if (warning) {
+            warning.classList.remove('hidden');
+            setTimeout(() => warning.classList.add('hidden'), 500);
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
+        if (
+            e.key === 'F12' ||
+            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+            (e.ctrlKey && e.key === 'u')
+        ) {
+            e.preventDefault();
+            const warning = document.getElementById('cheat-warning');
+            if (warning) {
+                warning.classList.remove('hidden');
+                setTimeout(() => warning.classList.add('hidden'), 500);
+            }
+        }
+    });
+
     // Anti-Cheat Guard
     function showBanScreen() {
         if (document.getElementById('ban-overlay')) return;
@@ -527,40 +518,32 @@
     let userId = '';
     let playerName = '';
     let level = 1;
-    let _xp = 0;
-    let _bananas = 0;
+    let xp = 0;
+    let bananas = 0;
     let isInternalUpdate = false;
 
     function getXpForLevel(l) {
         return Math.floor(100 * Math.pow(1.25, l - 1));
     }
 
-    Object.defineProperty(window, 'xp', {
-        get() { return _xp; },
-        set(newVal) {
-            if (!isInternalUpdate && newVal !== _xp && !isPlaying && bjState !== 'playing' && bjState !== 'dealerTurn') {
+    function updateXp(newVal) {
+        if (!isInternalUpdate && newVal !== xp && !isPlaying && bjState !== 'playing' && bjState !== 'dealerTurn') {
+            banUser();
+        }
+        xp = newVal;
+        if (typeof updateGameUI === 'function') updateGameUI();
+    }
+
+    function updateBananas(newVal) {
+        if (!isInternalUpdate && newVal > bananas && !isPlaying && bjState !== 'playing' && bjState !== 'dealerTurn') {
+            const diff = newVal - bananas;
+            if (diff > 400) {
                 banUser();
             }
-            _xp = newVal;
-            if (typeof updateGameUI === 'function') updateGameUI();
         }
-    });
-
-    Object.defineProperty(window, 'bananas', {
-        get() { return _bananas; },
-        set(newVal) {
-            if (!isInternalUpdate && newVal > _bananas && !isPlaying && bjState !== 'playing' && bjState !== 'dealerTurn') {
-                const diff = newVal - _bananas;
-                // Max possible income from 20 trees at level 5 is 400 per tick (20 * 2000/100)
-                // If they add more than 400 at once without being in a game or internal update, it's an immediate ban.
-                if (diff > 400) {
-                    banUser();
-                }
-            }
-            _bananas = newVal;
-            if (typeof updateGameUI === 'function') updateGameUI();
-        }
-    });
+        bananas = newVal;
+        if (typeof updateGameUI === 'function') updateGameUI();
+    }
     
     // DB Sync State Protection
     let expectedDbBananas = -1; 
@@ -746,7 +729,7 @@
           userId = data.userId || generateId();
           playerName = data.name || '';
           isInternalUpdate = true;
-          bananas = typeof data.bananas === 'number' ? data.bananas : 0;
+          updateBananas(typeof data.bananas === 'number' ? data.bananas : 0);
           isInternalUpdate = false;
           
           let savedTrees = data.trees;
@@ -795,9 +778,9 @@
           
           if (data.score !== undefined) {
             isInternalUpdate = true;
-            bananas = Number(data.score);
+            updateBananas(Number(data.score));
             level = data.level || 1;
-            xp = data.xp || 0;
+            updateXp(data.xp || 0);
             isInternalUpdate = false;
             expectedDbBananas = bananas; 
             
@@ -897,12 +880,11 @@
               const { data, error } = await supabaseClient.from('leaderboard').select('*').eq('id', idInput).maybeSingle();
               if (data) {
                   // Found account! Overwrite local data
-                  userId = data.id;
-                  playerName = data.name;
-                  bananas = data.score;
-                  expectedDbBananas = bananas;
+                  isInternalUpdate = true;
+                  updateBananas(data.score);
                   level = data.level || 1;
-                  xp = data.xp || 0;
+                  updateXp(data.xp || 0);
+                  isInternalUpdate = false;
                   
                   if (data.trees) {
                       trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
@@ -951,33 +933,6 @@
         }, 1500);
     }
 
-    // --- ADMIN PANEL LOGIC ---
-    let adminClickCount = 0;
-    let adminClickTimer = null;
-    let adminAction = 'add';
-
-    function handleVersionClick() {
-      adminClickCount++;
-      clearTimeout(adminClickTimer);
-      adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 2000);
-      
-      if (adminClickCount >= 5) {
-          adminClickCount = 0;
-          if (userId === "user_ss1ecm0ls_mmiy48xe") {
-              openAdminModal();
-          }
-      }
-    }
-
-    function openAdminModal() {
-        const select = document.getElementById('admin-user-select');
-        select.innerHTML = leaderboard.map(u => `<option value="${u.id}">${u.name} (${u.score.toLocaleString()} 🍌)</option>`).join('');
-        document.getElementById('admin-modal').classList.remove('hidden');
-    }
-
-    function closeAdminModal() {
-        document.getElementById('admin-modal').classList.add('hidden');
-    }
 
     async function addLog(action, amount, balanceAfter, details = '') {
         if (!supabaseClient || !userId) return;
@@ -1054,45 +1009,6 @@
         document.getElementById('history-modal').classList.add('hidden');
     }
 
-    function setAdminAction(action) {
-        adminAction = action;
-        const addBtn = document.getElementById('admin-btn-add');
-        const setBtn = document.getElementById('admin-btn-set');
-        const subBtn = document.getElementById('admin-btn-sub');
-        
-        // Reset all
-        [addBtn, setBtn, subBtn].forEach(b => b.className = 'flex-1 py-2.5 bg-slate-800 text-slate-400 border border-slate-700 rounded-lg font-bold text-sm transition-colors');
-        
-        // Active Styling
-        if (action === 'add') addBtn.className = 'flex-1 py-2.5 bg-green-600/20 text-green-500 border border-green-600 rounded-lg font-bold text-sm transition-colors';
-        if (action === 'set') setBtn.className = 'flex-1 py-2.5 bg-blue-600/20 text-blue-500 border border-blue-600 rounded-lg font-bold text-sm transition-colors';
-        if (action === 'sub') subBtn.className = 'flex-1 py-2.5 bg-red-600/20 text-red-500 border border-red-600 rounded-lg font-bold text-sm transition-colors';
-    }
-
-    async function executeAdminAction() {
-        const uid = document.getElementById('admin-user-select').value;
-        const amount = parseInt(document.getElementById('admin-amount').value) || 0;
-        
-        if (!uid || amount < 0) return;
-        
-        const targetUser = leaderboard.find(u => u.id === uid);
-        if (!targetUser) return;
-
-        let newScore = targetUser.score;
-        if (adminAction === 'add') newScore += amount;
-        if (adminAction === 'sub') newScore = Math.max(0, newScore - amount);
-        if (adminAction === 'set') newScore = amount;
-
-        if (supabaseClient) {
-            try {
-                await supabaseClient.from('leaderboard').update({ score: newScore }).eq('id', uid);
-                closeAdminModal();
-                alert(`Admin Override Applied!\nUser: ${targetUser.name}\nNew Balance: ${newScore.toLocaleString()} 🍌`);
-            } catch (e) {
-                alert("Failed to contact database.");
-            }
-        }
-    }
 
     async function setupSupabaseListeners() {
       if (!supabaseClient) return;
@@ -1112,7 +1028,7 @@
             const newScore = Number(payload.new.score);
             if (expectedDbBananas !== -1 && newScore !== expectedDbBananas) {
                 isInternalUpdate = true;
-                bananas = newScore;
+                updateBananas(newScore);
                 isInternalUpdate = false;
                 expectedDbBananas = bananas;
                 stateChanged = true;
@@ -1148,7 +1064,7 @@
 
             isInternalUpdate = true;
             if (payload.new.level !== undefined) level = payload.new.level;
-            if (payload.new.xp !== undefined) xp = payload.new.xp;
+            if (payload.new.xp !== undefined) updateXp(payload.new.xp);
             isInternalUpdate = false;
             
             if (stateChanged) {
@@ -1188,7 +1104,7 @@
         
         if (incomeGenerated > 0) {
             isInternalUpdate = true;
-            bananas += incomeGenerated;
+            updateBananas(bananas + incomeGenerated);
             isInternalUpdate = false;
             updateGameUI();
             clearTimeout(syncTimeout);
@@ -1250,7 +1166,7 @@
 
         if (bananas >= gadget.cost) {
             isInternalUpdate = true;
-            bananas -= gadget.cost;
+            updateBananas(bananas - gadget.cost);
             isInternalUpdate = false;
             unlockedGadgets[index] = true;
             
@@ -1298,7 +1214,7 @@
         if (lastLossAmount <= 0) return;
         const refund = Math.round(lastLossAmount * 0.25);
         isInternalUpdate = true;
-        bananas += refund;
+        updateBananas(bananas + refund);
         isInternalUpdate = false;
         spinResultMsg = `Insurance Claimed! Refunded ${refund} 🍌.`;
         lastLossAmount = 0;
@@ -1315,7 +1231,7 @@
             return `Failsafe: Saved ${lossAmount} bananas.`;
         }
         isInternalUpdate = true;
-        bananas -= lossAmount;
+        updateBananas(bananas - lossAmount);
         isInternalUpdate = false;
         if (activeGadgets[2]) {
             showInsuranceButton(lossAmount);
@@ -1331,16 +1247,14 @@
         }
         const finalAmount = amount * multiplier;
         isInternalUpdate = true;
-        bananas += finalAmount;
-        isInternalUpdate = false;
-        winStreak++;
-
-        // Level System: 25 XP per win
-        xp += 25;
+        updateBananas(bananas + finalAmount);
+        updateXp(xp + 25);
         while (xp >= getXpForLevel(level)) {
-            xp -= getXpForLevel(level);
+            updateXp(xp - getXpForLevel(level));
             level++;
         }
+        isInternalUpdate = false;
+        winStreak++;
 
         playSound('win');
         return finalAmount;
@@ -1353,7 +1267,7 @@
       
       if (firstEmpty !== -1 && bananas >= data.cost) {
         isInternalUpdate = true;
-        bananas -= data.cost;
+        updateBananas(bananas - data.cost);
         isInternalUpdate = false;
         trees[firstEmpty] = 1;
         syncData(bananas, trees);
@@ -1438,7 +1352,7 @@
         
         if (bananas >= nextData.cost && conditionMet) {
             isInternalUpdate = true;
-            bananas -= nextData.cost;
+            updateBananas(bananas - nextData.cost);
             isInternalUpdate = false;
             trees[selectedTreeIndex]++;
             syncData(bananas, trees);
@@ -1458,7 +1372,7 @@
         const sellValue = Math.floor(currentData.cost * 0.25);
         
         isInternalUpdate = true;
-        bananas += sellValue;
+        updateBananas(bananas + sellValue);
         isInternalUpdate = false;
         
         trees[selectedTreeIndex] = 0;
@@ -1947,7 +1861,11 @@
 
     // --- SHARED LOGIC ---
     function endGameTurn() {
-      bananas = Math.max(0, bananas);
+      if (bananas < 0) {
+          isInternalUpdate = true;
+          updateBananas(0);
+          isInternalUpdate = false;
+      }
       syncData(bananas, trees);
       isPlaying = false;
       if (betAmount > bananas) betAmount = bananas; 
@@ -2132,7 +2050,7 @@
             } else if (!isOwned) {
                 btnHtml = `<button onclick="buyGadget(${i})" class="px-3 py-1.5 rounded font-bold text-[10px] transition-transform active:scale-95 border-b-2 ${canAfford ? 'bg-yellow-400 text-yellow-900 border-yellow-600 hover:bg-yellow-300' : 'bg-emerald-800/50 text-emerald-700 border-emerald-900 cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>BUY (${g.cost} 🍌)</button>`;
             } else if (isActive) {
-                btnHtml = `<button onclick="toggleGadget(${i})" class="px-3 py-1.5 rounded bg-emerald-500 text-emerald-950 font-bold text-[10px] border-b-2 border-emerald-700 hover:bg-emerald-400">UNEQUIP</button>`;
+                btnHtml = `<button onclick="toggleGadget(${i})" class="px-3 py-1.5 rounded bg-emerald-500 text-emerald-950 font-bold text-[10px] border-b-2 border-emerald-700 hover:bg-emerald-400">ACTIVE</button>`;
             } else {
                 const canEquip = activeCount < 2;
                 btnHtml = `<button onclick="toggleGadget(${i})" class="px-3 py-1.5 rounded font-bold text-[10px] border-b-2 ${canEquip ? 'bg-emerald-800 text-emerald-300 border-emerald-900 hover:bg-emerald-700' : 'bg-slate-800 text-slate-500 border-slate-900 cursor-not-allowed'}" ${canEquip ? '' : 'disabled'}>EQUIP</button>`;
@@ -2144,7 +2062,7 @@
                 <div class="flex justify-between items-start z-10">
                     <div class="flex-1 pr-2">
                         <div class="flex items-center gap-2">
-                            <span class="text-xs ${isActive ? 'bg-yellow-500 text-yellow-950' : 'bg-emerald-900 text-emerald-400'} px-1.5 py-0.5 rounded font-mono border ${isActive ? 'border-yellow-600' : 'border-emerald-800'}">${isActive ? 'UNEQUIP' : '#' + (i + 1)}</span>
+                            <span class="text-xs ${isActive ? 'bg-yellow-500 text-yellow-950' : 'bg-emerald-900 text-emerald-400'} px-1.5 py-0.5 rounded font-mono border ${isActive ? 'border-yellow-600' : 'border-emerald-800'}">${isActive ? 'ACTIVE' : '#' + (i + 1)}</span>
                             <h4 class="font-bold text-emerald-100 text-sm ${g.locked ? 'opacity-50' : ''}">${g.title}</h4>
                         </div>
                         <p class="text-emerald-400/70 text-[10px] leading-snug mt-1.5 ${g.locked ? 'opacity-50' : ''}">${g.desc}</p>
@@ -2182,6 +2100,33 @@
       });
       elLeaderboardContainer.innerHTML = html;
     }
+
+    // Expose necessary functions to window for HTML event handlers
+    window.closeHistoryModal = closeHistoryModal;
+    window.closeTreeModal = closeTreeModal;
+    window.upgradeTree = upgradeTree;
+    window.handleSellTree = handleSellTree;
+    window.setView = setView;
+    window.enterCasino = enterCasino;
+    window.handleBuyTree = handleBuyTree;
+    window.setSidebarView = setSidebarView;
+    window.toggleMute = toggleMute;
+    window.openHistoryModal = openHistoryModal;
+    window.setGameMode = setGameMode;
+    window.setBetColor = setBetColor;
+    window.setMaxBet = setMaxBet;
+    window.toggleAutoBet = toggleAutoBet;
+    window.handleMainAction = handleMainAction;
+    window.claimInsurance = claimInsurance;
+    window.bjHit = bjHit;
+    window.bjStand = bjStand;
+    window.copyUserId = copyUserId;
+    window.handleTreeClick = handleTreeClick;
+    window.buyGadget = buyGadget;
+    window.toggleGadget = toggleGadget;
+    window.toggleBonusBet = toggleBonusBet;
+
+    })();
   </script>
 </body>
 </html>
