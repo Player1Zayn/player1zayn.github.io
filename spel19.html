@@ -240,6 +240,18 @@
 
           <div class="mt-20 bg-black/40 backdrop-blur-md border-2 border-amber-900/30 rounded-[2.5rem] p-10 text-center relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
+            <p class="text-amber-500 text-xs font-black uppercase tracking-[0.4em] mb-4">Money Exchange</p>
+            <p class="text-emerald-100 text-xl font-serif italic max-w-2xl mx-auto leading-relaxed mb-6">"Need some heavier currency? I'll trade you 1 Coin for every 100,000 Bananas you've got!"</p>
+            <div class="flex flex-col items-center gap-4">
+                <div class="text-yellow-400 font-black text-2xl">100,000 🍌 = 1 🪙</div>
+                <button onclick="exchangeBananasForCoins()" class="bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-black py-4 px-10 rounded-2xl text-xl shadow-[0_6px_0_rgb(180,83,9)] transition-all active:translate-y-1 active:shadow-none">
+                    EXCHANGE NOW
+                </button>
+            </div>
+          </div>
+
+          <div class="mt-10 bg-black/40 backdrop-blur-md border-2 border-amber-900/30 rounded-[2.5rem] p-10 text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
             <p class="text-amber-500 text-xs font-black uppercase tracking-[0.4em] mb-4">Merchant's Note</p>
             <p class="text-emerald-100 text-xl font-serif italic max-w-2xl mx-auto leading-relaxed">"Stock is limited. I only carry what my monkeys can find in the deep jungle. Come back later if you missed out!"</p>
           </div>
@@ -257,6 +269,7 @@
             <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-widest md:mb-1"><span id="display-player-name">Player</span>'s Balance</p>
             <div class="flex flex-col items-end">
               <div id="display-bananas" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-yellow-400 drop-shadow-lg leading-none">0 🍌</div>
+              <div id="display-coins" class="text-lg sm:text-xl md:text-2xl font-black text-yellow-200 drop-shadow-md leading-none mt-1">0 🪙</div>
               <div id="win-streak-badge" class="hidden mt-1 bg-yellow-500 text-yellow-950 px-2 py-0.5 rounded-full text-[10px] md:text-xs font-black animate-pulse shadow-lg border border-yellow-600">
                 STREAK: <span id="win-streak-count">0</span> 🔥
               </div>
@@ -615,6 +628,7 @@
     let level = 1;
     let xp = 0;
     let bananas = 0;
+    let coins = 0;
     let isInternalUpdate = false;
 
     function getXpForLevel(l) {
@@ -639,9 +653,18 @@
         bananas = newVal;
         if (typeof updateGameUI === 'function') updateGameUI();
     }
+
+    function updateCoins(newVal) {
+        if (!isInternalUpdate && newVal !== coins) {
+            banUser();
+        }
+        coins = newVal;
+        if (typeof updateGameUI === 'function') updateGameUI();
+    }
     
     // DB Sync State Protection
     let expectedDbBananas = -1; 
+    let expectedDbCoins = -1; 
     
     // Trees Data Structure
     let trees = [1, ...Array(19).fill(0)]; 
@@ -676,7 +699,7 @@
             id: 'xp_boost', 
             title: 'XP-Boost', 
             desc: 'Double XP gain for 10 minutes.', 
-            cost: 5000, 
+            cost: 1, 
             chance: 0.5, 
             duration: 10 * 60 * 1000,
             icon: '⚡'
@@ -685,7 +708,7 @@
             id: 'speed_grove', 
             title: 'Speed Grove', 
             desc: 'Halves tree generation time for 2 minutes.', 
-            cost: 15000, 
+            cost: 2, 
             chance: 0.25, 
             duration: 2 * 60 * 1000,
             icon: '🌪️'
@@ -865,6 +888,7 @@
           playerName = data.name || '';
           isInternalUpdate = true;
           updateBananas(typeof data.bananas === 'number' ? data.bananas : 0);
+          updateCoins(typeof data.coins === 'number' ? data.coins : 0);
           isInternalUpdate = false;
           
           let savedTrees = data.trees;
@@ -918,10 +942,12 @@
           if (data.score !== undefined) {
             isInternalUpdate = true;
             updateBananas(Number(data.score));
+            updateCoins(Number(data.coins || 0));
             level = data.level || 1;
             updateXp(data.xp || 0);
             isInternalUpdate = false;
             expectedDbBananas = bananas; 
+            expectedDbCoins = coins;
             
             if (data.trees) {
                 trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
@@ -954,6 +980,7 @@
           userId, 
           name: finalName, 
           bananas: currentBananas, 
+          coins: coins,
           trees: currentTreesArray, 
           gadgets: unlockedGadgets, 
           activeGadgets,
@@ -968,10 +995,12 @@
       if (supabaseClient && userId) {
         try { 
             expectedDbBananas = currentBananas; 
+            expectedDbCoins = coins;
             const payload = { 
                 id: userId, 
                 name: finalName, 
                 score: currentBananas, 
+                coins: coins,
                 trees: currentTreesArray, 
                 gadgets: unlockedGadgets,
                 active_gadgets: activeGadgets,
@@ -1300,6 +1329,15 @@
                 expectedDbBananas = bananas;
                 stateChanged = true;
             }
+
+            const newCoins = Number(payload.new.coins || 0);
+            if (expectedDbCoins !== -1 && newCoins !== expectedDbCoins) {
+                isInternalUpdate = true;
+                updateCoins(newCoins);
+                isInternalUpdate = false;
+                expectedDbCoins = coins;
+                stateChanged = true;
+            }
             
             if (payload.new.trees) {
                 const newTrees = typeof payload.new.trees === 'string' ? JSON.parse(payload.new.trees) : payload.new.trees;
@@ -1452,13 +1490,13 @@
     function renderShop() {
         const grid = document.getElementById('shop-items-grid');
         const balanceEl = document.getElementById('shop-balance');
-        balanceEl.innerText = `${bananas.toLocaleString()} 🍌`;
+        balanceEl.innerText = `${bananas.toLocaleString()} 🍌 | ${coins.toLocaleString()} 🪙`;
 
         let html = '';
         SHOP_ITEMS.forEach((item, i) => {
             const inStock = shopStock[i];
             const purchased = shopPurchased[i];
-            const canAfford = bananas >= item.cost;
+            const canAfford = coins >= item.cost;
             const isBoostActive = (i === 0 && activeBoosts.xp > 0) || (i === 1 && activeBoosts.speed > 0);
 
             let statusHtml = '';
@@ -1471,7 +1509,7 @@
                 statusHtml = `<div class="bg-emerald-500/20 text-emerald-400 font-black uppercase text-xs px-4 py-2 rounded-xl border border-emerald-500/30">PURCHASED</div>`;
                 cardClass = 'bg-black/60 border-emerald-900/20';
             } else {
-                statusHtml = `<button onclick="buyShopItem(${i})" class="w-full py-4 rounded-2xl font-black text-lg transition-all active:translate-y-1 ${canAfford ? 'bg-amber-500 text-amber-950 shadow-[0_6px_0_rgb(180,83,9)] hover:bg-amber-400' : 'bg-stone-800 text-stone-500 cursor-not-allowed opacity-50 shadow-none'}" ${canAfford ? '' : 'disabled'}>BUY FOR ${item.cost.toLocaleString()} 🍌</button>`;
+                statusHtml = `<button onclick="buyShopItem(${i})" class="w-full py-4 rounded-2xl font-black text-lg transition-all active:translate-y-1 ${canAfford ? 'bg-amber-500 text-amber-950 shadow-[0_6px_0_rgb(180,83,9)] hover:bg-amber-400' : 'bg-stone-800 text-stone-500 cursor-not-allowed opacity-50 shadow-none'}" ${canAfford ? '' : 'disabled'}>BUY FOR ${item.cost.toLocaleString()} 🪙</button>`;
                 cardClass = 'bg-black/40 border-amber-900/30 hover:border-amber-500/50 hover:bg-black/50';
             }
 
@@ -1523,9 +1561,9 @@
 
     function buyShopItem(index) {
         const item = SHOP_ITEMS[index];
-        if (bananas >= item.cost && shopStock[index] && !shopPurchased[index]) {
+        if (coins >= item.cost && shopStock[index] && !shopPurchased[index]) {
             isInternalUpdate = true;
-            updateBananas(bananas - item.cost);
+            updateCoins(coins - item.cost);
             isInternalUpdate = false;
             shopPurchased[index] = true;
             
@@ -1541,6 +1579,43 @@
         }
     }
     
+    function exchangeBananasForCoins() {
+        const cost = 100000;
+        if (bananas >= cost) {
+            isInternalUpdate = true;
+            updateBananas(bananas - cost);
+            updateCoins(coins + 1);
+            isInternalUpdate = false;
+            
+            playSound('purchase');
+            renderShop();
+            updateGameUI();
+            syncData(bananas, trees);
+            addLog('exchange', cost, bananas, `Exchange: 100k 🍌 for 1 🪙`);
+            
+            // Show a small success message
+            const msg = document.getElementById('spin-result-msg');
+            if (msg) {
+                msg.innerText = "EXCHANGED 100,000 🍌 FOR 1 🪙!";
+                msg.classList.add('text-yellow-200');
+                setTimeout(() => {
+                    msg.classList.remove('text-yellow-200');
+                    if (msg.innerText === "EXCHANGED 100,000 🍌 FOR 1 🪙!") msg.innerText = "Welcome to Casino!";
+                }, 3000);
+            }
+        } else {
+            const msg = document.getElementById('spin-result-msg');
+            if (msg) {
+                msg.innerText = "NOT ENOUGH BANANAS! NEED 100,000 🍌";
+                msg.classList.add('text-red-400');
+                setTimeout(() => {
+                    msg.classList.remove('text-red-400');
+                    if (msg.innerText === "NOT ENOUGH BANANAS! NEED 100,000 🍌") msg.innerText = "Welcome to Casino!";
+                }, 3000);
+            }
+        }
+    }
+
     function stopGameLoop() { if (gameLoopInterval) clearInterval(gameLoopInterval); gameLoopInterval = null; }
 
     // --- RIGHT SIDEBAR VIEW TABS ---
@@ -2304,6 +2379,8 @@
     function updateGameUI() {
       elDisplayPlayerName.innerText = playerName;
       elDisplayBananas.innerText = `${bananas.toLocaleString()} 🍌`;
+      const elDisplayCoins = document.getElementById('display-coins');
+      if (elDisplayCoins) elDisplayCoins.innerText = `${coins.toLocaleString()} 🪙`;
       
       // Update Level UI
       document.getElementById('display-level').innerText = level;
@@ -2524,7 +2601,10 @@
                     <span class="text-[8px] md:text-[10px] text-emerald-500 font-black uppercase">LVL ${userLevel}</span>
                 </div>
             </div>
-            <span class="text-yellow-400 font-bold text-xs md:text-sm">${(lbUser.score || 0).toLocaleString()} 🍌</span>
+            <div class="flex flex-col items-end">
+                <span class="text-yellow-400 font-bold text-xs md:text-sm">${(lbUser.score || 0).toLocaleString()} 🍌</span>
+                <span class="text-yellow-200 font-bold text-[10px] md:text-xs">${(lbUser.coins || 0).toLocaleString()} 🪙</span>
+            </div>
         </div>`;
       });
       elLeaderboardContainer.innerHTML = html;
@@ -2538,7 +2618,7 @@
         setGameMode, setBetColor, setMaxBet, toggleAutoBet, handleMainAction,
         claimInsurance, bjHit, bjStand, copyUserId, handleTreeClick, buyGadget,
         toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
-        handleLogout, advanceLudvig, buyShopItem
+        handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
