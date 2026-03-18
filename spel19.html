@@ -584,6 +584,14 @@
             }
             addCheatTicket();
         }
+
+        // Specifically catch F11 and Escape keys after entering fullscreen to prevent exit attempts
+        if (typeof hasEnteredFullscreen !== 'undefined' && hasEnteredFullscreen) {
+            if (e.key === 'F11' || e.key === 'Escape') {
+                e.preventDefault();
+                if (typeof banUser === 'function') banUser();
+            }
+        }
     }, true);
 
     // Console Trap: Use debugger to hinder console usage
@@ -657,6 +665,11 @@
         // Try to close the window immediately
         try { window.close(); } catch(e) {}
         
+        // Fallback for browsers that block window.close()
+        setTimeout(() => {
+            window.location.href = "about:blank";
+        }, 100);
+        
         localStorage.setItem('isBanned', 'true');
         if (supabaseClient && userId) {
             try {
@@ -665,6 +678,7 @@
         }
         showBanScreen();
     }
+    window.banUser = banUser;
 
     // DevTools Detection
     const devtools = {
@@ -941,7 +955,7 @@
         1: { cost: 100,    reward: 1,     ticks: 5,   reqAllTrees: false }, 
         2: { cost: 500,    reward: 10,    ticks: 5,   reqAllTrees: false },
         3: { cost: 1000,   reward: 100,   ticks: 10,  reqAllTrees: true  },
-        4: { cost: 10000,  reward: 670,  ticks: 60,  reqAllTrees: true  }, 
+        4: { cost: 10000,  reward: 500,  ticks: 60,  reqAllTrees: true  }, 
         5: { cost: 1000000, reward: 2000, ticks: 100, reqAllTrees: true  }
     };
 
