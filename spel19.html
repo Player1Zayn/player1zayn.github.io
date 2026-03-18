@@ -597,6 +597,9 @@
     let lastWidth = window.outerWidth;
     let lastHeight = window.outerHeight;
     window.addEventListener('resize', () => {
+        // Skip resize detection in iframes as outerWidth/Height reflect the parent window
+        if (window.self !== window.top) return;
+
         const threshold = 160;
         if (Math.abs(window.outerWidth - lastWidth) > threshold || Math.abs(window.outerHeight - lastHeight) > threshold) {
             addCheatTicket();
@@ -664,13 +667,16 @@
     };
 
     setInterval(() => {
+        // Skip resize detection in iframes as outerWidth/Height reflect the parent window
+        if (window.self !== window.top) return;
+
         const widthThreshold = window.outerWidth - window.innerWidth > threshold;
         const heightThreshold = window.outerHeight - window.innerHeight > threshold;
         const orientation = widthThreshold ? 'vertical' : 'horizontal';
 
         if (
             !(heightThreshold && widthThreshold) &&
-            ((window.Firebug && window.Firebug.chrome && window.Firebug.chrome.isInitialized) || widthThreshold || heightThreshold)
+            (widthThreshold || heightThreshold)
         ) {
             if (!devtools.isOpen || devtools.orientation !== orientation) {
                 emitEvent(true, orientation);
@@ -678,15 +684,13 @@
             devtools.isOpen = true;
             devtools.orientation = orientation;
         } else {
-            if (devtools.isOpen) {
-                emitEvent(false, undefined);
-            }
             devtools.isOpen = false;
             devtools.orientation = undefined;
         }
     }, 500);
 
-    // Console Detection via Getter
+    // Console Detection via Getter - Disabled as it's too aggressive and can trigger on F11
+    /*
     const checkConsole = () => {
         const devtools = /./;
         devtools.toString = function() {
@@ -696,6 +700,7 @@
         console.log('%c', devtools);
     };
     setInterval(checkConsole, 1000);
+    */
 
     // Fullscreen Enforcement Logic
     let fullscreenTimer = 5;
@@ -712,8 +717,21 @@
 
             if (fullscreenTimer <= 0) {
                 clearInterval(fullscreenInterval);
-                if (!document.fullscreenElement) {
+                
+                // Be more lenient: check API fullscreen OR window size (for F11)
+                const isApiFullscreen = !!document.fullscreenElement;
+                const isWindowFullscreen = window.innerHeight >= screen.height - 10; // Lenient check for F11
+                
+                if (!isApiFullscreen && !isWindowFullscreen) {
                     banUser();
+                } else {
+                    // If they are in F11 fullscreen, treat it as success
+                    if (!hasEnteredFullscreen) {
+                        hasEnteredFullscreen = true;
+                        document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
+                        document.getElementById('app').classList.remove('hidden');
+                        if (typeof updateGameUI === 'function') updateGameUI();
+                    }
                 }
             }
         }, 1000);
@@ -721,38 +739,55 @@
 
     function requestFullscreenAndStart() {
         const docEl = document.documentElement;
-        const requestMethod = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
-
-        if (requestMethod) {
-            try {
-                const promise = requestMethod.call(docEl);
-                
-                const onSuccess = () => {
-                    hasEnteredFullscreen = true;
-                    clearInterval(fullscreenInterval);
-                    document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
-                    document.getElementById('app').classList.remove('hidden');
-                    updateGameUI(); // Ensure UI is fresh
-                };
-
-                if (promise && typeof promise.then === 'function') {
-                    promise.then(onSuccess).catch(err => {
-                        console.error("Fullscreen request failed:", err);
-                        // If it fails, we don't hide the overlay, so the timer will eventually ban them
-                        // unless they try again and it works.
-                    });
-                } else {
-                    // Fallback for browsers where requestFullscreen doesn't return a promise
-                    onSuccess();
-                }
-            } catch (err) {
-                console.error("Fullscreen execution error:", err);
+        
+        // Try multiple targets
+        const targets = [document.documentElement, document.body, document.getElementById('app')];
+        
+        const tryFullscreen = (index) => {
+            if (index >= targets.length) {
+                alert("Your browser does not support fullscreen or blocked the request. Please try manual fullscreen (F11).");
+                return;
             }
-        } else {
-            console.error("Fullscreen API not supported");
-            // If not supported, we might want to allow them to play anyway or show an error
-            // But per user request, we "force" it.
-        }
+            
+            const target = targets[index];
+            if (!target) return tryFullscreen(index + 1);
+
+            const requestMethod = target.requestFullscreen || 
+                                target.mozRequestFullScreen || 
+                                target.webkitRequestFullScreen || 
+                                target.msRequestFullscreen ||
+                                target.webkitRequestFullscreen;
+
+            if (requestMethod) {
+                try {
+                    const promise = requestMethod.call(target);
+                    
+                    const onSuccess = () => {
+                        hasEnteredFullscreen = true;
+                        clearInterval(fullscreenInterval);
+                        document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
+                        document.getElementById('app').classList.remove('hidden');
+                        if (typeof updateGameUI === 'function') updateGameUI();
+                    };
+
+                    if (promise && typeof promise.then === 'function') {
+                        promise.then(onSuccess).catch(err => {
+                            console.error(`Fullscreen request failed for target ${index}:`, err);
+                            tryFullscreen(index + 1);
+                        });
+                    } else {
+                        onSuccess();
+                    }
+                } catch (err) {
+                    console.error(`Fullscreen execution error for target ${index}:`, err);
+                    tryFullscreen(index + 1);
+                }
+            } else {
+                tryFullscreen(index + 1);
+            }
+        };
+
+        tryFullscreen(0);
     }
 
     // Monitor fullscreen change
@@ -764,12 +799,16 @@
                 clearInterval(fullscreenInterval);
                 document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
                 document.getElementById('app').classList.remove('hidden');
-                updateGameUI();
+                if (typeof updateGameUI === 'function') updateGameUI();
             }
         } else {
             // If they exited fullscreen
             if (hasEnteredFullscreen) {
-                banUser();
+                // Check if they are still in browser-level fullscreen (F11)
+                const isWindowFullscreen = window.innerHeight >= screen.height - 10;
+                if (!isWindowFullscreen) {
+                    banUser();
+                }
             }
         }
     });
