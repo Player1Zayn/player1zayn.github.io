@@ -110,10 +110,10 @@
     <div class="max-w-md w-full bg-emerald-900 border-4 border-emerald-800 rounded-[3rem] p-10 shadow-2xl">
       <div class="w-24 h-24 bg-yellow-500/20 rounded-full flex items-center justify-center text-5xl mb-6 mx-auto animate-pulse">🖥️</div>
       <h1 class="text-3xl font-black text-white uppercase tracking-tighter mb-4">Fullscreen Required</h1>
-      <p class="text-emerald-400 font-medium mb-8 leading-tight">To ensure a fair and immersive experience, this game must be played in fullscreen mode. <br><span class="text-yellow-500 text-[10px] font-bold mt-2 block">If the button below doesn't work, please press <span class="bg-yellow-500/20 px-1 rounded text-yellow-400">FN + F11</span> manually.</span></p>
+      <p class="text-emerald-400 font-medium mb-8 leading-tight">To ensure a fair and immersive experience, this game must be played in fullscreen mode.</p>
       
       <div class="mb-8">
-        <div class="text-5xl font-black text-yellow-500 mb-2" id="fullscreen-timer">5</div>
+        <div class="text-5xl font-black text-yellow-500 mb-2" id="fullscreen-timer">3</div>
         <p class="text-xs text-emerald-600 font-bold uppercase tracking-widest">Seconds to enter</p>
       </div>
 
@@ -631,11 +631,11 @@
             <h1 style="font-size:3rem; font-weight:900; margin:0;">YOU GOT BANNED</h1>
             <p style="font-size:1.2rem; opacity:0.8; margin-top:10px;">Cheat detection triggered. Your account has been locked.</p>
             <p style="font-size:0.9rem; opacity:0.5; margin-top:20px;">Contact support on the Supabase server to appeal.</p>
-            <div id="ban-close-timer" style="margin-top:30px; font-weight:bold; color:#ef4444;">Closing page in 3s...</div>
+            <div id="ban-close-timer" style="margin-top:30px; font-weight:bold; color:#ef4444;">Closing page in 1s...</div>
         `;
         document.body.appendChild(banOverlay);
 
-        let timeLeft = 3;
+        let timeLeft = 1;
         const timerEl = document.getElementById('ban-close-timer');
         const interval = setInterval(() => {
             timeLeft--;
@@ -658,25 +658,28 @@
     async function banUser() {
         if (localStorage.getItem('isBanned') === 'true') return;
         
+        // Persist ban immediately
+        localStorage.setItem('isBanned', 'true');
+        
         // Immediately hide the app to "close down" the game
         const appEl = document.getElementById('app');
         if (appEl) appEl.classList.add('hidden');
         
-        // Try to close the window immediately
-        try { window.close(); } catch(e) {}
-        
-        // Fallback for browsers that block window.close()
-        setTimeout(() => {
-            window.location.href = "about:blank";
-        }, 100);
-        
-        localStorage.setItem('isBanned', 'true');
         if (supabaseClient && userId) {
             try {
                 await supabaseClient.from('leaderboard').update({ banned: true }).eq('id', userId);
             } catch (e) { console.error(e); }
         }
+        
         showBanScreen();
+        
+        // Try to close the window after a short delay
+        setTimeout(() => {
+            try { window.close(); } catch(e) {}
+            setTimeout(() => {
+                window.location.href = "about:blank";
+            }, 100);
+        }, 1000);
     }
     window.banUser = banUser;
 
@@ -729,7 +732,7 @@
     */
 
     // Fullscreen Enforcement Logic
-    let fullscreenTimer = 5;
+    let fullscreenTimer = 3;
     let fullscreenInterval = null;
     let hasEnteredFullscreen = false;
 
@@ -739,25 +742,16 @@
         fullscreenInterval = setInterval(() => {
             fullscreenTimer--;
             const timerEl = document.getElementById('fullscreen-timer');
-            if (timerEl) timerEl.innerText = fullscreenTimer;
+            if (timerEl) timerEl.innerText = Math.max(0, fullscreenTimer);
 
             if (fullscreenTimer <= 0) {
                 clearInterval(fullscreenInterval);
                 
-                // Be more lenient: check API fullscreen OR window size (for F11)
+                // ONLY allow API fullscreen now. No F11 fallback.
                 const isApiFullscreen = !!document.fullscreenElement;
-                const isWindowFullscreen = window.innerHeight >= screen.height - 10; // Lenient check for F11
                 
-                if (!isApiFullscreen && !isWindowFullscreen) {
+                if (!isApiFullscreen) {
                     banUser();
-                } else {
-                    // If they are in F11 fullscreen, treat it as success
-                    if (!hasEnteredFullscreen) {
-                        hasEnteredFullscreen = true;
-                        document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
-                        document.getElementById('app').classList.remove('hidden');
-                        if (typeof updateGameUI === 'function') updateGameUI();
-                    }
                 }
             }
         }, 1000);
@@ -795,29 +789,17 @@
                 if (promise && typeof promise.then === 'function') {
                     promise.then(onSuccess).catch(err => {
                         console.error("Fullscreen request failed:", err);
-                        // Fallback: Check if they are already in F11 mode
-                        const isWindowFullscreen = window.innerHeight >= screen.height - 10;
-                        if (isWindowFullscreen) {
-                            onSuccess();
-                        } else {
-                            alert("Fullscreen request blocked. Please use FN + F11 manually.");
-                        }
+                        alert("Fullscreen request blocked. Please check your browser settings.");
                     });
                 } else {
                     onSuccess();
                 }
             } catch (e) {
                 console.error("Fullscreen execution error:", e);
-                alert("Fullscreen error. Please use FN + F11 manually.");
+                alert("Fullscreen error.");
             }
         } else {
-            // Fallback for F11
-            const isWindowFullscreen = window.innerHeight >= screen.height - 10;
-            if (isWindowFullscreen) {
-                onSuccess();
-            } else {
-                alert("Your browser does not support the Fullscreen API. Please use FN + F11 manually.");
-            }
+            alert("Your browser does not support the Fullscreen API.");
         }
     }
     window.requestFullscreenAndStart = requestFullscreenAndStart;
@@ -844,29 +826,31 @@
         } else {
             // If they exited fullscreen
             if (hasEnteredFullscreen) {
-                // Check if they are still in browser-level fullscreen (F11)
-                // We use a more strict check here. If they are not in API fullscreen,
-                // and they were, we ban immediately if they aren't in F11 either.
-                const isWindowFullscreen = window.innerHeight >= screen.height - 5;
-                if (!isWindowFullscreen) {
-                    banUser();
-                }
-            }
-        }
-    });
-
-    // Also monitor resize for F11 exit
-    window.addEventListener('resize', () => {
-        if (hasEnteredFullscreen) {
-            const isApiFullscreen = !!document.fullscreenElement;
-            const isWindowFullscreen = window.innerHeight >= screen.height - 5;
-            if (!isApiFullscreen && !isWindowFullscreen) {
+                // Strict ban on exit: if they were in fullscreen and now they aren't, ban.
                 banUser();
             }
         }
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
+    // Also monitor resize for exit attempts
+    window.addEventListener('resize', () => {
+        if (hasEnteredFullscreen) {
+            const isApiFullscreen = !!document.fullscreenElement;
+            if (!isApiFullscreen) {
+                banUser();
+            }
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Initialize core state as early as possible
+        loadPersistentData();
+        if (window.supabase && supabaseUrl && supabaseKey) {
+            supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+            await fetchServerState(); 
+            setupSupabaseListeners();
+        }
+
         if (localStorage.getItem('isBanned') === 'true') {
             document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
             showBanScreen();
@@ -876,7 +860,7 @@
                 hasEnteredFullscreen = true;
                 document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
                 document.getElementById('app').classList.remove('hidden');
-                updateGameUI();
+                if (typeof updateGameUI === 'function') updateGameUI();
             } else {
                 startFullscreenCheck();
             }
@@ -955,7 +939,7 @@
         1: { cost: 100,    reward: 1,     ticks: 5,   reqAllTrees: false }, 
         2: { cost: 500,    reward: 10,    ticks: 5,   reqAllTrees: false },
         3: { cost: 1000,   reward: 100,   ticks: 10,  reqAllTrees: true  },
-        4: { cost: 10000,  reward: 500,  ticks: 60,  reqAllTrees: true  }, 
+        4: { cost: 10000,  reward: 670,  ticks: 60,  reqAllTrees: true  }, 
         5: { cost: 1000000, reward: 2000, ticks: 100, reqAllTrees: true  }
     };
 
@@ -1140,12 +1124,6 @@
 
     window.onload = async () => {
       elWheel.style.background = getWheelBackground();
-      loadPersistentData();
-      if (window.supabase && supabaseUrl && supabaseKey) {
-        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-        await fetchServerState(); 
-        setupSupabaseListeners();
-      }
       elBetAmountInput.addEventListener('input', (e) => {
         let val = parseInt(e.target.value) || 0;
         val = Math.max(0, Math.min(bananas, val));
@@ -1195,9 +1173,10 @@
           if (data.activeBoosts) activeBoosts = data.activeBoosts;
           
           // Data loaded
-        } catch (e) { console.error(e); userId = generateId(); }
+        } catch (e) { console.error(e); userId = generateId(); savePersistentData(); }
       } else {
         userId = generateId();
+        savePersistentData();
       }
     }
 
