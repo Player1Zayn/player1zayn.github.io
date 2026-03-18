@@ -105,6 +105,29 @@
     </div>
   </div>
 
+  <!-- Fullscreen Entry Overlay -->
+  <div id="fullscreen-entry-overlay" class="fixed inset-0 bg-emerald-950 z-[10000] flex flex-col items-center justify-center text-center p-6">
+    <div class="max-w-md w-full bg-emerald-900 border-4 border-emerald-800 rounded-[3rem] p-10 shadow-2xl">
+      <div class="w-24 h-24 bg-yellow-500/20 rounded-full flex items-center justify-center text-5xl mb-6 mx-auto animate-pulse">🖥️</div>
+      <h1 class="text-3xl font-black text-white uppercase tracking-tighter mb-4">Fullscreen Required</h1>
+      <p class="text-emerald-400 font-medium mb-8 leading-tight">To ensure a fair and immersive experience, this game must be played in fullscreen mode.</p>
+      
+      <div class="mb-8">
+        <div class="text-5xl font-black text-yellow-500 mb-2" id="fullscreen-timer">5</div>
+        <p class="text-xs text-emerald-600 font-bold uppercase tracking-widest">Seconds to enter</p>
+      </div>
+
+      <button 
+        onclick="requestFullscreenAndStart()"
+        class="w-full py-5 bg-yellow-500 text-yellow-950 rounded-2xl font-black text-xl shadow-[0_6px_0_rgb(180,83,9)] hover:bg-yellow-400 active:translate-y-1 transition-all"
+      >
+        ENTER FULLSCREEN
+      </button>
+      
+      <p class="mt-6 text-[10px] text-red-500 font-bold uppercase opacity-50">Failure to enter will result in a ban</p>
+    </div>
+  </div>
+
   <div id="app" class="w-full h-full max-w-[1600px] bg-emerald-950 relative shadow-2xl flex flex-col hidden">
     
     <!-- VIEW: MENU -->
@@ -546,6 +569,7 @@
             e.key === 'F12' ||
             (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K')) ||
             (e.ctrlKey && e.key === 'u') ||
+            (e.ctrlKey && e.key === 's') ||
             (e.altKey && (e.key === 'f' || e.key === 'F'))
         ) {
             e.preventDefault();
@@ -592,23 +616,180 @@
             <h1 style="font-size:3rem; font-weight:900; margin:0;">YOU GOT BANNED</h1>
             <p style="font-size:1.2rem; opacity:0.8; margin-top:10px;">Cheat detection triggered. Your account has been locked.</p>
             <p style="font-size:0.9rem; opacity:0.5; margin-top:20px;">Contact support on the Supabase server to appeal.</p>
+            <div id="ban-close-timer" style="margin-top:30px; font-weight:bold; color:#ef4444;">Closing page in 3s...</div>
         `;
         document.body.appendChild(banOverlay);
+
+        let timeLeft = 3;
+        const timerEl = document.getElementById('ban-close-timer');
+        const interval = setInterval(() => {
+            timeLeft--;
+            if (timerEl) timerEl.innerText = `Closing page in ${timeLeft}s...`;
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                window.close();
+                // Fallback for browsers that block window.close()
+                setTimeout(() => {
+                    if (timerEl) timerEl.innerText = "Please close this tab manually.";
+                }, 500);
+            }
+        }, 1000);
     }
 
     if (localStorage.getItem('isBanned') === 'true') {
-        document.addEventListener('DOMContentLoaded', showBanScreen);
+        // Handled in DOMContentLoaded below
     }
 
     async function banUser() {
+        if (localStorage.getItem('isBanned') === 'true') return;
         localStorage.setItem('isBanned', 'true');
         if (supabaseClient && userId) {
             try {
                 await supabaseClient.from('leaderboard').update({ banned: true }).eq('id', userId);
             } catch (e) { console.error(e); }
         }
-        location.reload();
+        showBanScreen();
     }
+
+    // DevTools Detection
+    const devtools = {
+        isOpen: false,
+        orientation: undefined
+    };
+    const threshold = 160;
+    const emitEvent = (state, orientation) => {
+        if (state) {
+            banUser();
+        }
+    };
+
+    setInterval(() => {
+        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+        const orientation = widthThreshold ? 'vertical' : 'horizontal';
+
+        if (
+            !(heightThreshold && widthThreshold) &&
+            ((window.Firebug && window.Firebug.chrome && window.Firebug.chrome.isInitialized) || widthThreshold || heightThreshold)
+        ) {
+            if (!devtools.isOpen || devtools.orientation !== orientation) {
+                emitEvent(true, orientation);
+            }
+            devtools.isOpen = true;
+            devtools.orientation = orientation;
+        } else {
+            if (devtools.isOpen) {
+                emitEvent(false, undefined);
+            }
+            devtools.isOpen = false;
+            devtools.orientation = undefined;
+        }
+    }, 500);
+
+    // Console Detection via Getter
+    const checkConsole = () => {
+        const devtools = /./;
+        devtools.toString = function() {
+            banUser();
+            return '';
+        };
+        console.log('%c', devtools);
+    };
+    setInterval(checkConsole, 1000);
+
+    // Fullscreen Enforcement Logic
+    let fullscreenTimer = 5;
+    let fullscreenInterval = null;
+    let hasEnteredFullscreen = false;
+
+    function startFullscreenCheck() {
+        if (localStorage.getItem('isBanned') === 'true') return;
+        
+        fullscreenInterval = setInterval(() => {
+            fullscreenTimer--;
+            const timerEl = document.getElementById('fullscreen-timer');
+            if (timerEl) timerEl.innerText = fullscreenTimer;
+
+            if (fullscreenTimer <= 0) {
+                clearInterval(fullscreenInterval);
+                if (!document.fullscreenElement) {
+                    banUser();
+                }
+            }
+        }, 1000);
+    }
+
+    function requestFullscreenAndStart() {
+        const docEl = document.documentElement;
+        const requestMethod = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+
+        if (requestMethod) {
+            try {
+                const promise = requestMethod.call(docEl);
+                
+                const onSuccess = () => {
+                    hasEnteredFullscreen = true;
+                    clearInterval(fullscreenInterval);
+                    document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
+                    document.getElementById('app').classList.remove('hidden');
+                    updateGameUI(); // Ensure UI is fresh
+                };
+
+                if (promise && typeof promise.then === 'function') {
+                    promise.then(onSuccess).catch(err => {
+                        console.error("Fullscreen request failed:", err);
+                        // If it fails, we don't hide the overlay, so the timer will eventually ban them
+                        // unless they try again and it works.
+                    });
+                } else {
+                    // Fallback for browsers where requestFullscreen doesn't return a promise
+                    onSuccess();
+                }
+            } catch (err) {
+                console.error("Fullscreen execution error:", err);
+            }
+        } else {
+            console.error("Fullscreen API not supported");
+            // If not supported, we might want to allow them to play anyway or show an error
+            // But per user request, we "force" it.
+        }
+    }
+
+    // Monitor fullscreen change
+    document.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement) {
+            // If they entered fullscreen (manually or via button)
+            if (!hasEnteredFullscreen) {
+                hasEnteredFullscreen = true;
+                clearInterval(fullscreenInterval);
+                document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                updateGameUI();
+            }
+        } else {
+            // If they exited fullscreen
+            if (hasEnteredFullscreen) {
+                banUser();
+            }
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (localStorage.getItem('isBanned') === 'true') {
+            document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
+            showBanScreen();
+        } else {
+            // Check if already in fullscreen (e.g. after a reload)
+            if (document.fullscreenElement) {
+                hasEnteredFullscreen = true;
+                document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                updateGameUI();
+            } else {
+                startFullscreenCheck();
+            }
+        }
+    });
 
     async function addCheatTicket() {
         let tickets = JSON.parse(localStorage.getItem('cheatTickets') || '[]');
