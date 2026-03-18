@@ -118,7 +118,7 @@
       </div>
 
       <button 
-        onclick="requestFullscreenAndStart()"
+        id="btn-enter-fullscreen"
         class="w-full py-5 bg-yellow-500 text-yellow-950 rounded-2xl font-black text-xl shadow-[0_6px_0_rgb(180,83,9)] hover:bg-yellow-400 active:translate-y-1 transition-all"
       >
         ENTER FULLSCREEN
@@ -143,6 +143,10 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x1="16" x2="12" y2="12"></line><line x1="12" x1="8" x2="12.01" y2="8"></line></svg>
           CREDITS
         </button>
+        <button onclick="leaveGame()" class="bg-red-900/50 hover:bg-red-800/50 text-red-100 font-bold text-base md:text-lg py-3 rounded-xl flex items-center justify-center gap-2 border border-red-800/50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          LEAVE GAME
+        </button>
       </div>
     </div>
 
@@ -154,6 +158,7 @@
         <p class="text-emerald-300/80 text-xs md:text-sm italic">Banana trademark from wilhelm.toverland.se</p>
       </div>
       <button onclick="setView('menu')" class="mt-8 bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-xl">Back to Menu</button>
+      <button onclick="leaveGame()" class="mt-4 text-red-400 font-bold hover:text-red-300 transition-colors">Leave Game</button>
     </div>
 
     <!-- VIEW: NAME ENTRY / ACCOUNT LOGIN -->
@@ -560,7 +565,6 @@
             warning.classList.remove('hidden');
             setTimeout(() => warning.classList.add('hidden'), 500);
         }
-        addCheatTicket();
     }, true);
 
     window.addEventListener('keydown', (e) => {
@@ -649,6 +653,9 @@
         // Immediately hide the app to "close down" the game
         const appEl = document.getElementById('app');
         if (appEl) appEl.classList.add('hidden');
+        
+        // Try to close the window immediately
+        try { window.close(); } catch(e) {}
         
         localStorage.setItem('isBanned', 'true');
         if (supabaseClient && userId) {
@@ -742,65 +749,72 @@
         }, 1000);
     }
 
+    window.leaveGame = function() {
+        // Close the window without banning
+        window.close();
+        // Fallback for browsers that block window.close()
+        setTimeout(() => {
+            window.location.href = "about:blank";
+        }, 100);
+    };
+
     function requestFullscreenAndStart() {
         const docEl = document.documentElement;
         
-        // Check if fullscreen is enabled in this context (iframe check)
-        if (!document.fullscreenEnabled && !document.webkitFullscreenEnabled && !document.mozFullScreenEnabled && !document.msFullscreenEnabled) {
-            alert("Your browser or this environment blocks the fullscreen button. Please press FN + F11 manually to start the game.");
-            return;
-        }
+        // Simplified request to maximize success
+        const requestMethod = docEl.requestFullscreen || 
+                            docEl.webkitRequestFullscreen || 
+                            docEl.mozRequestFullScreen || 
+                            docEl.msRequestFullscreen;
 
-        // Try multiple targets
-        const targets = [document.documentElement, document.body, document.getElementById('app')];
-        
-        const tryFullscreen = (index) => {
-            if (index >= targets.length) {
-                alert("Fullscreen request blocked. Please use FN + F11 manually.");
-                return;
-            }
-            
-            const target = targets[index];
-            if (!target) return tryFullscreen(index + 1);
-
-            const requestMethod = target.requestFullscreen || 
-                                target.mozRequestFullScreen || 
-                                target.webkitRequestFullScreen || 
-                                target.msRequestFullscreen ||
-                                target.webkitRequestFullscreen;
-
-            if (requestMethod) {
-                try {
-                    // Use navigationUI: 'hide' to be more aggressive
-                    const promise = requestMethod.call(target, { navigationUI: 'hide' });
-                    
-                    const onSuccess = () => {
-                        hasEnteredFullscreen = true;
-                        clearInterval(fullscreenInterval);
-                        document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
-                        document.getElementById('app').classList.remove('hidden');
-                        if (typeof updateGameUI === 'function') updateGameUI();
-                    };
-
-                    if (promise && typeof promise.then === 'function') {
-                        promise.then(onSuccess).catch(err => {
-                            console.error(`Fullscreen request failed for target ${index}:`, err);
-                            tryFullscreen(index + 1);
-                        });
-                    } else {
-                        onSuccess();
-                    }
-                } catch (err) {
-                    console.error(`Fullscreen execution error for target ${index}:`, err);
-                    tryFullscreen(index + 1);
-                }
-            } else {
-                tryFullscreen(index + 1);
-            }
+        const onSuccess = () => {
+            hasEnteredFullscreen = true;
+            clearInterval(fullscreenInterval);
+            document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            if (typeof updateGameUI === 'function') updateGameUI();
         };
 
-        tryFullscreen(0);
+        if (requestMethod) {
+            try {
+                const promise = requestMethod.call(docEl);
+                if (promise && typeof promise.then === 'function') {
+                    promise.then(onSuccess).catch(err => {
+                        console.error("Fullscreen request failed:", err);
+                        // Fallback: Check if they are already in F11 mode
+                        const isWindowFullscreen = window.innerHeight >= screen.height - 10;
+                        if (isWindowFullscreen) {
+                            onSuccess();
+                        } else {
+                            alert("Fullscreen request blocked. Please use FN + F11 manually.");
+                        }
+                    });
+                } else {
+                    onSuccess();
+                }
+            } catch (e) {
+                console.error("Fullscreen execution error:", e);
+                alert("Fullscreen error. Please use FN + F11 manually.");
+            }
+        } else {
+            // Fallback for F11
+            const isWindowFullscreen = window.innerHeight >= screen.height - 10;
+            if (isWindowFullscreen) {
+                onSuccess();
+            } else {
+                alert("Your browser does not support the Fullscreen API. Please use FN + F11 manually.");
+            }
+        }
     }
+    window.requestFullscreenAndStart = requestFullscreenAndStart;
+
+    // Add explicit click listener for better gesture detection
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('btn-enter-fullscreen');
+        if (btn) {
+            btn.addEventListener('click', requestFullscreenAndStart);
+        }
+    });
 
     // Monitor fullscreen change
     document.addEventListener('fullscreenchange', () => {
@@ -2666,7 +2680,7 @@
       updateGameUI();
     }
 
-    function updateGameUI() {
+    window.updateGameUI = function() {
       elDisplayPlayerName.innerText = playerName;
       elDisplayBananas.innerText = `${bananas.toLocaleString()} 🍌`;
       const elDisplayCoins = document.getElementById('display-coins');
