@@ -110,7 +110,7 @@
     <div class="max-w-md w-full bg-emerald-900 border-4 border-emerald-800 rounded-[3rem] p-10 shadow-2xl">
       <div class="w-24 h-24 bg-yellow-500/20 rounded-full flex items-center justify-center text-5xl mb-6 mx-auto animate-pulse">🖥️</div>
       <h1 class="text-3xl font-black text-white uppercase tracking-tighter mb-4">Fullscreen Required</h1>
-      <p class="text-emerald-400 font-medium mb-8 leading-tight">To ensure a fair and immersive experience, this game must be played in fullscreen mode.</p>
+      <p class="text-emerald-400 font-medium mb-8 leading-tight">To ensure a fair and immersive experience, this game must be played in fullscreen mode. <br><span class="text-yellow-500 text-[10px] font-bold mt-2 block">If the button below doesn't work, please press <span class="bg-yellow-500/20 px-1 rounded text-yellow-400">FN + F11</span> manually.</span></p>
       
       <div class="mb-8">
         <div class="text-5xl font-black text-yellow-500 mb-2" id="fullscreen-timer">5</div>
@@ -645,6 +645,11 @@
 
     async function banUser() {
         if (localStorage.getItem('isBanned') === 'true') return;
+        
+        // Immediately hide the app to "close down" the game
+        const appEl = document.getElementById('app');
+        if (appEl) appEl.classList.add('hidden');
+        
         localStorage.setItem('isBanned', 'true');
         if (supabaseClient && userId) {
             try {
@@ -740,12 +745,18 @@
     function requestFullscreenAndStart() {
         const docEl = document.documentElement;
         
+        // Check if fullscreen is enabled in this context (iframe check)
+        if (!document.fullscreenEnabled && !document.webkitFullscreenEnabled && !document.mozFullScreenEnabled && !document.msFullscreenEnabled) {
+            alert("Your browser or this environment blocks the fullscreen button. Please press FN + F11 manually to start the game.");
+            return;
+        }
+
         // Try multiple targets
         const targets = [document.documentElement, document.body, document.getElementById('app')];
         
         const tryFullscreen = (index) => {
             if (index >= targets.length) {
-                alert("Your browser does not support fullscreen or blocked the request. Please try manual fullscreen (F11).");
+                alert("Fullscreen request blocked. Please use FN + F11 manually.");
                 return;
             }
             
@@ -760,7 +771,8 @@
 
             if (requestMethod) {
                 try {
-                    const promise = requestMethod.call(target);
+                    // Use navigationUI: 'hide' to be more aggressive
+                    const promise = requestMethod.call(target, { navigationUI: 'hide' });
                     
                     const onSuccess = () => {
                         hasEnteredFullscreen = true;
@@ -805,10 +817,23 @@
             // If they exited fullscreen
             if (hasEnteredFullscreen) {
                 // Check if they are still in browser-level fullscreen (F11)
-                const isWindowFullscreen = window.innerHeight >= screen.height - 10;
+                // We use a more strict check here. If they are not in API fullscreen,
+                // and they were, we ban immediately if they aren't in F11 either.
+                const isWindowFullscreen = window.innerHeight >= screen.height - 5;
                 if (!isWindowFullscreen) {
                     banUser();
                 }
+            }
+        }
+    });
+
+    // Also monitor resize for F11 exit
+    window.addEventListener('resize', () => {
+        if (hasEnteredFullscreen) {
+            const isApiFullscreen = !!document.fullscreenElement;
+            const isWindowFullscreen = window.innerHeight >= screen.height - 5;
+            if (!isApiFullscreen && !isWindowFullscreen) {
+                banUser();
             }
         }
     });
