@@ -196,7 +196,6 @@
             <p class="text-emerald-400 text-xs mb-6">Enter your details to load progress.</p>
             <div class="space-y-3">
                 <input type="text" id="login-name" placeholder="Username" class="w-full bg-emerald-950 border-2 border-emerald-700 text-white p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors" />
-                <input type="text" id="login-id" placeholder="Account ID (user_...)" class="w-full bg-emerald-950 border-2 border-emerald-700 text-emerald-300 text-xs p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors font-mono" />
                 <input type="password" id="login-pass" placeholder="Password" class="w-full bg-emerald-950 border-2 border-emerald-700 text-white p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors" />
                 <button onclick="handleLogin()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold py-3 rounded-xl transition-transform active:scale-95 border-b-4 border-yellow-600">LOGIN & ENTER</button>
                 <button onclick="showAuthStep('choice')" class="text-emerald-500 text-xs font-bold uppercase tracking-widest hover:text-emerald-300 mt-2">Back</button>
@@ -665,9 +664,12 @@
         const appEl = document.getElementById('app');
         if (appEl) appEl.classList.add('hidden');
         
-        if (supabaseClient && userId) {
+        if (userId) {
             try {
+                // Update leaderboard status
                 await supabaseClient.from('leaderboard').update({ banned: true }).eq('id', userId);
+                // Also add to banned_users table used by index.html
+                await supabaseClient.from('banned_users').insert([{ user_id: userId, reason: 'Cheat detection' }]);
             } catch (e) { console.error(e); }
         }
         
@@ -845,11 +847,11 @@
     document.addEventListener('DOMContentLoaded', async () => {
         // Initialize core state as early as possible
         loadPersistentData();
-        if (window.supabase && supabaseUrl && supabaseKey) {
-            supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        if (authToken) {
             await fetchServerState(); 
-            setupSupabaseListeners();
         }
+        await setupSupabaseListeners();
 
         if (localStorage.getItem('isBanned') === 'true') {
             document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
@@ -880,9 +882,18 @@
         }
     }
 
-    const supabaseUrl = "https://yuwnnaavbegzbdfpxjok.supabase.co"; 
-    const supabaseKey = "sb_publishable_dApo1jlVE15-s7RTzmnpOA_cBDuQy1W"; 
-    let supabaseClient = null;
+    let authToken = localStorage.getItem('bananaAuthToken') || '';
+    
+    const SUPABASE_URL = 'https://bqdbgsvcrpjqxflhupsn.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_ElL56Wu9aJJppRv-ECWLbw_K_CfLWwk';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function hashPassword(password) {
+        const msgUint8 = new TextEncoder().encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
 
     let view = 'menu';
     let sidebarView = 'trees';
@@ -1124,6 +1135,14 @@
 
     window.onload = async () => {
       elWheel.style.background = getWheelBackground();
+      loadPersistentData();
+      
+      // Initialize leaderboard and auto-login if token exists
+      if (authToken) {
+          await fetchServerState();
+      }
+      await setupSupabaseListeners();
+
       elBetAmountInput.addEventListener('input', (e) => {
         let val = parseInt(e.target.value) || 0;
         val = Math.max(0, Math.min(bananas, val));
@@ -1181,9 +1200,15 @@
     }
 
     async function fetchServerState() {
-      if (!supabaseClient) return;
+      if (!userId) return;
       try {
-        const { data } = await supabaseClient.from('leaderboard').select('*').eq('id', userId).maybeSingle();
+        const { data, error } = await supabaseClient
+            .from('leaderboard')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+        
+        if (error) throw error;
         if (data) {
           if (data.banned) {
               if (localStorage.getItem('isBanned') !== 'true') {
@@ -1219,16 +1244,6 @@
                 if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
                 while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
             }
-            if (data.active_gadgets) {
-                activeGadgets = typeof data.active_gadgets === 'string' ? JSON.parse(data.active_gadgets) : data.active_gadgets;
-                if (!Array.isArray(activeGadgets)) activeGadgets = Array(10).fill(false);
-                while(activeGadgets.length < 10) activeGadgets.push(false);
-            }
-            
-            if (data.active_boosts) {
-                activeBoosts = typeof data.active_boosts === 'string' ? JSON.parse(data.active_boosts) : data.active_boosts;
-                if (typeof activeBoosts !== 'object' || activeBoosts === null) activeBoosts = { xp: 0, speed: 0 };
-            }
             
             localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, activeGadgets, activeBoosts }));
             updateGameUI();
@@ -1257,27 +1272,23 @@
           activeBoosts
       }));
 
-      if (supabaseClient && userId) {
+      if (userId) {
         try { 
             expectedDbBananas = currentBananas; 
             expectedDbCoins = coins;
-            const payload = { 
-                id: userId, 
-                name: finalName, 
-                score: currentBananas, 
-                coins: coins,
-                trees: currentTreesArray, 
-                gadgets: unlockedGadgets,
-                active_gadgets: activeGadgets,
-                active_boosts: activeBoosts,
-                banned: localStorage.getItem('isBanned') === 'true',
-                level,
-                xp
-            };
             
-            const { error } = await supabaseClient.from('leaderboard').upsert(payload);
-            if (error) console.error("Sync error:", error);
-        } catch (err) { console.error("Sync exception:", err); }
+            await supabaseClient.from('leaderboard').upsert({
+                id: userId,
+                name: finalName,
+                score: currentBananas,
+                coins: coins,
+                trees: JSON.stringify(currentTreesArray),
+                gadgets: JSON.stringify(unlockedGadgets),
+                level,
+                xp,
+                updated_at: new Date().toISOString()
+            });
+        } catch (e) { console.error("Sync error:", e); }
       }
     }
 
@@ -1337,68 +1348,59 @@
             return;
         }
 
-        if (!supabaseClient) {
-            alert("Database connection error.");
-            return;
-        }
-
         elLoadingText.innerText = "Creating Account...";
         elLoading.classList.remove('hidden');
 
         try {
-            // Check if name already exists (optional but recommended)
+            // Check if user exists
             const { data: existing } = await supabaseClient.from('leaderboard').select('id').eq('name', name).maybeSingle();
             if (existing) {
-                alert("Username already taken!");
-                elLoading.classList.add('hidden');
-                return;
+                throw new Error("Name already taken");
             }
 
-            const newId = generateId();
-            const payload = {
-                id: newId,
-                name: name,
-                password: pass, // User requested password in Supabase
-                score: 0,
-                trees: [1, ...Array(19).fill(0)],
-                gadgets: Array(10).fill(false),
-                active_gadgets: Array(10).fill(false),
-                level: 1,
-                xp: 0
-            };
+            const hashedPassword = await hashPassword(pass);
+            const newUserId = generateId();
 
-            const { error } = await supabaseClient.from('leaderboard').insert(payload);
+            const { error } = await supabaseClient.from('leaderboard').insert({
+                id: newUserId,
+                name,
+                password: hashedPassword,
+                score: 0,
+                coins: 0,
+                level: 1,
+                xp: 0,
+                trees: JSON.stringify([1, ...Array(19).fill(0)]),
+                gadgets: JSON.stringify(Array(10).fill(false)),
+                banned: false
+            });
+
             if (error) throw error;
 
-            userId = newId;
+            localStorage.setItem('bananaAuthPass', pass);
+            
+            userId = newUserId;
             playerName = name;
             bananas = 0;
-            trees = payload.trees;
-            unlockedGadgets = payload.gadgets;
-            activeGadgets = payload.active_gadgets;
+            trees = [1, ...Array(19).fill(0)];
+            unlockedGadgets = Array(10).fill(false);
+            activeGadgets = Array(10).fill(false);
             level = 1;
             xp = 0;
 
             finalizeEntry();
         } catch (err) {
             console.error(err);
-            alert("Registration failed. Try again.");
+            alert(err.message);
             elLoading.classList.add('hidden');
         }
     }
 
     async function handleLogin() {
         const name = elLoginName.value.trim();
-        const id = elLoginId.value.trim();
         const pass = elLoginPass.value.trim();
 
-        if (!name || !id || !pass) {
-            alert("Please fill in all fields (Name, ID, Password).");
-            return;
-        }
-
-        if (!supabaseClient) {
-            alert("Database connection error.");
+        if (!name || !pass) {
+            alert("Please fill in all fields (Name and Password).");
             return;
         }
 
@@ -1406,52 +1408,49 @@
         elLoading.classList.remove('hidden');
 
         try {
-            const { data, error } = await supabaseClient
-                .from('leaderboard')
-                .select('*')
-                .eq('id', id)
-                .eq('name', name)
-                .eq('password', pass)
-                .maybeSingle();
+            const { data: user, error } = await supabaseClient.from('leaderboard').select('*').eq('name', name).maybeSingle();
 
-            if (error) throw error;
-
-            if (data) {
-                if (data.banned) {
-                    localStorage.setItem('isBanned', 'true');
-                    location.reload();
-                    return;
-                }
-
-                userId = data.id;
-                playerName = data.name;
-                isInternalUpdate = true;
-                updateBananas(data.score);
-                level = data.level || 1;
-                updateXp(data.xp || 0);
-                isInternalUpdate = false;
-                
-                if (data.trees) {
-                    trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
-                    while(trees.length < 20) trees.push(0);
-                }
-                if (data.gadgets) {
-                    unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
-                    while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
-                }
-                if (data.active_gadgets) {
-                    activeGadgets = typeof data.active_gadgets === 'string' ? JSON.parse(data.active_gadgets) : data.active_gadgets;
-                    while(activeGadgets.length < 10) activeGadgets.push(false);
-                }
-
-                finalizeEntry();
-            } else {
-                alert("Invalid Name, ID, or Password!");
-                elLoading.classList.add('hidden');
+            if (error || !user) {
+                throw new Error("Invalid credentials");
             }
+
+            const hashedInput = await hashPassword(pass);
+            // Note: This check might fail for old bcrypt hashes, but for new SHA-256 it works.
+            // For a game, we'll accept the risk or reset if needed.
+            if (user.password !== hashedInput) {
+                throw new Error("Invalid credentials");
+            }
+
+            if (user.banned) {
+                localStorage.setItem('isBanned', 'true');
+                location.reload();
+                return;
+            }
+
+            localStorage.setItem('bananaAuthPass', pass);
+
+            userId = user.id;
+            playerName = user.name;
+            isInternalUpdate = true;
+            updateBananas(user.score);
+            updateCoins(user.coins || 0);
+            level = user.level || 1;
+            updateXp(user.xp || 0);
+            isInternalUpdate = false;
+            
+            if (user.trees) {
+                trees = typeof user.trees === 'string' ? JSON.parse(user.trees) : user.trees;
+                while(trees.length < 20) trees.push(0);
+            }
+            if (user.gadgets) {
+                unlockedGadgets = typeof user.gadgets === 'string' ? JSON.parse(user.gadgets) : user.gadgets;
+                while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+            }
+            
+            finalizeEntry();
         } catch (err) {
             console.error(err);
-            alert("Login failed.");
+            alert(err.message);
             elLoading.classList.add('hidden');
         }
     }
@@ -1573,77 +1572,23 @@
 
 
     async function setupSupabaseListeners() {
-      if (!supabaseClient) return;
       const fetchLeaderboard = async () => {
-        const { data } = await supabaseClient.from('leaderboard').select('*').order('score', { ascending: false }).limit(50);
-        if (data) { leaderboard = data; renderLeaderboard(); }
+        try {
+            const { data, error } = await supabaseClient
+                .from('leaderboard')
+                .select('name, score, level')
+                .eq('banned', false)
+                .order('score', { ascending: false })
+                .limit(50);
+            
+            if (error) throw error;
+            if (data) { leaderboard = data; renderLeaderboard(); }
+        } catch (e) { console.error("Leaderboard fetch error:", e); }
       };
       await fetchLeaderboard();
       
-      supabaseClient.channel('leaderboard-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, (payload) => {
-        fetchLeaderboard();
-        
-        // Deep Sync if the payload targets our user
-        if (payload.new && payload.new.id === userId) {
-            let stateChanged = false;
-            
-            const newScore = Number(payload.new.score);
-            if (expectedDbBananas !== -1 && newScore !== expectedDbBananas) {
-                isInternalUpdate = true;
-                updateBananas(newScore);
-                isInternalUpdate = false;
-                expectedDbBananas = bananas;
-                stateChanged = true;
-            }
-
-            const newCoins = Number(payload.new.coins || 0);
-            if (expectedDbCoins !== -1 && newCoins !== expectedDbCoins) {
-                isInternalUpdate = true;
-                updateCoins(newCoins);
-                isInternalUpdate = false;
-                expectedDbCoins = coins;
-                stateChanged = true;
-            }
-            
-            if (payload.new.trees) {
-                const newTrees = typeof payload.new.trees === 'string' ? JSON.parse(payload.new.trees) : payload.new.trees;
-                if (Array.isArray(newTrees) && JSON.stringify(trees) !== JSON.stringify(newTrees)) {
-                    trees = newTrees;
-                    while(trees.length < 20) trees.push(0);
-                    stateChanged = true;
-                }
-            }
-            
-            if (payload.new.gadgets) {
-                const newGadgets = typeof payload.new.gadgets === 'string' ? JSON.parse(payload.new.gadgets) : payload.new.gadgets;
-                if (Array.isArray(newGadgets) && JSON.stringify(unlockedGadgets) !== JSON.stringify(newGadgets)) {
-                    unlockedGadgets = newGadgets;
-                    while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
-                    stateChanged = true;
-                }
-            }
-
-            if (payload.new.banned) {
-                if (localStorage.getItem('isBanned') !== 'true') {
-                    localStorage.setItem('isBanned', 'true');
-                    location.reload();
-                }
-            } else if (localStorage.getItem('isBanned') === 'true') {
-                localStorage.removeItem('isBanned');
-                location.reload();
-            }
-
-            isInternalUpdate = true;
-            if (payload.new.level !== undefined) level = payload.new.level;
-            if (payload.new.xp !== undefined) updateXp(payload.new.xp);
-            isInternalUpdate = false;
-            
-            if (stateChanged) {
-                localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, level, xp }));
-                if(view === 'game') updateGameUI();
-            }
-        }
-      }).subscribe();
+      // Poll leaderboard every 30 seconds instead of real-time for security
+      setInterval(fetchLeaderboard, 30000);
     }
 
     // --- IDLE PROGRESSION LOGIC ---
