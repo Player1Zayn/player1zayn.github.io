@@ -1,1 +1,888 @@
-Tjena tjena
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Night Horror 2: Asylum</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+            background-color: #050505;
+            max-width: 100%;
+            max-height: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: contain;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 1);
+            border: 4px solid #1a1a1a;
+        }
+        /* CRT Effect Overlay */
+        #game-container::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 10;
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+            box-shadow: inset 0 0 120px rgba(0,0,0,0.9);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+/**
+ * NIGHT HORROR 2: ASYLUM
+ */
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const GAME_W = 800;
+const GAME_H = 600;
+
+// Firebase & Storage Setup
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+let db = null;
+let auth = null;
+let user = null;
+let savedShift = 1;
+
+if (firebaseConfigStr) {
+    try {
+        const firebaseConfig = JSON.parse(firebaseConfigStr);
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, async (u) => {
+            user = u;
+            if (user && db) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'saveData', 'progress');
+                    const snap = await getDoc(docRef);
+                    if (snap.exists()) {
+                        savedShift = snap.data().shift || 1;
+                        if (savedShift > 1 && savedShift <= maxShifts) {
+                            menuButtons.continue = { x: 50, y: 360, w: 250, h: 40, text: 'CONTINUE SHIFT ' + savedShift };
+                        }
+                    }
+                } catch (e) { console.error("Error loading save:", e); }
+            }
+        });
+    } catch (e) { console.error("Firebase init failed:", e); }
+}
+
+async function saveProgress(newShift) {
+    if (!user || !db) return;
+    try {
+        await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'saveData', 'progress'), { shift: newShift });
+        savedShift = newShift;
+        if (savedShift <= maxShifts) {
+            menuButtons.continue = { x: 50, y: 360, w: 250, h: 40, text: 'CONTINUE SHIFT ' + savedShift };
+        }
+    } catch (e) { console.error("Error saving progress:", e); }
+}
+
+let lastTime = performance.now();
+let gameState = 'MENU'; 
+let gameOverReason = "";
+
+let shift = 1;
+const maxShifts = 5;
+let shiftTimeElapsed = 0;
+const SHIFT_DURATION = 360; // 6 in-game hours (6 IRL minutes)
+
+let monstersLetIn = 0;
+let attackTimer = 0;
+let lockdownTimer = 0;
+let greyScreenTimer = 0;
+let jumpscareTimer = 0;
+let emergencyTriggered = false;
+
+let horde = []; // Array for storing lockdown monster NPCs
+
+const player = { x: 400, y: 450, w: 20, h: 20, speed: 180, angle: 0 };
+
+const office = { x: 200, y: 200, w: 400, h: 320 };
+const desk = { x: 355, y: 320, w: 90, h: 50 };
+const windowObj = { x: 350, y: 200, w: 100, h: 14, barricaded: false, barricadeProgress: 0 };
+const door = { x: 350, y: 506, w: 100, h: 14, isClosed: false, barricaded: false, barricadeProgress: 0 };
+
+// External Gate/Fence
+const fenceTop = { x: 500, y: 0, w: 10, h: 140 };
+const gateObj = { x: 500, y: 140, w: 10, h: 60, open: false };
+const fenceBottom = { x: 500, y: 520, w: 10, h: 80 };
+
+const shelves = [
+    { x: 230, y: 230, w: 45, h: 90, stock: 100 }, 
+    { x: 525, y: 230, w: 45, h: 90, stock: 100 }
+];
+
+let currentNPC = null;
+let npcSpawnTimer = 3;
+
+const keys = { w: false, a: false, s: false, d: false, e: false, f: false };
+const keysJustPressed = { e: false, f: false };
+const mouse = { x: 400, y: 300, clicked: false };
+
+window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    if (keys.hasOwnProperty(key)) {
+        if (!keys[key] && (key === 'e' || key === 'f')) keysJustPressed[key] = true;
+        keys[key] = true;
+    }
+});
+window.addEventListener('keyup', (e) => {
+    const key = e.key.toLowerCase();
+    if (keys.hasOwnProperty(key)) keys[key] = false;
+});
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+});
+canvas.addEventListener('mousedown', (e) => { if (e.button === 0) mouse.clicked = true; });
+
+// --- NPC GROUPS & REASONS ---
+
+const namesG1 = ["John Alhar", "Nick Ed", "Sophie Bohn", "Jake", "Paul", "Em", "Tristan", "Aloo"];
+const reasonsG1 = ["I want to meet my family", "Its dangerous here in the Asylum", "Need to calm down in Haven", "Looking for peace and love"];
+const namesG2 = ["Relief Soldier", "Security guard", "Perimeter Supervisor"];
+const reasonsG2 = ["Here for my shift", "I'm replacing my former guard", "Here for security reasons", "Here to supervise"];
+const namesG3 = ["Unknown", "Bear", "Fox", "Bunny", "?", "...", "Bryngel"];
+const reasonsG3 = ["LET ME IN", "IM HURT PLEASE", "...", "Im hungry", "I want to break free", "Please help me", "I'm not dangerous"];
+
+function spawnNPC() {
+    const isMonster = Math.random() < 0.3 + (shift * 0.08);
+    const isExpired = isMonster ? (Math.random() < 0.6) : (Math.random() < 0.15);
+
+    let npcName = "";
+    let npcReason = "";
+
+    if (isMonster) {
+        const allNames = [...namesG1, ...namesG2, ...namesG3];
+        npcName = allNames[Math.floor(Math.random() * allNames.length)];
+        npcReason = reasonsG3[Math.floor(Math.random() * reasonsG3.length)];
+    } else {
+        const isGroup1 = Math.random() < 0.6; 
+        if (isGroup1) {
+            npcName = namesG1[Math.floor(Math.random() * namesG1.length)];
+            npcReason = reasonsG1[Math.floor(Math.random() * reasonsG1.length)];
+        } else {
+            npcName = namesG2[Math.floor(Math.random() * namesG2.length)];
+            npcReason = reasonsG2[Math.floor(Math.random() * reasonsG2.length)];
+        }
+    }
+
+    currentNPC = {
+        x: 390, y: -40, w: 20, h: 20,
+        state: 'WALKING_IN',
+        isMonster: isMonster,
+        hasTakenFood: false,
+        name: npcName,
+        reason: npcReason,
+        idNumber: `ASY-${Math.floor(Math.random() * 9000) + 1000}`,
+        expYear: isExpired ? 2024 : 2029,
+        targetShelfIndex: Math.floor(Math.random() * shelves.length),
+        wobble: Math.random() * 10
+    };
+}
+
+function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
+    return x2 < x1 + w1 && x2 + w2 > x1 && y2 < y1 + h1 && y2 + h2 > y1;
+}
+
+function getDist(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
+function getCenter(obj) { return { x: obj.x + obj.w / 2, y: obj.y + obj.h / 2 }; }
+
+function isHit(btn) { return mouse.x > btn.x && mouse.x < btn.x+btn.w && mouse.y > btn.y && mouse.y < btn.y+btn.h; }
+const isMenuHit = (btn) => mouse.x > btn.x && mouse.x < btn.x+btn.w && mouse.y > btn.y-30 && mouse.y < btn.y+10;
+
+function canMove(newX, newY) {
+    if (newX < 0 || newX + player.w > GAME_W || newY < 0 || newY + player.h > GAME_H) return false;
+    if (rectIntersect(newX, newY, player.w, player.h, desk.x, desk.y, desk.w, desk.h)) return false;
+    for (let s of shelves) if (rectIntersect(newX, newY, player.w, player.h, s.x, s.y, s.w, s.h)) return false;
+
+    // Office Walls
+    const t = 10;
+    if (rectIntersect(newX, newY, player.w, player.h, office.x, office.y, office.w, t)) return false;
+    if (rectIntersect(newX, newY, player.w, player.h, office.x, office.y, t, office.h)) return false;
+    if (rectIntersect(newX, newY, player.w, player.h, office.x + office.w - t, office.y, t, office.h)) return false;
+    if (rectIntersect(newX, newY, player.w, player.h, office.x, office.y + office.h - t, door.x - office.x, t)) return false;
+    if (rectIntersect(newX, newY, player.w, player.h, door.x + door.w, office.y + office.h - t, (office.x + office.w) - (door.x + door.w), t)) return false;
+    
+    // Doors / Barricades
+    if ((door.isClosed || door.barricaded) && rectIntersect(newX, newY, player.w, player.h, door.x, door.y, door.w, door.h)) return false;
+    
+    // Gate/Fences
+    if (rectIntersect(newX, newY, player.w, player.h, fenceTop.x, fenceTop.y, fenceTop.w, fenceTop.h)) return false;
+    if (rectIntersect(newX, newY, player.w, player.h, fenceBottom.x, fenceBottom.y, fenceBottom.w, fenceBottom.h)) return false;
+    if (!gateObj.open && rectIntersect(newX, newY, player.w, player.h, gateObj.x, gateObj.y, gateObj.w, gateObj.h)) return false;
+
+    return true;
+}
+
+const buttons = {
+    accept: { x: 260, y: 440, w: 120, h: 40, text: 'ACCEPT' },
+    deny: { x: 420, y: 440, w: 120, h: 40, text: 'DENIED' },
+    emergency: { x: 340, y: 500, w: 120, h: 40, text: 'EMERGENCY' }
+};
+
+const menuButtons = {
+    start: { x: 50, y: 420, w: 250, h: 40, text: 'NEW SHIFT' },
+    credits: { x: 50, y: 480, w: 250, h: 40, text: 'ARCHIVES' }
+};
+
+function startShift() {
+    gameState = 'START';
+    shiftTimeElapsed = 0;
+    monstersLetIn = 0;
+    currentNPC = null;
+    npcSpawnTimer = 3;
+    attackTimer = 0;
+    lockdownTimer = 0;
+    horde = [];
+    door.isClosed = false;
+    door.barricaded = false;
+    door.barricadeProgress = 0;
+    windowObj.barricaded = false;
+    windowObj.barricadeProgress = 0;
+    emergencyTriggered = false;
+    shelves.forEach(s => s.stock = 100);
+    player.x = 400; player.y = 420;
+}
+
+function triggerGameOver(reason) {
+    gameOverReason = reason;
+    gameState = 'JUMPSCARE';
+    jumpscareTimer = 1.5;
+}
+
+function getAMTime(secs) {
+    let hour = Math.floor(secs / 60);
+    if (hour === 0) return "12 AM";
+    if (hour === 6) return "6 AM";
+    return hour + " AM";
+}
+
+function update(dt) {
+    let fPressed = keysJustPressed['f'];
+    let ePressed = keysJustPressed['e'];
+    keysJustPressed['e'] = false;
+    keysJustPressed['f'] = false;
+
+    if (gameState === 'MENU') {
+        if (mouse.clicked && isMenuHit(menuButtons.start)) { shift = 1; gameState = 'MESSAGE'; }
+        if (mouse.clicked && isMenuHit(menuButtons.credits)) gameState = 'CREDITS';
+        if (mouse.clicked && menuButtons.continue && isMenuHit(menuButtons.continue)) { 
+            shift = savedShift; 
+            if (shift === 1) gameState = 'MESSAGE'; else startShift(); 
+        }
+        mouse.clicked = false; return;
+    }
+    if (gameState === 'MESSAGE') {
+        if (mouse.clicked || ePressed) startShift();
+        mouse.clicked = false; return;
+    }
+    if (gameState === 'CREDITS') {
+        if (mouse.clicked) gameState = 'MENU';
+        mouse.clicked = false; return;
+    }
+    if (gameState === 'START') {
+        if (mouse.clicked || ePressed) gameState = 'PLAYING';
+        mouse.clicked = false; return;
+    }
+    if (gameState === 'JUMPSCARE') {
+        jumpscareTimer -= dt;
+        if (jumpscareTimer <= 0) gameState = 'GAME_OVER';
+        return;
+    }
+    if (gameState === 'GAME_OVER' || gameState === 'WIN') {
+        if (mouse.clicked || ePressed) { shift = 1; gameState = 'MENU'; }
+        mouse.clicked = false; return;
+    }
+    if (gameState === 'SHIFT_COMPLETE') {
+        if (mouse.clicked) {
+            if (isHit({x: GAME_W/2 - 100, y: 400, w: 200, h: 40})) { 
+                shift++; if (shift > maxShifts) gameState = 'WIN'; else startShift();
+            }
+            if (isHit({x: GAME_W/2 - 100, y: 460, w: 200, h: 40})) { 
+                shift++; if (shift > maxShifts) gameState = 'WIN'; else gameState = 'MENU';
+            }
+        }
+        mouse.clicked = false; return;
+    }
+    if (gameState === 'GREY_SCREEN') {
+        greyScreenTimer -= dt;
+        if (greyScreenTimer <= 0) { gameState = 'PLAYING'; door.isClosed = false; emergencyTriggered = false; currentNPC = null; }
+        return;
+    }
+    if (gameState === 'GREY_SCREEN_LOCKDOWN_START') {
+        greyScreenTimer -= dt;
+        if (greyScreenTimer <= 0) { gameState = 'LOCKDOWN_ALARM'; lockdownTimer = 20; }
+        return;
+    }
+    if (gameState === 'GREY_SCREEN_LOCKDOWN_END') {
+        greyScreenTimer -= dt;
+        if (greyScreenTimer <= 0) { 
+            gameState = 'PLAYING'; 
+            monstersLetIn = 0;
+            lockdownTimer = 0;
+            emergencyTriggered = false;
+            door.barricaded = false;
+            windowObj.barricaded = false;
+            door.barricadeProgress = 0;
+            windowObj.barricadeProgress = 0;
+            door.isClosed = false;
+            currentNPC = null;
+            horde = [];
+        }
+        return;
+    }
+
+    // Timer Logic - Freeze time while NPC is waiting for a decision
+    let freezeTime = (currentNPC && currentNPC.state === 'WAITING');
+    if (!freezeTime && (gameState === 'PLAYING' || gameState === 'ATTACK_REACT' || gameState === 'LOCKDOWN_ALARM' || gameState === 'DIALOGUE' || gameState === 'COMPUTER')) {
+        shiftTimeElapsed += dt;
+        if (shiftTimeElapsed >= SHIFT_DURATION) {
+            gameState = 'SHIFT_COMPLETE';
+            if (shift < maxShifts) saveProgress(shift + 1); else saveProgress(1);
+            return;
+        }
+    }
+
+    // Global Attack Timer 
+    if (attackTimer > 0) {
+        attackTimer -= dt;
+        if (attackTimer <= 0) { triggerGameOver("The intruder breached the office."); return; }
+        if (door.isClosed && emergencyTriggered) {
+            gameState = 'GREY_SCREEN';
+            greyScreenTimer = 2.5; 
+            attackTimer = 0;
+            emergencyTriggered = false;
+        }
+    }
+
+    const pCenter = getCenter(player);
+
+    // Player Movement
+    if (gameState !== 'DIALOGUE' && gameState !== 'COMPUTER') {
+        let dx = 0, dy = 0;
+        if (keys['w']) dy -= player.speed * dt;
+        if (keys['s']) dy += player.speed * dt;
+        if (keys['a']) dx -= player.speed * dt;
+        if (keys['d']) dx += player.speed * dt;
+        if (dx !== 0 && canMove(player.x + dx, player.y)) player.x += dx;
+        if (dy !== 0 && canMove(player.x, player.y + dy)) player.y += dy;
+        player.angle = Math.atan2(mouse.y - pCenter.y, mouse.x - pCenter.x);
+    }
+
+    // Barricade Mechanics / Shelf Fill (Holding E)
+    if (keys['e']) {
+        if (gameState === 'PLAYING' || gameState === 'ATTACK_REACT' || gameState === 'LOCKDOWN_ALARM') {
+            shelves.forEach(s => {
+                if (getDist(pCenter.x, pCenter.y, s.x+s.w/2, s.y+s.h/2) < 100) s.stock = Math.min(100, s.stock + 40 * dt);
+            });
+        }
+        if (gameState === 'LOCKDOWN_ALARM') {
+            if (getDist(pCenter.x, pCenter.y, door.x+door.w/2, door.y) < 120) door.barricadeProgress += dt * 2;
+            if (getDist(pCenter.x, pCenter.y, windowObj.x+windowObj.w/2, windowObj.y) < 120) windowObj.barricadeProgress += dt * 2;
+        }
+    }
+
+    // Auto-complete Barricade
+    if (door.barricadeProgress >= 5) door.barricaded = true;
+    if (windowObj.barricadeProgress >= 5) windowObj.barricaded = true;
+
+    // Gate update
+    gateObj.open = (currentNPC && currentNPC.state === 'LEAVING_ACCEPTED');
+
+    if (currentNPC) {
+        currentNPC.wobble += 5 * dt;
+        if (currentNPC.state === 'WALKING_IN') {
+            currentNPC.y += 60 * dt;
+            if (currentNPC.y >= windowObj.y - 25) { 
+                currentNPC.y = windowObj.y - 25; 
+                currentNPC.state = 'WAITING'; 
+                if (!currentNPC.hasTakenFood) {
+                    currentNPC.hasTakenFood = true;
+                    const shelf = shelves[currentNPC.targetShelfIndex];
+                    shelf.stock -= 25; 
+                    if (shelf.stock <= 0) { triggerGameOver("Fired! A visitor took the last of your supplies."); return; }
+                }
+            }
+        } else if (currentNPC.state === 'LEAVING_DENIED') {
+            currentNPC.x -= 120 * dt; if (currentNPC.x < -50) currentNPC = null;
+        } else if (currentNPC.state === 'LEAVING_ACCEPTED') {
+            currentNPC.x += 120 * dt; if (currentNPC.x > GAME_W + 50) currentNPC = null;
+        }
+    } else if (gameState === 'PLAYING' || gameState === 'LOCKDOWN_ALARM') {
+        npcSpawnTimer -= dt;
+        if (npcSpawnTimer <= 0 && lockdownTimer <= 0) { spawnNPC(); npcSpawnTimer = Math.random() * 5 + 5; }
+    }
+
+    // Horde animation
+    if (gameState === 'LOCKDOWN_ALARM') {
+        horde.forEach(m => m.wobble += 5 * dt);
+    }
+
+    // Door Toggling (E press)
+    if ((gameState === 'PLAYING' || gameState === 'ATTACK_REACT') && ePressed) {
+        if (getDist(pCenter.x, pCenter.y, door.x+door.w/2, door.y) < 120) door.isClosed = !door.isClosed;
+    }
+
+    // Interactive Logic
+    if (gameState === 'PLAYING' || gameState === 'ATTACK_REACT' || gameState === 'LOCKDOWN_ALARM') {
+        if (gameState !== 'LOCKDOWN_ALARM' && currentNPC && currentNPC.state === 'WAITING' && ePressed && getDist(pCenter.x, pCenter.y, windowObj.x+windowObj.w/2, windowObj.y) < 130) {
+            gameState = 'DIALOGUE';
+        }
+        if (fPressed && getDist(pCenter.x, pCenter.y, desk.x+desk.w/2, desk.y+desk.h/2) < 120) {
+            gameState = 'COMPUTER';
+        }
+    } else if (gameState === 'DIALOGUE') {
+        if (fPressed) gameState = 'COMPUTER';
+        else if (ePressed) gameState = 'PLAYING';
+    } else if (gameState === 'COMPUTER') {
+        if (ePressed || fPressed) {
+            gameState = lockdownTimer > 0 ? 'LOCKDOWN_ALARM' : (attackTimer > 0 ? 'ATTACK_REACT' : 'PLAYING');
+        }
+        
+        // Accept/Deny Buttons Logic (Only accessible if NPC is waiting)
+        if (currentNPC && currentNPC.state === 'WAITING' && attackTimer <= 0 && lockdownTimer <= 0) {
+            if (mouse.clicked && isHit(buttons.accept)) {
+                if (currentNPC.isMonster) {
+                    monstersLetIn++;
+                    if (monstersLetIn >= 3) { 
+                        gameState = 'GREY_SCREEN_LOCKDOWN_START'; 
+                        greyScreenTimer = 1.5; 
+                        // Spawn Monster Horde for lockdown
+                        horde = [];
+                        for(let i=0; i<60; i++) {
+                            let hx = Math.random() * 470; // Map area left of the gate fence
+                            let hy = Math.random() * GAME_H;
+                            if (!rectIntersect(hx, hy, 20, 20, office.x, office.y, office.w, office.h)) {
+                                horde.push({x: hx, y: hy, wobble: Math.random() * 10});
+                            }
+                        }
+                    }
+                    else { currentNPC.state = 'LEAVING_ACCEPTED'; gameState = 'PLAYING'; }
+                } else { currentNPC.state = 'LEAVING_ACCEPTED'; gameState = 'PLAYING'; }
+            }
+            if (mouse.clicked && isHit(buttons.deny)) {
+                if (currentNPC.isMonster) { gameState = 'ATTACK_REACT'; attackTimer = 10; currentNPC.state = 'ATTACKING'; }
+                else { currentNPC.state = 'LEAVING_DENIED'; gameState = 'PLAYING'; }
+            }
+        }
+        
+        // Emergency button can only be clicked if threat is active
+        if (mouse.clicked && isHit(buttons.emergency)) {
+            if (attackTimer > 0 || lockdownTimer > 0) {
+                emergencyTriggered = true;
+                if (lockdownTimer > 0) {
+                    door.barricaded = true; 
+                    windowObj.barricaded = true;
+                }
+            }
+        }
+    }
+
+    if (gameState === 'LOCKDOWN_ALARM') {
+        lockdownTimer -= dt;
+        if (lockdownTimer <= 0) triggerGameOver("Overrun by escaped patients.");
+        // Protect yourself -> reset lockdown, resume shift
+        if (door.barricaded && windowObj.barricaded) { 
+            gameState = 'GREY_SCREEN_LOCKDOWN_END';
+            greyScreenTimer = 2.0;
+        }
+    }
+    mouse.clicked = false;
+}
+
+function draw() {
+    ctx.fillStyle = '#050505';
+    ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+    // Cinematic Grey Screens
+    if (gameState === 'GREY_SCREEN' || gameState === 'GREY_SCREEN_LOCKDOWN_START' || gameState === 'GREY_SCREEN_LOCKDOWN_END') {
+        ctx.fillStyle = '#333'; ctx.fillRect(0, 0, GAME_W, GAME_H);
+        
+        // Static noise effect
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        for(let i = 0; i < 1500; i++) ctx.fillRect(Math.random()*GAME_W, Math.random()*GAME_H, 4, 4);
+
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 40px "Courier New"';
+
+        if (gameState === 'GREY_SCREEN_LOCKDOWN_START') {
+            ctx.fillText("WARNING: MULTIPLE BREACHES DETECTED", GAME_W/2, GAME_H/2);
+            ctx.fillStyle = '#f00'; ctx.font = '24px "Courier New"';
+            ctx.fillText("INITIATING LOCKDOWN...", GAME_W/2, GAME_H/2 + 50);
+        } else if (gameState === 'GREY_SCREEN_LOCKDOWN_END') {
+            ctx.fillText("THREAT PURGED. RESUMING SHIFT...", GAME_W/2, GAME_H/2);
+        } else {
+            ctx.fillText("CAMERA REBOOTING...", GAME_W/2, GAME_H/2);
+            ctx.fillStyle = '#0f0'; ctx.font = '24px "Courier New"';
+            ctx.fillText("THREAT SECURED.", GAME_W/2, GAME_H/2 + 50);
+        }
+        return;
+    }
+
+    if (gameState === 'MESSAGE') {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, GAME_W, GAME_H);
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 20px "Courier New"';
+        
+        const lines = [
+            "Message from Management:",
+            "",
+            "Hello there again! You did a amazing job at the factory,",
+            "keeping the experiments outside! However, the next guard",
+            "failed and now THEY are outside, roaming around.",
+            "",
+            "You need to check peoples IDs for security measures, to",
+            "protect the Safe Haven from the potential dangers in the",
+            "Asylum.",
+            "",
+            "Check their name and reason, and their ID, use the",
+            "Database for help. If anythings seems wrong, deny their",
+            "enter, sound the alarm and shut the door.",
+            "",
+            "Good luck- Bryngel Halvardsson"
+        ];
+        
+        for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], 100, 150 + (i * 25));
+        
+        ctx.textAlign = 'center'; ctx.fillStyle = '#0f0';
+        ctx.fillText("Click or press [E] to continue", GAME_W/2, 550);
+        return;
+    }
+
+    if (gameState === 'CREDITS') {
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+        ctx.font = 'bold 40px "Courier New"'; ctx.fillText('ARCHIVES', GAME_W/2, 200);
+        ctx.font = '24px "Courier New"'; ctx.fillText('MADE BY Player1Zayn', GAME_W/2, 300);
+        ctx.font = '16px "Courier New"'; ctx.fillText('Click anywhere to return', GAME_W/2, 500);
+        return;
+    }
+
+    if (gameState === 'JUMPSCARE') {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, GAME_W, GAME_H);
+        const jx = Math.random() * 30 - 15; const jy = Math.random() * 30 - 15;
+        ctx.fillStyle = '#600'; ctx.fillRect(0, 0, GAME_W, GAME_H);
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.ellipse(GAME_W/2 + jx, GAME_H/2 + jy, 150, 200, 0, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = '#fff'; ctx.beginPath();
+        ctx.arc(GAME_W/2 - 60 + jx, GAME_H/2 - 40 + jy, 30, 0, Math.PI*2);
+        ctx.arc(GAME_W/2 + 60 + jx, GAME_H/2 - 40 + jy, 30, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = '#f00'; ctx.beginPath();
+        ctx.arc(GAME_W/2 - 60 + jx, GAME_H/2 - 40 + jy, 10, 0, Math.PI*2);
+        ctx.arc(GAME_W/2 + 60 + jx, GAME_H/2 - 40 + jy, 10, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = '#fff'; ctx.fillRect(GAME_W/2 - 80 + jx, GAME_H/2 + 60 + jy, 160, 40);
+        ctx.fillStyle = '#000';
+        for(let i=0; i<6; i++) ctx.fillRect(GAME_W/2 - 75 + i*30 + jx, GAME_H/2 + 60 + jy, 5, 40);
+        ctx.fillRect(GAME_W/2 - 80 + jx, GAME_H/2 + 75 + jy, 160, 10);
+        
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        for(let i=0; i<200; i++) ctx.fillRect(Math.random()*GAME_W, Math.random()*GAME_H, 4, 4);
+        return;
+    }
+
+    if (gameState === 'MENU') {
+        ctx.fillStyle = '#0a0a0c';
+        ctx.beginPath(); ctx.arc(GAME_W-180, GAME_H/2+80, 140, 0, Math.PI*2); ctx.fill();
+        if (Math.random() > 0.96) {
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.beginPath(); ctx.arc(GAME_W-230, GAME_H/2+30, 3, 0, Math.PI*2); ctx.arc(GAME_W-130, GAME_H/2+30, 3, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        for(let i=0; i<400; i++) ctx.fillRect(Math.random()*GAME_W, Math.random()*GAME_H, 2, 1);
+        
+        ctx.textAlign = 'left'; ctx.fillStyle = '#fff';
+        ctx.font = 'bold 60px "Courier New"'; ctx.fillText('NIGHT HORROR 2', 45, 120);
+        ctx.fillStyle = '#900'; ctx.font = 'bold 50px "Courier New"'; ctx.fillText('ASYLUM', 45, 175);
+
+        const drawM = (btn) => {
+            const h = isMenuHit(btn);
+            ctx.fillStyle = h ? '#fff' : '#666'; ctx.font = 'bold 30px "Courier New"';
+            ctx.fillText((h ? '> ' : '') + btn.text, btn.x, btn.y);
+        };
+        
+        if (menuButtons.continue) drawM(menuButtons.continue);
+        drawM(menuButtons.start); drawM(menuButtons.credits); 
+        return;
+    }
+
+    if (gameState === 'START') {
+        ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='30px Courier';
+        ctx.fillText(`SHIFT ${shift} STARTING`, GAME_W/2, 280);
+        ctx.font='18px Courier'; ctx.fillText('Press [E] to begin', GAME_W/2, 320);
+        return;
+    }
+
+    if (gameState === 'SHIFT_COMPLETE') {
+        ctx.fillStyle='#0f0'; ctx.textAlign='center'; ctx.font='bold 40px Courier';
+        ctx.fillText(`YOU SURVIVED SHIFT ${shift}!`, GAME_W/2, 200);
+        const drawBtn = (x, y, text) => {
+            const hit = mouse.x > x && mouse.x < x+200 && mouse.y > y && mouse.y < y+40;
+            ctx.fillStyle = hit ? '#333' : '#222'; ctx.fillRect(x, y, 200, 40);
+            ctx.fillStyle = '#fff'; ctx.font = '20px Courier'; ctx.fillText(text, x + 100, y + 27);
+        };
+        drawBtn(GAME_W/2 - 100, 400, 'NEXT SHIFT'); drawBtn(GAME_W/2 - 100, 460, 'RETURN TO MENU');
+        return;
+    }
+
+    if (gameState === 'GAME_OVER') {
+        ctx.fillStyle='#900'; ctx.textAlign='center'; ctx.font='bold 50px Courier';
+        ctx.fillText('TERMINATED', GAME_W/2, 280);
+        ctx.fillStyle='#fff'; ctx.font='16px Courier'; ctx.fillText(gameOverReason, GAME_W/2, 320);
+        return;
+    }
+
+    // --- APPLY SCREEN SHAKE FOR EVERYTHING (Main Game + UI) ---
+    ctx.save();
+    if (attackTimer > 0 || lockdownTimer > 0) ctx.translate(Math.random()*8-4, Math.random()*8-4);
+
+    // Main World
+    const pCenter = getCenter(player);
+
+    ctx.fillStyle = '#111311'; ctx.fillRect(0, 0, GAME_W, GAME_H);
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(380, 0, 40, office.y);
+
+    // Fences
+    const drawFence = (fObj) => {
+        ctx.fillStyle = '#444'; ctx.fillRect(fObj.x, fObj.y, fObj.w, fObj.h);
+        ctx.fillStyle = '#222'; for(let fy = fObj.y + 10; fy < fObj.y + fObj.h; fy += 20) ctx.fillRect(fObj.x-2, fy, fObj.w+4, 4);
+    }
+    drawFence(fenceTop); drawFence(fenceBottom);
+    if (!gateObj.open) drawFence(gateObj);
+
+    // Draw Lockdown Horde Map Overlay
+    if (gameState === 'LOCKDOWN_ALARM' && horde.length > 0) {
+        ctx.fillStyle = '#411';
+        horde.forEach(m => {
+            let ny = m.y + Math.sin(m.wobble)*3;
+            ctx.fillStyle = '#411'; ctx.fillRect(m.x, ny, 20, 20); // Body
+            ctx.fillStyle = '#000'; ctx.fillRect(m.x+4, ny-10, 12, 10); // Head
+            ctx.fillStyle = '#fff'; ctx.fillRect(m.x+5, ny-7, 3, 3); ctx.fillRect(m.x+12, ny-7, 3, 3); // Eyes
+        });
+    }
+
+    // Draw Main NPC
+    if (currentNPC) {
+        ctx.fillStyle = currentNPC.state === 'ATTACKING' ? '#411' : '#a89f91';
+        let nx = currentNPC.x, ny = currentNPC.y;
+        if (currentNPC.state === 'WALKING_IN' || currentNPC.state.includes('LEAVING')) ny += Math.sin(currentNPC.wobble)*3;
+        
+        ctx.fillRect(nx, ny, currentNPC.w, currentNPC.h); // Square Body
+        if (currentNPC.state === 'ATTACKING') {
+            ctx.fillStyle = '#000'; ctx.fillRect(nx+4, ny-10, 12, 10); // Black Head
+            ctx.fillStyle = '#fff'; ctx.fillRect(nx+5, ny-7, 3, 3); ctx.fillRect(nx+12, ny-7, 3, 3); // White Eyes
+        } else {
+            ctx.fillStyle = '#d4c5b0'; ctx.fillRect(nx+4, ny-10, 12, 10); // Normal Square Head
+        }
+    }
+
+    ctx.fillStyle = '#2d302f'; ctx.fillRect(office.x, office.y, office.w, office.h);
+    ctx.strokeStyle = '#111'; ctx.lineWidth=8; ctx.strokeRect(office.x, office.y, office.w, office.h);
+    
+    ctx.fillStyle = windowObj.barricaded ? '#311' : '#1d3945'; ctx.fillRect(windowObj.x, windowObj.y, windowObj.w, windowObj.h);
+    ctx.fillStyle = door.barricaded ? '#311' : (door.isClosed ? '#421' : '#000'); ctx.fillRect(door.x, door.y, door.w, door.h);
+    
+    ctx.fillStyle = '#222'; ctx.fillRect(desk.x, desk.y, desk.w, desk.h);
+    ctx.fillStyle = '#0c4'; if(Math.random()>0.1) ctx.fillRect(desk.x + 20, desk.y + 10, 50, 25); 
+
+    shelves.forEach(s => {
+        ctx.fillStyle = '#2b2118'; ctx.fillRect(s.x, s.y, s.w, s.h);
+        ctx.fillStyle = '#888';
+        for(let i=0; i<Math.floor(s.stock/10); i++) ctx.fillRect(s.x+5+(i%2)*20, s.y+10+Math.floor(i/2)*15, 12, 10);
+        if (s.stock < 30 && Math.floor(Date.now()/300)%2===0) { ctx.fillStyle='#f00'; ctx.font='12px Courier'; ctx.fillText('LOW', s.x+10, s.y-5); }
+    });
+
+    // Barricade Progress Bars
+    if (door.barricadeProgress > 0 && !door.barricaded) {
+        ctx.fillStyle = '#fff'; ctx.fillRect(door.x, door.y + 20, 100, 5);
+        ctx.fillStyle = '#0f0'; ctx.fillRect(door.x, door.y + 20, (door.barricadeProgress/5)*100, 5);
+    }
+    if (windowObj.barricadeProgress > 0 && !windowObj.barricaded) {
+        ctx.fillStyle = '#fff'; ctx.fillRect(windowObj.x, windowObj.y - 10, 100, 5);
+        ctx.fillStyle = '#0f0'; ctx.fillRect(windowObj.x, windowObj.y - 10, (windowObj.barricadeProgress/5)*100, 5);
+    }
+
+    // Guard Player Light
+    const grad = ctx.createRadialGradient(pCenter.x, pCenter.y, 0, pCenter.x, pCenter.y, 250);
+    grad.addColorStop(0, 'rgba(255,255,200,0.3)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.save();
+    ctx.translate(pCenter.x, pCenter.y); ctx.rotate(player.angle);
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.moveTo(10,5); ctx.lineTo(250, -60); ctx.arc(0,0,250,-0.25, 0.25); ctx.lineTo(10,5); ctx.fill();
+    ctx.restore();
+
+    // Guard Body 
+    ctx.save();
+    ctx.translate(pCenter.x, pCenter.y);
+    ctx.fillStyle = '#1a2b4c'; ctx.fillRect(-10, -10, 20, 20); // Dark Blue Uniform Body
+    ctx.fillStyle = '#d4c5b0'; ctx.fillRect(-6, -20, 12, 10); // Skin tone head
+    ctx.fillStyle = '#0f192e'; ctx.fillRect(-8, -22, 16, 5); // Dark blue cap top
+    ctx.fillRect(-10, -19, 20, 2); // Cap brim
+    ctx.fillStyle = '#ffd700'; ctx.fillRect(3, -6, 5, 6); // Yellow Badge
+    ctx.restore();
+
+    // UI Overlays
+    if (gameState === 'DIALOGUE') {
+        ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(100, 420, 600, 120);
+        ctx.fillStyle = '#fff'; ctx.font='18px Courier'; ctx.textAlign='left';
+        ctx.fillText(`ID: ${currentNPC.name}`, 120, 450);
+        ctx.fillText(`Reason: ${currentNPC.reason}`, 120, 480);
+        ctx.fillStyle='#0ff'; ctx.fillText('[F] Use Computer | [E] Close', 120, 520);
+    }
+    
+    if (gameState === 'COMPUTER') {
+        ctx.fillStyle='#010'; ctx.fillRect(150, 100, 500, 450);
+        ctx.strokeStyle='#0f0'; ctx.strokeRect(150,100,500,450);
+        ctx.fillStyle='#0f0'; ctx.font='20px Courier'; ctx.textAlign='center';
+        ctx.fillText('ASYLUM DATABASE', 400, 140);
+        
+        const dr = (b) => { 
+            const isEmergHit = (b === buttons.emergency && emergencyTriggered);
+            ctx.fillStyle = isEmergHit ? '#400' : '#020'; ctx.fillRect(b.x,b.y,b.w,b.h); 
+            ctx.strokeStyle = isEmergHit ? '#f00' : '#0f0'; ctx.strokeRect(b.x,b.y,b.w,b.h); 
+            ctx.fillStyle = isEmergHit ? '#f00' : '#0f0'; ctx.textAlign='center'; 
+            ctx.fillText(b.text, b.x+b.w/2, b.y+25); 
+        };
+        
+        if (currentNPC && currentNPC.state === 'WAITING' && lockdownTimer <= 0 && attackTimer <= 0) {
+            ctx.textAlign='left'; 
+            ctx.fillText(`Subject: ${currentNPC.name}`, 180, 200);
+            ctx.fillText(`ID: ${currentNPC.idNumber}`, 180, 230);
+            ctx.fillText(`Status: ${currentNPC.expYear < 2026 ? 'EXPIRED' : 'VALID'}`, 180, 260);
+            dr(buttons.accept); dr(buttons.deny);
+        } else if (lockdownTimer <= 0 && attackTimer <= 0) {
+            // No NPC waiting, display no info.
+            ctx.textAlign='center';
+            ctx.fillStyle='#f00';
+            ctx.fillText("NO INFO INPUT", 400, 250);
+        }
+        
+        // Draw Emergency Button Based on Threat
+        const isThreatActive = (attackTimer > 0 || lockdownTimer > 0);
+        if (isThreatActive) {
+            dr(buttons.emergency);
+        } else {
+            // Greyed out emergency button
+            ctx.fillStyle = '#111'; ctx.fillRect(buttons.emergency.x, buttons.emergency.y, buttons.emergency.w, buttons.emergency.h);
+            ctx.strokeStyle = '#333'; ctx.strokeRect(buttons.emergency.x, buttons.emergency.y, buttons.emergency.w, buttons.emergency.h);
+            ctx.fillStyle = '#555'; ctx.textAlign='center'; 
+            ctx.fillText(buttons.emergency.text, buttons.emergency.x + buttons.emergency.w/2, buttons.emergency.y + 25);
+        }
+        
+        if (lockdownTimer > 0) {
+            ctx.fillStyle = '#f00'; ctx.font = '24px Courier'; ctx.textAlign='center';
+            ctx.fillText("LOCKDOWN PROTOCOL ACTIVE", 400, 250);
+            ctx.fillText("CLICK EMERGENCY TO SEAL DOORS", 400, 290);
+        }
+    }
+    if (gameState === 'LOCKDOWN_ALARM') {
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.2)'; ctx.fillRect(0, 0, GAME_W, GAME_H);
+        ctx.fillStyle = '#f00'; ctx.textAlign = 'center'; ctx.font = 'bold 30px Courier';
+        if (Math.floor(Date.now() / 500) % 2 === 0) ctx.fillText("LOCKDOWN - HOLD 'E' OR USE PC!", GAME_W/2, 100);
+    }
+
+    // Restore screen shake state
+    ctx.restore();
+
+    // HUD & Keytips (Unshaken for readability)
+    ctx.textAlign='left'; ctx.fillStyle='#fff'; ctx.font='16px Courier';
+    ctx.fillText(`SHIFT ${shift} | TIME: ${getAMTime(shiftTimeElapsed)}`, 20, 30);
+    
+    // Timer paused text
+    if (currentNPC && currentNPC.state === 'WAITING' && attackTimer <= 0 && lockdownTimer <= 0) {
+        ctx.fillStyle = '#ff0'; ctx.fillText(`[TIMER PAUSED - DECISION PENDING]`, 250, 30);
+    }
+
+    // Keytips in Bottom Left Corner
+    if (gameState === 'PLAYING' || gameState === 'ATTACK_REACT') {
+        ctx.fillStyle = '#0f0';
+        let keyTipY = GAME_H - 20;
+        
+        const distDesk = getDist(pCenter.x, pCenter.y, desk.x+desk.w/2, desk.y+desk.h/2);
+        const distWindow = getDist(pCenter.x, pCenter.y, windowObj.x+windowObj.w/2, windowObj.y);
+        const distDoor = getDist(pCenter.x, pCenter.y, door.x+door.w/2, door.y);
+
+        if (distDesk < 120) {
+            ctx.fillText("[F] Open Computer", 20, keyTipY);
+            keyTipY -= 20;
+        }
+        if (currentNPC && currentNPC.state === 'WAITING' && distWindow < 130) {
+            ctx.fillText("[E] Interact", 20, keyTipY);
+            keyTipY -= 20;
+        }
+        if (distDoor < 120) {
+            ctx.fillText("[E] Toggle Door", 20, keyTipY);
+        }
+    }
+}
+
+function gameLoop() {
+    const now = performance.now();
+    const dt = Math.min((now - lastTime) / 1000, 0.1);
+    lastTime = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
