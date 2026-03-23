@@ -1,10 +1,21 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import fs from 'fs';
 import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
+  
+  // Dynamically find all HTML files in the root to include as entry points
+  const htmlFiles = fs.readdirSync(__dirname)
+    .filter(file => file.endsWith('.html'))
+    .reduce((acc, file) => {
+      const name = file.replace('.html', '');
+      acc[name] = path.resolve(__dirname, file);
+      return acc;
+    }, {} as Record<string, string>);
+
   return {
     plugins: [react(), tailwindcss()],
     define: {
@@ -12,9 +23,7 @@ export default defineConfig(({mode}) => {
     },
     build: {
       rollupOptions: {
-        input: {
-          main: path.resolve(__dirname, 'index.html'),
-        },
+        input: htmlFiles,
       },
     },
     resolve: {
