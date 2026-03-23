@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
@@ -13,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
@@ -237,6 +238,18 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
+    
+    // Middleware to handle clean URLs (e.g., /spel1 -> /spel1.html)
+    app.use((req, res, next) => {
+      if (req.path.indexOf('.') === -1) {
+        const filePath = path.join(distPath, `${req.path}.html`);
+        if (fs.existsSync(filePath)) {
+          return res.sendFile(filePath);
+        }
+      }
+      next();
+    });
+
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
