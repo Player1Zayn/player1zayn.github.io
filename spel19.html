@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Banana Casino</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     #wheel {
       transition-property: transform;
@@ -146,7 +147,7 @@
           START
         </button>
         <button onclick="setView('credits')" class="bg-emerald-800 hover:bg-emerald-700 text-emerald-100 font-bold text-base md:text-lg py-3 rounded-xl flex items-center justify-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x1="16" x2="12" y2="12"></line><line x1="12" x1="8" x2="12.01" y2="8"></line></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
           CREDITS
         </button>
         <button onclick="leaveGame()" class="bg-red-900/50 hover:bg-red-800/50 text-red-100 font-bold text-base md:text-lg py-3 rounded-xl flex items-center justify-center gap-2 border border-red-800/50 transition-colors">
@@ -633,9 +634,8 @@
         banOverlay.style = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:#064e3b; color:#facc15; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px; z-index:9999;";
         banOverlay.innerHTML = `
             <svg style="width:80px; height:80px; margin-bottom:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-            <h1 style="font-size:3rem; font-weight:900; margin:0;">YOU GOT BANNED</h1>
-            <p style="font-size:1.2rem; opacity:0.8; margin-top:10px;">Cheat detection triggered. Your account has been locked.</p>
-            <p style="font-size:0.9rem; opacity:0.5; margin-top:20px;">Contact support on the Supabase server to appeal.</p>
+            <h1 style="font-size:3rem; font-weight:900; margin:0;">GAME CLOSED</h1>
+            <p style="font-size:1.2rem; opacity:0.8; margin-top:10px;">Security violation detected. The game session is closing.</p>
             <div id="ban-close-timer" style="margin-top:30px; font-weight:bold; color:#ef4444;">Closing page in 1s...</div>
         `;
         document.body.appendChild(banOverlay);
@@ -661,27 +661,12 @@
     }
 
     async function banUser() {
-        if (localStorage.getItem('isBanned') === 'true') return;
-        
-        // Persist ban immediately
-        localStorage.setItem('isBanned', 'true');
+        // Ban feature temporarily disabled as requested.
+        // Replacing with page-closing logic.
         
         // Immediately hide the app to "close down" the game
         const appEl = document.getElementById('app');
         if (appEl) appEl.classList.add('hidden');
-        
-        if (authToken && userId) {
-            try {
-                await fetch('/api/ban', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ userId })
-                });
-            } catch (e) { console.error(e); }
-        }
         
         showBanScreen();
         
@@ -875,10 +860,7 @@
         }
         await setupSupabaseListeners();
 
-        if (localStorage.getItem('isBanned') === 'true') {
-            document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
-            showBanScreen();
-        } else if (isMobile()) {
+        if (isMobile()) {
             document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
             document.getElementById('app').classList.remove('hidden');
             if (typeof updateGameUI === 'function') updateGameUI();
@@ -909,7 +891,16 @@
     }
 
     let authToken = localStorage.getItem('bananaAuthToken') || '';
-    let supabaseClient = null; // Kept for compatibility if needed, but we use fetch now
+    
+    // --- SUPABASE CONFIGURATION ---
+    // Replace these with your actual Supabase project values
+    const SUPABASE_URL = "https://yuwnnaavbegzbdfpxjok.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1d25uYWF2YmVnemJkZnB4am9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTA0NDgsImV4cCI6MjA4ODI4NjQ0OH0.lyogg7iFOnoye-UF8W26bMRmHCwZQyXV6rwD0TGNbgw"; // Get this from your Supabase dashboard
+    
+    let supabaseClient = null;
+    if (SUPABASE_ANON_KEY !== "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1d25uYWF2YmVnemJkZnB4am9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTA0NDgsImV4cCI6MjA4ODI4NjQ0OH0.lyogg7iFOnoye-UF8W26bMRmHCwZQyXV6rwD0TGNbgw") {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
 
     let view = 'menu';
     let sidebarView = 'trees';
@@ -1177,7 +1168,7 @@
       if (saved) {
         try {
           const data = JSON.parse(saved);
-          userId = data.userId || generateId();
+          userId = data.id || data.userId || generateId();
           playerName = data.name || '';
           isInternalUpdate = true;
           updateBananas(typeof data.bananas === 'number' ? data.bananas : 0);
@@ -1217,61 +1208,76 @@
     async function fetchServerState() {
       if (!authToken) return;
       try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: playerName, password: localStorage.getItem('bananaAuthPass') }) // Simple auto-login
+        const response = await fetch('/api/me', {
+            method: 'GET',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
         });
         
         if (!response.ok) {
-            if (response.status === 401) {
+            if (response.status === 401 || response.status === 403) {
                 // Token expired or invalid
                 localStorage.removeItem('bananaAuthToken');
+                localStorage.removeItem('bananaAuthPass');
                 authToken = '';
                 return;
             }
-            throw new Error("Login failed");
+            throw new Error("Session fetch failed");
         }
 
         const data = await response.json();
         if (data) {
-          if (data.banned) {
-              if (localStorage.getItem('isBanned') !== 'true') {
-                  localStorage.setItem('isBanned', 'true');
-                  location.reload();
-              }
-              return;
-          } else if (localStorage.getItem('isBanned') === 'true') {
-              localStorage.removeItem('isBanned');
-              location.reload();
-              return;
+          if (data.id) {
+            userId = data.id;
+            const currentSave = JSON.parse(localStorage.getItem('bananaCasinoSave') || '{}');
+            currentSave.id = userId;
+            currentSave.userId = userId;
+            localStorage.setItem('bananaCasinoSave', JSON.stringify(currentSave));
           }
-          
           if (data.name) playerName = data.name;
           
           if (data.score !== undefined) {
-            isInternalUpdate = true;
-            updateBananas(Number(data.score));
-            updateCoins(Number(data.coins || 0));
-            level = data.level || 1;
-            updateXp(data.xp || 0);
-            isInternalUpdate = false;
-            expectedDbBananas = bananas; 
-            expectedDbCoins = coins;
-            
-            if (data.trees) {
-                trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
-                if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
-                while(trees.length < 20) trees.push(0);
+            const serverScore = Number(data.score);
+            const serverCoins = Number(data.coins || 0);
+            const serverLevel = data.level || 1;
+            const serverXp = data.xp || 0;
+
+            // Sync logic: If server data differs from our last known "expected" state,
+            // it means an external change (another tab, admin edit) occurred.
+            // We prioritize server data in such cases to maintain consistency.
+            const externalChange = (serverScore !== expectedDbBananas && expectedDbBananas !== -1) || 
+                                   (serverCoins !== expectedDbCoins && expectedDbCoins !== -1);
+
+            if (externalChange || expectedDbBananas === -1) {
+                isInternalUpdate = true;
+                updateBananas(serverScore);
+                updateCoins(serverCoins);
+                level = serverLevel;
+                updateXp(serverXp);
+                isInternalUpdate = false;
+                
+                expectedDbBananas = bananas; 
+                expectedDbCoins = coins;
+
+                if (data.trees) {
+                    trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
+                    if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
+                    while(trees.length < 20) trees.push(0);
+                }
+                if (data.gadgets) {
+                    unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
+                    if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
+                    while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+                }
+                
+                localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
+                    userId, id: userId, name: playerName, bananas, coins, trees, 
+                    gadgets: unlockedGadgets, activeGadgets, activeBoosts, level, xp 
+                }));
+                updateGameUI();
             }
-            if (data.gadgets) {
-                unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
-                if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
-                while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
-            }
-            
-            localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, activeGadgets, activeBoosts }));
-            updateGameUI();
           }
         }
       } catch (e) { console.error("Fetch error:", e); }
@@ -1282,6 +1288,7 @@
       const finalName = nameToSave || playerName || 'Unknown Monkey';
       
       localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
+          id: userId,
           userId, 
           name: finalName, 
           bananas: currentBananas, 
@@ -1299,10 +1306,7 @@
 
       if (authToken && userId) {
         try { 
-            expectedDbBananas = currentBananas; 
-            expectedDbCoins = coins;
-            
-            await fetch('/api/save', {
+            const response = await fetch('/api/save', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -1316,9 +1320,47 @@
                     trees: currentTreesArray,
                     gadgets: unlockedGadgets,
                     level,
-                    xp
+                    xp,
+                    expectedScore: expectedDbBananas,
+                    expectedCoins: expectedDbCoins
                 })
             });
+
+            const result = await response.json();
+            if (result.success) {
+                expectedDbBananas = currentBananas; 
+                expectedDbCoins = coins;
+            } else if (result.user) {
+                // External change detected! Sync with server data
+                const serverData = result.user;
+                isInternalUpdate = true;
+                updateBananas(Number(serverData.score));
+                updateCoins(Number(serverData.coins || 0));
+                level = serverData.level || 1;
+                updateXp(serverData.xp || 0);
+                isInternalUpdate = false;
+                
+                expectedDbBananas = bananas; 
+                expectedDbCoins = coins;
+
+                if (serverData.trees) {
+                    trees = typeof serverData.trees === 'string' ? JSON.parse(serverData.trees) : serverData.trees;
+                    if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
+                    while(trees.length < 20) trees.push(0);
+                }
+                if (serverData.gadgets) {
+                    unlockedGadgets = typeof serverData.gadgets === 'string' ? JSON.parse(serverData.gadgets) : serverData.gadgets;
+                    if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
+                    while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+                }
+                
+                localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
+                    userId, id: userId, name: playerName, bananas, coins, trees, 
+                    gadgets: unlockedGadgets, activeGadgets, activeBoosts, level, xp 
+                }));
+                updateGameUI();
+                console.log("External change detected and synchronized from server.");
+            }
         } catch (e) { console.error("Sync error:", e); }
       }
     }
@@ -1403,7 +1445,7 @@
             localStorage.setItem('bananaAuthToken', authToken);
             localStorage.setItem('bananaAuthPass', pass);
             
-            userId = data.userId;
+            userId = data.id;
             playerName = name;
             bananas = 0;
             trees = [1, ...Array(19).fill(0)];
@@ -1412,6 +1454,7 @@
             level = 1;
             xp = 0;
 
+            await syncData(bananas, trees);
             finalizeEntry();
         } catch (err) {
             console.error(err);
@@ -1446,12 +1489,6 @@
 
             const data = await response.json();
             
-            if (data.banned) {
-                localStorage.setItem('isBanned', 'true');
-                location.reload();
-                return;
-            }
-
             authToken = data.token;
             localStorage.setItem('bananaAuthToken', authToken);
             localStorage.setItem('bananaAuthPass', pass);
@@ -1460,10 +1497,12 @@
             playerName = data.name;
             isInternalUpdate = true;
             updateBananas(data.score);
+            updateCoins(data.coins || 0);
             level = data.level || 1;
             updateXp(data.xp || 0);
             isInternalUpdate = false;
             
+            await syncData(bananas, trees);
             if (data.trees) {
                 trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
                 while(trees.length < 20) trees.push(0);
@@ -1484,6 +1523,8 @@
     function handleLogout() {
         if (confirm("Are you sure you want to logout? Progress is saved to your account ID.")) {
             localStorage.removeItem('bananaCasinoSave');
+            localStorage.removeItem('bananaAuthToken');
+            localStorage.removeItem('bananaAuthPass');
             userId = '';
             playerName = '';
             bananas = 0;
@@ -1603,12 +1644,17 @@
             const response = await fetch('/api/leaderboard');
             const data = await response.json();
             if (data) { leaderboard = data; renderLeaderboard(); }
+            
+            // Also refresh current user state to sync with any external changes
+            if (authToken) {
+                await fetchServerState();
+            }
         } catch (e) { console.error("Leaderboard fetch error:", e); }
       };
       await fetchLeaderboard();
       
-      // Poll leaderboard every 30 seconds instead of real-time for security
-      setInterval(fetchLeaderboard, 30000);
+      // Poll leaderboard and user state every 10 seconds
+      setInterval(fetchLeaderboard, 10000);
     }
 
     // --- IDLE PROGRESSION LOGIC ---
