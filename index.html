@@ -377,7 +377,7 @@
         games.forEach(game => {
             const card = document.createElement('div');
             card.className = "game-card bg-slate-800 border border-slate-700 rounded-xl p-6 flex flex-col items-center justify-between transition-all duration-300 transform hover:-translate-y-2 cursor-pointer group relative overflow-hidden";
-            card.onclick = () => window.open(`spel${game.id}.html`, '_blank');
+            card.onclick = () => window.open(`/spel${game.id}.html`, '_blank');
             card.innerHTML = `
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${game.color}"></div>
                 <div class="w-16 h-16 mb-4 rounded-full bg-slate-900 flex items-center justify-center border border-slate-600 group-hover:border-white transition-colors">
