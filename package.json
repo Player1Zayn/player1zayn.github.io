@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build",
-    "start": "NODE_ENV=production node server.ts",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:vite --external:express --external:bcryptjs --external:jsonwebtoken --external:dotenv --external:@supabase/supabase-js",
+    "start": "NODE_ENV=production node dist/server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
@@ -21,6 +21,7 @@
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.4.1",
     "dotenv": "^17.2.3",
+    "esbuild": "^0.27.4",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.546.0",
