@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Night Horror</title>
+    <style>
+        /* --- CORE VISUALS --- */
+        :root {
+            --bg-color: #050505;
+            --ui-color: #33ff00;
+            --metal: #2a2a2a;
+            --desk-color: #1a1a1a;
+            --error-red: #ff3300;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: black;
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            user-select: none;
+            -webkit-user-select: none;
+            width: 100vw;
+            height: 100vh;
+        }
+        #game-stage {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+        }
+
+        /* --- SCREENS --- */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #111;
+            z-index: 1000;
+            transition: opacity 0.3s;
+        }
+        .hidden { display: none !important; opacity: 0; pointer-events: none; }
+        
+        #start-screen {
+            background: #000;
+            flex-direction: row;
+            justify-content: space-around;
+            width: 100%; height: 100%;
+        }
+
+        #intro-screen {
+            background: #000;
+            flex-direction: column;
+            padding: 50px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .letter-content {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            padding: 40px;
+            max-width: 800px;
+            width: 90%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            font-family: 'Courier New', Courier, monospace;
+            text-align: left;
+            line-height: 1.6;
+            color: #ddd;
+            position: relative;
+        }
+        .letter-content h2 { margin-top: 0; color: white; border-bottom: 1px solid #555; padding-bottom: 10px; }
+        
+        /* --- PIXEL MONSTER START SCREEN --- */
+        .pixel-monster-container {
+            width: 40vw;
+            height: 80vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .pixel-monster {
+            width: 10px; height: 10px;
+            background: transparent;
+            box-shadow: 
+                30px 0 #333, 40px 0 #333, 50px 0 #333, 60px 0 #333, 70px 0 #333, 80px 0 #333,
+                20px 10px #333, 90px 10px #333,
+                10px 20px #333, 100px 20px #333,
+                10px 30px #333, 30px 30px #f00, 40px 30px #333, 70px 30px #333, 80px 30px #f00, 100px 30px #333,
+                10px 40px #333, 30px 40px #f00, 40px 40px #333, 70px 40px #333, 80px 40px #f00, 100px 40px #333,
+                10px 50px #333, 50px 50px #000, 60px 50px #000, 100px 50px #333,
+                20px 60px #333, 50px 60px #000, 60px 60px #000, 90px 60px #333,
+                30px 70px #ccc, 50px 70px #ccc, 60px 70px #ccc, 80px 70px #ccc,
+                30px 80px #ccc, 40px 80px #000, 50px 80px #ccc, 60px 80px #ccc, 70px 80px #000, 80px 80px #ccc,
+                40px 90px #333, 50px 90px #333, 60px 90px #333, 70px 90px #333;
+            transform: scale(4); 
+            filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
+            animation: glitch-anim 2.5s infinite steps(2);
+        }
+        
+        @keyframes glitch-anim {
+            0% { transform: scale(4) translate(0,0); }
+            5% { transform: scale(4) translate(-2px, 2px); filter: drop-shadow(-2px 0 5px cyan); }
+            10% { transform: scale(4) translate(2px, -2px); filter: drop-shadow(2px 0 5px red); }
+            15% { transform: scale(4) translate(0,0); }
+            50% { transform: scale(4) translate(0,0); }
+            52% { transform: scale(4.1) translate(0,0); }
+            54% { transform: scale(4) translate(0,0); }
+            100% { transform: scale(4) translate(0,0); }
+        }
+
+        .menu-content { display: flex; flex-direction: column; align-items: flex-start; z-index: 10; }
+        h1 { font-size: 5rem; text-shadow: 4px 4px #500; margin: 0; letter-spacing: 5px; text-transform: uppercase; line-height: 1; }
+        .btn {
+            padding: 15px 40px; font-size: 1.5rem; background: transparent; border: 2px solid white;
+            color: white; cursor: pointer; font-family: inherit; margin-top: 20px; transition: all 0.2s; width: 280px; text-align: center;
+        }
+        .btn:hover { background: white; color: black; box-shadow: 0 0 15px white; }
+
+        /* --- MODALS & PAUSE --- */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000;
+        }
+        #pause-screen { background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); }
+        .controls-list {
+            text-align: left; background: #1a1a1a; padding: 20px; border: 1px solid #444; color: #ccc;
+            margin: 20px 0; max-width: 400px; line-height: 1.8;
+        }
+        .controls-list b { color: #33ff00; }
+
+        input.code-input {
+            background: #111; border: 2px solid #33ff00; color: #33ff00;
+            font-family: 'Courier New', Courier, monospace; font-size: 1.5rem;
+            padding: 10px; text-align: center; width: 300px; margin-bottom: 20px; text-transform: uppercase;
+        }
+        .level-select-container { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+        .lvl-btn {
+            width: 50px; height: 50px; border: 1px solid white; background: #222; color: white;
+            cursor: pointer; font-size: 1.2rem; display: flex; justify-content: center; align-items: center;
+        }
+        .lvl-btn:hover { background: #33ff00; color: black; }
+
+        /* Game Over / Win */
+        #game-over-screen { background: #100; flex-direction: column; }
+        #game-over-screen h1 { color: red; }
+        #win-screen { flex-direction: column; }
+
+        /* --- HUD --- */
+        #hud { position: absolute; top: 20px; left: 20px; z-index: 500; pointer-events: none; font-size: 1.5rem; font-weight: bold; }
+        .power-bar-container { width: 200px; height: 20px; border: 2px solid #555; margin-top: 5px; background: #111; }
+        #power-fill { width: 100%; height: 100%; background: var(--ui-color); transition: width 0.2s; }
+        #regen-indicator { font-size: 0.8rem; color: #33ff00; display: none; margin-left: 10px; animation: pulse 1s infinite; }
+        @keyframes pulse { 50% { opacity: 0.5; } }
+        #cheat-indicator { font-size: 0.8rem; color: cyan; display: none; margin-top: 5px; text-shadow: 0 0 5px cyan; }
+        #time-display { font-size: 2rem; }
+        #night-display { font-size: 1rem; color: #888; margin-bottom: 5px; }
+
+        /* --- OFFICE VIEW --- */
+        #office-container {
+            width: 300vw; height: 100vh; position: absolute; left: -100vw;
+            display: flex; transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1), filter 0.5s ease; 
+        }
+        .room-section {
+            width: 100vw; height: 100vh; position: relative;
+            background-color: #9e9e9e;
+            background-image: 
+                linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.9) 100%),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.3"/></svg>');
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        .floor {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 20vh;
+            background: repeating-linear-gradient(90deg, #111 0px, #111 40px, #222 41px, #222 80px);
+            perspective: 500px; transform-style: preserve-3d; box-shadow: inset 0 20px 50px black;
+        }
+        .nav-zone {
+            position: absolute; top: 0; width: 12vw; height: 100%; z-index: 100;
+            cursor: w-resize; background: rgba(255,255,255,0.02); opacity: 0; transition: opacity 0.3s;
+        }
+        .nav-zone:hover { opacity: 0.1; }
+        .nav-left { left: 0; cursor: w-resize; }
+        .nav-right { right: 0; cursor: e-resize; }
+
+        /* --- ROOM OBJECTS --- */
+        .door-frame {
+            width: 300px; height: 75vh; background: #111; border: 20px solid #222; border-bottom: none;
+            position: relative; z-index: 10; box-shadow: 0 0 30px black;
+        }
+        .door-panel { width: 100%; height: 100%; background: #080808; position: relative; overflow: hidden; }
+        .steel-door {
+            position: absolute; top: -100%; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(135deg, #333, #333 20px, #2a2a2a 20px, #2a2a2a 40px);
+            transition: top 0.2s ease-in; z-index: 10; border-bottom: 5px solid #555;
+        }
+        .steel-door.closed { top: 0; }
+        
+        .button-panel {
+            position: absolute; top: 50%; width: 60px; height: 160px; background: #222; border: 2px solid #555;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; box-shadow: 5px 5px 15px black;
+        }
+        .btn-l { left: -90px; } .btn-r { right: -90px; }
+        .ctrl-btn { width: 45px; height: 45px; border-radius: 50%; border: 3px solid #111; cursor: pointer; transition: transform 0.1s; }
+        .btn-door { background: #500; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.2); }
+        .btn-door.active { background: #f00; box-shadow: 0 0 15px red; }
+        .btn-light { background: #bbb; box-shadow: inset 2px 2px 5px white; }
+
+        .vent-system {
+            position: absolute; top: 40px; width: 340px; height: 140px; background: #151515; border: 8px solid #333;
+            display: flex; flex-direction: column; align-items: center; z-index: 10; box-shadow: 0 10px 30px black;
+        }
+        .vent-cover {
+            width: 90%; height: 80%; background: repeating-linear-gradient(0deg, #000, #000 10px, #222 10px, #222 12px);
+            transition: background-color 0.2s;
+        }
+        .vent-cover.closed { background: #444; }
+
+        /* --- DESK AND MONITOR --- */
+        .desk-container {
+            position: absolute; bottom: 0; width: 600px; height: 45vh;
+            display: flex; flex-direction: column; align-items: center; z-index: 15;
+        }
+        .desk-top {
+            width: 100%; height: 30px; background: #1a1a1a; border: 4px solid #333;
+            border-bottom: 8px solid #000; box-shadow: 0 10px 20px rgba(0,0,0,0.8); position: relative;
+        }
+        .desk-base {
+            width: 85%; flex-grow: 1; background: linear-gradient(to right, #111, #222, #111);
+            border-left: 2px solid #333; border-right: 2px solid #333; position: relative;
+        }
+        .desk-drawer { width: 100%; height: 40px; border-bottom: 2px solid #333; position: relative; }
+        .drawer-handle {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40px; height: 8px; background: #333; border-radius: 4px;
+        }
+        .monitor-prop {
+            width: 320px; height: 220px; background: #111; border: 10px solid #333; border-radius: 5px;
+            position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center;
+            color: #33ff00; font-size: 0.8rem; text-align: center; z-index: 20; box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            margin-bottom: -10px; 
+        }
+        .monitor-stand { width: 60px; height: 40px; background: #222; border: 2px solid #333; margin-top: -5px; }
+
+        /* --- CAMERA SYSTEM --- */
+        #cam-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 800; display: none;
+        }
+        #cam-feed {
+            position: absolute; top: 5vh; left: 5vw; width: 60vw; height: 80vh;
+            border: 4px solid #333; background: #050505; overflow: hidden; box-shadow: 0 0 50px rgba(0,255,0,0.1);
+        }
+        .static-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.75" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.15"/></svg>');
+            pointer-events: none; animation: noise 0.2s steps(4) infinite; opacity: 0.1; z-index: 20;
+        }
+        @keyframes noise { 0% { transform: translate(0,0) } 100% { transform: translate(10px, 10px) } }
+        
+        /* SYSTEM ERROR STYLE */
+        #system-error-view {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #222 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="5" height="5" fill="%23333"/></svg>');
+            z-index: 50; display: none; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .error-box {
+            background: black; border: 4px solid var(--error-red); padding: 30px;
+            color: var(--error-red); font-size: 2rem; font-weight: bold; text-align: center;
+            box-shadow: 0 0 30px var(--error-red); animation: error-flicker 0.1s infinite alternate;
+        }
+        @keyframes error-flicker { 0% { opacity: 0.8; } 100% { opacity: 1; } }
+
+        #cam-map {
+            position: absolute; right: 5vw; bottom: 5vh; width: 300px; height: 450px;
+            background: rgba(0, 15, 0, 0.9); border: 2px solid var(--ui-color); box-shadow: 0 0 20px var(--ui-color);
+        }
+        .office-rect {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 140px; height: 70px; border: 3px solid var(--ui-color); background: rgba(0, 255, 0, 0.1);
+            color: var(--ui-color); font-size: 10px; display: flex; justify-content: center; align-items: center;
+        }
+        .cam-btn {
+            position: absolute; width: 40px; height: 30px; background: #000; border: 1px solid var(--ui-color);
+            color: var(--ui-color); font-size: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer;
+            transition: background 0.1s;
+        }
+        .cam-btn.active { background: var(--ui-color); color: black; box-shadow: 0 0 10px var(--ui-color); }
+
+        #reboot-btn {
+            position: absolute; top: -70px; left: 50%; transform: translateX(-50%);
+            width: 220px; height: 50px; background: #222; border: 3px solid var(--error-red);
+            color: var(--error-red); font-weight: bold; cursor: pointer; display: none;
+            justify-content: center; align-items: center; z-index: 100; font-family: inherit;
+        }
+        #reboot-btn.active { display: flex; }
+        #reboot-btn:hover { background: var(--error-red); color: black; }
+        #reboot-btn:disabled { opacity: 0.5; cursor: wait; border-color: #555; color: #555; }
+
+        /* --- MONSTER & LIGHT OVERLAYS --- */
+        .light-cone {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 320px; height: 320px;
+            background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.7) 35%, rgba(255,255,255,0.3) 60%, transparent 85%);
+            pointer-events: none; display: none; z-index: 5; 
+            filter: blur(8px);
+            mix-blend-mode: screen;
+        }
+
+        .door-monster-light { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 180px; height: auto; aspect-ratio: 1/1; 
+            z-index: 6; display: none; 
+            filter: drop-shadow(0 0 10px black);
+        }
+
+        .cam-monster {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; z-index: 10; 
+            width: 138px; height: 138px; 
+            filter: drop-shadow(0 0 10px black);
+        }
+        
+        .mon-rabbit { animation: breathe 3s infinite; }
+        .mon-bear { animation: twitch 0.2s infinite paused; }
+        .mon-fox { opacity: 0.95; animation: float 4s infinite ease-in-out; }
+
+        #jumpscare-overlay { background: radial-gradient(circle, #200 0%, #000 100%); z-index: 2000; }
+        .js-container { width: 90vmin; height: 90vmin; display: flex; justify-content: center; align-items: center; }
+        .js-anim { width: 100%; height: 100%; animation: js-shake 0.05s infinite, js-scale 0.5s forwards; filter: drop-shadow(0 0 50px rgba(0,0,0,0.9)); }
+
+        @keyframes js-shake { 0% { transform: translate(10px, 10px) rotate(2deg); } 100% { transform: translate(-10px, -10px) rotate(-2deg); } }
+        @keyframes js-scale { 0% { transform: scale(0.8); } 100% { transform: scale(1.3); } }
+        @keyframes breathe { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }
+        @keyframes twitch { 0% { transform: translate(-50%, -50%) rotate(0deg) scale(0.9); } 20% { transform: translate(-50%, -50%) rotate(5deg) scale(0.9); } 40% { transform: translate(-50%, -50%) rotate(-5deg) scale(0.9); } }
+        @keyframes float { 0% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -60%); } 100% { transform: translate(-50%, -50%); } }
+
+    </style>
+</head>
+<body>
+
+<svg style="display: none;">
+    <defs>
+        <g id="mon-rabbit">
+            <path d="M 30 50 L 25 5 L 35 5 Z" fill="#1b1b3a" stroke="#000" stroke-width="2"/>
+            <path d="M 70 50 L 65 5 L 75 5 Z" fill="#1b1b3a" stroke="#000" stroke-width="2"/>
+            <path d="M 27 10 L 33 10 L 30 40 Z" fill="#2c2c5c"/>
+            <path d="M 67 10 L 73 10 L 70 40 Z" fill="#2c2c5c"/>
+            <ellipse cx="50" cy="55" rx="30" ry="25" fill="#1b1b3a" stroke="#000" stroke-width="2"/>
+            <ellipse cx="50" cy="67" rx="18" ry="12" fill="#2c2c5c" stroke="#000" stroke-width="1"/>
+            <circle cx="50" cy="62" r="5" fill="#000"/>
+            <rect x="44" y="79" width="5" height="6" fill="#ccc" stroke="#000" stroke-width="1"/>
+            <rect x="51" y="79" width="5" height="6" fill="#ccc" stroke="#000" stroke-width="1"/>
+            <circle cx="38" cy="48" r="8" fill="#000"/>
+            <circle cx="62" cy="48" r="8" fill="#000"/>
+            <circle cx="38" cy="48" r="3" fill="#ff1111" filter="drop-shadow(0 0 3px red)"/>
+            <circle cx="62" cy="48" r="3" fill="#ff1111" filter="drop-shadow(0 0 3px red)"/>
+        </g>
+        <g id="mon-bear">
+            <circle cx="22" cy="35" r="12" fill="#3a2311" stroke="#000" stroke-width="2"/>
+            <circle cx="78" cy="35" r="12" fill="#3a2311" stroke="#000" stroke-width="2"/>
+            <circle cx="22" cy="35" r="6" fill="#1a0f05"/>
+            <circle cx="78" cy="35" r="6" fill="#1a0f05"/>
+            <rect x="22" y="32" width="56" height="48" rx="15" fill="#4a2e15" stroke="#000" stroke-width="2"/>
+            <rect x="35" y="8" width="30" height="22" fill="#111" stroke="#000" stroke-width="1"/>
+            <rect x="22" y="30" width="56" height="5" fill="#111" stroke="#000" stroke-width="1"/>
+            <ellipse cx="50" cy="65" rx="20" ry="12" fill="#2a180b" stroke="#000" stroke-width="1"/>
+            <circle cx="50" cy="58" r="7" fill="#000"/>
+            <path d="M 32 75 Q 50 95 68 75 Z" fill="#2a180b" stroke="#000" stroke-width="2"/>
+            <circle cx="36" cy="45" r="7" fill="#000"/>
+            <circle cx="64" cy="45" r="7" fill="#000"/>
+            <circle cx="36" cy="45" r="2.5" fill="#ffffff" filter="drop-shadow(0 0 2px white)"/>
+            <circle cx="64" cy="45" r="2.5" fill="#ffffff" filter="drop-shadow(0 0 2px white)"/>
+        </g>
+        <g id="mon-fox">
+            <polygon points="25,45 10,10 40,35" fill="#8b2511" stroke="#000" stroke-width="2"/>
+            <polygon points="75,45 90,10 60,35" fill="#8b2511" stroke="#000" stroke-width="2"/>
+            <polygon points="22,40 15,18 35,32" fill="#4a1505"/>
+            <polygon points="78,40 85,18 65,32" fill="#4a1505"/>
+            <polygon points="25,50 5,55 25,65" fill="#8b2511" stroke="#000" stroke-width="1"/>
+            <polygon points="75,50 95,55 75,65" fill="#8b2511" stroke="#000" stroke-width="1"/>
+            <polygon points="35,35 65,35 80,55 50,85 20,55" fill="#a03015" stroke="#000" stroke-width="2"/>
+            <circle cx="35" cy="48" r="9" fill="#111"/>
+            <line x1="15" y1="35" x2="50" y2="55" stroke="#111" stroke-width="3"/>
+            <circle cx="65" cy="48" r="8" fill="#000"/>
+            <circle cx="65" cy="48" r="2.5" fill="#ffaa00" filter="drop-shadow(0 0 3px orange)"/>
+            <polygon points="40,65 60,65 50,82" fill="#5a1505"/>
+            <circle cx="50" cy="82" r="5" fill="#000"/>
+            <polygon points="42,72 44,78 46,72" fill="#fff"/>
+            <polygon points="46,72 48,78 50,72" fill="#fff"/>
+            <polygon points="50,72 52,78 54,72" fill="#fff"/>
+            <polygon points="54,72 56,78 58,72" fill="#fff"/>
+        </g>
+    </defs>
+</svg>
+
+<div id="game-stage">
+    <!-- START SCREEN -->
+    <div id="start-screen" class="screen">
+        <div class="pixel-monster-container">
+            <div class="pixel-monster"></div>
+        </div>
+        <div class="menu-content">
+            <h1>NIGHT<br>HORROR</h1>
+            <button class="btn" onclick="Game.init(1)">START GAME</button>
+            <button class="btn" onclick="document.getElementById('extras-modal').classList.remove('hidden')">EXTRAS</button>
+            <button class="btn" onclick="document.getElementById('credits-modal').classList.remove('hidden')">CREDITS</button>
+        </div>
+    </div>
+
+    <!-- PAUSE MENU -->
+    <div id="pause-screen" class="screen hidden" style="z-index: 5000;">
+        <div class="menu-content" style="align-items: center;">
+            <h2 style="font-size: 3rem; margin-bottom: 20px;">SHIFT PAUSED</h2>
+            <button class="btn" onclick="Game.togglePause()">CONTINUE SHIFT</button>
+            <button class="btn" onclick="document.getElementById('controls-modal').classList.remove('hidden')">CONTROLS</button>
+            <button class="btn" onclick="location.reload()" style="border-color: #500; color: #f55;">RETURN TO MENU</button>
+        </div>
+    </div>
+
+    <!-- CONTROLS MODAL -->
+    <div id="controls-modal" class="modal-overlay hidden" style="z-index: 6000;">
+        <h2>SECURITY CONTROLS</h2>
+        <div class="controls-list">
+            <p><b>ESC:</b> Pause / Resume Game</p>
+            <p><b>Monitor Failure:</b> Cameras fail occasionally. Use the <b>REBOOT</b> button on the map to fix them.</p>
+            <p><b>Doors:</b> Click the Red Button to toggle locks.</p>
+            <p><b>Lights:</b> Hold the Grey Button to check for entities.</p>
+            <p><b>F Key:</b> Hold down to recharge emergency power.</p>
+            <p><b>Secret Codes:</b> Enter keypad numbers during shifts for bonuses.</p>
+        </div>
+        <button class="btn" onclick="document.getElementById('controls-modal').classList.add('hidden')">CLOSE</button>
+    </div>
+
+    <!-- INTRO LETTER -->
+    <div id="intro-screen" class="screen hidden">
+        <div class="letter-content">
+            <h2>MESSAGE FROM MANAGEMENT</h2>
+            <p>Hello Nightguard! Welcome to your new job!</p>
+            <p>Your shift starts at 12 AM and ends at 6 AM. You work here for 5 nights</p>
+            <p>This building holds old experiments, which your job is to watch over. Yor office has doors and ventlocks to protect you.
+            During the night, there might be some harmful entity trying to get into your office. Keep it... or them out.
+            Also, keep an eye on the vent, since you have no way to look into it.</p>
+            <p>Just... Don't let anything in. Stay safe.You'll get your paycheck after your last shift.</p>
+            <br>
+            <p>- Bryngel Halvardson</p>
+        </div>
+        <button class="btn" onclick="Game.startNight(1)" style="margin-top: 30px;">CONTINUE TO NIGHTSHIFT</button>
+    </div>
+
+    <!-- EXTRAS MENU -->
+    <div id="extras-modal" class="modal-overlay hidden">
+        <h2 style="color:white; font-size:3rem; margin-bottom:20px;">EXTRAS</h2>
+        <p style="color:#aaa; margin-bottom: 20px;">Enter Redeem Code:</p>
+        <input type="text" id="redeem-input" class="code-input" maxlength="15" placeholder="ENTER CODE">
+        <button class="btn" onclick="Game.checkRedeemCode()" style="margin-top: 10px;">REDEEM</button>
+        
+        <div id="unlocked-extras-area" class="hidden" style="text-align: center; width: 100%;">
+            <h3 style="color:#33ff00; margin-top:30px;">LEVEL SELECT</h3>
+            <div class="level-select-container">
+                <div class="lvl-btn" onclick="Game.init(1); document.getElementById('extras-modal').classList.add('hidden')">1</div>
+                <div class="lvl-btn" onclick="Game.init(2); document.getElementById('extras-modal').classList.add('hidden')">2</div>
+                <div class="lvl-btn" onclick="Game.init(3); document.getElementById('extras-modal').classList.add('hidden')">3</div>
+                <div class="lvl-btn" onclick="Game.init(4); document.getElementById('extras-modal').classList.add('hidden')">4</div>
+                <div class="lvl-btn" onclick="Game.init(5); document.getElementById('extras-modal').classList.add('hidden')">5</div>
+            </div>
+
+            <h3 style="color:#ff3300; margin-top:30px;">JUMPSCARES</h3>
+            <div class="level-select-container">
+                <button class="btn" style="width: auto; padding: 10px 20px; font-size: 1.2rem; margin-top: 0;" onclick="Game.previewJumpscare('mon-rabbit')">RABBIT</button>
+                <button class="btn" style="width: auto; padding: 10px 20px; font-size: 1.2rem; margin-top: 0;" onclick="Game.previewJumpscare('mon-bear')">BEAR</button>
+                <button class="btn" style="width: auto; padding: 10px 20px; font-size: 1.2rem; margin-top: 0;" onclick="Game.previewJumpscare('mon-fox')">FOX</button>
+            </div>
+        </div>
+        <button class="btn" onclick="document.getElementById('extras-modal').classList.add('hidden')" style="margin-top: 30px; border-color: #555;">BACK</button>
+    </div>
+
+    <!-- CREDITS -->
+    <div id="credits-modal" class="modal-overlay hidden">
+        <h2 style="color:white; font-size:3rem; margin-bottom:20px;">CREDITS</h2>
+        <p style="color:#aaa; font-size:1.5rem;">Created By: Zayn Lilak</p>
+        <button class="btn" onclick="document.getElementById('credits-modal').classList.add('hidden')">BACK</button>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="game-over-screen" class="screen hidden">
+        <h1>GAME OVER</h1>
+        <h3 style="color: #a00;">You...Died...</h3>
+        <button class="btn" onclick="Game.init(Game.state.night)">TRY AGAIN...</button>
+        <button class="btn" onclick="location.reload()">RETURN TO MENU</button>
+    </div>
+
+    <!-- WIN SCREEN -->
+    <div id="win-screen" class="screen hidden">
+        <h1 style="color: #33ff00;">6:00 AM</h1>
+        <h3 id="win-text">Night Complete!</h3>
+        <button id="next-night-btn" class="btn" onclick="Game.nextNight()">START NEXT NIGHT</button>
+        <button id="win-menu-btn" class="btn hidden" onclick="location.reload()">RETURN TO MENU... [NIGHTGUARD]</button>
+    </div>
+
+    <!-- JUMPSCARE OVERLAY -->
+    <div id="jumpscare-overlay" class="screen hidden">
+        <div class="js-container" id="js-dynamic-container"></div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+        <div id="night-display">NIGHT 1</div>
+        <div id="time-display">12:00 AM</div>
+        <div class="power-bar-container"><div id="power-fill"></div></div>
+        <div style="display:flex; align-items:center; margin-top:5px;">
+            <div id="usage-text" style="font-size: 0.8rem;">Usage: None</div>
+            <div id="regen-indicator">CHARGING...</div>
+            <div id="cheat-indicator">POWER RESTORED</div>
+        </div>
+    </div>
+
+    <div id="office-container">
+        <!-- LEFT ROOM -->
+        <div class="room-section">
+            <div class="floor"></div>
+            <div class="door-frame">
+                <div class="door-panel">
+                    <div id="door-l" class="steel-door"></div>
+                    <div id="light-beam-l" class="light-cone"></div>
+                    <div id="monster-l" class="door-monster-light"></div>
+                </div>
+                <div class="button-panel btn-l">
+                    <div class="ctrl-btn btn-door" id="btn-door-l" onclick="Game.toggleDoor('left')"></div>
+                    <div class="ctrl-btn btn-light" onmousedown="Game.light('left', true)" onmouseup="Game.light('left', false)" onmouseleave="Game.light('left', false)"></div>
+                </div>
+            </div>
+            <div class="nav-zone nav-right" onmouseenter="Game.pan('mid')"></div>
+        </div>
+
+        <!-- MID ROOM -->
+        <div class="room-section">
+            <div class="floor"></div>
+            <div class="nav-zone nav-left" onmouseenter="Game.pan('left')"></div>
+            
+            <div class="vent-system">
+                <div id="vent-cover" class="vent-cover"></div>
+                <div class="btn" id="vent-btn" style="padding: 5px 10px; font-size: 0.8rem; margin-top: 10px; border: 1px solid #555;" onclick="Game.toggleVent()">CLOSE VENT</div>
+            </div>
+
+            <div class="desk-container">
+                <div id="monitor-label" class="monitor-prop" onclick="Game.toggleMonitor(true)">SYSTEM ONLINE<br>OPEN TO VIEW CAMERAS</div>
+                <div class="monitor-stand"></div>
+                <div class="desk-top"></div>
+                <div class="desk-base">
+                    <div class="desk-drawer"><div class="drawer-handle"></div></div>
+                    <div class="desk-drawer"><div class="drawer-handle"></div></div>
+                </div>
+            </div>
+
+            <div class="nav-zone nav-right" onmouseenter="Game.pan('right')"></div>
+        </div>
+
+        <!-- RIGHT ROOM -->
+        <div class="room-section">
+            <div class="floor"></div>
+            <div class="door-frame">
+                <div class="door-panel">
+                    <div id="door-r" class="steel-door"></div>
+                    <div id="light-beam-r" class="light-cone"></div>
+                    <div id="monster-r" class="door-monster-light"></div>
+                </div>
+                <div class="button-panel btn-r">
+                    <div class="ctrl-btn btn-door" id="btn-door-r" onclick="Game.toggleDoor('right')"></div>
+                    <div class="ctrl-btn btn-light" onmousedown="Game.light('right', true)" onmouseup="Game.light('right', false)" onmouseleave="Game.light('right', false)"></div>
+                </div>
+            </div>
+            <div class="nav-zone nav-left" onmouseenter="Game.pan('mid')"></div>
+        </div>
+    </div>
+
+    <!-- CAMERAS -->
+    <div id="cam-overlay">
+        <div id="cam-feed">
+            <div id="cam-title" style="position:absolute; top:10px; left:10px; color:white; z-index:10; background:black; padding:2px;">CAM 10</div>
+            
+            <div id="system-error-view">
+                <div class="error-box">SYSTEM ERROR</div>
+            </div>
+
+            <div class="static-overlay"></div>
+            <div id="feed-mon-rabbit" class="cam-monster mon-rabbit"><svg viewBox="0 0 100 100" width="100%" height="100%"><use href="#mon-rabbit"></use></svg></div>
+            <div id="feed-mon-bear" class="cam-monster mon-bear"><svg viewBox="0 0 100 100" width="100%" height="100%"><use href="#mon-bear"></use></svg></div>
+            <div id="feed-mon-fox" class="cam-monster mon-fox"><svg viewBox="0 0 100 100" width="100%" height="100%"><use href="#mon-fox"></use></svg></div>
+        </div>
+        
+        <div id="cam-map">
+            <button id="reboot-btn" onclick="Game.rebootMonitor()">SYSTEM REBOOT</button>
+            <div class="office-rect">YOU</div>
+            <div class="cam-btn" style="top: 240px; left: 20px;" onclick="Game.switchCam(1)">CAM 1</div>
+            <div class="cam-btn" style="top: 170px; left: 20px;" onclick="Game.switchCam(4)">CAM 4</div>
+            <div class="cam-btn" style="top: 100px; left: 20px;" onclick="Game.switchCam(7)">CAM 7</div>
+            <div class="cam-btn" style="top: 280px; left: 50%; transform:translateX(-50%);" onclick="Game.switchCam(2)">CAM 2</div>
+            <div class="cam-btn" style="top: 210px; left: 50%; transform:translateX(-50%);" onclick="Game.switchCam(5)">CAM 5</div>
+            <div class="cam-btn" style="top: 140px; left: 50%; transform:translateX(-50%);" onclick="Game.switchCam(8)">CAM 8</div>
+            <div class="cam-btn" style="top: 240px; right: 20px;" onclick="Game.switchCam(3)">CAM 3</div>
+            <div class="cam-btn" style="top: 170px; right: 20px;" onclick="Game.switchCam(6)">CAM 6</div>
+            <div class="cam-btn" style="top: 100px; right: 20px;" onclick="Game.switchCam(9)">CAM 9</div>
+            <div class="cam-btn active" style="top: 20px; left: 50%; transform:translateX(-50%); width: 60px;" onclick="Game.switchCam(10)">CAM 10</div>
+        </div>
+        <button class="btn" style="position:absolute; bottom:20px; left:20px; margin:0; padding:10px 20px;" onclick="Game.toggleMonitor(false)">CLOSE</button>
+    </div>
+
+</div>
+
+<script>
+const AudioEngine = {
+    ctx: null,
+    ambienceGain: null,
+    ambienceNodes: null,
+    init() { if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+    playTone(f, t, d, v=0.1) {
+        if(!this.ctx) return;
+        const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+        o.type = t; o.frequency.value = f; g.gain.value = v;
+        g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + d);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(); o.stop(this.ctx.currentTime + d);
+    },
+    startAmbience() {
+        if(this.ambienceNodes) return;
+        if(!this.ctx) this.init();
+        
+        const bufferSize = this.ctx.sampleRate * 2;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        
+        const noiseSrc = this.ctx.createBufferSource();
+        noiseSrc.buffer = buffer;
+        noiseSrc.loop = true;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 400; 
+
+        const lfo = this.ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 15; 
+        
+        const lfoGain = this.ctx.createGain();
+        lfoGain.gain.value = 100; 
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+
+        this.ambienceGain = this.ctx.createGain();
+        this.ambienceGain.gain.value = 0.20; 
+
+        noiseSrc.connect(filter);
+        filter.connect(this.ambienceGain);
+        this.ambienceGain.connect(this.ctx.destination);
+
+        noiseSrc.start();
+        lfo.start();
+
+        this.ambienceNodes = { noiseSrc, lfo };
+    },
+    updateAmbience(visible) {
+        if (!this.ambienceGain) return;
+        const target = visible ? 0.20 : 0;
+        this.ambienceGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.05);
+    },
+    stopAmbience() { 
+        if(this.ambienceNodes) { 
+            this.ambienceNodes.noiseSrc.stop(); 
+            this.ambienceNodes.lfo.stop(); 
+            this.ambienceNodes = null; 
+            this.ambienceGain = null;
+        } 
+    },
+    sfx: {
+        click: () => AudioEngine.playTone(1000, 'sine', 0.05),
+        vent: () => AudioEngine.playTone(150, 'sawtooth', 0.2),
+        blip: () => AudioEngine.playTone(600, 'sine', 0.1),
+        fail: () => AudioEngine.playTone(200, 'sawtooth', 0.5, 0.2),
+        success: () => { AudioEngine.playTone(800, 'sine', 0.1); setTimeout(()=>AudioEngine.playTone(1200, 'sine', 0.2), 100); },
+        doorClose: () => {
+            if(!AudioEngine.ctx) return;
+            const ctx = AudioEngine.ctx;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(120, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(20, ctx.currentTime + 0.4);
+            gain.gain.setValueAtTime(1.5, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.4);
+        },
+        doorOpen: () => {
+            if(!AudioEngine.ctx) return;
+            const ctx = AudioEngine.ctx;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(80, ctx.currentTime);
+            osc.frequency.linearRampToValueAtTime(160, ctx.currentTime + 0.4);
+            gain.gain.setValueAtTime(0.8, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.4);
+        },
+        jumpscare: () => { 
+            if(!AudioEngine.ctx) return;
+            const ctx = AudioEngine.ctx;
+            const t = ctx.currentTime;
+            
+            const bufferSize = ctx.sampleRate;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(3.0, t); 
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 2.5);
+            noise.connect(noiseGain); noiseGain.connect(ctx.destination);
+            noise.start(t); noise.stop(t + 2.5);
+
+            const playShriek = (f1, f2, dur) => {
+                const o1 = ctx.createOscillator(); const o2 = ctx.createOscillator();
+                const g = ctx.createGain();
+                o1.type = 'sawtooth'; o2.type = 'square';
+                o1.frequency.setValueAtTime(f1, t);
+                o1.frequency.exponentialRampToValueAtTime(f1 * 0.4, t + dur);
+                o2.frequency.setValueAtTime(f2, t);
+                o2.frequency.exponentialRampToValueAtTime(f2 * 0.4, t + dur);
+                
+                g.gain.setValueAtTime(2.0, t); 
+                g.gain.exponentialRampToValueAtTime(0.01, t + dur);
+                o1.connect(g); o2.connect(g); g.connect(ctx.destination);
+                o1.start(t); o2.start(t); o1.stop(t + dur); o2.stop(t + dur);
+            };
+            playShriek(150, 155, 2.5); 
+            playShriek(700, 730, 2.0); 
+            playShriek(2500, 2600, 1.5); 
+        }
+    }
+};
+
+const Game = {
+    state: {
+        active: false, paused: false, inGame: false, power: 100, time: 0, view: 'mid', night: 1,
+        doors: { left: false, right: false }, vent: false,
+        lights: { left: false, right: false },
+        monitorOpen: false, currentCam: 10, monitorFailed: false, isRebooting: false,
+        regen: false, cheatUsed: false, lastFailureRoll: 0, codeBuffer: "", powerCodeUsed: false,
+        isTransitioning: false
+    },
+    paths: {
+        left: [10, 7, 4, 1, 'door-l'],
+        vent: [10, 8, 5, 2, 'vent'],
+        right: [10, 9, 6, 3, 'door-r']
+    },
+    monsters: [],
+    init(night) {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-over-screen').classList.add('hidden');
+        document.getElementById('win-screen').classList.add('hidden');
+        document.getElementById('intro-screen').classList.add('hidden');
+        AudioEngine.init();
+        if (night === 1) document.getElementById('intro-screen').classList.remove('hidden');
+        else this.startNight(night);
+    },
+    startNight(night) {
+        document.getElementById('intro-screen').classList.add('hidden');
+        document.getElementById('hud').classList.remove('hidden');
+        document.getElementById('office-container').style.left = '-100vw';
+        AudioEngine.startAmbience();
+        this.resetVariables(night);
+        this.setupNight(night);
+        this.state.active = true;
+        this.state.inGame = true;
+        if(this.timer) clearInterval(this.timer);
+        this.timer = setInterval(() => this.tick(), 1000);
+    },
+    resetVariables(night) {
+        this.state = {
+            active: true, paused: false, inGame: true, power: 100, time: 0, view: 'mid', night: night,
+            doors: { left: false, right: false }, vent: false,
+            lights: { left: false, right: false },
+            monitorOpen: false, currentCam: 10, monitorFailed: false, isRebooting: false,
+            regen: false, cheatUsed: false, lastFailureRoll: 0, codeBuffer: "", powerCodeUsed: false,
+            isTransitioning: false
+        };
+        document.getElementById('night-display').innerText = "NIGHT " + night;
+        document.getElementById('system-error-view').style.display = 'none';
+        document.getElementById('reboot-btn').classList.remove('active');
+        document.getElementById('monitor-label').innerText = "SYSTEM ONLINE\nCLICK TO VIEW CAMERAS";
+        document.querySelectorAll('.steel-door').forEach(d => d.classList.remove('closed'));
+        document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('vent-cover').classList.remove('closed');
+        document.getElementById('pause-screen').classList.add('hidden');
+        document.getElementById('cheat-indicator').style.display = 'none';
+        
+        // Ensure buttons sync up visually
+        document.querySelectorAll('.cam-btn').forEach(btn => {
+            if(btn.innerText === "CAM 10") btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+        document.getElementById('cam-title').innerText = "CAM 10";
+
+        // Reset power-down visual effect just in case
+        document.getElementById('office-container').style.filter = 'none';
+    },
+    setupNight(night) {
+        const mRabbit = { name: 'Rabbit', active: false, type: 'left', cssId: 'feed-mon-rabbit', svgId: 'mon-rabbit' };
+        const mBear = { name: 'Bear', active: false, type: 'vent', cssId: 'feed-mon-bear', svgId: 'mon-bear' };
+        const mFox = { name: 'Fox', active: false, type: 'right', cssId: 'feed-mon-fox', svgId: 'mon-fox' };
+        
+        mRabbit.path = [...this.paths.left]; 
+        mBear.path = [...this.paths.vent]; 
+        mFox.path = [...this.paths.right];
+        
+        mRabbit.loc = 10; mBear.loc = 10; mFox.loc = 10;
+        mRabbit.wait = 0; mBear.wait = 0; mFox.wait = 0;
+
+        if (night === 1) { 
+            mRabbit.active = true; 
+            mRabbit.speed = 25; 
+            mRabbit.isNight1Rabbit = true; 
+        } 
+        else if (night === 2) { 
+            mRabbit.active = true; mRabbit.speed = 20; 
+            mFox.active = true; mFox.speed = 20; 
+        } 
+        else if (night === 3) { 
+            mRabbit.active = true; mRabbit.speed = 15; 
+            mFox.active = true; mFox.speed = 15; 
+            mBear.active = true; mBear.speed = 15; 
+        } 
+        else { 
+            mRabbit.active = true; mRabbit.speed = 10; 
+            mFox.active = true; mFox.speed = 10; 
+            mBear.active = true; mBear.speed = 12; 
+        } 
+        this.monsters = [mRabbit, mFox, mBear].filter(m => m.active);
+    },
+    togglePause() {
+        if(!this.state.inGame) return;
+        this.state.paused = !this.state.paused;
+        this.state.active = !this.state.paused;
+        document.getElementById('pause-screen').classList.toggle('hidden', !this.state.paused);
+        AudioEngine.updateAmbience(this.state.active && !this.state.monitorOpen);
+    },
+    pan(v) {
+        if(this.state.monitorOpen || !this.state.active || this.state.isTransitioning) return;
+        if(this.state.view === v) return;
+
+        this.state.isTransitioning = true;
+        this.state.view = v;
+        const c = document.getElementById('office-container');
+        c.style.left = (v === 'left' ? '0' : (v === 'mid' ? '-100vw' : '-200vw'));
+
+        setTimeout(() => {
+            this.state.isTransitioning = false;
+        }, 500);
+    },
+    toggleDoor(s) {
+        if(!this.state.active || this.state.power <= 0 || this.state.isTransitioning) return;
+        this.state.doors[s] = !this.state.doors[s];
+        
+        if (this.state.doors[s]) {
+            AudioEngine.sfx.doorClose();
+        } else {
+            AudioEngine.sfx.doorOpen();
+        }
+
+        document.getElementById('door-' + (s === 'left' ? 'l' : 'r')).classList.toggle('closed', this.state.doors[s]);
+        document.getElementById('btn-door-' + (s === 'left' ? 'l' : 'r')).classList.toggle('active', this.state.doors[s]);
+    },
+    toggleVent() {
+        if(!this.state.active || this.state.power <= 0 || this.state.isTransitioning) return;
+        AudioEngine.sfx.vent();
+        this.state.vent = !this.state.vent;
+        document.getElementById('vent-cover').classList.toggle('closed', this.state.vent);
+    },
+    light(s, on) {
+        if(!this.state.active || this.state.power <= 0 || this.state.doors[s] || this.state.isTransitioning) return;
+        this.state.lights[s] = on;
+        const sideChar = s === 'left' ? 'l' : 'r';
+        const beamEl = document.getElementById('light-beam-' + sideChar);
+        const monsterEl = document.getElementById('monster-' + sideChar);
+        if (on) {
+            beamEl.style.display = 'block';
+            const m = this.monsters.find(mon => mon.loc === 'door-' + sideChar);
+            if(m) {
+                monsterEl.innerHTML = `<svg viewBox="0 0 100 100" width="100%" height="100%"><use href="#${m.svgId}"></use></svg>`;
+                monsterEl.style.display = 'block';
+            }
+        } else {
+            beamEl.style.display = 'none';
+            monsterEl.style.display = 'none';
+        }
+    },
+    toggleMonitor(open) {
+        if(!this.state.active || this.state.power <= 0 || this.state.isTransitioning) return;
+        
+        this.state.monitorOpen = open;
+        document.getElementById('cam-overlay').style.display = open ? 'block' : 'none';
+        AudioEngine.updateAmbience(!open);
+        
+        if(open) this.updateCamFeed();
+    },
+    switchCam(camId) {
+        if(!this.state.active || this.state.power <= 0 || this.state.monitorFailed) return;
+        
+        this.state.currentCam = camId;
+        document.getElementById('cam-title').innerText = "CAM " + camId;
+        
+        document.querySelectorAll('.cam-btn').forEach(btn => {
+            if (btn.innerText === "CAM " + camId) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        if (AudioEngine.sfx.click) AudioEngine.sfx.click();
+        this.updateCamFeed();
+    },
+    rebootMonitor() {
+        if(this.state.isRebooting || !this.state.monitorFailed) return;
+        this.state.isRebooting = true;
+        const rb = document.getElementById('reboot-btn');
+        rb.disabled = true;
+        rb.innerText = "REBOOTING...";
+        AudioEngine.sfx.blip();
+        
+        setTimeout(() => {
+            this.state.monitorFailed = false;
+            this.state.isRebooting = false;
+            rb.classList.remove('active');
+            rb.disabled = false;
+            rb.innerText = "SYSTEM REBOOT";
+            document.getElementById('system-error-view').style.display = 'none';
+            document.getElementById('monitor-label').innerText = "SYSTEM ONLINE\nCLICK TO VIEW CAMERAS";
+            this.updateCamFeed();
+            AudioEngine.sfx.success();
+        }, 5000);
+    },
+    updateCamFeed() {
+        const errorView = document.getElementById('system-error-view');
+        const monsters = document.querySelectorAll('.cam-monster');
+        
+        if(this.state.monitorFailed) {
+            errorView.style.display = 'flex';
+            monsters.forEach(el => el.style.display = 'none');
+            document.getElementById('reboot-btn').classList.add('active');
+            return;
+        }
+
+        errorView.style.display = 'none';
+        monsters.forEach(el => el.style.display = 'none');
+        this.monsters.filter(mon => mon.loc === this.state.currentCam).forEach(m => {
+            const el = document.getElementById(m.cssId);
+            el.style.display = 'block';
+            if (this.state.currentCam === 10) {
+                el.style.left = m.type === 'left' ? '20%' : (m.type === 'vent' ? '50%' : '80%');
+                el.style.top = m.type === 'vent' ? '70%' : '30%';
+            } else {
+                el.style.left = '50%';
+                el.style.top = '50%';
+            }
+        });
+    },
+    handlePowerCheat() {
+        if(this.state.powerCodeUsed) return;
+        this.state.power = 100;
+        this.state.powerCodeUsed = true;
+        const ci = document.getElementById('cheat-indicator');
+        ci.style.display = 'block';
+        AudioEngine.sfx.success();
+        setTimeout(() => ci.style.display = 'none', 3000);
+    },
+    triggerPowerOutage() {
+        this.state.active = false;
+        if (this.timer) clearInterval(this.timer);
+        
+        AudioEngine.stopAmbience();
+        AudioEngine.playTone(50, 'sawtooth', 1.5, 0.5); // Deep power down sound
+        
+        // Force monitor closed if open
+        if (this.state.monitorOpen) {
+            document.getElementById('cam-overlay').style.display = 'none';
+            this.state.monitorOpen = false;
+        }
+
+        // Force pan to vent (mid) view immediately
+        document.getElementById('office-container').style.left = '-100vw';
+        this.state.view = 'mid';
+        
+        // Plunge the office into darkness
+        document.getElementById('office-container').style.filter = 'brightness(0.1)';
+
+        // Suspense waiting period before jumpscare
+        setTimeout(() => {
+            // Restore visibility so the jumpscare can be seen clearly
+            document.getElementById('office-container').style.filter = 'none';
+            // Trigger bear jumpscare (vent monster)
+            this.jumpscare({ svgId: 'mon-bear' }); 
+        }, 2000);
+    },
+    tick() {
+        if(!this.state.active) return;
+        this.state.time++;
+        const hour = Math.floor(this.state.time / 60);
+        document.getElementById('time-display').innerText = (hour === 0 ? 12 : hour) + ":00 AM";
+        if(hour === 6) { this.win(); return; }
+
+        if(this.state.time % 30 === 0 && this.state.time !== this.state.lastFailureRoll) {
+            this.state.lastFailureRoll = this.state.time;
+            if(Math.random() < 0.15 && !this.state.monitorFailed) {
+                this.state.monitorFailed = true;
+                AudioEngine.sfx.fail();
+                document.getElementById('monitor-label').innerText = "SYSTEM ERROR\nREBOOT REQUIRED";
+                if(this.state.monitorOpen) this.updateCamFeed();
+            }
+        }
+
+        let unitCount = 0;
+        if(this.state.doors.left) unitCount++;
+        if(this.state.doors.right) unitCount++;
+        if(this.state.vent) unitCount++;
+        if(this.state.monitorOpen) unitCount++;
+        if(this.state.isRebooting) unitCount++;
+        if(this.state.lights.left || this.state.lights.right) unitCount++;
+
+        const usageEl = document.getElementById('usage-text');
+        if (unitCount === 0) usageEl.innerText = "Usage: None";
+        else if (unitCount === 1) usageEl.innerText = "Usage: Low";
+        else if (unitCount === 2) usageEl.innerText = "Usage: Mid";
+        else usageEl.innerText = "Usage: High";
+
+        let drain = 0.1 + (unitCount * 1.0);
+
+        if(this.state.regen) {
+            this.state.power += 0.5;
+            document.getElementById('regen-indicator').style.display = 'block';
+        } else {
+            this.state.power -= (drain * 0.15);
+            document.getElementById('regen-indicator').style.display = 'none';
+        }
+
+        if(this.state.power > 100) this.state.power = 100;
+        if(this.state.power <= 0) {
+            this.state.power = 0;
+            this.triggerPowerOutage();
+            return;
+        }
+        document.getElementById('power-fill').style.width = this.state.power + '%';
+
+        this.monsters.forEach(m => {
+            m.wait++;
+            if(m.wait >= m.speed) {
+                m.wait = 0;
+                
+                if(typeof m.loc === 'string') {
+                    let blocked = (m.loc === 'door-l' && this.state.doors.left) || 
+                                  (m.loc === 'door-r' && this.state.doors.right) || 
+                                  (m.loc === 'vent' && this.state.vent);
+                    if(blocked) m.loc = 10; else this.jumpscare(m); 
+                    return;
+                }
+
+                if(m.isNight1Rabbit && m.loc === 10) {
+                    const r = Math.random();
+                    if(r < 0.33) { m.path = [...this.paths.left]; m.type = 'left'; }
+                    else if(r < 0.66) { m.path = [...this.paths.vent]; m.type = 'vent'; }
+                    else { m.path = [...this.paths.right]; m.type = 'right'; }
+                    m.loc = m.path[1];
+                    return;
+                }
+
+                const idx = m.path.indexOf(m.loc);
+                
+                if(m.loc === 10) {
+                    m.loc = m.path[idx + 1];
+                } else {
+                    if(Math.random() < 0.6) {
+                        m.loc = m.path[idx + 1];
+                    } else {
+                        m.loc = m.path[Math.max(0, idx - 1)];
+                    }
+                }
+            }
+        });
+        if(this.state.monitorOpen) this.updateCamFeed();
+    },
+    win() {
+        this.state.active = false;
+        AudioEngine.stopAmbience();
+        if(this.timer) clearInterval(this.timer);
+        
+        document.getElementById('win-screen').classList.remove('hidden');
+        
+        if (this.state.night >= 5) {
+            document.getElementById('win-text').innerText = "YOU SURVIVED ALL 5 NIGHTS!";
+            document.getElementById('next-night-btn').classList.add('hidden');
+            document.getElementById('win-menu-btn').classList.remove('hidden');
+        } else {
+            document.getElementById('win-text').innerText = "Night " + this.state.night + " Complete";
+            document.getElementById('next-night-btn').classList.remove('hidden');
+            document.getElementById('win-menu-btn').classList.add('hidden');
+        }
+    },
+    nextNight() {
+        document.getElementById('win-screen').classList.add('hidden');
+        this.state.night++;
+        this.startNight(this.state.night);
+    },
+    jumpscare(monster, isPreview = false) {
+        AudioEngine.init();
+        
+        if (!isPreview) {
+            this.state.active = false; this.state.inGame = false;
+            AudioEngine.stopAmbience();
+            clearInterval(this.timer);
+        }
+        
+        AudioEngine.sfx.jumpscare();
+        
+        let jSvg = (monster && monster.svgId) ? monster.svgId : 'mon-rabbit'; 
+        
+        document.getElementById('js-dynamic-container').innerHTML = `<svg viewBox="0 0 100 100" class="js-anim"><use href="#${jSvg}"></use></svg>`;
+        document.getElementById('jumpscare-overlay').classList.remove('hidden');
+        
+        // Makes sure the jumpscare overlays the Extras Modal properly when previewing
+        document.getElementById('jumpscare-overlay').style.zIndex = isPreview ? "9999" : "2000";
+
+        setTimeout(() => {
+            document.getElementById('jumpscare-overlay').classList.add('hidden');
+            if (!isPreview) {
+                document.getElementById('game-over-screen').classList.remove('hidden');
+            }
+        }, 3000);
+    },
+    previewJumpscare(svgId) {
+        // Triggers the jumpscare sequence safely without ending the game state
+        this.jumpscare({ svgId: svgId }, true);
+    },
+    checkRedeemCode() {
+        if(document.getElementById('redeem-input').value.toUpperCase() === 'NIGHTGUARD') {
+            document.getElementById('unlocked-extras-area').classList.remove('hidden');
+            AudioEngine.init();
+            AudioEngine.sfx.success();
+        }
+    }
+};
+
+window.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') Game.togglePause();
+    if(e.key.toLowerCase() === 'f') Game.state.regen = true;
+    
+    if(Game.state.inGame && Game.state.active && /^[0-9]$/.test(e.key)) {
+        Game.state.codeBuffer += e.key;
+        if(Game.state.codeBuffer.length > 6) Game.state.codeBuffer = Game.state.codeBuffer.slice(-6);
+        if(Game.state.codeBuffer === "250925") {
+            Game.handlePowerCheat();
+        }
+    }
+});
+window.addEventListener('keyup', (e) => {
+    if(e.key.toLowerCase() === 'f') Game.state.regen = false;
+});
+</script>
+</body>
+</html>
