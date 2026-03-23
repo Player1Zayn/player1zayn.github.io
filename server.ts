@@ -17,16 +17,21 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Supabase Setup (Server-side only)
-const supabaseUrl = process.env.SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+// Supabase Setup (Lazy Initialization)
+let supabaseClient: any = null;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error("CRITICAL ERROR: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing in environment variables.");
-  console.error("Please add them to your environment settings in AI Studio.");
+function getSupabase() {
+  if (!supabaseClient) {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!url || !key) {
+      throw new Error("CRITICAL ERROR: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing in environment variables. Please add them to your Render dashboard.");
+    }
+    supabaseClient = createClient(url, key);
+  }
+  return supabaseClient;
 }
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const JWT_SECRET = process.env.JWT_SECRET || "banana_secret_monkey_business";
 
@@ -55,6 +60,7 @@ app.post("/api/register", async (req, res) => {
   }
 
   try {
+    const supabase = getSupabase();
     // Check if user exists
     const { data: existing } = await supabase.from('leaderboard').select('id').eq('name', name).maybeSingle();
     if (existing) {
@@ -94,6 +100,7 @@ app.post("/api/login", async (req, res) => {
   }
 
   try {
+    const supabase = getSupabase();
     const { data: user, error } = await supabase.from('leaderboard').select('*').eq('name', name).maybeSingle();
 
     if (error || !user) {
@@ -124,6 +131,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
   }
 
   try {
+    const supabase = getSupabase();
     // Optimistic Concurrency Control: Check if the score on server matches what client expects
     const { data: current, error: fetchError } = await supabase
       .from('leaderboard')
@@ -183,6 +191,7 @@ app.post("/api/ban", authenticateToken, async (req: any, res) => {
 // Get Current User Data
 app.get("/api/me", authenticateToken, async (req: any, res) => {
   try {
+    const supabase = getSupabase();
     const { data: user, error } = await supabase
       .from('leaderboard')
       .select('*')
@@ -203,6 +212,7 @@ app.get("/api/me", authenticateToken, async (req: any, res) => {
 // Get Leaderboard
 app.get("/api/leaderboard", async (req, res) => {
   try {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from('leaderboard')
       .select('id, name, score, level, coins')
