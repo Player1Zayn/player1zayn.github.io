@@ -17,13 +17,13 @@ CREATE TABLE IF NOT EXISTS public.leaderboard (
 -- Enable RLS for leaderboard
 ALTER TABLE public.leaderboard ENABLE ROW LEVEL SECURITY;
 
--- Create policy to allow public read access to non-banned users
+-- Create policy to allow public read access to non-banned users (only specific fields should be public, but RLS is table-level)
+-- We rely on the server to filter sensitive fields, but as a backup, we only allow reading non-banned users.
 CREATE POLICY "Allow public read access to non-banned users" ON public.leaderboard
     FOR SELECT USING (banned = FALSE);
 
--- Create policy to allow users to update their own data
-CREATE POLICY "Allow users to update their own data" ON public.leaderboard
-    FOR ALL USING (true); -- Simplified for now as we use service role on server
+-- IMPORTANT: No public INSERT, UPDATE, or DELETE policies. 
+-- All modifications must go through the server using the Service Role Key.
 
 -- Create logs table
 CREATE TABLE IF NOT EXISTS public.logs (
@@ -39,13 +39,8 @@ CREATE TABLE IF NOT EXISTS public.logs (
 -- Enable RLS for logs
 ALTER TABLE public.logs ENABLE ROW LEVEL SECURITY;
 
--- Create policy to allow users to insert their own logs
-CREATE POLICY "Allow users to insert their own logs" ON public.logs
-    FOR INSERT WITH CHECK (true);
-
--- Create policy to allow users to read their own logs
-CREATE POLICY "Allow users to read their own logs" ON public.logs
-    FOR SELECT USING (true);
+-- No public access to logs. Only the server (Service Role) can read/write logs.
+-- This prevents users from spoofing logs or reading other users' transaction history.
 
 -- Enable Realtime for logs
 ALTER PUBLICATION supabase_realtime ADD TABLE public.logs;
