@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Banana Casino</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     #wheel {
       transition-property: transform;
@@ -892,16 +891,9 @@
 
     let authToken = localStorage.getItem('bananaAuthToken') || '';
     
-    // --- SUPABASE CONFIGURATION ---
-    // Replace these with your actual Supabase project values
-    const SUPABASE_URL = "https://yuwnnaavbegzbdfpxjok.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1d25uYWF2YmVnemJkZnB4am9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTA0NDgsImV4cCI6MjA4ODI4NjQ0OH0.lyogg7iFOnoye-UF8W26bMRmHCwZQyXV6rwD0TGNbgw"; // Get this from your Supabase dashboard
+    // --- SERVER API CONFIGURATION ---
+    const API_BASE = ""; // Use relative paths
     
-    let supabaseClient = null;
-    if (SUPABASE_ANON_KEY !== "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1d25uYWF2YmVnemJkZnB4am9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTA0NDgsImV4cCI6MjA4ODI4NjQ0OH0.lyogg7iFOnoye-UF8W26bMRmHCwZQyXV6rwD0TGNbgw") {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }
-
     let view = 'menu';
     let sidebarView = 'trees';
     let userId = '';
@@ -1183,6 +1175,11 @@
               while(trees.length < 20) trees.push(0);
           }
           
+          // Ensure at least one tree exists
+          if (trees.every(t => t === 0)) {
+              trees[0] = 1;
+          }
+          
           if (Array.isArray(data.gadgets)) {
               unlockedGadgets = data.gadgets;
               while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
@@ -1265,6 +1262,11 @@
                     trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
                     if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
                     while(trees.length < 20) trees.push(0);
+                    
+                    // Ensure at least one tree exists
+                    if (trees.every(t => t === 0)) {
+                        trees[0] = 1;
+                    }
                 }
                 if (data.gadgets) {
                     unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
@@ -1347,6 +1349,11 @@
                     trees = typeof serverData.trees === 'string' ? JSON.parse(serverData.trees) : serverData.trees;
                     if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
                     while(trees.length < 20) trees.push(0);
+                    
+                    // Ensure at least one tree exists
+                    if (trees.every(t => t === 0)) {
+                        trees[0] = 1;
+                    }
                 }
                 if (serverData.gadgets) {
                     unlockedGadgets = typeof serverData.gadgets === 'string' ? JSON.parse(serverData.gadgets) : serverData.gadgets;
@@ -1563,14 +1570,20 @@
 
 
     async function addLog(action, amount, balanceAfter, details = '') {
-        if (!supabaseClient || !userId) return;
+        if (!authToken || !userId) return;
         try {
-            await supabaseClient.from('logs').insert({
-                user_id: userId,
-                action,
-                amount,
-                balance_after: balanceAfter,
-                details
+            await fetch('/api/logs', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    action,
+                    amount,
+                    balance_after: balanceAfter,
+                    details
+                })
             });
         } catch (e) {
             console.error('Failed to add log:', e);
@@ -1583,20 +1596,22 @@
         modal.classList.remove('hidden');
         content.innerHTML = '<div class="text-center text-emerald-600 py-10 animate-pulse">Fetching transactions...</div>';
 
-        if (!supabaseClient || !userId) {
-            content.innerHTML = '<div class="text-center text-red-500 py-10">Supabase not connected.</div>';
+        if (!authToken || !userId) {
+            content.innerHTML = '<div class="text-center text-red-500 py-10">Not logged in.</div>';
             return;
         }
 
         try {
-            const { data, error } = await supabaseClient
-                .from('logs')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(50);
-
-            if (error) throw error;
+            const response = await fetch('/api/logs', {
+                method: 'GET',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (!response.ok) throw new Error("Failed to fetch history");
+            const data = await response.json();
 
             if (!data || data.length === 0) {
                 content.innerHTML = '<div class="text-center text-emerald-600 py-10 italic">No transactions found.</div>';
