@@ -78,7 +78,7 @@ app.post("/api/register", async (req, res) => {
       coins: 0,
       level: 1,
       xp: 0,
-      trees: JSON.stringify(Array(20).fill(0)),
+      trees: JSON.stringify([1, ...Array(19).fill(0)]),
       gadgets: JSON.stringify(Array(10).fill(false)),
       banned: false
     });
@@ -205,6 +205,44 @@ app.get("/api/me", authenticateToken, async (req: any, res) => {
     // Don't send password back to client
     const { password: _, ...userData } = user;
     res.json(userData);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get Logs
+app.get("/api/logs", authenticateToken, async (req: any, res) => {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('logs')
+      .select('*')
+      .eq('user_id', req.user.userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add Log
+app.post("/api/logs", authenticateToken, async (req: any, res) => {
+  const { action, amount, balance_after, details } = req.body;
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase.from('logs').insert({
+      user_id: req.user.userId,
+      action,
+      amount,
+      balance_after,
+      details
+    });
+
+    if (error) throw error;
+    res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
