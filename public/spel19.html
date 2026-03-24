@@ -1006,11 +1006,16 @@
     let ludvigStep = 0;
     let unlockedTitles = [];
     let equippedTitle = null;
+    let consecutiveGreens = 0;
+    let consecutiveJackpots = 0;
 
     const TITLES = {
         'newbie_monkey': { id: 'newbie_monkey', name: 'Newbie Monkey', color: 'text-emerald-400', group: 'Common' },
         'investor': { id: 'investor', name: 'Investor', color: 'text-emerald-400', group: 'Common' },
-        'grove': { id: 'grove', name: 'Grove', color: 'text-emerald-400', group: 'Common' }
+        'grove': { id: 'grove', name: 'Grove', color: 'text-emerald-400', group: 'Common' },
+        'lucky_one': { id: 'lucky_one', name: 'The Lucky One', color: 'text-blue-400', group: 'Rare' },
+        'unlucky': { id: 'unlucky', name: 'The Unlucky', color: 'text-blue-400', group: 'Rare' },
+        'extra_hand': { id: 'extra_hand', name: 'Extra Hand', color: 'text-blue-400', group: 'Rare' }
     };
 
     const SHOP_ITEMS = [
@@ -1967,8 +1972,8 @@
                 `;
             });
             
-            // Add 10 locked slots as requested
-            for (let i = Object.keys(TITLES).length; i < 10; i++) {
+            // Add 20 locked slots as requested
+            for (let i = Object.keys(TITLES).length; i < 20; i++) {
                 extrasHtml += `
                     <div class="bg-black/20 backdrop-blur-md border-2 border-stone-900/30 rounded-3xl p-6 flex flex-col items-center justify-center text-center opacity-40">
                         <div class="w-6 h-6 rounded-full border-2 border-stone-700 flex items-center justify-center text-stone-700 mb-2">
@@ -2130,6 +2135,7 @@
             }
             
             syncData(bananas, trees);
+            if (unlockedGadgets.every(g => g)) unlockTitle('extra_hand');
             updateGameUI();
             addLog('purchase', gadget.cost, bananas, `Buy Gadget: ${gadget.name}`);
             playSound('purchase');
@@ -2531,6 +2537,7 @@
             addLog('win', finalProfit + betAmount, bananas, `Plinko: ${mult}x`);
           } else if (mult < 1) {
             const loss = Math.round(betAmount * (1 - mult));
+            if (betAmount > 100000) unlockTitle('unlucky');
             spinResultMsg = processLoss(loss, betAmount, `Landed on ${mult}x. Lost ${loss} 🍌.`);
             addLog('loss', loss, bananas, `Plinko: ${mult}x`);
           } else {
@@ -2616,12 +2623,20 @@
 
       setTimeout(() => {
         if (betColor === winningColor) {
+          if (winningColor === 'green') {
+            consecutiveGreens++;
+            if (consecutiveGreens >= 3) unlockTitle('lucky_one');
+          } else {
+            consecutiveGreens = 0;
+          }
           const mult = winningColor === 'green' ? 3 : 1;
           const winAmount = betAmount * mult;
           const finalWin = applyWin(winAmount);
           spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${finalWin} 🍌!`;
           addLog('win', finalWin, bananas, `Roulette ${winningColor.toUpperCase()}`);
         } else {
+          consecutiveGreens = 0;
+          if (betAmount > 100000) unlockTitle('unlucky');
           spinResultMsg = processLoss(betAmount, betAmount, `Landed on ${winningColor.toUpperCase()}! Lost ${betAmount} 🍌.`);
           addLog('loss', betAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
         }
@@ -2745,6 +2760,13 @@
         }
       }
 
+      if (outcome === 'jackpot') {
+        consecutiveJackpots++;
+        if (consecutiveJackpots >= 3) unlockTitle('lucky_one');
+      } else {
+        consecutiveJackpots = 0;
+      }
+
       const totalBet = normalBet + bonusBetAmount;
       let normalProfit = 0;
       
@@ -2773,6 +2795,7 @@
         spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${netChange} 🍌!` : `WIN! Won ${netChange} 🍌!`;
         addLog('win', netChange, bananas, bonusWin ? 'Slots: Bonus Prediction Win' : 'Slots Win');
       } else if (netChange < 0) {
+        if (totalBet > 100000) unlockTitle('unlucky');
         processLoss(Math.abs(netChange), totalBet, `Loss. Lost ${Math.abs(netChange)} 🍌.`);
         spinResultMsg = `Loss. Lost ${Math.abs(netChange)} 🍌.`;
         addLog('loss', Math.abs(netChange), bananas, 'Slots Loss');
@@ -2862,6 +2885,7 @@
     function bjEndGame(reason, multiplier) {
       let change = Math.round(betAmount * multiplier);
       if (reason === 'bust') { 
+          if (betAmount > 100000) unlockTitle('unlucky');
           spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${betAmount} 🍌.`); 
           addLog('loss', betAmount, bananas, 'Blackjack: Bust');
       }
@@ -2881,6 +2905,7 @@
         addLog('win', finalWin, bananas, 'Blackjack: Win');
       }
       else if (reason === 'lose') { 
+          if (betAmount > 100000) unlockTitle('unlucky');
           spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${betAmount} 🍌.`); 
           addLog('loss', betAmount, bananas, 'Blackjack: Dealer Wins');
       }
