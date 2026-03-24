@@ -108,7 +108,28 @@ app.post("/api/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password);
+    let validPassword = false;
+    try {
+        // Try bcrypt comparison first
+        validPassword = await bcrypt.compare(password, user.password);
+    } catch (e) {
+        // If it's not a valid bcrypt hash, it might be plain text
+        validPassword = false;
+    }
+
+    // Migration logic: If bcrypt fails, check if it's a plain text match
+    if (!validPassword && password === user.password) {
+        validPassword = true;
+        // Migrate to hashed password for future logins
+        try {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            await supabase.from('leaderboard').update({ password: hashedPassword }).eq('id', user.id);
+            console.log(`Migrated user ${name} to hashed password.`);
+        } catch (migrationError) {
+            console.error("Failed to migrate password:", migrationError);
+        }
+    }
+
     if (!validPassword) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
