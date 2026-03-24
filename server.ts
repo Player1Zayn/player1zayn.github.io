@@ -80,6 +80,8 @@ app.post("/api/register", async (req, res) => {
       xp: 0,
       trees: JSON.stringify([1, ...Array(19).fill(0)]),
       gadgets: JSON.stringify(Array(10).fill(false)),
+      unlocked_titles: JSON.stringify([]),
+      equipped_title: null,
       banned: false
     });
 
@@ -146,7 +148,7 @@ app.post("/api/login", async (req, res) => {
 
 // Save Data
 app.post("/api/save", authenticateToken, async (req: any, res) => {
-  const { userId, name, score, coins, trees, gadgets, level, xp } = req.body;
+  const { userId, name, score, coins, trees, gadgets, level, xp, unlocked_titles, equipped_title } = req.body;
 
   if (req.user.userId !== userId) {
     return res.status(403).json({ error: "Cannot save data for another user" });
@@ -181,6 +183,8 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
       gadgets: JSON.stringify(gadgets),
       level,
       xp,
+      unlocked_titles: JSON.stringify(unlocked_titles || []),
+      equipped_title: equipped_title || null,
       updated_at: new Date().toISOString()
     });
 
@@ -275,7 +279,7 @@ app.get("/api/leaderboard", async (req, res) => {
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('leaderboard')
-      .select('id, name, score, level, coins')
+      .select('id, name, score, level, coins, equipped_title')
       .order('score', { ascending: false })
       .limit(50);
 
