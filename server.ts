@@ -63,14 +63,14 @@ app.post("/api/register", async (req, res) => {
   try {
     const supabase = getSupabase();
     // Check if user exists
-    const { data: existing } = await supabase.from('leaderboard').select('id').eq('name', name).maybeSingle();
+    const { data: existing } = await supabase.from('database').select('id').eq('name', name).maybeSingle();
     if (existing) {
       return res.status(400).json({ error: "Name already taken" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const { error } = await supabase.from('leaderboard').insert({
+    const { error } = await supabase.from('database').insert({
       id,
       name,
       password: hashedPassword,
@@ -102,7 +102,7 @@ app.post("/api/login", async (req, res) => {
 
   try {
     const supabase = getSupabase();
-    const { data: user, error } = await supabase.from('leaderboard').select('*').eq('name', name).maybeSingle();
+    const { data: user, error } = await supabase.from('database').select('*').eq('name', name).maybeSingle();
 
     if (error || !user) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -123,7 +123,7 @@ app.post("/api/login", async (req, res) => {
         // Migrate to hashed password for future logins
         try {
             const hashedPassword = await bcrypt.hash(password, 10);
-            await supabase.from('leaderboard').update({ password: hashedPassword }).eq('id', user.id);
+            await supabase.from('database').update({ password: hashedPassword }).eq('id', user.id);
             console.log(`Migrated user ${name} to hashed password.`);
         } catch (migrationError) {
             console.error("Failed to migrate password:", migrationError);
@@ -156,7 +156,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     const supabase = getSupabase();
     // Optimistic Concurrency Control: Check if the score on server matches what client expects
     const { data: current, error: fetchError } = await supabase
-      .from('leaderboard')
+      .from('database')
       .select('score, coins')
       .eq('id', userId)
       .maybeSingle();
@@ -166,13 +166,13 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     if (current && expectedScore !== undefined && expectedCoins !== undefined) {
         if (Number(current.score) !== Number(expectedScore) || Number(current.coins) !== Number(expectedCoins)) {
             // External change detected, return current data instead of overwriting
-            const { data: fullUser } = await supabase.from('leaderboard').select('*').eq('id', userId).maybeSingle();
+            const { data: fullUser } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
             const { password: _, ...userData } = fullUser;
             return res.json({ success: false, error: "External change detected", user: userData });
         }
     }
 
-    const { error } = await supabase.from('leaderboard').upsert({
+    const { error } = await supabase.from('database').upsert({
       id: userId,
       name,
       score,
@@ -188,7 +188,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     
     // Fetch and return the updated data to ensure client is in sync
     const { data: updatedUser, error: finalFetchError } = await supabase
-      .from('leaderboard')
+      .from('database')
       .select('*')
       .eq('id', userId)
       .maybeSingle();
@@ -215,7 +215,7 @@ app.get("/api/me", authenticateToken, async (req: any, res) => {
   try {
     const supabase = getSupabase();
     const { data: user, error } = await supabase
-      .from('leaderboard')
+      .from('database')
       .select('*')
       .eq('id', req.user.userId)
       .maybeSingle();
