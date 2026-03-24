@@ -484,11 +484,36 @@
             </div>
 
             <!-- Slots Specific Bonus Bet Bar -->
-            <div id="bonus-bet-container" class="hidden flex items-center justify-center bg-emerald-950 border border-emerald-800 rounded-lg p-2 gap-2 cursor-pointer" onclick="toggleBonusBet()">
-              <div id="bonus-bet-checkbox" class="w-5 h-5 border-2 border-yellow-500 rounded flex items-center justify-center">
-                <div id="bonus-bet-check" class="w-3 h-3 bg-yellow-500 rounded-sm hidden"></div>
+            <div id="bonus-bet-container" class="hidden flex flex-col bg-emerald-950 border border-emerald-800 rounded-lg p-3 gap-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="toggleBonusBet()">
+                  <div id="bonus-bet-checkbox" class="w-5 h-5 border-2 border-yellow-500 rounded flex items-center justify-center">
+                    <div id="bonus-bet-check" class="w-3 h-3 bg-yellow-500 rounded-sm hidden"></div>
+                  </div>
+                  <span class="text-yellow-500 font-bold text-xs md:text-sm uppercase tracking-wider">Bonus Bet</span>
+                </div>
+                <div id="bonus-bet-info" class="text-[10px] text-emerald-500 font-bold uppercase">Max: 50% of Normal Bet</div>
               </div>
-              <span class="text-yellow-500 font-bold text-xs md:text-sm">Bonus Bet Mode (2x Cost, 2x Payout)</span>
+              
+              <div id="bonus-bet-controls" class="hidden flex flex-col gap-2 pt-2 border-t border-emerald-800/50">
+                <div class="flex gap-2 items-center">
+                  <span class="text-[9px] text-emerald-500 font-black uppercase tracking-widest shrink-0">Amount:</span>
+                  <input 
+                    type="number" 
+                    id="bonus-bet-amount-input"
+                    class="flex-1 bg-emerald-900 border border-emerald-700 text-yellow-400 text-sm font-mono p-1.5 rounded-lg focus:border-yellow-400 outline-none"
+                    placeholder="Bonus Amount..."
+                  />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <span class="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Predict Selection:</span>
+                  <div class="flex gap-2 justify-center">
+                    <button onclick="cycleBonusIcon(0)" id="bonus-icon-0" class="w-10 h-10 bg-emerald-900 rounded-lg flex items-center justify-center text-xl border border-emerald-700 hover:border-yellow-500 transition-colors">🍎</button>
+                    <button onclick="cycleBonusIcon(1)" id="bonus-icon-1" class="w-10 h-10 bg-emerald-900 rounded-lg flex items-center justify-center text-xl border border-emerald-700 hover:border-yellow-500 transition-colors">🍎</button>
+                    <button onclick="cycleBonusIcon(2)" id="bonus-icon-2" class="w-10 h-10 bg-emerald-900 rounded-lg flex items-center justify-center text-xl border border-emerald-700 hover:border-yellow-500 transition-colors">🍎</button>
+                  </div>
+                </div>
+              </div>
             </div>
             
             <!-- Universal Bet Amount Input -->
@@ -1010,6 +1035,8 @@
 
     // Slots State
     let isBonusBet = false;
+    let bonusBetAmount = 0;
+    let bonusBetSelection = ['🍎', '🍎', '🍎'];
     const SLOT_ICONS = ['🍎', '🍉', '🥝', '🍐', '🍍'];
     const JACKPOT_ICON = '💰';
 
@@ -2506,11 +2533,58 @@
 
     // --- SLOTS LOGIC ---
     function toggleBonusBet() {
-      if (!isPlaying) { isBonusBet = !isBonusBet; updateGameUI(); }
+      if (!isPlaying) { 
+        isBonusBet = !isBonusBet; 
+        const check = document.getElementById('bonus-bet-check');
+        const controls = document.getElementById('bonus-bet-controls');
+        if (isBonusBet) {
+          check.classList.remove('hidden');
+          controls.classList.remove('hidden');
+        } else {
+          check.classList.add('hidden');
+          controls.classList.add('hidden');
+        }
+        updateGameUI(); 
+      }
+    }
+
+    function cycleBonusIcon(index) {
+      if (isPlaying) return;
+      const currentIcon = bonusBetSelection[index];
+      const iconIndex = SLOT_ICONS.indexOf(currentIcon);
+      const nextIndex = (iconIndex + 1) % SLOT_ICONS.length;
+      bonusBetSelection[index] = SLOT_ICONS[nextIndex];
+      document.getElementById(`bonus-icon-${index}`).innerText = bonusBetSelection[index];
+      playSound('click');
     }
     function playSlots() {
-      const actualBet = betAmount * (isBonusBet ? 2 : 1);
-      if (actualBet > bananas) { alert("Not enough bananas for Bonus Bet!"); return; }
+      let actualBet = betAmount;
+      let currentBonusBet = 0;
+
+      if (isBonusBet) {
+        const bonusInput = document.getElementById('bonus-bet-amount-input');
+        currentBonusBet = parseInt(bonusInput.value) || 0;
+        
+        if (currentBonusBet <= 0) {
+          alert("Please enter a valid Bonus Bet amount.");
+          return;
+        }
+        
+        if (currentBonusBet > betAmount / 2) {
+          alert("Bonus Bet cannot exceed 50% of your normal bet!");
+          return;
+        }
+        
+        actualBet += currentBonusBet;
+        bonusBetAmount = currentBonusBet; // Store for finalize
+      } else {
+        bonusBetAmount = 0;
+      }
+
+      if (actualBet > bananas) { 
+        alert("Not enough bananas!"); 
+        return; 
+      }
       
       isPlaying = true;
       spinResultMsg = "Spinning slots...";
@@ -2524,12 +2598,12 @@
         ticks++;
         if (ticks > 20) {
           clearInterval(slotAnimInterval);
-          finalizeSlots(actualBet);
+          finalizeSlots(betAmount); // Pass normal bet amount
         }
       }, 100);
     }
     
-    function finalizeSlots(actualBet) {
+    function finalizeSlots(normalBet) {
       let r = Math.random() * 105;
       let outcome, resultSlots = [];
       
@@ -2556,22 +2630,50 @@
       document.getElementById('slot-2').innerText = resultSlots[1];
       document.getElementById('slot-3').innerText = resultSlots[2];
 
+      // Check Bonus Bet
+      let bonusWin = false;
+      if (isBonusBet && bonusBetAmount > 0) {
+        if (resultSlots[0] === bonusBetSelection[0] && 
+            resultSlots[1] === bonusBetSelection[1] && 
+            resultSlots[2] === bonusBetSelection[2]) {
+          bonusWin = true;
+        }
+      }
+
+      const totalBet = normalBet + bonusBetAmount;
+      let normalProfit = 0;
+      
       if (outcome === 'lose') {
-        spinResultMsg = processLoss(actualBet, actualBet, `No match. Lost ${actualBet} 🍌.`);
-        addLog('loss', actualBet, bananas, 'Slots: No match');
+        normalProfit = -normalBet;
       } else if (outcome === 'partial') {
-        let returnAmount = Math.round(actualBet * 0.25);
-        let netLoss = actualBet - returnAmount;
-        spinResultMsg = processLoss(netLoss, actualBet, `Got 2! Won back ${returnAmount} 🍌.`);
-        addLog('loss', netLoss, bananas, 'Slots: 2 matches');
+        normalProfit = Math.round(normalBet * 0.25) - normalBet;
       } else if (outcome === 'win') {
-        const finalWin = applyWin(actualBet);
-        spinResultMsg = `3 of a Kind! Won ${finalWin + actualBet} 🍌!`;
-        addLog('win', finalWin + actualBet, bananas, 'Slots: 3 of a Kind');
+        normalProfit = normalBet;
       } else if (outcome === 'jackpot') {
-        const finalWin = applyWin(actualBet * 9);
-        spinResultMsg = `🎰 JACKPOT! 🎰 Won ${finalWin + actualBet} 🍌!`;
-        addLog('win', finalWin + actualBet, bananas, 'Slots: JACKPOT');
+        normalProfit = normalBet * 9;
+      }
+
+      let bonusProfit = isBonusBet ? -bonusBetAmount : 0;
+      if (bonusWin) {
+        bonusProfit = bonusBetAmount * 20; // 20x multiplier for correct prediction
+        if (normalProfit < 0) {
+          normalProfit = 0; // "you dont lose your normal bet amount"
+        }
+      }
+
+      const netChange = normalProfit + bonusProfit;
+
+      if (netChange > 0) {
+        applyWin(netChange);
+        spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${netChange} 🍌!` : `WIN! Won ${netChange} 🍌!`;
+        addLog('win', netChange, bananas, bonusWin ? 'Slots: Bonus Prediction Win' : 'Slots Win');
+      } else if (netChange < 0) {
+        processLoss(Math.abs(netChange), totalBet, `Loss. Lost ${Math.abs(netChange)} 🍌.`);
+        spinResultMsg = `Loss. Lost ${Math.abs(netChange)} 🍌.`;
+        addLog('loss', Math.abs(netChange), bananas, 'Slots Loss');
+      } else {
+        spinResultMsg = "Push! No change in bananas.";
+        addLog('push', 0, bananas, 'Slots Push');
       }
 
       endGameTurn();
@@ -2751,7 +2853,15 @@
       controlBonus.classList.toggle('hidden', gameMode !== 'slots');
       
       // Bonus Bet styling
-      document.getElementById('bonus-bet-check').style.display = isBonusBet ? 'block' : 'none';
+      const bonusCheck = document.getElementById('bonus-bet-check');
+      const bonusControls = document.getElementById('bonus-bet-controls');
+      if (isBonusBet) {
+        bonusCheck.classList.remove('hidden');
+        bonusControls.classList.remove('hidden');
+      } else {
+        bonusCheck.classList.add('hidden');
+        bonusControls.classList.add('hidden');
+      }
       
       // Update Roulette labels dynamically based on Gadget 2
       document.getElementById('label-red-chance').innerText = activeGadgets[1] ? '42% CHANCE' : '46% CHANCE';
@@ -2778,10 +2888,16 @@
           autoBtn.classList.remove('bg-blue-600', 'text-white');
       }
 
+      let currentBonusBet = 0;
+      if (isBonusBet) {
+        const bonusInput = document.getElementById('bonus-bet-amount-input');
+        currentBonusBet = parseInt(bonusInput?.value) || 0;
+      }
+
       let canAction = !isPlaying && bananas > 0 && betAmount > 0;
       if (gameMode === 'roulette' && !betColor) canAction = false;
       if (gameMode === 'blackjack' && bjState === 'playing') canAction = false; 
-      if (gameMode === 'slots' && isBonusBet && (betAmount * 2) > bananas) canAction = false;
+      if (gameMode === 'slots' && isBonusBet && (betAmount + currentBonusBet) > bananas) canAction = false;
 
       elMainActionBtn.disabled = !canAction;
       elMainActionBtn.className = canAction ? "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl transition-all active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-b-4 border-yellow-600" : "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl bg-emerald-800 text-emerald-900 cursor-not-allowed opacity-80 border-b-4 border-emerald-900";
@@ -2941,7 +3057,7 @@
         setGameMode, setBetColor, setMaxBet, toggleAutoBet, handleMainAction,
         claimInsurance, bjHit, bjStand, copyUserId, handleTreeClick, buyGadget,
         toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
-        handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins
+        handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
