@@ -1,5 +1,5 @@
--- Create leaderboard table
-CREATE TABLE IF NOT EXISTS public.leaderboard (
+-- Create database table (private user data)
+CREATE TABLE IF NOT EXISTS public.database (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
@@ -14,16 +14,48 @@ CREATE TABLE IF NOT EXISTS public.leaderboard (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS for leaderboard
+-- Create leaderboard table (public display data)
+CREATE TABLE IF NOT EXISTS public.leaderboard (
+    id TEXT PRIMARY KEY REFERENCES public.database(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    score BIGINT DEFAULT 0,
+    level INTEGER DEFAULT 1,
+    coins BIGINT DEFAULT 0,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.database ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.leaderboard ENABLE ROW LEVEL SECURITY;
 
--- Create policy to allow public read access to non-banned users (only specific fields should be public, but RLS is table-level)
--- We rely on the server to filter sensitive fields, but as a backup, we only allow reading non-banned users.
-CREATE POLICY "Allow public read access to non-banned users" ON public.leaderboard
-    FOR SELECT USING (banned = FALSE);
+-- Create policy to allow public read access to the leaderboard
+CREATE POLICY "Allow public read access to leaderboard" ON public.leaderboard
+    FOR SELECT USING (TRUE);
 
--- IMPORTANT: No public INSERT, UPDATE, or DELETE policies. 
+-- IMPORTANT: No public INSERT, UPDATE, or DELETE policies for database or leaderboard. 
 -- All modifications must go through the server using the Service Role Key.
+
+-- Function to sync data from database to leaderboard
+CREATE OR REPLACE FUNCTION public.sync_to_leaderboard()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.leaderboard (id, name, score, level, coins, updated_at)
+    VALUES (NEW.id, NEW.name, NEW.score, NEW.level, NEW.coins, NEW.updated_at)
+    ON CONFLICT (id) DO UPDATE
+    SET name = EXCLUDED.name,
+        score = EXCLUDED.score,
+        level = EXCLUDED.level,
+        coins = EXCLUDED.coins,
+        updated_at = EXCLUDED.updated_at;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to call the sync function on INSERT or UPDATE of the database table
+CREATE TRIGGER trigger_sync_to_leaderboard
+AFTER INSERT OR UPDATE ON public.database
+FOR EACH ROW
+EXECUTE FUNCTION public.sync_to_leaderboard();
 
 -- Create logs table
 CREATE TABLE IF NOT EXISTS public.logs (
@@ -39,9 +71,20 @@ CREATE TABLE IF NOT EXISTS public.logs (
 -- Enable RLS for logs
 ALTER TABLE public.logs ENABLE ROW LEVEL SECURITY;
 
--- No public access to logs. Only the server (Service Role) can read/write logs.
--- This prevents users from spoofing logs or reading other users' transaction history.
+-- Enable Realtime for logs and leaderboard (Safe way)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'logs'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.logs;
+    END IF;
 
--- Enable Realtime for logs
-ALTER PUBLICATION supabase_realtime ADD TABLE public.logs;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.leaderboard;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'leaderboard'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.leaderboard;
+    END IF;
+END $$;
