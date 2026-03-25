@@ -25,6 +25,28 @@
       border-radius: 10px;
     }
     
+    /* Mobile UI Fixes */
+    @media (max-width: 767px) and (orientation: landscape) {
+      .slot-machine-body { transform: scale(0.7); transform-origin: center; margin-bottom: -2rem !important; }
+      #area-roulette > div { transform: scale(0.75); transform-origin: center; }
+      #area-blackjack { transform: scale(0.75); transform-origin: center; }
+      #area-plinko canvas { height: 200px !important; width: auto !important; }
+      #spin-result-msg { font-size: 0.875rem !important; height: 1.5rem !important; margin-top: -1rem !important; }
+      #bet-amount-container { height: 2.5rem !important; }
+      #main-action-btn { py: 0.75rem !important; font-size: 1.25rem !important; }
+      
+      /* General landscape optimizations */
+      #view-menu h1 { font-size: 3rem !important; }
+      #view-menu p { margin-bottom: 1.5rem !important; }
+      #view-name_entry .max-w-md { max-width: 90% !important; }
+      #shop-main-content { padding: 1rem !important; }
+      #shop-main-content h2 { font-size: 2.5rem !important; }
+      #fullscreen-entry-overlay .max-w-md { max-width: 90% !important; padding: 1.5rem !important; }
+      #fullscreen-entry-overlay h1 { font-size: 1.5rem !important; }
+      #fullscreen-entry-overlay p { margin-bottom: 1rem !important; }
+      #fullscreen-entry-overlay .mb-8 { margin-bottom: 1rem !important; }
+    }
+    
     .slot-icon {
       display: inline-flex;
       align-items: center;
@@ -363,10 +385,10 @@
     </div>
 
     <!-- VIEW: GAME -->
-    <div id="view-game" class="flex-1 flex flex-col md:flex-row overflow-hidden hidden">
+    <div id="view-game" class="flex-1 flex flex-col landscape:flex-row md:flex-row overflow-hidden hidden">
       
       <!-- Right Sidebar (Moved to Top on Mobile): Trees & Gadgets -->
-      <div class="order-1 md:order-3 md:w-[28%] bg-emerald-900/50 border-b md:border-b-0 md:border-l border-emerald-800 flex flex-col max-h-[35vh] md:max-h-none shrink-0 z-20">
+      <div class="order-1 landscape:order-3 md:order-3 landscape:w-[28%] md:w-[28%] bg-emerald-900/50 border-b landscape:border-b-0 md:border-b-0 landscape:border-l md:border-l border-emerald-800 flex flex-col max-h-[30vh] landscape:max-h-none md:max-h-none shrink-0 z-20">
         <div class="p-3 md:p-6 bg-emerald-900 flex flex-row md:flex-col items-center justify-between md:justify-center shrink-0">
           <div class="text-left md:text-center">
             <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-widest md:mb-1"><span id="display-player-name">Player</span>'s Balance</p>
@@ -385,13 +407,13 @@
               </div>
             </div>
           </div>
-          <button onclick="handleBuyTree()" id="buy-tree-btn-mobile" class="md:hidden px-4 py-2 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700 ml-4 h-full shrink-0" disabled>
+          <button onclick="handleBuyTree()" id="buy-tree-btn-mobile" class="md:hidden landscape:hidden px-4 py-2 rounded-xl font-black transition-all flex flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700 ml-4 h-full shrink-0" disabled>
             <span id="buy-tree-title-mobile" class="text-sm">BUY TREE</span>
             <span id="buy-tree-subtitle-mobile" class="text-[10px] opacity-70">(-100 🍌)</span>
           </button>
           
           <!-- Mobile Banana Box Claim -->
-          <button onclick="claimBananas()" id="claim-bananas-btn-mobile" class="md:hidden ml-2 px-3 py-2 rounded-xl bg-yellow-500 text-yellow-950 font-black text-[10px] shadow-[0_4px_0_rgb(161,98,7)] hover:bg-yellow-400 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:shadow-[0_4px_0_rgb(161,98,7)] flex flex-col items-center justify-center shrink-0" disabled>
+          <button onclick="claimBananas()" id="claim-bananas-btn-mobile" class="md:hidden landscape:hidden ml-2 px-3 py-2 rounded-xl bg-yellow-500 text-yellow-950 font-black text-[10px] shadow-[0_4px_0_rgb(161,98,7)] hover:bg-yellow-400 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:shadow-[0_4px_0_rgb(161,98,7)] flex flex-col items-center justify-center shrink-0" disabled>
             <span id="display-banana-box-mobile">0 🍌</span>
             <span class="uppercase tracking-tighter">CLAIM</span>
           </button>
@@ -423,9 +445,9 @@
             <span class="text-[10px] text-emerald-400 font-bold bg-emerald-950 px-2 py-1 rounded border border-emerald-800">+<span id="display-tree-income">0.2</span> 🍌/s (Avg)</span>
           </div>
           
-          <div id="tree-grid" class="grid grid-cols-5 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-2 lg:gap-3 mb-0 md:mb-6 shrink-0 pb-4 md:pb-0"></div>
+          <div id="tree-grid" class="grid grid-cols-5 landscape:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-2 lg:gap-3 mb-0 md:mb-6 shrink-0 pb-4 md:pb-0"></div>
           
-          <button onclick="handleBuyTree()" id="buy-tree-btn" class="hidden md:flex w-full py-4 rounded-xl font-black transition-all flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700 mt-auto shrink-0" disabled>
+          <button onclick="handleBuyTree()" id="buy-tree-btn" class="hidden md:flex landscape:flex w-full py-4 rounded-xl font-black transition-all flex-col items-center justify-center shadow-lg bg-emerald-800/50 text-emerald-700 mt-auto shrink-0" disabled>
             <span id="buy-tree-title" class="text-lg">BUY TREE</span>
             <span id="buy-tree-subtitle" class="text-xs opacity-70">(-100 🍌)</span>
           </button>
@@ -483,7 +505,7 @@
         </div>
         
         <!-- Main Game Viewing Area -->
-        <div class="flex-1 flex flex-col items-center justify-center p-2 min-h-0 relative mt-20 md:mt-24">
+        <div class="flex-1 flex flex-col items-center justify-center p-2 min-h-0 relative mt-4 landscape:mt-16 md:mt-24">
           
           <!-- Game: ROULETTE -->
           <div id="area-roulette" class="w-full h-full flex flex-col items-center justify-center">
@@ -688,7 +710,7 @@
       </div>
 
       <!-- Left Sidebar (Moved to Bottom on Mobile): Scoreboard -->
-      <div class="order-3 md:order-1 md:w-[22%] bg-emerald-900/50 border-t md:border-t-0 md:border-r border-emerald-800 flex flex-col h-[20vh] md:h-full shrink-0 z-20">
+      <div class="order-3 landscape:order-1 md:order-1 landscape:w-[22%] md:w-[22%] bg-emerald-900/50 border-t landscape:border-t-0 md:border-t-0 landscape:border-r md:border-r border-emerald-800 flex flex-col h-[20vh] landscape:h-full md:h-full shrink-0 z-20">
         <div class="p-2 md:p-4 bg-emerald-900 border-b border-emerald-800 flex items-center justify-center md:justify-start gap-2 shrink-0">
           <svg class="text-yellow-400 w-4 h-4 md:w-6 md:h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
           <h2 class="font-bold text-yellow-400 text-[10px] md:text-sm uppercase tracking-widest">Global Scoreboard</h2>
@@ -1344,6 +1366,11 @@
           updateBananas(typeof data.bananas === 'number' ? data.bananas : 0);
           bananaBox = typeof data.bananaBox === 'number' ? data.bananaBox : 0;
           updateCoins(typeof data.coins === 'number' ? data.coins : 0);
+          
+          // Load expected state if available
+          if (typeof data.expectedDbBananas === 'number') expectedDbBananas = data.expectedDbBananas;
+          if (typeof data.expectedDbCoins === 'number') expectedDbCoins = data.expectedDbCoins;
+          
           isInternalUpdate = false;
           
           let savedTrees = data.trees;
@@ -1427,46 +1454,64 @@
                                    (serverCoins !== expectedDbCoins && expectedDbCoins !== -1);
 
             if (externalChange || expectedDbBananas === -1) {
-                isInternalUpdate = true;
-                updateBananas(serverScore);
-                updateCoins(serverCoins);
-                bananaBox = data.banana_box || 0;
-                level = serverLevel;
-                updateXp(serverXp);
+                // If expectedDbBananas is -1, it means we don't have a known server state.
+                // In this case, we only overwrite if the server has data.
+                // If we have local progress (bananas > 0) but server is 0, we might want to keep local.
+                // However, for initial login, we should trust the server.
                 
-                if (data.unlocked_titles) {
-                    unlockedTitles = typeof data.unlocked_titles === 'string' ? JSON.parse(data.unlocked_titles) : data.unlocked_titles;
-                    if (!Array.isArray(unlockedTitles)) unlockedTitles = [];
-                }
-                equippedTitle = data.equipped_title || null;
+                const shouldOverwrite = externalChange || (expectedDbBananas === -1 && (serverScore > 0 || serverCoins > 0 || bananas === 0));
 
-                isInternalUpdate = false;
-                
-                // CRITICAL: Update expected state to match server data
-                expectedDbBananas = serverScore; 
-                expectedDbCoins = serverCoins;
-
-                if (data.trees) {
-                    trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
-                    if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
-                    while(trees.length < 20) trees.push(0);
+                if (shouldOverwrite) {
+                    console.log("Syncing with server data (External change or initial sync)");
+                    isInternalUpdate = true;
+                    updateBananas(serverScore);
+                    updateCoins(serverCoins);
+                    bananaBox = data.banana_box || 0;
+                    level = serverLevel;
+                    updateXp(serverXp);
                     
-                    // Ensure at least one tree exists
-                    if (trees.every(t => t === 0)) {
-                        trees[0] = 1;
+                    if (data.unlocked_titles) {
+                        unlockedTitles = typeof data.unlocked_titles === 'string' ? JSON.parse(data.unlocked_titles) : data.unlocked_titles;
+                        if (!Array.isArray(unlockedTitles)) unlockedTitles = [];
                     }
+                    equippedTitle = data.equipped_title || null;
+
+                    isInternalUpdate = false;
+                    
+                    // Update expected state to match server data
+                    expectedDbBananas = serverScore; 
+                    expectedDbCoins = serverCoins;
+
+                    if (data.trees) {
+                        trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
+                        if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
+                        while(trees.length < 20) trees.push(0);
+                        
+                        // Ensure at least one tree exists
+                        if (trees.every(t => t === 0)) {
+                            trees[0] = 1;
+                        }
+                    }
+                    if (data.gadgets) {
+                        unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
+                        if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
+                        while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+                    }
+                    
+                    localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
+                        userId, id: userId, name: playerName, bananas, coins, trees, 
+                        gadgets: unlockedGadgets, activeGadgets, activeBoosts, level, xp,
+                        expectedDbBananas, expectedDbCoins
+                    }));
+                    updateGameUI();
+                } else if (expectedDbBananas === -1) {
+                    // We have local progress but server is empty. 
+                    // Set expected state to match server so we can push our local progress.
+                    expectedDbBananas = serverScore;
+                    expectedDbCoins = serverCoins;
+                    console.log("Local progress detected, preparing to sync to server.");
+                    syncData(bananas, trees);
                 }
-                if (data.gadgets) {
-                    unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
-                    if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
-                    while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
-                }
-                
-                localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
-                    userId, id: userId, name: playerName, bananas, coins, trees, 
-                    gadgets: unlockedGadgets, activeGadgets, activeBoosts, level, xp 
-                }));
-                updateGameUI();
             }
           }
         }
@@ -1494,7 +1539,9 @@
           shopStock,
           shopPurchased,
           shopRefreshTime,
-          activeBoosts
+          activeBoosts,
+          expectedDbBananas,
+          expectedDbCoins
       }));
 
       if (authToken && userId) {
