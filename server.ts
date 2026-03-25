@@ -76,6 +76,7 @@ app.post("/api/register", async (req, res) => {
       password: hashedPassword,
       score: 0,
       coins: 0,
+      banana_box: 0,
       level: 1,
       xp: 0,
       trees: JSON.stringify([1, ...Array(19).fill(0)]),
@@ -148,7 +149,7 @@ app.post("/api/login", async (req, res) => {
 
 // Save Data
 app.post("/api/save", authenticateToken, async (req: any, res) => {
-  const { userId, name, score, coins, trees, gadgets, level, xp, unlocked_titles, equipped_title } = req.body;
+  const { userId, name, score, coins, bananaBox, trees, gadgets, level, xp, unlocked_titles, equipped_title } = req.body;
 
   if (req.user.userId !== userId) {
     return res.status(403).json({ error: "Cannot save data for another user" });
@@ -189,6 +190,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
       name,
       score,
       coins,
+      banana_box: bananaBox || 0,
       trees: JSON.stringify(trees),
       gadgets: JSON.stringify(gadgets),
       level,
