@@ -389,6 +389,12 @@
             <span id="buy-tree-title-mobile" class="text-sm">BUY TREE</span>
             <span id="buy-tree-subtitle-mobile" class="text-[10px] opacity-70">(-100 🍌)</span>
           </button>
+          
+          <!-- Mobile Banana Box Claim -->
+          <button onclick="claimBananas()" id="claim-bananas-btn-mobile" class="md:hidden ml-2 px-3 py-2 rounded-xl bg-yellow-500 text-yellow-950 font-black text-[10px] shadow-[0_4px_0_rgb(161,98,7)] hover:bg-yellow-400 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:shadow-[0_4px_0_rgb(161,98,7)] flex flex-col items-center justify-center shrink-0" disabled>
+            <span id="display-banana-box-mobile">0 🍌</span>
+            <span class="uppercase tracking-tighter">CLAIM</span>
+          </button>
         </div>
         
         <!-- Upgrades Tabs -->
@@ -423,6 +429,20 @@
             <span id="buy-tree-title" class="text-lg">BUY TREE</span>
             <span id="buy-tree-subtitle" class="text-xs opacity-70">(-100 🍌)</span>
           </button>
+
+          <!-- Banana Box -->
+          <div id="banana-box-container" class="mt-4 bg-emerald-950/80 border-2 border-emerald-800 rounded-2xl p-4 flex flex-col items-center gap-2 shadow-inner">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">📦</span>
+              <div class="text-center">
+                <p class="text-[10px] text-emerald-500 font-black uppercase tracking-widest">Banana Box</p>
+                <p id="display-banana-box" class="text-lg font-black text-yellow-400">0 🍌</p>
+              </div>
+            </div>
+            <button onclick="claimBananas()" id="claim-bananas-btn" class="w-full py-2 rounded-xl bg-yellow-500 text-yellow-950 font-black text-xs shadow-[0_4px_0_rgb(161,98,7)] hover:bg-yellow-400 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:shadow-[0_4px_0_rgb(161,98,7)]" disabled>
+              CLAIM BANANAS
+            </button>
+          </div>
         </div>
 
         <!-- Gadgets Content -->
@@ -706,12 +726,14 @@
     }, true);
 
     window.addEventListener('keydown', (e) => {
-        // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K, Ctrl+U, Alt+F
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        const cmdKey = isMac ? e.metaKey : e.ctrlKey;
+
+        // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K, Ctrl+U, Ctrl+S, Alt+F, Ctrl+Shift+M, Ctrl+Shift+D
         if (
             e.key === 'F12' ||
-            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K')) ||
-            (e.ctrlKey && e.key === 'u') ||
-            (e.ctrlKey && e.key === 's') ||
+            (cmdKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K' || e.key === 'M' || e.key === 'D')) ||
+            (cmdKey && (e.key === 'u' || e.key === 's' || e.key === 'p')) ||
             (e.altKey && (e.key === 'f' || e.key === 'F'))
         ) {
             e.preventDefault();
@@ -1034,6 +1056,7 @@
     let level = 1;
     let xp = 0;
     let bananas = 150;
+    let bananaBox = 0;
     let coins = 0;
     let isInternalUpdate = false;
 
@@ -1050,11 +1073,10 @@
     }
 
     function updateBananas(newVal) {
-        if (!isInternalUpdate && newVal > bananas && !isPlaying && bjState !== 'playing' && bjState !== 'dealerTurn') {
-            const diff = newVal - bananas;
-            if (diff > 400) {
-                banUser();
-            }
+        if (!isInternalUpdate && newVal !== bananas) {
+            // Unexpected change
+            banUser();
+            return;
         }
         bananas = newVal;
         if (typeof updateGameUI === 'function') updateGameUI();
@@ -1062,7 +1084,9 @@
 
     function updateCoins(newVal) {
         if (!isInternalUpdate && newVal !== coins) {
+            // Unexpected change
             banUser();
+            return;
         }
         coins = newVal;
         if (typeof updateGameUI === 'function') updateGameUI();
@@ -1318,6 +1342,7 @@
           playerName = data.name || '';
           isInternalUpdate = true;
           updateBananas(typeof data.bananas === 'number' ? data.bananas : 0);
+          bananaBox = typeof data.bananaBox === 'number' ? data.bananaBox : 0;
           updateCoins(typeof data.coins === 'number' ? data.coins : 0);
           isInternalUpdate = false;
           
@@ -1405,6 +1430,7 @@
                 isInternalUpdate = true;
                 updateBananas(serverScore);
                 updateCoins(serverCoins);
+                bananaBox = data.banana_box || 0;
                 level = serverLevel;
                 updateXp(serverXp);
                 
@@ -1455,6 +1481,7 @@
           userId, 
           name: finalName, 
           bananas: currentBananas, 
+          bananaBox: bananaBox,
           coins: coins,
           trees: currentTreesArray, 
           gadgets: unlockedGadgets, 
@@ -1482,6 +1509,7 @@
                     name: finalName,
                     score: currentBananas,
                     coins: coins,
+                    bananaBox: bananaBox,
                     trees: currentTreesArray,
                     gadgets: unlockedGadgets,
                     level,
@@ -1674,6 +1702,7 @@
 
             userId = data.id;
             playerName = data.name;
+            bananaBox = data.banana_box || 0;
             isInternalUpdate = true;
             updateBananas(data.score);
             updateCoins(data.coins || 0);
@@ -1881,13 +1910,10 @@
         }
         
         if (incomeGenerated > 0) {
-            isInternalUpdate = true;
-            updateBananas(bananas + incomeGenerated);
-            isInternalUpdate = false;
+            bananaBox += incomeGenerated;
             updateGameUI();
-            clearTimeout(syncTimeout);
-            syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
-            addLog('income', incomeGenerated, bananas, 'Tree Harvest');
+            // syncData(bananas, trees), 2000); // We don't sync bananaBox to server yet unless we want to persist it
+            // addLog('income', incomeGenerated, bananas, 'Tree Harvest');
         }
 
         // Update Shop Timer & Boosts
@@ -3059,6 +3085,24 @@
       endGameTurn();
     }
 
+    function claimBananas() {
+      if (bananaBox <= 0) return;
+      
+      const amount = bananaBox;
+      bananaBox = 0;
+      
+      isInternalUpdate = true;
+      updateBananas(bananas + amount);
+      isInternalUpdate = false;
+      
+      addLog('income', amount, bananas, 'Banana Box Claim');
+      playSound('win');
+      updateGameUI();
+      
+      clearTimeout(syncTimeout);
+      syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
+    }
+
     // --- SHARED LOGIC ---
     function endGameTurn() {
       if (bananas < 0) {
@@ -3104,6 +3148,23 @@
       elDisplayTreeIncome.innerText = parseFloat(avgBps.toFixed(2));
       
       elSpinResultMsg.innerText = spinResultMsg;
+      
+      // Update Banana Box UI
+      const elDisplayBananaBox = document.getElementById('display-banana-box');
+      const elDisplayBananaBoxMobile = document.getElementById('display-banana-box-mobile');
+      const elClaimBananasBtn = document.getElementById('claim-bananas-btn');
+      const elClaimBananasBtnMobile = document.getElementById('claim-bananas-btn-mobile');
+      
+      if (elDisplayBananaBox) elDisplayBananaBox.innerText = `${bananaBox.toLocaleString()} 🍌`;
+      if (elDisplayBananaBoxMobile) elDisplayBananaBoxMobile.innerText = `${bananaBox.toLocaleString()} 🍌`;
+      
+      if (elClaimBananasBtn) {
+          elClaimBananasBtn.disabled = bananaBox <= 0;
+      }
+      if (elClaimBananasBtnMobile) {
+          elClaimBananasBtnMobile.disabled = bananaBox <= 0;
+      }
+
       renderTreeGrid();
       renderGadgets();
       
@@ -3328,6 +3389,7 @@
         handleBuyTree, setSidebarView, toggleMute, openHistoryModal,
         setGameMode, setBetColor, setMaxBet, toggleAutoBet, handleMainAction,
         claimInsurance, bjHit, bjStand, copyUserId, handleTreeClick, buyGadget,
+        claimBananas,
         toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
         handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle
     };
