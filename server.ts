@@ -166,7 +166,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
 
     const { expectedScore, expectedCoins } = req.body;
     
-    if (current && expectedScore !== undefined && expectedCoins !== undefined) {
+    if (current && expectedScore !== undefined && expectedCoins !== undefined && expectedScore !== -1 && expectedCoins !== -1) {
         if (Number(current.score) !== Number(expectedScore) || Number(current.coins) !== Number(expectedCoins)) {
             // External change detected, return current data instead of overwriting
             const { data: fullUser } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
