@@ -159,7 +159,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     // Optimistic Concurrency Control: Check if the score on server matches what client expects
     const { data: current, error: fetchError } = await supabase
       .from('database')
-      .select('score, coins')
+      .select('score, coins, unlocked_titles')
       .eq('id', userId)
       .maybeSingle();
 
@@ -174,6 +174,16 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
         }
     }
 
+    // Merge unlocked_titles to prevent overwriting manual admin edits
+    let finalUnlockedTitles = unlocked_titles || [];
+    if (current && current.unlocked_titles) {
+        const serverTitles = typeof current.unlocked_titles === 'string' ? JSON.parse(current.unlocked_titles) : current.unlocked_titles;
+        if (Array.isArray(serverTitles)) {
+            // Keep all server titles (including manually added ones) and add any new ones from client
+            finalUnlockedTitles = Array.from(new Set([...serverTitles, ...finalUnlockedTitles]));
+        }
+    }
+
     const { error } = await supabase.from('database').upsert({
       id: userId,
       name,
@@ -183,7 +193,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
       gadgets: JSON.stringify(gadgets),
       level,
       xp,
-      unlocked_titles: JSON.stringify(unlocked_titles || []),
+      unlocked_titles: JSON.stringify(finalUnlockedTitles),
       equipped_title: equipped_title || null,
       updated_at: new Date().toISOString()
     });
