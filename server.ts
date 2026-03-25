@@ -60,6 +60,18 @@ app.post("/api/register", async (req, res) => {
     return res.status(400).json({ error: "Missing fields" });
   }
 
+  if (name.length < 3 || name.length > 20) {
+    return res.status(400).json({ error: "Name must be between 3 and 20 characters" });
+  }
+
+  if (password.length < 4) {
+    return res.status(400).json({ error: "Password must be at least 4 characters" });
+  }
+
+  if (!/^[a-zA-Z0-9_]+$/.test(name)) {
+    return res.status(400).json({ error: "Name can only contain letters, numbers, and underscores" });
+  }
+
   try {
     const supabase = getSupabase();
     // Check if user exists
