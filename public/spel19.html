@@ -1113,6 +1113,7 @@
         'extra_hand': { id: 'extra_hand', name: 'Extra Hand', color: 'text-blue-400', group: 'Rare' },
         // Limited Edition Titles
         'the_hacker': { id: 'the_hacker', name: 'The Hacker', color: 'text-red-500', group: 'Mythic', limited: true },
+        'n1_grinder': { id: 'n1_grinder', name: 'The n1 Grinder', color: 'text-red-500', group: 'Mythic', limited: true },
         'the_true_one': { id: 'the_true_one', name: 'The True One', color: 'text-yellow-400', group: 'Legendary', limited: true },
         'the_cheater': { id: 'the_cheater', name: 'The Cheater', color: 'text-blue-400', group: 'Rare', limited: true },
         'ludvigs_stand': { id: 'ludvigs_stand', name: 'Ludvigs Stand', color: 'text-black drop-shadow-[0_0_2px_rgba(255,255,255,0.8)]', group: 'Admin', limited: true }
@@ -2828,12 +2829,6 @@
         return; 
       }
       
-      // SUBTRACT BET AT START
-      isInternalUpdate = true;
-      updateBananas(bananas - actualBet);
-      isInternalUpdate = false;
-      addLog('purchase', actualBet, bananas, 'Slots Bet');
-
       isPlaying = true;
       spinResultMsg = "Spinning slots...";
       
@@ -2906,12 +2901,13 @@
       }
 
       const totalBet = normalBet + bonusBetAmount;
-      let payout = 0;
       
-      // UPDATED PAYOUT LOGIC (Subtract at start, add payout at end)
+      // NEW LOGIC: Only subtract on loss, add profit on win
+      let netProfit = 0;
+      let netLoss = 0;
+
       if (outcome === 'partial') {
-        // 1.5x Payout (Bet back + 0.5x profit)
-        payout = Math.round(normalBet * 1.5);
+        netProfit += Math.round(normalBet * 0.5);
         slots.forEach((s, i) => {
           const counts = {};
           resultSlots.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
@@ -2919,34 +2915,34 @@
           if (resultSlots[i] === matchingIcon) s.classList.add('slot-win');
         });
       } else if (outcome === 'win') {
-        // 3x Payout (Bet back + 2x profit)
-        // User said: "bet 1000... i should get 2000 added". 
-        // If I subtract 1000 at start, and payout is 3000, they get 3000 added.
-        // Their net gain is 2000. This matches "get 2000 added" in terms of net profit.
-        payout = normalBet * 3;
+        netProfit += normalBet * 2;
         slots.forEach(s => s.classList.add('slot-win'));
       } else if (outcome === 'jackpot') {
-        // 15x Payout
-        payout = normalBet * 15;
+        netProfit += normalBet * 14;
         slots.forEach(s => s.classList.add('slot-win'));
+      } else {
+        netLoss += normalBet;
       }
 
       if (bonusWin) {
-        payout += bonusBetAmount * 20; // 20x multiplier for correct prediction
+        netProfit += bonusBetAmount * 19;
         slots.forEach(s => s.classList.add('slot-win'));
+      } else if (isBonusBet) {
+        netLoss += bonusBetAmount;
       }
 
-      if (payout > 0) {
-        const finalPayout = applyWin(payout);
-        spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${finalPayout} 🍌!` : `WIN! Won ${finalPayout} 🍌!`;
-        addLog('win', finalPayout, bananas, bonusWin ? 'Slots: Bonus Prediction Win' : 'Slots Win');
-      } else {
-        winStreak = 0; // RESET STREAK ON LOSS
+      if (netProfit > netLoss) {
+        const finalWin = applyWin(netProfit - netLoss);
+        spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${finalWin} 🍌!` : `WIN! Won ${finalWin} 🍌!`;
+        addLog('win', finalWin, bananas, bonusWin ? 'Slots: Bonus Prediction Win' : 'Slots Win');
+      } else if (netLoss > netProfit) {
+        const finalLoss = netLoss - netProfit;
         if (totalBet > 100000) unlockTitle('unlucky');
-        // Already subtracted bet at start, so this is just a loss message
-        spinResultMsg = `Loss. Lost ${totalBet} 🍌.`;
-        addLog('loss', totalBet, bananas, 'Slots Loss');
-        playSound('loss');
+        spinResultMsg = processLoss(finalLoss, totalBet, `Loss. Lost ${finalLoss} 🍌.`);
+        addLog('loss', finalLoss, bananas, 'Slots Loss');
+      } else {
+        spinResultMsg = "Push! No change.";
+        addLog('push', 0, bananas, 'Slots Push');
       }
 
       endGameTurn();
