@@ -1422,6 +1422,13 @@
                 updateCoins(Number(serverData.coins || 0));
                 level = serverData.level || 1;
                 updateXp(serverData.xp || 0);
+                
+                if (serverData.unlocked_titles) {
+                    unlockedTitles = typeof serverData.unlocked_titles === 'string' ? JSON.parse(serverData.unlocked_titles) : serverData.unlocked_titles;
+                    if (!Array.isArray(unlockedTitles)) unlockedTitles = [];
+                }
+                equippedTitle = serverData.equipped_title || null;
+
                 isInternalUpdate = false;
                 
                 expectedDbBananas = bananas; 
