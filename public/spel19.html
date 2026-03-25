@@ -26,7 +26,51 @@
     }
     
     .slot-icon {
-      transition: transform 0.1s ease-in-out;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      font-size: 3.5rem;
+      filter: drop-shadow(0 0 8px rgba(0,0,0,0.5));
+    }
+    .slot-spinning {
+      filter: blur(4px);
+      transform: scale(0.9) translateY(5px);
+      animation: slot-shake 0.1s infinite;
+      opacity: 0.7;
+    }
+    .slot-win {
+      animation: slot-win-glow 0.6s ease-in-out infinite alternate;
+      z-index: 10;
+      position: relative;
+    }
+    @keyframes slot-shake {
+      0% { transform: translate(1px, 1px) rotate(0deg) scale(0.9); }
+      20% { transform: translate(-1px, -2px) rotate(-1deg) scale(0.9); }
+      40% { transform: translate(-3px, 0px) rotate(1deg) scale(0.9); }
+      60% { transform: translate(3px, 2px) rotate(0deg) scale(0.9); }
+      80% { transform: translate(1px, -1px) rotate(1deg) scale(0.9); }
+      100% { transform: translate(-1px, 2px) rotate(-1deg) scale(0.9); }
+    }
+    @keyframes slot-win-glow {
+      from { transform: scale(1); filter: brightness(1) drop-shadow(0 0 10px gold); }
+      to { transform: scale(1.15); filter: brightness(1.8) drop-shadow(0 0 30px gold); }
+    }
+    .slot-machine-body {
+      background: linear-gradient(135deg, #444 0%, #222 50%, #111 100%);
+      border: 4px solid #555;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,255,255,0.1);
+    }
+    .slot-reel-container {
+      background: #000;
+      border: 2px solid #333;
+      box-shadow: inset 0 0 30px rgba(0,0,0,1);
+    }
+    .slot-light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      box-shadow: 0 0 10px currentColor;
     }
     .playing-card {
       background-image: repeating-linear-gradient(45deg, #1e40af 25%, transparent 25%, transparent 75%, #1e40af 75%, #1e40af), repeating-linear-gradient(45deg, #1e40af 25%, #1e3a8a 25%, #1e3a8a 75%, #1e40af 75%, #1e40af);
@@ -432,18 +476,56 @@
 
           <!-- Game: SLOTS -->
           <div id="area-slots" class="w-full h-full flex flex-col items-center justify-center hidden">
-            <div class="bg-gradient-to-b from-yellow-500 to-yellow-600 p-2 md:p-3 rounded-2xl shadow-2xl mb-4 border-4 border-yellow-700">
-              <div class="bg-emerald-950 flex gap-2 md:gap-4 p-4 md:p-6 rounded-xl border-4 border-emerald-900 shadow-inner">
-                <div id="slot-1" class="w-20 h-24 md:w-28 md:h-32 bg-emerald-900 rounded-lg flex items-center justify-center text-5xl md:text-7xl shadow-inner border-y-4 border-black/30 slot-icon">🍎</div>
-                <div id="slot-2" class="w-20 h-24 md:w-28 md:h-32 bg-emerald-900 rounded-lg flex items-center justify-center text-5xl md:text-7xl shadow-inner border-y-4 border-black/30 slot-icon">🍉</div>
-                <div id="slot-3" class="w-20 h-24 md:w-28 md:h-32 bg-emerald-900 rounded-lg flex items-center justify-center text-5xl md:text-7xl shadow-inner border-y-4 border-black/30 slot-icon">🥝</div>
+            <div class="relative group max-w-md w-full px-4">
+              <!-- Slot Machine Frame -->
+              <div class="slot-machine-body p-4 md:p-6 rounded-[2rem] mb-6 relative overflow-hidden">
+                <!-- Decorative Top -->
+                <div class="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/10 to-transparent"></div>
+                
+                <!-- Top Light Bar -->
+                <div class="flex justify-center gap-4 mb-4">
+                  <div class="slot-light text-red-500 bg-red-500 animate-pulse"></div>
+                  <div class="slot-light text-yellow-400 bg-yellow-400 animate-pulse delay-75"></div>
+                  <div class="slot-light text-blue-500 bg-blue-500 animate-pulse delay-150"></div>
+                  <div class="slot-light text-green-500 bg-green-500 animate-pulse delay-300"></div>
+                </div>
+
+                <!-- Reels Section -->
+                <div class="flex gap-2 md:gap-4 justify-center items-center bg-zinc-900 p-3 md:p-5 rounded-xl border-4 border-zinc-800 shadow-inner relative">
+                    <!-- Glass Reflection -->
+                    <div class="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/5 pointer-events-none rounded-lg"></div>
+                    
+                    <div id="slot-1" class="slot-reel-container w-20 h-24 md:w-28 md:h-32 flex items-center justify-center rounded-lg overflow-hidden">
+                      <span class="slot-icon">🍒</span>
+                    </div>
+                    <div id="slot-2" class="slot-reel-container w-20 h-24 md:w-28 md:h-32 flex items-center justify-center rounded-lg overflow-hidden">
+                      <span class="slot-icon">🍋</span>
+                    </div>
+                    <div id="slot-3" class="slot-reel-container w-20 h-24 md:w-28 md:h-32 flex items-center justify-center rounded-lg overflow-hidden">
+                      <span class="slot-icon">🔔</span>
+                    </div>
+                </div>
+
+                <!-- Bottom Decorative Bar -->
+                <div class="mt-4 flex justify-between items-center px-2">
+                  <div class="text-[10px] text-zinc-500 font-mono">SERIES 777</div>
+                  <div class="flex gap-1">
+                    <div class="w-1 h-4 bg-zinc-700 rounded-full"></div>
+                    <div class="w-1 h-4 bg-zinc-700 rounded-full"></div>
+                    <div class="w-1 h-4 bg-zinc-700 rounded-full"></div>
+                  </div>
+                  <div class="text-[10px] text-zinc-500 font-mono">CASINO TECH</div>
+                </div>
               </div>
-            </div>
-            <div class="text-emerald-200 text-[10px] md:text-sm font-medium mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-center bg-emerald-900/50 p-3 rounded-xl">
-              <div>3 Diff: <span class="text-red-400">Lose</span></div>
-              <div>2 Same: <span class="text-emerald-400">25% Win</span></div>
-              <div>3 Same: <span class="text-yellow-400">2x Bet</span></div>
-              <div>3 Jackpot 💰: <span class="text-yellow-300 font-bold">10x Bet</span></div>
+
+              <!-- Payout Info -->
+              <div class="bg-black/40 backdrop-blur-md border border-white/10 rounded-xl p-3 mb-6 text-center">
+                <div class="grid grid-cols-3 gap-2 text-[10px] md:text-xs">
+                  <div class="text-zinc-400">2 PAIR: <span class="text-emerald-400 font-bold">1.5x</span></div>
+                  <div class="text-zinc-400">3 MATCH: <span class="text-emerald-400 font-bold">3x</span></div>
+                  <div class="text-zinc-400">JACKPOT: <span class="text-yellow-400 font-bold">15x</span></div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2746,38 +2828,53 @@
         return; 
       }
       
+      // SUBTRACT BET AT START
+      isInternalUpdate = true;
+      updateBananas(bananas - actualBet);
+      isInternalUpdate = false;
+      addLog('purchase', actualBet, bananas, 'Slots Bet');
+
       isPlaying = true;
       spinResultMsg = "Spinning slots...";
+      
+      // Add spinning visual state
+      const slots = [document.getElementById('slot-1'), document.getElementById('slot-2'), document.getElementById('slot-3')];
+      slots.forEach(s => {
+        s.classList.add('slot-spinning');
+        s.classList.remove('slot-win');
+      });
+      
       updateGameUI();
 
       let ticks = 0;
       let slotAnimInterval = setInterval(() => {
-        document.getElementById('slot-1').innerText = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
-        document.getElementById('slot-2').innerText = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
-        document.getElementById('slot-3').innerText = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
+        slots.forEach(s => {
+          s.querySelector('span').innerText = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
+        });
         ticks++;
-        if (ticks > 20) {
+        if (ticks > 30) {
           clearInterval(slotAnimInterval);
+          slots.forEach(s => s.classList.remove('slot-spinning'));
           finalizeSlots(betAmount); // Pass normal bet amount
         }
-      }, 100);
+      }, 70);
     }
     
     function finalizeSlots(normalBet) {
       let r = Math.random() * 105;
       let outcome, resultSlots = [];
       
-      if (r < 40) { 
+      if (r < 45) { 
         outcome = 'lose';
         let temp = [...SLOT_ICONS].sort(() => Math.random() - 0.5);
         resultSlots = [temp[0], temp[1], temp[2]];
-      } else if (r < 70) { 
+      } else if (r < 75) { 
         outcome = 'partial';
         let icon = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
         let other = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
         while (other === icon) other = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
         resultSlots = [icon, icon, other].sort(() => Math.random() - 0.5);
-      } else if (r < 95) { 
+      } else if (r < 98) { 
         outcome = 'win';
         let icon = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
         resultSlots = [icon, icon, icon];
@@ -2786,9 +2883,10 @@
         resultSlots = [JACKPOT_ICON, JACKPOT_ICON, JACKPOT_ICON];
       }
 
-      document.getElementById('slot-1').innerText = resultSlots[0];
-      document.getElementById('slot-2').innerText = resultSlots[1];
-      document.getElementById('slot-3').innerText = resultSlots[2];
+      const slots = [document.getElementById('slot-1'), document.getElementById('slot-2'), document.getElementById('slot-3')];
+      slots.forEach((s, i) => {
+        s.querySelector('span').innerText = resultSlots[i];
+      });
 
       // Check Bonus Bet
       let bonusWin = false;
@@ -2808,40 +2906,46 @@
       }
 
       const totalBet = normalBet + bonusBetAmount;
-      let normalProfit = 0;
+      let payout = 0;
       
-      if (outcome === 'lose') {
-        normalProfit = -normalBet;
-      } else if (outcome === 'partial') {
-        normalProfit = Math.round(normalBet * 0.25) - normalBet;
+      // UPDATED PAYOUT LOGIC (Subtract at start, add payout at end)
+      if (outcome === 'partial') {
+        // 1.5x Payout (Bet back + 0.5x profit)
+        payout = Math.round(normalBet * 1.5);
+        slots.forEach((s, i) => {
+          const counts = {};
+          resultSlots.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
+          const matchingIcon = Object.keys(counts).find(icon => counts[icon] >= 2);
+          if (resultSlots[i] === matchingIcon) s.classList.add('slot-win');
+        });
       } else if (outcome === 'win') {
-        normalProfit = normalBet;
+        // 3x Payout (Bet back + 2x profit)
+        // User said: "bet 1000... i should get 2000 added". 
+        // If I subtract 1000 at start, and payout is 3000, they get 3000 added.
+        // Their net gain is 2000. This matches "get 2000 added" in terms of net profit.
+        payout = normalBet * 3;
+        slots.forEach(s => s.classList.add('slot-win'));
       } else if (outcome === 'jackpot') {
-        normalProfit = normalBet * 9;
+        // 15x Payout
+        payout = normalBet * 15;
+        slots.forEach(s => s.classList.add('slot-win'));
       }
 
-      let bonusProfit = isBonusBet ? -bonusBetAmount : 0;
       if (bonusWin) {
-        bonusProfit = bonusBetAmount * 20; // 20x multiplier for correct prediction
-        if (normalProfit < 0) {
-          normalProfit = 0; // "you dont lose your normal bet amount"
-        }
+        payout += bonusBetAmount * 20; // 20x multiplier for correct prediction
+        slots.forEach(s => s.classList.add('slot-win'));
       }
 
-      const netChange = normalProfit + bonusProfit;
-
-      if (netChange > 0) {
-        applyWin(netChange);
-        spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${netChange} 🍌!` : `WIN! Won ${netChange} 🍌!`;
-        addLog('win', netChange, bananas, bonusWin ? 'Slots: Bonus Prediction Win' : 'Slots Win');
-      } else if (netChange < 0) {
-        if (totalBet > 100000) unlockTitle('unlucky');
-        processLoss(Math.abs(netChange), totalBet, `Loss. Lost ${Math.abs(netChange)} 🍌.`);
-        spinResultMsg = `Loss. Lost ${Math.abs(netChange)} 🍌.`;
-        addLog('loss', Math.abs(netChange), bananas, 'Slots Loss');
+      if (payout > 0) {
+        const finalPayout = applyWin(payout);
+        spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${finalPayout} 🍌!` : `WIN! Won ${finalPayout} 🍌!`;
+        addLog('win', finalPayout, bananas, bonusWin ? 'Slots: Bonus Prediction Win' : 'Slots Win');
       } else {
-        spinResultMsg = "Push! No change in bananas.";
-        addLog('push', 0, bananas, 'Slots Push');
+        if (totalBet > 100000) unlockTitle('unlucky');
+        // Already subtracted bet at start, so this is just a loss message
+        spinResultMsg = `Loss. Lost ${totalBet} 🍌.`;
+        addLog('loss', totalBet, bananas, 'Slots Loss');
+        playSound('loss');
       }
 
       endGameTurn();
