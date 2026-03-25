@@ -1442,8 +1442,9 @@
 
                 isInternalUpdate = false;
                 
-                expectedDbBananas = bananas; 
-                expectedDbCoins = coins;
+                // CRITICAL: Update expected state to match server data
+                expectedDbBananas = serverScore; 
+                expectedDbCoins = serverCoins;
 
                 if (data.trees) {
                     trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
@@ -1531,6 +1532,7 @@
                 isInternalUpdate = true;
                 updateBananas(Number(serverData.score));
                 updateCoins(Number(serverData.coins || 0));
+                bananaBox = serverData.banana_box || 0;
                 level = serverData.level || 1;
                 updateXp(serverData.xp || 0);
                 
@@ -1542,8 +1544,8 @@
 
                 isInternalUpdate = false;
                 
-                expectedDbBananas = bananas; 
-                expectedDbCoins = coins;
+                expectedDbBananas = Number(serverData.score); 
+                expectedDbCoins = Number(serverData.coins || 0);
 
                 if (serverData.trees) {
                     trees = typeof serverData.trees === 'string' ? JSON.parse(serverData.trees) : serverData.trees;
