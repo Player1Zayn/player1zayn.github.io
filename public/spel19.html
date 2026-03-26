@@ -752,6 +752,18 @@
         const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
         const cmdKey = isMac ? e.metaKey : e.ctrlKey;
 
+        // Warning for Tab or Alt instead of immediate ban to prevent accidental bans
+        if (e.key === 'Tab' || e.key === 'Alt') {
+            const warning = document.getElementById('cheat-warning');
+            if (warning) {
+                warning.classList.remove('hidden');
+                setTimeout(() => warning.classList.add('hidden'), 1000);
+            }
+            // We don't preventDefault here to allow normal navigation, 
+            // but we show the "STOP CHEATING" warning as requested.
+            return;
+        }
+
         // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K, Ctrl+U, Ctrl+S, Alt+F, Ctrl+Shift+M, Ctrl+Shift+D
         if (
             e.key === 'F12' ||
@@ -811,7 +823,7 @@
         banOverlay.style = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:#064e3b; color:#facc15; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px; z-index:9999;";
         banOverlay.innerHTML = `
             <svg style="width:80px; height:80px; margin-bottom:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-            <h1 style="font-size:3rem; font-weight:900; margin:0;">GAME CLOSED</h1>
+            <h1 style="font-size:3rem; font-weight:900; margin:0;">STOP CHEATING</h1>
             <p style="font-size:1.2rem; opacity:0.8; margin-top:10px;">Security violation detected. The game session is closing.</p>
             <div id="ban-close-timer" style="margin-top:30px; font-weight:bold; color:#ef4444;">Closing page in 1s...</div>
         `;
@@ -838,9 +850,21 @@
     }
 
     async function banUser() {
-        // Ban feature temporarily disabled as requested.
-        // Replacing with page-closing logic.
-        
+        localStorage.setItem('isBanned', 'true');
+        // Call server to ban user
+        if (authToken && userId) {
+            try {
+                await fetch('/api/ban', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ userId })
+                });
+            } catch (e) { console.error("Failed to notify server of ban:", e); }
+        }
+
         // Immediately hide the app to "close down" the game
         const appEl = document.getElementById('app');
         if (appEl) appEl.classList.add('hidden');
@@ -1427,10 +1451,25 @@
               const response = await fetch(url, options);
               if (!response.ok) {
                   const errorText = await response.text();
+                  
+                  // Handle ban status
+                  if (response.status === 403) {
+                      try {
+                          const errJson = JSON.parse(errorText);
+                          if (errJson.error && errJson.error.includes("banned")) {
+                              banUser();
+                              throw new Error("Account banned");
+                          }
+                      } catch (e) {
+                          // Not JSON or other error
+                      }
+                  }
+                  
                   throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
               }
               return await response.json();
           } catch (error) {
+              if (error.message === "Account banned") throw error;
               if (retries > 0 && (error.name === 'TypeError' || error.message.includes('HTTP 5'))) {
                   console.warn(`Fetch failed for ${url}, retrying in ${backoff}ms... (${retries} retries left)`, error);
                   await new Promise(resolve => setTimeout(resolve, backoff));
@@ -2834,52 +2873,82 @@
     // --- ROULETTE LOGIC ---
     function setBetColor(color) { if (!isPlaying) { betColor = color; updateGameUI(); } }
     
-    function playRoulette() {
+    async function playRoulette() {
       isPlaying = true;
       spinResultMsg = "Spinning...";
       updateGameUI();
 
-      const rand = Math.random();
-      
-      const pRed = unlockedGadgets[1] ? 0.42 : 0.46;
-      const pBlack = unlockedGadgets[1] ? 0.42 : 0.46;
-      
-      let winningColor;
-      if (rand < pRed) winningColor = 'red';
-      else if (rand < pRed + pBlack) winningColor = 'black';
-      else winningColor = 'green';
+      try {
+        const response = await fetch('/api/game/roulette', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ userId, betAmount, betColor, gadgets: unlockedGadgets })
+        });
+        
+        if (response.status === 403) {
+            const result = await response.json().catch(() => ({ error: "Forbidden" }));
+            if (result.error && result.error.includes("banned")) {
+                banUser();
+                return;
+            }
+        }
 
-      const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
-      const matchingIndices = WHEEL_COLORS.map((c, i) => c === winningColor ? i : -1).filter(i => i !== -1);
-      const targetIndex = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
-      
-      const sliceCenterAngle = targetIndex * 18 + 9;
-      const baseTargetRotation = 360 - sliceCenterAngle;
-      const nextRotation = wheelRotation + (360 * 5) + (baseTargetRotation - (wheelRotation % 360));
-      wheelRotation = nextRotation;
-      elWheel.style.transform = `rotate(${wheelRotation}deg)`;
+        const result = await response.json();
+        if (!result.success) {
+          alert(result.error || "Roulette failed");
+          isPlaying = false;
+          updateGameUI();
+          return;
+        }
 
-      setTimeout(() => {
-        if (betColor === winningColor) {
-          if (winningColor === 'green') {
-            consecutiveGreens++;
-            if (consecutiveGreens >= 3) unlockTitle('lucky_one');
+        const winningColor = result.winningColor;
+        const winAmount = result.winAmount;
+
+        const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
+        const matchingIndices = WHEEL_COLORS.map((c, i) => c === winningColor ? i : -1).filter(i => i !== -1);
+        const targetIndex = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
+        
+        const sliceCenterAngle = targetIndex * 18 + 9;
+        const baseTargetRotation = 360 - sliceCenterAngle;
+        const nextRotation = wheelRotation + (360 * 5) + (baseTargetRotation - (wheelRotation % 360));
+        wheelRotation = nextRotation;
+        elWheel.style.transform = `rotate(${wheelRotation}deg)`;
+
+        setTimeout(() => {
+          if (winAmount > 0) {
+            if (winningColor === 'green') {
+              consecutiveGreens++;
+              if (consecutiveGreens >= 3) unlockTitle('lucky_one');
+            } else {
+              consecutiveGreens = 0;
+            }
+            bananas = result.newScore;
+            xp = result.newXp;
+            level = result.newLevel;
+            spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${formatNumber(winAmount)} 🍌!`;
+            addLog('win', winAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
           } else {
             consecutiveGreens = 0;
+            if (betAmount > 100000) unlockTitle('unlucky');
+            bananas = result.newScore;
+            xp = result.newXp;
+            level = result.newLevel;
+            spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Lost ${formatNumber(betAmount)} 🍌.`;
+            addLog('loss', betAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
           }
-          const mult = winningColor === 'green' ? 3 : 1;
-          const winAmount = betAmount * mult;
-          const finalWin = applyWin(winAmount);
-          spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${formatNumber(finalWin)} 🍌!`;
-          addLog('win', finalWin, bananas, `Roulette ${winningColor.toUpperCase()}`);
-        } else {
-          consecutiveGreens = 0;
-          if (betAmount > 100000) unlockTitle('unlucky');
-          spinResultMsg = processLoss(betAmount, betAmount, `Landed on ${winningColor.toUpperCase()}! Lost ${formatNumber(betAmount)} 🍌.`);
-          addLog('loss', betAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
-        }
-        endGameTurn();
-      }, 4000);
+          isPlaying = false;
+          savePersistentData();
+          updateGameUI();
+          endGameTurn();
+        }, 4000);
+      } catch (e) {
+        console.error("Roulette error:", e);
+        isPlaying = false;
+        updateGameUI();
+      }
     }
     
     function getWheelBackground() {
@@ -2915,7 +2984,7 @@
       document.getElementById(`bonus-icon-${index}`).innerText = bonusBetSelection[index];
       playSound('click');
     }
-    function playSlots() {
+    async function playSlots() {
       let actualBet = betAmount;
       let currentBonusBet = 0;
 
@@ -2956,18 +3025,111 @@
       
       updateGameUI();
 
-      let ticks = 0;
-      let slotAnimInterval = setInterval(() => {
-        slots.forEach(s => {
-          s.querySelector('span').innerText = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
+      try {
+        const response = await fetch('/api/game/slots', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ 
+            userId, 
+            betAmount, 
+            isBonusBet, 
+            bonusBetAmount, 
+            bonusBetSelection 
+          })
         });
-        ticks++;
-        if (ticks > 30) {
-          clearInterval(slotAnimInterval);
-          slots.forEach(s => s.classList.remove('slot-spinning'));
-          finalizeSlots(betAmount); // Pass normal bet amount
+        
+        if (response.status === 403) {
+            const result = await response.json().catch(() => ({ error: "Forbidden" }));
+            if (result.error && result.error.includes("banned")) {
+                banUser();
+                return;
+            }
         }
-      }, 70);
+
+        const result = await response.json();
+        if (!result.success) {
+          alert(result.error || "Slots failed");
+          isPlaying = false;
+          slots.forEach(s => s.classList.remove('slot-spinning'));
+          updateGameUI();
+          return;
+        }
+
+        let ticks = 0;
+        let slotAnimInterval = setInterval(() => {
+          slots.forEach(s => {
+            s.querySelector('span').innerText = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
+          });
+          ticks++;
+          if (ticks > 30) {
+            clearInterval(slotAnimInterval);
+            slots.forEach(s => s.classList.remove('slot-spinning'));
+            finalizeSlotsServer(result);
+          }
+        }, 70);
+      } catch (e) {
+        console.error("Slots error:", e);
+        isPlaying = false;
+        slots.forEach(s => s.classList.remove('slot-spinning'));
+        updateGameUI();
+      }
+    }
+
+    function finalizeSlotsServer(result) {
+      const resultSlots = result.resultSlots;
+      const outcome = result.outcome;
+      const netProfit = result.netProfit;
+      const bonusWin = result.bonusWin;
+
+      const slots = [document.getElementById('slot-1'), document.getElementById('slot-2'), document.getElementById('slot-3')];
+      slots.forEach((s, i) => {
+        s.querySelector('span').innerText = resultSlots[i];
+      });
+
+      if (outcome === 'jackpot') {
+        consecutiveJackpots++;
+        if (consecutiveJackpots >= 3) unlockTitle('lucky_one');
+      } else {
+        consecutiveJackpots = 0;
+      }
+
+      if (outcome === 'partial') {
+        slots.forEach((s, i) => {
+          const counts = {};
+          resultSlots.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
+          const matchingIcon = Object.keys(counts).find(icon => counts[icon] >= 2);
+          if (resultSlots[i] === matchingIcon) s.classList.add('slot-win');
+        });
+      } else if (outcome === 'win' || outcome === 'jackpot') {
+        slots.forEach(s => s.classList.add('slot-win'));
+      }
+
+      bananas = result.newScore;
+      xp = result.newXp;
+      level = result.newLevel;
+
+      if (netProfit > 0) {
+        spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${formatNumber(netProfit)} 🍌!` : `WIN! Won ${formatNumber(netProfit)} 🍌!`;
+        addLog('win', netProfit, bananas, bonusWin ? 'Slots: Bonus Prediction Win' : 'Slots Win');
+        playSound('win');
+      } else if (netProfit < 0) {
+        const finalLoss = Math.abs(netProfit);
+        if (betAmount > 100000) unlockTitle('unlucky');
+        spinResultMsg = `Loss. Lost ${formatNumber(finalLoss)} 🍌.`;
+        addLog('loss', finalLoss, bananas, 'Slots Loss');
+        playSound('loss');
+      } else {
+        spinResultMsg = "Push! No change.";
+        addLog('push', 0, bananas, 'Slots Push');
+      }
+
+      isPlaying = false;
+      savePersistentData();
+      updateGameUI();
+      endGameTurn();
     }
     
     function finalizeSlots(normalBet) {
