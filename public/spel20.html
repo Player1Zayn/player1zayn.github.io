@@ -186,6 +186,8 @@ let lockdownTimer = 0;
 let greyScreenTimer = 0;
 let jumpscareTimer = 0;
 let emergencyTriggered = false;
+let power = 100;
+const generator = { x: 80, y: 380, w: 40, h: 40 };
 
 let horde = []; // Array for storing lockdown monster NPCs
 
@@ -233,12 +235,12 @@ canvas.addEventListener('mousedown', (e) => { if (e.button === 0) mouse.clicked 
 
 // --- NPC GROUPS & REASONS ---
 
-const namesG1 = ["John Alhar", "Nick Ed", "Sophie Bohn", "Jake", "Paul", "Em", "Tristan", "Aloo", "Sarah J.", "Mike Vance", "Chloe S.", "David R.", "Elena", "Marcus T.", "Lily", "Omar"];
-const reasonsG1 = ["I want to meet my family", "Its dangerous here in the Asylum", "Need to calm down in Haven", "Looking for peace and love", "My house was destroyed", "I was told this is a safe zone", "Seeking medical attention", "I have supplies to trade", "Just passing through", "I lost my group"];
-const namesG2 = ["Relief Soldier", "Security guard", "Perimeter Supervisor", "Medical Officer", "Maintenance Tech", "Inspector Vance", "Supply Runner", "Night Watchman", "Dr. Aris", "Field Medic"];
-const reasonsG2 = ["Here for my shift", "I'm replacing my former guard", "Here for security reasons", "Here to supervise", "Delivering medical supplies", "Routine perimeter check", "Fixing the generator", "Authorized personnel transfer", "Checking the barricades", "Management sent me"];
-const namesG3 = ["Unknown", "Bear", "Fox", "Bunny", "?", "...", "Bryngel", "Your Replacement", "A Friend", "Help", "The Doctor", "Mom", "Lost Child", "Officer 404", "David...?", "S.O.S."];
-const reasonsG3 = ["LET ME IN", "IM HURT PLEASE", "...", "Im hungry", "I want to break free", "Please help me", "I'm not dangerous", "I forgot my keys", "It's so cold out here", "They are right behind me", "I have the new access codes", "Don't you recognize me?", "I live here now", "Open the door, it's safe", "I just want to look inside", "The shadows are biting me", "I brought dinner", "Management said I could enter"];
+const namesG1 = ["John Alhar", "Nick Ed", "Sophie Bohn", "Jake", "Paul", "Em", "Tristan", "Aloo", "Sarah J.", "Mike Vance", "Chloe S.", "David R.", "Elena", "Marcus T.", "Lily", "Omar", "Noah", "Emma", "Liam", "Olivia", "William", "Ava", "James", "Isabella", "Oliver", "Sophia", "Benjamin", "Mia", "Elijah", "Charlotte", "Lucas", "Amelia", "Mason", "Harper", "Logan", "Evelyn"];
+const reasonsG1 = ["I want to meet my family", "Its dangerous here in the Asylum", "Need to calm down in Haven", "Looking for peace and love", "My house was destroyed", "I was told this is a safe zone", "Seeking medical attention", "I have supplies to trade", "Just passing through", "I lost my group", "Seeking shelter for the night", "I heard there is food here", "I'm a refugee from the city", "My car broke down", "I need a place to rest", "I'm looking for my brother", "I was directed here by the military", "I need to use the radio", "I'm injured and need help"];
+const namesG2 = ["Relief Soldier", "Security guard", "Perimeter Supervisor", "Medical Officer", "Maintenance Tech", "Inspector Vance", "Supply Runner", "Night Watchman", "Dr. Aris", "Field Medic", "Chief Engineer", "Logistics Coordinator", "Head of Security", "Dr. Evans", "Sanitation Worker", "Communications Officer", "Quartermaster", "Lead Researcher", "Facility Manager", "Emergency Responder"];
+const reasonsG2 = ["Here for my shift", "I'm replacing my former guard", "Here for security reasons", "Here to supervise", "Delivering medical supplies", "Routine perimeter check", "Fixing the generator", "Authorized personnel transfer", "Checking the barricades", "Management sent me", "Conducting a safety audit", "Repairing the communication array", "Delivering rations", "Escorting a VIP", "Investigating a breach", "Updating the security protocols", "Replacing a broken camera", "Performing maintenance on the gate", "I have a scheduled appointment"];
+const namesG3 = ["Unknown", "Bear", "Fox", "Bunny", "?", "...", "Bryngel", "Your Replacement", "A Friend", "Help", "The Doctor", "Mom", "Lost Child", "Officer 404", "David...?", "S.O.S.", "Nobody", "The Janitor", "Your Shadow", "A Survivor", "The Voice", "He Who Waits", "The Smiling Man", "A Lost Soul", "The Watcher", "A Familiar Face", "The Previous Guard", "A Ghost", "The Man in the Dark"];
+const reasonsG3 = ["LET ME IN", "IM HURT PLEASE", "...", "Im hungry", "I want to break free", "Please help me", "I'm not dangerous", "I forgot my keys", "It's so cold out here", "They are right behind me", "I have the new access codes", "Don't you recognize me?", "I live here now", "Open the door, it's safe", "I just want to look inside", "The shadows are biting me", "I brought dinner", "Management said I could enter", "I can see you", "Why won't you let me in?", "I know what you did", "It's dark out here", "I'm just like you", "The others are waiting", "I have a secret to tell you", "I'm so lonely", "I want to play a game", "I'm the new guard", "I'm bleeding, please", "I can hear them breathing", "I'm not one of them, I swear", "I just need a moment of your time", "I have a delivery for you", "I'm here to relieve you", "I'm your friend, remember?", "I'm so cold, let me warm up", "I'm a doctor, I can help", "I'm lost, can you give me directions?", "I'm just a child", "I'm looking for my mommy", "I'm a police officer, open up", "I'm a soldier, I need a safe place", "I'm a scientist, I have the cure", "I'm a priest, I can save your soul", "I'm a ghost, I want to haunt you", "I'm a monster, I want to eat you", "I'm the devil, I want your soul", "I'm God, I want to judge you", "I'm nothing, I want to be something"];
 
 function spawnNPC() {
     const isMonster = Math.random() < 0.3 + (shift * 0.08);
@@ -313,7 +315,7 @@ function canMove(newX, newY) {
 
 const buttons = {
     accept: { x: 260, y: 440, w: 120, h: 40, text: 'ACCEPT' },
-    deny: { x: 420, y: 440, w: 120, h: 40, text: 'DENIED' },
+    deny: { x: 420, y: 440, w: 120, h: 40, text: 'DENY' },
     emergency: { x: 340, y: 500, w: 120, h: 40, text: 'EMERGENCY' }
 };
 
@@ -483,7 +485,7 @@ function update(dt) {
     const pCenter = getCenter(player);
 
     // Player Movement
-    if (gameState !== 'DIALOGUE' && gameState !== 'COMPUTER') {
+    if (gameState !== 'DIALOGUE' && gameState !== 'COMPUTER' && gameState !== 'GENERATOR_ATTACK') {
         let dx = 0, dy = 0;
         if (keys['w']) dy -= player.speed * dt;
         if (keys['s']) dy += player.speed * dt;
@@ -493,16 +495,27 @@ function update(dt) {
         if (dy !== 0 && canMove(player.x, player.y + dy)) player.y += dy;
     }
 
-    // Barricade Mechanics / Shelf Fill (Holding E)
+    // Barricade Mechanics / Shelf Fill / Generator (Holding E)
     if (keys['e']) {
         if (gameState === 'PLAYING' || gameState === 'ATTACK_REACT' || gameState === 'LOCKDOWN_ALARM') {
             shelves.forEach(s => {
-                if (getDist(pCenter.x, pCenter.y, s.x+s.w/2, s.y+s.h/2) < 100) s.stock = Math.min(100, s.stock + 40 * dt);
+                if (getDist(pCenter.x, pCenter.y, s.x+s.w/2, s.y+s.h/2) < 80) s.stock = Math.min(100, s.stock + 40 * dt);
             });
+            if (getDist(pCenter.x, pCenter.y, generator.x+generator.w/2, generator.y+generator.h/2) < 80) {
+                power = Math.min(100, power + 1 * dt);
+                if (currentNPC && currentNPC.state === 'WAITING' && currentNPC.isMonster && !currentNPC.generatorChecked) {
+                    currentNPC.generatorChecked = true;
+                    if (Math.random() < 0.25) {
+                        gameState = 'GENERATOR_ATTACK';
+                        currentNPC.animX = windowObj.x + windowObj.w/2;
+                        currentNPC.animY = windowObj.y - 25;
+                    }
+                }
+            }
         }
         if (gameState === 'LOCKDOWN_ALARM') {
-            if (getDist(pCenter.x, pCenter.y, door.x+door.w/2, door.y) < 120) door.barricadeProgress += dt * 2;
-            if (getDist(pCenter.x, pCenter.y, windowObj.x+windowObj.w/2, windowObj.y) < 120) windowObj.barricadeProgress += dt * 2;
+            if (getDist(pCenter.x, pCenter.y, door.x+door.w/2, door.y) < 90) door.barricadeProgress += dt * 2;
+            if (getDist(pCenter.x, pCenter.y, windowObj.x+windowObj.w/2, windowObj.y) < 90) windowObj.barricadeProgress += dt * 2;
         }
     }
 
@@ -548,19 +561,37 @@ function update(dt) {
 
     // Door Toggling (E press)
     if ((gameState === 'PLAYING' || gameState === 'ATTACK_REACT') && ePressed) {
-        if (getDist(pCenter.x, pCenter.y, door.x+door.w/2, door.y) < 120) door.isClosed = !door.isClosed;
+        if (getDist(pCenter.x, pCenter.y, door.x+door.w/2, door.y) < 90) {
+            if (!door.isClosed && rectIntersect(player.x, player.y, player.w, player.h, door.x, door.y, door.w, door.h)) {
+                // Player is in the way, push them out
+                if (pCenter.y < door.y + door.h/2) {
+                    player.y = door.y - player.h - 1;
+                } else {
+                    player.y = door.y + door.h + 1;
+                }
+            }
+            door.isClosed = !door.isClosed;
+        }
     }
 
     // Interactive Logic
     if (gameState === 'PLAYING' || gameState === 'ATTACK_REACT' || gameState === 'LOCKDOWN_ALARM') {
-        if (gameState !== 'LOCKDOWN_ALARM' && currentNPC && currentNPC.state === 'WAITING' && ePressed && getDist(pCenter.x, pCenter.y, windowObj.x+windowObj.w/2, windowObj.y) < 130) {
+        if (gameState !== 'LOCKDOWN_ALARM' && currentNPC && currentNPC.state === 'WAITING' && ePressed && getDist(pCenter.x, pCenter.y, windowObj.x+windowObj.w/2, windowObj.y) < 100) {
             gameState = 'DIALOGUE';
         }
-        if (fPressed && getDist(pCenter.x, pCenter.y, desk.x+desk.w/2, desk.y+desk.h/2) < 120) {
-            gameState = 'COMPUTER';
+        if (fPressed && getDist(pCenter.x, pCenter.y, desk.x+desk.w/2, desk.y+desk.h/2) < 90) {
+            if (power >= 1) {
+                power -= 1;
+                gameState = 'COMPUTER';
+            }
         }
     } else if (gameState === 'DIALOGUE') {
-        if (fPressed) gameState = 'COMPUTER';
+        if (fPressed) {
+            if (power >= 1) {
+                power -= 1;
+                gameState = 'COMPUTER';
+            }
+        }
         else if (ePressed) gameState = 'PLAYING';
     } else if (gameState === 'COMPUTER') {
         if (ePressed || fPressed) {
@@ -606,6 +637,25 @@ function update(dt) {
         }
     }
 
+    if (gameState === 'GENERATOR_ATTACK') {
+        let speed = 200 * dt;
+        if (currentNPC.animX > generator.x + generator.w/2) {
+            currentNPC.animX -= speed;
+        } else if (currentNPC.animY < generator.y + generator.h/2) {
+            currentNPC.animY += speed;
+        } else {
+            triggerGameOver("The monster caught you at the generator!");
+        }
+    }
+
+    if (door.isClosed && power > 0) {
+        power -= 1 * dt;
+        if (power <= 0) {
+            power = 0;
+            door.isClosed = false;
+        }
+    }
+
     if (gameState === 'LOCKDOWN_ALARM') {
         lockdownTimer -= dt;
         if (lockdownTimer <= 0) triggerGameOver("Overrun by escaped patients.");
@@ -619,6 +669,10 @@ function update(dt) {
 }
 
 function draw() {
+    ctx.save();
+    if (gameState === 'GENERATOR_ATTACK') {
+        ctx.translate(Math.random()*10-5, Math.random()*10-5);
+    }
     ctx.fillStyle = '#050505';
     ctx.fillRect(0, 0, GAME_W, GAME_H);
 
@@ -792,7 +846,7 @@ function draw() {
     }
 
     // Draw Main NPC
-    if (currentNPC) {
+    if (currentNPC && gameState !== 'GENERATOR_ATTACK') {
         ctx.fillStyle = currentNPC.state === 'ATTACKING' ? '#411' : '#a89f91';
         let nx = currentNPC.x, ny = currentNPC.y;
         if (currentNPC.state === 'WALKING_IN' || currentNPC.state.includes('LEAVING')) ny += Math.sin(currentNPC.wobble)*3;
@@ -813,7 +867,16 @@ function draw() {
     ctx.fillStyle = door.barricaded ? '#311' : (door.isClosed ? '#421' : '#000'); ctx.fillRect(door.x, door.y, door.w, door.h);
     
     ctx.fillStyle = '#222'; ctx.fillRect(desk.x, desk.y, desk.w, desk.h);
-    ctx.fillStyle = '#0c4'; if(Math.random()>0.1) ctx.fillRect(desk.x + 20, desk.y + 10, 50, 25); 
+    // Draw Generator
+    ctx.fillStyle = '#444'; ctx.fillRect(generator.x, generator.y, generator.w, generator.h);
+    ctx.fillStyle = '#f90'; ctx.fillRect(generator.x + 10, generator.y + 10, 20, 20);
+    ctx.fillStyle = '#000'; ctx.font = '10px Courier'; ctx.textAlign = 'center'; ctx.fillText("GEN", generator.x + 20, generator.y + 25);
+    
+    // Draw a more detailed computer
+    ctx.fillStyle = '#111'; ctx.fillRect(desk.x + 15, desk.y + 5, 60, 35); // Monitor base/back
+    ctx.fillStyle = '#0c4'; if(Math.random()>0.1) ctx.fillRect(desk.x + 20, desk.y + 10, 50, 25); // Screen
+    ctx.fillStyle = '#333'; ctx.fillRect(desk.x + 10, desk.y + 42, 70, 15); // Keyboard
+    ctx.fillStyle = '#555'; ctx.fillRect(desk.x + 85, desk.y + 42, 10, 15); // Mouse
 
     shelves.forEach(s => {
         ctx.fillStyle = '#2b2118'; ctx.fillRect(s.x, s.y, s.w, s.h);
@@ -842,7 +905,18 @@ function draw() {
     ctx.fillStyle = '#ffd700'; ctx.fillRect(3, -6, 5, 6); // Yellow Badge
     ctx.restore();
 
+    if (gameState === 'GENERATOR_ATTACK') {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(currentNPC.animX - 15, currentNPC.animY - 15, 30, 30);
+        ctx.fillStyle = '#f00';
+        ctx.fillRect(currentNPC.animX - 10, currentNPC.animY - 10, 8, 8);
+        ctx.fillRect(currentNPC.animX + 2, currentNPC.animY - 10, 8, 8);
+    }
+
     // UI Overlays
+    ctx.fillStyle = '#0f0'; ctx.font = '20px Courier'; ctx.textAlign = 'right';
+    ctx.fillText(`POWER: ${Math.floor(power)}%`, GAME_W - 20, 30);
+
     if (gameState === 'DIALOGUE') {
         ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(100, 420, 600, 120);
         ctx.fillStyle = '#fff'; ctx.font='18px Courier'; ctx.textAlign='left';
@@ -856,31 +930,54 @@ function draw() {
     }
     
     if (gameState === 'COMPUTER') {
+        // Draw a retro CRT monitor bezel
+        ctx.fillStyle='#111'; ctx.fillRect(130, 80, 540, 490); // Outer bezel
+        ctx.fillStyle='#222'; ctx.fillRect(140, 90, 520, 470); // Inner bezel
+        
+        // Screen background
         ctx.fillStyle='#010'; ctx.fillRect(150, 100, 500, 450);
-        ctx.strokeStyle='#0f0'; ctx.strokeRect(150,100,500,450);
-        ctx.fillStyle='#0f0'; ctx.font='20px Courier'; ctx.textAlign='center';
-        ctx.fillText('ASYLUM DATABASE', 400, 140);
+        
+        // Scanlines effect
+        ctx.fillStyle='rgba(0, 255, 0, 0.05)';
+        for(let i=100; i<550; i+=4) ctx.fillRect(150, i, 500, 2);
+        
+        ctx.strokeStyle='#0f0'; ctx.lineWidth=2; ctx.strokeRect(150,100,500,450);
+        ctx.fillStyle='#0f0'; ctx.font='bold 24px Courier'; ctx.textAlign='center';
+        ctx.fillText('ASYLUM DATABASE OS v2.1', 400, 140);
+        ctx.fillRect(170, 155, 460, 2); // Separator line
         
         const dr = (b) => { 
             const isEmergHit = (b === buttons.emergency && emergencyTriggered);
             ctx.fillStyle = isEmergHit ? '#400' : '#020'; ctx.fillRect(b.x,b.y,b.w,b.h); 
-            ctx.strokeStyle = isEmergHit ? '#f00' : '#0f0'; ctx.strokeRect(b.x,b.y,b.w,b.h); 
+            ctx.strokeStyle = isEmergHit ? '#f00' : '#0f0'; ctx.lineWidth=2; ctx.strokeRect(b.x,b.y,b.w,b.h); 
             ctx.fillStyle = isEmergHit ? '#f00' : '#0f0'; ctx.textAlign='center'; 
-            ctx.fillText(b.text, b.x+b.w/2, b.y+25); 
+            ctx.font='bold 18px Courier'; ctx.fillText(b.text, b.x+b.w/2, b.y+26); 
         };
         
         if (currentNPC && currentNPC.state === 'WAITING' && lockdownTimer <= 0 && attackTimer <= 0) {
             ctx.textAlign='left'; 
+            ctx.fillStyle='#0f0'; ctx.font='18px Courier';
             ctx.fillText(`Subject: ${currentNPC.name}`, 180, 200);
             ctx.fillText(`ID: ${currentNPC.idNumber}`, 180, 230);
-            const expText = currentNPC.expYear < 2026 ? `${currentNPC.expYear} (Expired)` : `${currentNPC.expYear}`;
-            ctx.fillText(`ID Date: ${expText}`, 180, 260);
+            const isExp = currentNPC.expYear < 2026;
+            ctx.fillStyle = isExp ? '#f00' : '#0f0';
+            ctx.fillText(`ID Date: ${currentNPC.expYear} ${isExp ? '(Expired)' : ''}`, 180, 260);
+            
+            // Blinking cursor
+            if (Math.floor(performance.now() / 500) % 2 === 0) {
+                ctx.fillStyle='#0f0';
+                ctx.fillRect(180, 280, 10, 20);
+            }
+            
             dr(buttons.accept); dr(buttons.deny);
         } else if (lockdownTimer <= 0 && attackTimer <= 0) {
             // No NPC waiting, display no info.
             ctx.textAlign='center';
-            ctx.fillStyle='#f00';
-            ctx.fillText("NO INFO INPUT", 400, 250);
+            ctx.fillStyle='#f00'; ctx.font='18px Courier';
+            ctx.fillText("NO PENDING REQUESTS", 400, 280);
+            if (Math.floor(performance.now() / 500) % 2 === 0) {
+                ctx.fillRect(390, 300, 20, 4);
+            }
         }
         
         // Draw Emergency Button Based on Threat
@@ -890,10 +987,12 @@ function draw() {
         } else {
             // Greyed out emergency button
             ctx.fillStyle = '#111'; ctx.fillRect(buttons.emergency.x, buttons.emergency.y, buttons.emergency.w, buttons.emergency.h);
-            ctx.strokeStyle = '#333'; ctx.strokeRect(buttons.emergency.x, buttons.emergency.y, buttons.emergency.w, buttons.emergency.h);
-            ctx.fillStyle = '#555'; ctx.textAlign='center'; 
-            ctx.fillText(buttons.emergency.text, buttons.emergency.x + buttons.emergency.w/2, buttons.emergency.y + 25);
+            ctx.strokeStyle = '#333'; ctx.lineWidth=2; ctx.strokeRect(buttons.emergency.x, buttons.emergency.y, buttons.emergency.w, buttons.emergency.h);
+            ctx.fillStyle = '#555'; ctx.textAlign='center'; ctx.font='bold 18px Courier';
+            ctx.fillText(buttons.emergency.text, buttons.emergency.x + buttons.emergency.w/2, buttons.emergency.y + 26);
         }
+        
+        ctx.lineWidth=1; // Reset line width
         
         if (lockdownTimer > 0) {
             ctx.fillStyle = '#f00'; ctx.font = '24px Courier'; ctx.textAlign='center';
@@ -928,24 +1027,29 @@ function draw() {
         const distWindow = getDist(pCenter.x, pCenter.y, windowObj.x+windowObj.w/2, windowObj.y);
         const distDoor = getDist(pCenter.x, pCenter.y, door.x+door.w/2, door.y);
 
-        if (distDesk < 120) {
+        if (distDesk < 90) {
             ctx.fillText("[F] Open Computer", 20, keyTipY);
             keyTipY -= 20;
         }
-        if (currentNPC && currentNPC.state === 'WAITING' && distWindow < 130) {
+        if (currentNPC && currentNPC.state === 'WAITING' && distWindow < 100) {
             ctx.fillText("[E] Interact", 20, keyTipY);
             keyTipY -= 20;
         }
-        if (distDoor < 120) {
+        if (distDoor < 90) {
             ctx.fillText("[E] Toggle Door", 20, keyTipY);
             keyTipY -= 20;
         }
         let nearShelf = false;
         shelves.forEach(s => {
-            if (getDist(pCenter.x, pCenter.y, s.x+s.w/2, s.y+s.h/2) < 100) nearShelf = true;
+            if (getDist(pCenter.x, pCenter.y, s.x+s.w/2, s.y+s.h/2) < 80) nearShelf = true;
         });
         if (nearShelf) {
             ctx.fillText("[Hold E] Refill Shelf", 20, keyTipY);
+            keyTipY -= 20;
+        }
+        if (getDist(pCenter.x, pCenter.y, generator.x+generator.w/2, generator.y+generator.h/2) < 80) {
+            ctx.fillText("[Hold E] Crank Generator", 20, keyTipY);
+            keyTipY -= 20;
         }
     }
 
@@ -1003,6 +1107,7 @@ function draw() {
             drawBtn(GAME_W/2 - 100, 500, 200, 40, 'BACK');
         }
     }
+    ctx.restore();
 }
 
 function gameLoop() {
