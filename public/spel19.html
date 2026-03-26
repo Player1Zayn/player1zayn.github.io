@@ -1331,6 +1331,13 @@
       return 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
     }
 
+    function formatNumber(num) {
+        if (num >= 1e12) return (num / 1e12).toFixed(1).replace(/\.0$/, '') + 'T';
+        if (num >= 1e9) return (num / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+        if (num >= 1e6) return (num / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+        return num.toLocaleString();
+    }
+
     window.onload = async () => {
       elWheel.style.background = getWheelBackground();
       loadPersistentData();
@@ -2275,22 +2282,22 @@
             // Show a small success message
             const msg = document.getElementById('spin-result-msg');
             if (msg) {
-                msg.innerText = "EXCHANGED 100,000 🍌 FOR 1 🪙!";
-                msg.classList.add('text-yellow-200');
-                setTimeout(() => {
-                    msg.classList.remove('text-yellow-200');
-                    if (msg.innerText === "EXCHANGED 100,000 🍌 FOR 1 🪙!") msg.innerText = "Welcome to Casino!";
-                }, 3000);
-            }
-        } else {
-            const msg = document.getElementById('spin-result-msg');
-            if (msg) {
-                msg.innerText = "NOT ENOUGH BANANAS! NEED 100,000 🍌";
-                msg.classList.add('text-red-400');
-                setTimeout(() => {
-                    msg.classList.remove('text-red-400');
-                    if (msg.innerText === "NOT ENOUGH BANANAS! NEED 100,000 🍌") msg.innerText = "Welcome to Casino!";
-                }, 3000);
+            msg.innerText = `EXCHANGED ${formatNumber(cost)} 🍌 FOR 1 🪙!`;
+            msg.classList.add('text-yellow-200');
+            setTimeout(() => {
+                msg.classList.remove('text-yellow-200');
+                if (msg.innerText === `EXCHANGED ${formatNumber(cost)} 🍌 FOR 1 🪙!`) msg.innerText = "Welcome to Casino!";
+            }, 3000);
+        }
+    } else {
+        const msg = document.getElementById('spin-result-msg');
+        if (msg) {
+            msg.innerText = `NOT ENOUGH BANANAS! NEED ${formatNumber(cost)} 🍌`;
+            msg.classList.add('text-red-400');
+            setTimeout(() => {
+                msg.classList.remove('text-red-400');
+                if (msg.innerText === `NOT ENOUGH BANANAS! NEED ${formatNumber(cost)} 🍌`) msg.innerText = "Welcome to Casino!";
+            }, 3000);
             }
         }
     }
@@ -2398,7 +2405,7 @@
         isInternalUpdate = true;
         updateBananas(bananas + refund);
         isInternalUpdate = false;
-        spinResultMsg = `Insurance Claimed! Refunded ${refund} 🍌.`;
+        spinResultMsg = `Insurance Claimed! Refunded ${formatNumber(refund)} 🍌.`;
         lastLossAmount = 0;
         document.getElementById('insurance-btn').classList.add('hidden');
         clearTimeout(insuranceTimer);
@@ -2410,7 +2417,7 @@
     function processLoss(lossAmount, originalBet, defaultMessage) {
         winStreak = 0;
         if (originalBet >= 100 && activeGadgets[0] && Math.random() < 0.25) {
-            return `Failsafe: Saved ${lossAmount} bananas.`;
+            return `Failsafe: Saved ${formatNumber(lossAmount)} bananas.`;
         }
         isInternalUpdate = true;
         updateBananas(bananas - lossAmount);
@@ -2756,12 +2763,12 @@
           if (mult > 1) {
             const profit = Math.round(betAmount * (mult - 1));
             const finalProfit = applyWin(profit);
-            spinResultMsg = `Landed on ${mult}x! Won ${finalProfit + betAmount} 🍌!`;
+            spinResultMsg = `Landed on ${mult}x! Won ${formatNumber(finalProfit + betAmount)} 🍌!`;
             addLog('win', finalProfit + betAmount, bananas, `Plinko: ${mult}x`);
           } else if (mult < 1) {
             const loss = Math.round(betAmount * (1 - mult));
             if (betAmount > 100000) unlockTitle('unlucky');
-            spinResultMsg = processLoss(loss, betAmount, `Landed on ${mult}x. Lost ${loss} 🍌.`);
+            spinResultMsg = processLoss(loss, betAmount, `Landed on ${mult}x. Lost ${formatNumber(loss)} 🍌.`);
             addLog('loss', loss, bananas, `Plinko: ${mult}x`);
           } else {
             spinResultMsg = `Landed on 1x. Push!`;
@@ -2855,12 +2862,12 @@
           const mult = winningColor === 'green' ? 3 : 1;
           const winAmount = betAmount * mult;
           const finalWin = applyWin(winAmount);
-          spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${finalWin} 🍌!`;
+          spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${formatNumber(finalWin)} 🍌!`;
           addLog('win', finalWin, bananas, `Roulette ${winningColor.toUpperCase()}`);
         } else {
           consecutiveGreens = 0;
           if (betAmount > 100000) unlockTitle('unlucky');
-          spinResultMsg = processLoss(betAmount, betAmount, `Landed on ${winningColor.toUpperCase()}! Lost ${betAmount} 🍌.`);
+          spinResultMsg = processLoss(betAmount, betAmount, `Landed on ${winningColor.toUpperCase()}! Lost ${formatNumber(betAmount)} 🍌.`);
           addLog('loss', betAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
         }
         endGameTurn();
@@ -3033,12 +3040,12 @@
 
       if (netProfit > netLoss) {
         const finalWin = applyWin(netProfit - netLoss);
-        spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${finalWin} 🍌!` : `WIN! Won ${finalWin} 🍌!`;
+        spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${formatNumber(finalWin)} 🍌!` : `WIN! Won ${formatNumber(finalWin)} 🍌!`;
         addLog('win', finalWin, bananas, bonusWin ? 'Slots: Bonus Prediction Win' : 'Slots Win');
       } else if (netLoss > netProfit) {
         const finalLoss = netLoss - netProfit;
         if (totalBet > 100000) unlockTitle('unlucky');
-        spinResultMsg = processLoss(finalLoss, totalBet, `Loss. Lost ${finalLoss} 🍌.`);
+        spinResultMsg = processLoss(finalLoss, totalBet, `Loss. Lost ${formatNumber(finalLoss)} 🍌.`);
         addLog('loss', finalLoss, bananas, 'Slots Loss');
       } else {
         spinResultMsg = "Push! No change.";
@@ -3127,27 +3134,27 @@
       let change = Math.round(betAmount * multiplier);
       if (reason === 'bust') { 
           if (betAmount > 100000) unlockTitle('unlucky');
-          spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${betAmount} 🍌.`); 
+          spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${formatNumber(betAmount)} 🍌.`); 
           addLog('loss', betAmount, bananas, 'Blackjack: Bust');
       }
       else if (reason === 'dealerBust') { 
         const finalWin = applyWin(change);
-        spinResultMsg = `Dealer bust! Won ${finalWin} 🍌!`; 
+        spinResultMsg = `Dealer bust! Won ${formatNumber(finalWin)} 🍌!`; 
         addLog('win', finalWin, bananas, 'Blackjack: Dealer Bust');
       }
       else if (reason === 'blackjack') { 
         const finalWin = applyWin(change);
-        spinResultMsg = `Blackjack! Won ${finalWin} 🍌!`; 
+        spinResultMsg = `Blackjack! Won ${formatNumber(finalWin)} 🍌!`; 
         addLog('win', finalWin, bananas, 'Blackjack: BLACKJACK');
       }
       else if (reason === 'win') { 
         const finalWin = applyWin(change);
-        spinResultMsg = `You win! Won ${finalWin} 🍌!`; 
+        spinResultMsg = `You win! Won ${formatNumber(finalWin)} 🍌!`; 
         addLog('win', finalWin, bananas, 'Blackjack: Win');
       }
       else if (reason === 'lose') { 
           if (betAmount > 100000) unlockTitle('unlucky');
-          spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${betAmount} 🍌.`); 
+          spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${formatNumber(betAmount)} 🍌.`); 
           addLog('loss', betAmount, bananas, 'Blackjack: Dealer Wins');
       }
       else if (reason === 'push') { 
@@ -3192,9 +3199,9 @@
 
     window.updateGameUI = function() {
       elDisplayPlayerName.innerText = playerName;
-      elDisplayBananas.innerText = `${bananas.toLocaleString()} 🍌`;
+      elDisplayBananas.innerText = `${formatNumber(bananas)} 🍌`;
       const elDisplayCoins = document.getElementById('display-coins');
-      if (elDisplayCoins) elDisplayCoins.innerText = `${coins.toLocaleString()} 🪙`;
+      if (elDisplayCoins) elDisplayCoins.innerText = `${formatNumber(coins)} 🪙`;
       
       // Update Level UI
       document.getElementById('display-level').innerText = level;
@@ -3229,8 +3236,8 @@
       const elClaimBananasBtn = document.getElementById('claim-bananas-btn');
       const elClaimBananasBtnMobile = document.getElementById('claim-bananas-btn-mobile');
       
-      if (elDisplayBananaBox) elDisplayBananaBox.innerText = `${bananaBox.toLocaleString()} 🍌`;
-      if (elDisplayBananaBoxMobile) elDisplayBananaBoxMobile.innerText = `${bananaBox.toLocaleString()} 🍌`;
+      if (elDisplayBananaBox) elDisplayBananaBox.innerText = `${formatNumber(bananaBox)} 🍌`;
+      if (elDisplayBananaBoxMobile) elDisplayBananaBoxMobile.innerText = `${formatNumber(bananaBox)} 🍌`;
       
       if (elClaimBananasBtn) {
           elClaimBananasBtn.disabled = bananaBox <= 0;
