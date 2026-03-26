@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import cors from "cors";
 
 dotenv.config();
 
@@ -14,8 +15,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = 3000;
 
+app.use(cors());
 app.use(express.json());
 
 // Supabase Setup (Lazy Initialization)
@@ -45,8 +47,23 @@ const authenticateToken = (req: any, res: any, next: any) => {
 
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) return res.status(403).json({ error: "Forbidden" });
-    req.user = user;
-    next();
+    
+    // Check if user is banned
+    const supabase = getSupabase();
+    supabase.from('database').select('banned').eq('id', user.userId).maybeSingle()
+      .then(({ data: userData }: any) => {
+        if (userData && userData.banned) {
+          return res.status(403).json({ error: "Account banned for cheating" });
+        }
+        req.user = user;
+        next();
+      })
+      .catch((e: any) => {
+        console.error("Error checking ban status:", e);
+        // If database check fails, we still allow the request but log the error
+        req.user = user;
+        next();
+      });
   });
 };
 
@@ -234,8 +251,172 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
 
 // Ban User
 app.post("/api/ban", authenticateToken, async (req: any, res) => {
-  // Ban feature temporarily disabled as requested
-  res.json({ success: true, message: "Ban feature is currently disabled" });
+  const { userId } = req.body;
+  if (req.user.userId !== userId) {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const supabase = getSupabase();
+    await supabase.from('database').update({ banned: true }).eq('id', userId);
+    res.json({ success: true, message: "User banned successfully" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- GAME LOGIC ENDPOINTS ---
+
+const SLOT_ICONS = ['🍌', '🍒', '🍋', '🔔', '💎', '7️⃣'];
+const JACKPOT_ICON = '7️⃣';
+
+// Roulette
+app.post("/api/game/roulette", authenticateToken, async (req: any, res) => {
+  const { userId, betAmount, betColor, gadgets } = req.body;
+  if (req.user.userId !== userId) return res.status(403).json({ error: "Unauthorized" });
+
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('score, xp, level').eq('id', userId).maybeSingle();
+    if (!user || user.score < betAmount) return res.status(400).json({ error: "Insufficient balance" });
+
+    const rand = Math.random();
+    const pRed = gadgets && gadgets[1] ? 0.42 : 0.46;
+    const pBlack = gadgets && gadgets[1] ? 0.42 : 0.46;
+    
+    let winningColor;
+    if (rand < pRed) winningColor = 'red';
+    else if (rand < pRed + pBlack) winningColor = 'black';
+    else winningColor = 'green';
+
+    let winAmount = 0;
+    if (betColor === winningColor) {
+      const mult = winningColor === 'green' ? 3 : 1;
+      winAmount = betAmount * mult;
+    } else {
+      winAmount = -betAmount;
+    }
+
+    let newScore = Number(user.score);
+    let newXp = Number(user.xp);
+    let newLevel = Number(user.level);
+
+    if (winAmount > 0) {
+      const bonus = Math.floor(winAmount * (newLevel - 1) * 0.05);
+      const totalWin = winAmount + bonus;
+      newScore += totalWin;
+      
+      // Update XP
+      const xpGain = Math.floor(totalWin / 10);
+      newXp += xpGain;
+      
+      // Check level up
+      while (newXp >= newLevel * 1000) {
+        newXp -= newLevel * 1000;
+        newLevel++;
+      }
+      winAmount = totalWin; // Return total win including bonus
+    } else {
+      newScore += winAmount; // winAmount is negative here
+    }
+
+    await supabase.from('database').update({ 
+      score: newScore,
+      xp: newXp,
+      level: newLevel
+    }).eq('id', userId);
+
+    res.json({ success: true, winningColor, winAmount, newScore, newXp, newLevel });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Slots
+app.post("/api/game/slots", authenticateToken, async (req: any, res) => {
+  const { userId, betAmount, isBonusBet, bonusBetAmount, bonusBetSelection } = req.body;
+  if (req.user.userId !== userId) return res.status(403).json({ error: "Unauthorized" });
+
+  const totalBet = betAmount + (isBonusBet ? bonusBetAmount : 0);
+
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('score, xp, level').eq('id', userId).maybeSingle();
+    if (!user || user.score < totalBet) return res.status(400).json({ error: "Insufficient balance" });
+
+    let r = Math.random() * 105;
+    let outcome, resultSlots = [];
+    
+    if (r < 45) { 
+      outcome = 'lose';
+      let temp = [...SLOT_ICONS].sort(() => Math.random() - 0.5);
+      resultSlots = [temp[0], temp[1], temp[2]];
+    } else if (r < 75) { 
+      outcome = 'partial';
+      let icon = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
+      let other = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
+      while (other === icon) other = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
+      resultSlots = [icon, icon, other].sort(() => Math.random() - 0.5);
+    } else if (r < 98) { 
+      outcome = 'win';
+      let icon = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
+      resultSlots = [icon, icon, icon];
+    } else { 
+      outcome = 'jackpot';
+      resultSlots = [JACKPOT_ICON, JACKPOT_ICON, JACKPOT_ICON];
+    }
+
+    let bonusWin = false;
+    if (isBonusBet && bonusBetAmount > 0 && bonusBetSelection) {
+      if (resultSlots[0] === bonusBetSelection[0] && 
+          resultSlots[1] === bonusBetSelection[1] && 
+          resultSlots[2] === bonusBetSelection[2]) {
+        bonusWin = true;
+      }
+    }
+
+    let netProfit = 0;
+    if (outcome === 'partial') netProfit += Math.round(betAmount * 0.5);
+    else if (outcome === 'win') netProfit += betAmount * 2;
+    else if (outcome === 'jackpot') netProfit += betAmount * 14;
+    else netProfit -= betAmount;
+
+    if (bonusWin) netProfit += bonusBetAmount * 19;
+    else if (isBonusBet) netProfit -= bonusBetAmount;
+
+    let newScore = Number(user.score);
+    let newXp = Number(user.xp);
+    let newLevel = Number(user.level);
+
+    if (netProfit > 0) {
+      const bonus = Math.floor(netProfit * (newLevel - 1) * 0.05);
+      const totalWin = netProfit + bonus;
+      newScore += totalWin;
+      
+      // Update XP
+      const xpGain = Math.floor(totalWin / 10);
+      newXp += xpGain;
+      
+      // Check level up
+      while (newXp >= newLevel * 1000) {
+        newXp -= newLevel * 1000;
+        newLevel++;
+      }
+      netProfit = totalWin; // Return total win including bonus
+    } else {
+      newScore += netProfit; // netProfit is negative here
+    }
+
+    await supabase.from('database').update({ 
+      score: newScore,
+      xp: newXp,
+      level: newLevel
+    }).eq('id', userId);
+
+    res.json({ success: true, outcome, resultSlots, bonusWin, netProfit, newScore, newXp, newLevel });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Health Check
