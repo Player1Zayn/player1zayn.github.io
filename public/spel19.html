@@ -392,6 +392,7 @@
         <div class="p-3 md:p-6 bg-emerald-900 flex flex-row md:flex-col items-center justify-between md:justify-center shrink-0">
           <div class="text-left md:text-center">
             <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-widest md:mb-1"><span id="display-player-name">Player</span>'s Balance</p>
+            <p id="display-player-title" class="hidden text-[8px] md:text-[10px] font-black uppercase mb-1"></p>
             <div class="flex flex-col items-end">
               <div id="display-bananas" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-yellow-400 drop-shadow-lg leading-none">0 🍌</div>
               <div id="display-coins" class="text-lg sm:text-xl md:text-2xl font-black text-yellow-200 drop-shadow-md leading-none mt-1">0 🪙</div>
@@ -1402,6 +1403,11 @@
               while(activeGadgets.length < 10) activeGadgets.push(false);
           }
           
+          if (data.level) level = data.level;
+          if (data.xp) xp = data.xp;
+          if (data.unlockedTitles) unlockedTitles = data.unlockedTitles;
+          if (data.equippedTitle) equippedTitle = data.equippedTitle;
+
           if (data.shopStock) shopStock = data.shopStock;
           if (data.shopPurchased) shopPurchased = data.shopPurchased;
           if (data.shopRefreshTime) shopRefreshTime = data.shopRefreshTime;
@@ -1737,6 +1743,8 @@
             activeGadgets = Array(10).fill(false);
             level = 1;
             xp = 0;
+            unlockedTitles = [];
+            equippedTitle = null;
 
             await syncData(bananas, trees);
             finalizeEntry();
@@ -3199,6 +3207,18 @@
 
     window.updateGameUI = function() {
       elDisplayPlayerName.innerText = playerName;
+      
+      const elDisplayTitle = document.getElementById('display-player-title');
+      if (elDisplayTitle) {
+          if (equippedTitle && TITLES[equippedTitle]) {
+              elDisplayTitle.innerText = TITLES[equippedTitle].name;
+              elDisplayTitle.className = `text-[8px] md:text-[10px] font-black uppercase ${TITLES[equippedTitle].color || 'text-emerald-400'}`;
+              elDisplayTitle.classList.remove('hidden');
+          } else {
+              elDisplayTitle.classList.add('hidden');
+          }
+      }
+      
       elDisplayBananas.innerText = `${formatNumber(bananas)} 🍌`;
       const elDisplayCoins = document.getElementById('display-coins');
       if (elDisplayCoins) elDisplayCoins.innerText = `${formatNumber(coins)} 🪙`;
