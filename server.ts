@@ -238,9 +238,15 @@ app.post("/api/ban", authenticateToken, async (req: any, res) => {
   res.json({ success: true, message: "Ban feature is currently disabled" });
 });
 
+// Health Check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", time: new Date().toISOString() });
+});
+
 // Get Current User Data
 app.get("/api/me", authenticateToken, async (req: any, res) => {
   try {
+    console.log(`Fetching data for user: ${req.user.userId}`);
     const supabase = getSupabase();
     const { data: user, error } = await supabase
       .from('database')
@@ -248,13 +254,20 @@ app.get("/api/me", authenticateToken, async (req: any, res) => {
       .eq('id', req.user.userId)
       .maybeSingle();
 
-    if (error) throw error;
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (error) {
+      console.error("Supabase /api/me error:", error);
+      throw error;
+    }
+    if (!user) {
+      console.warn(`User not found: ${req.user.userId}`);
+      return res.status(404).json({ error: "User not found" });
+    }
 
     // Don't send password back to client
     const { password: _, ...userData } = user;
     res.json(userData);
   } catch (error: any) {
+    console.error("/api/me API error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -300,6 +313,7 @@ app.post("/api/logs", authenticateToken, async (req: any, res) => {
 // Get Leaderboard
 app.get("/api/leaderboard", async (req, res) => {
   try {
+    console.log("Fetching leaderboard...");
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('leaderboard')
@@ -307,9 +321,14 @@ app.get("/api/leaderboard", async (req, res) => {
       .order('score', { ascending: false })
       .limit(50);
 
-    if (error) throw error;
-    res.json(data);
+    if (error) {
+      console.error("Supabase leaderboard error:", error);
+      throw error;
+    }
+    console.log(`Leaderboard fetched: ${data?.length || 0} entries`);
+    res.json(data || []);
   } catch (error: any) {
+    console.error("Leaderboard API error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -317,6 +336,15 @@ app.get("/api/leaderboard", async (req, res) => {
 // --- VITE MIDDLEWARE ---
 
 async function startServer() {
+  // Global error handlers to prevent silent crashes
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
+
+  process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception thrown:', err);
+  });
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
