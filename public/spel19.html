@@ -1408,10 +1408,29 @@
       }
     }
 
+      // Robust fetch with retry
+      const fetchWithRetry = async (url, options = {}, retries = 3, backoff = 1000) => {
+          try {
+              const response = await fetch(url, options);
+              if (!response.ok) {
+                  const errorText = await response.text();
+                  throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+              }
+              return await response.json();
+          } catch (error) {
+              if (retries > 0 && (error.name === 'TypeError' || error.message.includes('HTTP 5'))) {
+                  console.warn(`Fetch failed for ${url}, retrying in ${backoff}ms... (${retries} retries left)`, error);
+                  await new Promise(resolve => setTimeout(resolve, backoff));
+                  return fetchWithRetry(url, options, retries - 1, backoff * 2);
+              }
+              throw error;
+          }
+      };
+
     async function fetchServerState() {
       if (!authToken) return;
       try {
-        const response = await fetch('/api/me', {
+        const data = await fetchWithRetry('/api/me', {
             method: 'GET',
             headers: { 
                 'Content-Type': 'application/json',
@@ -1419,18 +1438,6 @@
             }
         });
         
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                // Token expired or invalid
-                localStorage.removeItem('bananaAuthToken');
-                localStorage.removeItem('bananaAuthPass');
-                authToken = '';
-                return;
-            }
-            throw new Error("Session fetch failed");
-        }
-
-        const data = await response.json();
         if (data) {
           if (data.id) {
             userId = data.id;
@@ -1515,7 +1522,15 @@
             }
           }
         }
-      } catch (e) { console.error("Fetch error:", e); }
+      } catch (e) { 
+          console.error("Fetch error:", e); 
+          if (e.message && (e.message.includes('HTTP 401') || e.message.includes('HTTP 403'))) {
+              localStorage.removeItem('bananaAuthToken');
+              localStorage.removeItem('bananaAuthPass');
+              authToken = '';
+              // Optionally refresh UI or show login modal
+          }
+      }
     }
 
     async function syncData(currentBananas, currentTreesArray, nameToSave = playerName) {
@@ -1546,7 +1561,7 @@
 
       if (authToken && userId) {
         try { 
-            const response = await fetch('/api/save', {
+            const result = await fetchWithRetry('/api/save', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -1568,8 +1583,7 @@
                     expectedCoins: expectedDbCoins
                 })
             });
-
-            const result = await response.json();
+            
             if (result.success) {
                 expectedDbBananas = currentBananas; 
                 expectedDbCoins = coins;
@@ -1617,7 +1631,14 @@
                 updateGameUI();
                 console.log("External change detected and synchronized from server.");
             }
-        } catch (e) { console.error("Sync error:", e); }
+        } catch (e) { 
+            console.error("Sync error:", e); 
+            if (e.message && (e.message.includes('HTTP 401') || e.message.includes('HTTP 403'))) {
+                localStorage.removeItem('bananaAuthToken');
+                localStorage.removeItem('bananaAuthPass');
+                authToken = '';
+            }
+        }
       }
     }
 
@@ -1913,15 +1934,19 @@
     async function setupSupabaseListeners() {
       const fetchLeaderboard = async () => {
         try {
-            const response = await fetch('/api/leaderboard');
-            const data = await response.json();
-            if (data) { leaderboard = data; renderLeaderboard(); }
+            const data = await fetchWithRetry('/api/leaderboard');
+            if (data) { 
+                leaderboard = data; 
+                renderLeaderboard(); 
+            }
             
             // Also refresh current user state to sync with any external changes
             if (authToken) {
                 await fetchServerState();
             }
-        } catch (e) { console.error("Leaderboard fetch error:", e); }
+        } catch (e) { 
+            console.error("Leaderboard fetch error:", e); 
+        }
       };
       await fetchLeaderboard();
       
