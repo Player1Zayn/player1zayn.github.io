@@ -83,7 +83,17 @@ const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_
 let db = null;
 let auth = null;
 let user = null;
-let savedShift = 1;
+const maxShifts = 5;
+let savedShift = localStorage.getItem('nightHorror2_shift') ? parseInt(localStorage.getItem('nightHorror2_shift')) : 1;
+
+const menuButtons = {
+    start: { x: 50, y: 420, w: 250, h: 40, text: 'NEW SHIFT' },
+    credits: { x: 50, y: 480, w: 250, h: 40, text: 'ARCHIVES' }
+};
+
+if (savedShift > 1 && savedShift <= maxShifts) {
+    menuButtons.continue = { x: 50, y: 360, w: 250, h: 40, text: 'CONTINUE SHIFT ' + savedShift };
+}
 
 if (firebaseConfigStr) {
     try {
@@ -120,22 +130,53 @@ if (firebaseConfigStr) {
 }
 
 async function saveProgress(newShift) {
+    savedShift = newShift;
+    localStorage.setItem('nightHorror2_shift', savedShift);
+    if (savedShift <= maxShifts) {
+        menuButtons.continue = { x: 50, y: 360, w: 250, h: 40, text: 'CONTINUE SHIFT ' + savedShift };
+    }
     if (!user || !db) return;
     try {
         await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'saveData', 'progress'), { shift: newShift });
-        savedShift = newShift;
-        if (savedShift <= maxShifts) {
-            menuButtons.continue = { x: 50, y: 360, w: 250, h: 40, text: 'CONTINUE SHIFT ' + savedShift };
-        }
     } catch (e) { console.error("Error saving progress:", e); }
 }
 
 let lastTime = performance.now();
 let gameState = 'MENU'; 
+let previousGameState = 'PLAYING';
+let pauseSubState = 'MAIN';
 let gameOverReason = "";
 
+function getShiftMessage(shiftNum) {
+    if (shiftNum === 1) {
+        return [
+            "Message from Management:",
+            "",
+            "Hello there again! You did a amazing job at the factory,",
+            "keeping the experiments outside! However, the next guard",
+            "failed and now THEY are outside, roaming around.",
+            "",
+            "You need to check peoples IDs for security measures, to",
+            "protect the Safe Haven from the potential dangers in the",
+            "Asylum.",
+            "",
+            "Check their name and reason, and their ID, use the",
+            "Database for help. If anythings seems wrong, deny their",
+            "enter, sound the alarm and shut the door.",
+            "",
+            "Good luck- Bryngel Halvardsson"
+        ];
+    }
+    return [
+        "Message from Management:",
+        "",
+        "Survive the night.",
+        "",
+        "Good luck- Bryngel Halvardsson"
+    ];
+}
+
 let shift = 1;
-const maxShifts = 5;
 let shiftTimeElapsed = 0;
 const SHIFT_DURATION = 360; // 6 in-game hours (6 IRL minutes)
 
@@ -168,14 +209,14 @@ const shelves = [
 let currentNPC = null;
 let npcSpawnTimer = 3;
 
-const keys = { w: false, a: false, s: false, d: false, e: false, f: false };
-const keysJustPressed = { e: false, f: false };
+const keys = { w: false, a: false, s: false, d: false, e: false, f: false, escape: false, p: false };
+const keysJustPressed = { e: false, f: false, escape: false, p: false };
 const mouse = { x: 400, y: 300, clicked: false };
 
 window.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
     if (keys.hasOwnProperty(key)) {
-        if (!keys[key] && (key === 'e' || key === 'f')) keysJustPressed[key] = true;
+        if (!keys[key] && (key === 'e' || key === 'f' || key === 'escape' || key === 'p')) keysJustPressed[key] = true;
         keys[key] = true;
     }
 });
@@ -192,16 +233,16 @@ canvas.addEventListener('mousedown', (e) => { if (e.button === 0) mouse.clicked 
 
 // --- NPC GROUPS & REASONS ---
 
-const namesG1 = ["John Alhar", "Nick Ed", "Sophie Bohn", "Jake", "Paul", "Em", "Tristan", "Aloo"];
-const reasonsG1 = ["I want to meet my family", "Its dangerous here in the Asylum", "Need to calm down in Haven", "Looking for peace and love"];
-const namesG2 = ["Relief Soldier", "Security guard", "Perimeter Supervisor"];
-const reasonsG2 = ["Here for my shift", "I'm replacing my former guard", "Here for security reasons", "Here to supervise"];
-const namesG3 = ["Unknown", "Bear", "Fox", "Bunny", "?", "...", "Bryngel"];
-const reasonsG3 = ["LET ME IN", "IM HURT PLEASE", "...", "Im hungry", "I want to break free", "Please help me", "I'm not dangerous"];
+const namesG1 = ["John Alhar", "Nick Ed", "Sophie Bohn", "Jake", "Paul", "Em", "Tristan", "Aloo", "Sarah J.", "Mike Vance", "Chloe S.", "David R.", "Elena", "Marcus T.", "Lily", "Omar"];
+const reasonsG1 = ["I want to meet my family", "Its dangerous here in the Asylum", "Need to calm down in Haven", "Looking for peace and love", "My house was destroyed", "I was told this is a safe zone", "Seeking medical attention", "I have supplies to trade", "Just passing through", "I lost my group"];
+const namesG2 = ["Relief Soldier", "Security guard", "Perimeter Supervisor", "Medical Officer", "Maintenance Tech", "Inspector Vance", "Supply Runner", "Night Watchman", "Dr. Aris", "Field Medic"];
+const reasonsG2 = ["Here for my shift", "I'm replacing my former guard", "Here for security reasons", "Here to supervise", "Delivering medical supplies", "Routine perimeter check", "Fixing the generator", "Authorized personnel transfer", "Checking the barricades", "Management sent me"];
+const namesG3 = ["Unknown", "Bear", "Fox", "Bunny", "?", "...", "Bryngel", "Your Replacement", "A Friend", "Help", "The Doctor", "Mom", "Lost Child", "Officer 404", "David...?", "S.O.S."];
+const reasonsG3 = ["LET ME IN", "IM HURT PLEASE", "...", "Im hungry", "I want to break free", "Please help me", "I'm not dangerous", "I forgot my keys", "It's so cold out here", "They are right behind me", "I have the new access codes", "Don't you recognize me?", "I live here now", "Open the door, it's safe", "I just want to look inside", "The shadows are biting me", "I brought dinner", "Management said I could enter"];
 
 function spawnNPC() {
     const isMonster = Math.random() < 0.3 + (shift * 0.08);
-    const isExpired = isMonster ? (Math.random() < 0.6) : (Math.random() < 0.15);
+    const isExpired = Math.random() < 0.25;
 
     let npcName = "";
     let npcReason = "";
@@ -229,9 +270,10 @@ function spawnNPC() {
         name: npcName,
         reason: npcReason,
         idNumber: `ASY-${Math.floor(Math.random() * 9000) + 1000}`,
-        expYear: isExpired ? 2024 : 2029,
+        expYear: isExpired ? (2020 + Math.floor(Math.random() * 6)) : (2026 + Math.floor(Math.random() * 5)),
         targetShelfIndex: Math.floor(Math.random() * shelves.length),
-        wobble: Math.random() * 10
+        wobble: Math.random() * 10,
+        hidesReason: false
     };
 }
 
@@ -275,11 +317,6 @@ const buttons = {
     emergency: { x: 340, y: 500, w: 120, h: 40, text: 'EMERGENCY' }
 };
 
-const menuButtons = {
-    start: { x: 50, y: 420, w: 250, h: 40, text: 'NEW SHIFT' },
-    credits: { x: 50, y: 480, w: 250, h: 40, text: 'ARCHIVES' }
-};
-
 function startShift() {
     gameState = 'START';
     shiftTimeElapsed = 0;
@@ -315,8 +352,41 @@ function getAMTime(secs) {
 function update(dt) {
     let fPressed = keysJustPressed['f'];
     let ePressed = keysJustPressed['e'];
+    let escPressed = keysJustPressed['escape'] || keysJustPressed['p'];
     keysJustPressed['e'] = false;
     keysJustPressed['f'] = false;
+    keysJustPressed['escape'] = false;
+    keysJustPressed['p'] = false;
+
+    if (escPressed) {
+        const pausableStates = ['PLAYING', 'DIALOGUE', 'COMPUTER', 'LOCKDOWN_ALARM', 'ATTACK_REACT'];
+        if (pausableStates.includes(gameState)) {
+            previousGameState = gameState;
+            gameState = 'PAUSED';
+            pauseSubState = 'MAIN';
+        } else if (gameState === 'PAUSED') {
+            if (pauseSubState === 'MAIN') {
+                gameState = previousGameState;
+            } else {
+                pauseSubState = 'MAIN';
+            }
+        }
+    }
+
+    if (gameState === 'PAUSED') {
+        if (mouse.clicked) {
+            if (pauseSubState === 'MAIN') {
+                if (isHit({x: GAME_W/2 - 150, y: 200, w: 300, h: 40})) pauseSubState = 'CONTROLS';
+                if (isHit({x: GAME_W/2 - 150, y: 260, w: 300, h: 40})) pauseSubState = 'MESSAGE';
+                if (isHit({x: GAME_W/2 - 150, y: 320, w: 300, h: 40})) gameState = previousGameState;
+                if (isHit({x: GAME_W/2 - 150, y: 380, w: 300, h: 40})) gameState = 'MENU';
+            } else {
+                if (isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40})) pauseSubState = 'MAIN';
+            }
+        }
+        mouse.clicked = false; 
+        return;
+    }
 
     if (gameState === 'MENU') {
         if (mouse.clicked && isMenuHit(menuButtons.start)) { shift = 1; gameState = 'MESSAGE'; }
@@ -421,7 +491,6 @@ function update(dt) {
         if (keys['d']) dx += player.speed * dt;
         if (dx !== 0 && canMove(player.x + dx, player.y)) player.x += dx;
         if (dy !== 0 && canMove(player.x, player.y + dy)) player.y += dy;
-        player.angle = Math.atan2(mouse.y - pCenter.y, mouse.x - pCenter.x);
     }
 
     // Barricade Mechanics / Shelf Fill (Holding E)
@@ -454,8 +523,12 @@ function update(dt) {
                 if (!currentNPC.hasTakenFood) {
                     currentNPC.hasTakenFood = true;
                     const shelf = shelves[currentNPC.targetShelfIndex];
-                    shelf.stock -= 25; 
-                    if (shelf.stock <= 0) { triggerGameOver("Fired! A visitor took the last of your supplies."); return; }
+                    if (shelf.stock <= 0) {
+                        if (Math.random() < 0.5) currentNPC.hidesReason = true;
+                    } else {
+                        shelf.stock -= 25; 
+                        if (shelf.stock < 0) shelf.stock = 0;
+                    }
                 }
             }
         } else if (currentNPC.state === 'LEAVING_DENIED') {
@@ -581,23 +654,7 @@ function draw() {
         ctx.textAlign = 'left';
         ctx.font = 'bold 20px "Courier New"';
         
-        const lines = [
-            "Message from Management:",
-            "",
-            "Hello there again! You did a amazing job at the factory,",
-            "keeping the experiments outside! However, the next guard",
-            "failed and now THEY are outside, roaming around.",
-            "",
-            "You need to check peoples IDs for security measures, to",
-            "protect the Safe Haven from the potential dangers in the",
-            "Asylum.",
-            "",
-            "Check their name and reason, and their ID, use the",
-            "Database for help. If anythings seems wrong, deny their",
-            "enter, sound the alarm and shut the door.",
-            "",
-            "Good luck- Bryngel Halvardsson"
-        ];
+        const lines = getShiftMessage(shift);
         
         for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], 100, 150 + (i * 25));
         
@@ -640,11 +697,19 @@ function draw() {
     }
 
     if (gameState === 'MENU') {
-        ctx.fillStyle = '#0a0a0c';
-        ctx.beginPath(); ctx.arc(GAME_W-180, GAME_H/2+80, 140, 0, Math.PI*2); ctx.fill();
-        if (Math.random() > 0.96) {
-            ctx.fillStyle = 'rgba(255,255,255,0.7)';
-            ctx.beginPath(); ctx.arc(GAME_W-230, GAME_H/2+30, 3, 0, Math.PI*2); ctx.arc(GAME_W-130, GAME_H/2+30, 3, 0, Math.PI*2); ctx.fill();
+        const mx = GAME_W - 250;
+        const my = GAME_H / 2 + 50;
+        ctx.fillStyle = '#0a0a0c'; 
+        ctx.fillRect(mx, my, 200, 200); // Body
+        ctx.fillStyle = '#000'; 
+        ctx.fillRect(mx + 40, my - 100, 120, 100); // Head
+        
+        if (Math.random() > 0.05) { // Twitchy eyes
+            const tx = Math.random() * 6 - 3;
+            const ty = Math.random() * 6 - 3;
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillRect(mx + 50 + tx, my - 70 + ty, 30, 30);
+            ctx.fillRect(mx + 120 + tx, my - 70 + ty, 30, 30);
         }
         ctx.fillStyle = 'rgba(255,255,255,0.05)';
         for(let i=0; i<400; i++) ctx.fillRect(Math.random()*GAME_W, Math.random()*GAME_H, 2, 1);
@@ -698,6 +763,13 @@ function draw() {
     const pCenter = getCenter(player);
 
     ctx.fillStyle = '#111311'; ctx.fillRect(0, 0, GAME_W, GAME_H);
+    
+    // Draw Paths
+    ctx.fillStyle = '#181a18'; // Path color
+    ctx.fillRect(370, 0, 60, 200); // Path from top to window
+    ctx.fillRect(0, 140, 370, 60); // Path to the left
+    ctx.fillRect(430, 140, GAME_W - 430, 60); // Path to the right (through gate)
+
     ctx.fillStyle = '#1a1a1a'; ctx.fillRect(380, 0, 40, office.y);
 
     // Fences
@@ -760,15 +832,6 @@ function draw() {
         ctx.fillStyle = '#0f0'; ctx.fillRect(windowObj.x, windowObj.y - 10, (windowObj.barricadeProgress/5)*100, 5);
     }
 
-    // Guard Player Light
-    const grad = ctx.createRadialGradient(pCenter.x, pCenter.y, 0, pCenter.x, pCenter.y, 250);
-    grad.addColorStop(0, 'rgba(255,255,200,0.3)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.save();
-    ctx.translate(pCenter.x, pCenter.y); ctx.rotate(player.angle);
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.moveTo(10,5); ctx.lineTo(250, -60); ctx.arc(0,0,250,-0.25, 0.25); ctx.lineTo(10,5); ctx.fill();
-    ctx.restore();
-
     // Guard Body 
     ctx.save();
     ctx.translate(pCenter.x, pCenter.y);
@@ -784,7 +847,11 @@ function draw() {
         ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(100, 420, 600, 120);
         ctx.fillStyle = '#fff'; ctx.font='18px Courier'; ctx.textAlign='left';
         ctx.fillText(`ID: ${currentNPC.name}`, 120, 450);
-        ctx.fillText(`Reason: ${currentNPC.reason}`, 120, 480);
+        
+        const reasonText = currentNPC.hidesReason ? "... (Refuses to speak)" : currentNPC.reason;
+        if (currentNPC.hidesReason) ctx.fillStyle = '#aaa';
+        ctx.fillText(`Reason: ${reasonText}`, 120, 480);
+        
         ctx.fillStyle='#0ff'; ctx.fillText('[F] Use Computer | [E] Close', 120, 520);
     }
     
@@ -806,7 +873,8 @@ function draw() {
             ctx.textAlign='left'; 
             ctx.fillText(`Subject: ${currentNPC.name}`, 180, 200);
             ctx.fillText(`ID: ${currentNPC.idNumber}`, 180, 230);
-            ctx.fillText(`Status: ${currentNPC.expYear < 2026 ? 'EXPIRED' : 'VALID'}`, 180, 260);
+            const expText = currentNPC.expYear < 2026 ? `${currentNPC.expYear} (Expired)` : `${currentNPC.expYear}`;
+            ctx.fillText(`ID Date: ${expText}`, 180, 260);
             dr(buttons.accept); dr(buttons.deny);
         } else if (lockdownTimer <= 0 && attackTimer <= 0) {
             // No NPC waiting, display no info.
@@ -870,6 +938,69 @@ function draw() {
         }
         if (distDoor < 120) {
             ctx.fillText("[E] Toggle Door", 20, keyTipY);
+            keyTipY -= 20;
+        }
+        let nearShelf = false;
+        shelves.forEach(s => {
+            if (getDist(pCenter.x, pCenter.y, s.x+s.w/2, s.y+s.h/2) < 100) nearShelf = true;
+        });
+        if (nearShelf) {
+            ctx.fillText("[Hold E] Refill Shelf", 20, keyTipY);
+        }
+    }
+
+    if (gameState === 'PAUSED') {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+        const drawBtn = (x, y, w, h, text) => {
+            const hit = mouse.x > x && mouse.x < x+w && mouse.y > y && mouse.y < y+h;
+            ctx.fillStyle = hit ? '#333' : '#222'; ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = '#0f0'; ctx.strokeRect(x, y, w, h);
+            ctx.fillStyle = '#fff'; ctx.font = '20px Courier';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, x + w/2, y + h/2 + 6);
+        };
+
+        if (pauseSubState === 'MAIN') {
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 40px "Courier New"';
+            ctx.fillText("PAUSED", GAME_W/2, 100);
+
+            drawBtn(GAME_W/2 - 150, 200, 300, 40, 'CONTROLS');
+            drawBtn(GAME_W/2 - 150, 260, 300, 40, 'MESSAGE FROM MNGT');
+            drawBtn(GAME_W/2 - 150, 320, 300, 40, 'RESUME');
+            drawBtn(GAME_W/2 - 150, 380, 300, 40, 'MAIN MENU');
+        } else if (pauseSubState === 'CONTROLS') {
+            ctx.fillStyle = '#0f0';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 30px "Courier New"';
+            ctx.fillText("CONTROLS", GAME_W/2, 100);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '18px "Courier New"';
+            ctx.fillText("W,A,S,D - Move", GAME_W/2, 160);
+            ctx.fillText("E - Interact / Toggle Door", GAME_W/2, 190);
+            ctx.fillText("Hold E - Refill Shelf", GAME_W/2, 220);
+            ctx.fillText("F - Open Computer", GAME_W/2, 250);
+            ctx.fillText("ESC/P - Pause", GAME_W/2, 280);
+
+            drawBtn(GAME_W/2 - 100, 500, 200, 40, 'BACK');
+        } else if (pauseSubState === 'MESSAGE') {
+            ctx.fillStyle = '#0f0';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 30px "Courier New"';
+            ctx.fillText("CURRENT DIRECTIVE", GAME_W/2, 100);
+
+            ctx.fillStyle = '#ccc';
+            ctx.font = '16px "Courier New"';
+            const lines = getShiftMessage(shift);
+            for (let i = 0; i < lines.length; i++) {
+                ctx.fillText(lines[i], GAME_W/2, 150 + (i * 22));
+            }
+
+            drawBtn(GAME_W/2 - 100, 500, 200, 40, 'BACK');
         }
     }
 }
