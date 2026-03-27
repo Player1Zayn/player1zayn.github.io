@@ -21,8 +21,8 @@
         }
         #game-container {
             position: relative;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -31,8 +31,10 @@
             display: block;
             image-rendering: pixelated;
             background-color: #050505;
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: 100%;
+            max-width: 100vw;
+            max-height: 100vh;
             aspect-ratio: 4 / 3;
             object-fit: contain;
             box-shadow: 0 0 50px rgba(0, 0, 0, 1);
@@ -145,7 +147,41 @@ let lastTime = performance.now();
 let gameState = 'MENU'; 
 let previousGameState = 'PLAYING';
 let pauseSubState = 'MAIN';
+let archivesSubState = 'MAIN';
+let redeemCodeInput = "";
+let isCodeRedeemed = false;
+let selectedNoteShift = 1;
+let isExtrasInputFocused = false;
+let cheatCodeInput = "";
+let isCheatActive = false;
+let cutsceneTimer = 0;
+let cutsceneStage = 0;
+let cutscenePlayerX = 0;
+let cutsceneNPCs = [];
+let cutsceneStalkerX = -50;
+let cutsceneShake = 0;
+let cutsceneMonsterMode = false;
 let gameOverReason = "";
+
+function startEndingCutscene() {
+    gameState = 'ENDING_CUTSCENE';
+    cutsceneTimer = 0;
+    cutsceneStage = 0;
+    cutscenePlayerX = -50;
+    cutsceneStalkerX = -100;
+    cutsceneShake = 0;
+    cutsceneMonsterMode = false;
+    cutsceneNPCs = [];
+    for(let i=0; i<12; i++) {
+        cutsceneNPCs.push({
+            x: Math.random() * GAME_W,
+            y: Math.random() < 0.5 ? 50 + Math.random() * 100 : 450 + Math.random() * 100,
+            jump: Math.random() * Math.PI * 2,
+            jumpSpeed: 3 + Math.random() * 4,
+            isMonster: false
+        });
+    }
+}
 
 function getShiftMessage(shiftNum) {
     if (shiftNum === 1) {
@@ -167,10 +203,58 @@ function getShiftMessage(shiftNum) {
             "Good luck- Bryngel Halvardsson"
         ];
     }
+    if (shiftNum === 2) {
+        return [
+            "Message from Management:",
+            "",
+            "Hello there again!",
+            "You made your first shift! Great work!",
+            "Now, as you probably noticed, some individuals seem to be...",
+            "infected. They will try to enter the Safe Haven, but you",
+            "have to be careful and not let them. If you let more than 3",
+            "of them in, they will sound to their friends and a massive",
+            "horde of infected will storm the area. Be safe, and make",
+            "sure to verify any individuals ID before leaving the office:",
+            "The infected might attack you outside.",
+            "",
+            "- Bryngel Halvardsson."
+        ];
+    }
+    if (shiftNum === 3) {
+        return [
+            "Message from Management:",
+            "",
+            "The situation is escalating. The infected are becoming more",
+            "aggressive and some are even trying to mimic our staff more",
+            "convincingly. We've noticed they are targeting the power grid.",
+            "If the power goes out, the security systems fail. Keep that",
+            "generator running at all costs, but remember: you are",
+            "vulnerable when you step outside.",
+            "",
+            "Stay vigilant.",
+            "- Bryngel Halvardsson."
+        ];
+    }
+    if (shiftNum === 4) {
+        return [
+            "Message from Management:",
+            "",
+            "Urgent Notice:",
+            "The Asylum is almost completely overrun. We are seeing larger",
+            "groups gathering near the perimeter. The 'Lockdown' protocol",
+            "is your only hope if they breach the gate. Do not hesitate",
+            "to use the emergency barricades.",
+            "",
+            "We need you to hold the line for just a little longer.",
+            "The Safe Haven depends on you.",
+            "- Bryngel Halvardsson."
+        ];
+    }
     return [
         "Message from Management:",
         "",
-        "Survive the night.",
+        "Final Shift. The end is near.",
+        "Hold your ground until 6 AM.",
         "",
         "Good luck- Bryngel Halvardsson"
     ];
@@ -216,6 +300,29 @@ const keysJustPressed = { e: false, f: false, escape: false, p: false };
 const mouse = { x: 400, y: 300, clicked: false };
 
 window.addEventListener('keydown', (e) => {
+    if (gameState === 'ARCHIVES' && archivesSubState === 'EXTRAS' && isExtrasInputFocused) {
+        if (e.key === 'Backspace') {
+            redeemCodeInput = redeemCodeInput.slice(0, -1);
+        } else if (e.key === 'Enter') {
+            if (redeemCodeInput.toUpperCase() === 'NIGHTGUARD') {
+                isCodeRedeemed = true;
+            }
+        } else if (e.key.length === 1 && redeemCodeInput.length < 15) {
+            redeemCodeInput += e.key.toUpperCase();
+        }
+        return;
+    }
+    
+    // Cheat code detection (BRYNGEL)
+    if (gameState === 'PLAYING' || gameState === 'COMPUTER' || gameState === 'DIALOGUE') {
+        cheatCodeInput += e.key.toUpperCase();
+        if (cheatCodeInput.length > 7) cheatCodeInput = cheatCodeInput.slice(-7);
+        if (cheatCodeInput === 'BRYNGEL') {
+            isCheatActive = true;
+            cheatCodeInput = ""; // Reset after activation
+        }
+    }
+
     const key = e.key.toLowerCase();
     if (keys.hasOwnProperty(key)) {
         if (!keys[key] && (key === 'e' || key === 'f' || key === 'escape' || key === 'p')) keysJustPressed[key] = true;
@@ -334,6 +441,7 @@ function startShift() {
     windowObj.barricaded = false;
     windowObj.barricadeProgress = 0;
     emergencyTriggered = false;
+    isCheatActive = false; // Reset cheat each night
     shelves.forEach(s => s.stock = 100);
     player.x = 400; player.y = 420;
 }
@@ -392,10 +500,10 @@ function update(dt) {
 
     if (gameState === 'MENU') {
         if (mouse.clicked && isMenuHit(menuButtons.start)) { shift = 1; gameState = 'MESSAGE'; }
-        if (mouse.clicked && isMenuHit(menuButtons.credits)) gameState = 'CREDITS';
+        if (mouse.clicked && isMenuHit(menuButtons.credits)) { gameState = 'ARCHIVES'; archivesSubState = 'MAIN'; }
         if (mouse.clicked && menuButtons.continue && isMenuHit(menuButtons.continue)) { 
             shift = savedShift; 
-            if (shift === 1) gameState = 'MESSAGE'; else startShift(); 
+            gameState = 'MESSAGE'; 
         }
         mouse.clicked = false; return;
     }
@@ -403,8 +511,40 @@ function update(dt) {
         if (mouse.clicked || ePressed) startShift();
         mouse.clicked = false; return;
     }
-    if (gameState === 'CREDITS') {
-        if (mouse.clicked) gameState = 'MENU';
+    if (gameState === 'ARCHIVES') {
+        if (mouse.clicked) {
+            if (archivesSubState === 'MAIN') {
+                if (isHit({x: GAME_W/2 - 150, y: 200, w: 300, h: 40})) archivesSubState = 'NOTES';
+                if (isHit({x: GAME_W/2 - 150, y: 260, w: 300, h: 40})) archivesSubState = 'CREDITS';
+                if (isHit({x: GAME_W/2 - 150, y: 320, w: 300, h: 40})) archivesSubState = 'EXTRAS';
+                if (isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40})) gameState = 'MENU';
+            } else if (archivesSubState === 'NOTES') {
+                for (let i = 1; i <= maxShifts; i++) {
+                    if (i <= savedShift) {
+                        if (isHit({x: 100, y: 150 + (i-1)*50, w: 200, h: 40})) selectedNoteShift = i;
+                    }
+                }
+                if (isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40})) archivesSubState = 'MAIN';
+            } else if (archivesSubState === 'CREDITS') {
+                if (isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40})) archivesSubState = 'MAIN';
+            } else if (archivesSubState === 'EXTRAS') {
+                if (isHit({x: GAME_W/2 - 150, y: 230, w: 300, h: 50})) isExtrasInputFocused = true;
+                else isExtrasInputFocused = false;
+
+                if (isCodeRedeemed && isHit({x: GAME_W/2 - 150, y: 380, w: 300, h: 40})) archivesSubState = 'SHIFT_SELECT';
+                if (isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40})) archivesSubState = 'MAIN';
+            } else if (archivesSubState === 'SHIFT_SELECT') {
+                for (let i = 1; i <= 5; i++) {
+                    if (isHit({x: GAME_W/2 - 100, y: 150 + (i-1)*60, w: 200, h: 50})) {
+                        shift = i;
+                        savedShift = Math.max(savedShift, i);
+                        localStorage.setItem('nightHorror2_shift', savedShift);
+                        gameState = 'MESSAGE';
+                    }
+                }
+                if (isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40})) archivesSubState = 'MAIN';
+            }
+        }
         mouse.clicked = false; return;
     }
     if (gameState === 'START') {
@@ -416,14 +556,69 @@ function update(dt) {
         if (jumpscareTimer <= 0) gameState = 'GAME_OVER';
         return;
     }
-    if (gameState === 'GAME_OVER' || gameState === 'WIN') {
+    if (gameState === 'GAME_OVER') {
         if (mouse.clicked || ePressed) { shift = 1; gameState = 'MENU'; }
+        mouse.clicked = false; return;
+    }
+    if (gameState === 'WIN') {
+        const bx = GAME_W/2 - 150;
+        const by = 450;
+        const bw = 300;
+        const bh = 50;
+        if (mouse.clicked && mouse.x > bx && mouse.x < bx + bw && mouse.y > by && mouse.y < by + bh) {
+            startEndingCutscene();
+        }
+        mouse.clicked = false; return;
+    }
+    if (gameState === 'ENDING_CUTSCENE') {
+        cutsceneTimer += dt;
+        if (cutsceneStage === 0) {
+            cutscenePlayerX += 120 * dt;
+            if (cutscenePlayerX >= GAME_W - 150) {
+                cutscenePlayerX = GAME_W - 150;
+                cutsceneStage = 1;
+                cutsceneTimer = 0;
+            }
+        } else if (cutsceneStage === 1) {
+            if (cutsceneTimer > 1) {
+                cutsceneStalkerX += 180 * dt;
+                if (cutsceneStalkerX >= 150) {
+                    cutsceneStalkerX = 150;
+                    cutsceneStage = 2;
+                    cutsceneTimer = 0;
+                }
+            }
+        } else if (cutsceneStage === 2) {
+            if (cutsceneTimer > 1.5) {
+                if (!cutsceneMonsterMode) {
+                    cutsceneMonsterMode = true;
+                    cutsceneShake = 15;
+                }
+                if (cutsceneTimer > 4.5) {
+                    cutsceneStage = 3;
+                    cutsceneTimer = 0;
+                }
+            }
+        } else if (cutsceneStage === 3) {
+            if (mouse.clicked || ePressed) {
+                shift = 1;
+                gameState = 'MENU';
+            }
+        }
+        
+        // Update jumping NPCs
+        cutsceneNPCs.forEach(n => {
+            n.jump += n.jumpSpeed * dt;
+            if (cutsceneMonsterMode) n.isMonster = true;
+        });
+        
+        if (cutsceneShake > 0) cutsceneShake -= 30 * dt;
         mouse.clicked = false; return;
     }
     if (gameState === 'SHIFT_COMPLETE') {
         if (mouse.clicked) {
             if (isHit({x: GAME_W/2 - 100, y: 400, w: 200, h: 40})) { 
-                shift++; if (shift > maxShifts) gameState = 'WIN'; else startShift();
+                shift++; if (shift > maxShifts) gameState = 'WIN'; else gameState = 'MESSAGE';
             }
             if (isHit({x: GAME_W/2 - 100, y: 460, w: 200, h: 40})) { 
                 shift++; if (shift > maxShifts) gameState = 'WIN'; else gameState = 'MENU';
@@ -462,7 +657,7 @@ function update(dt) {
     // Timer Logic - Freeze time while NPC is waiting for a decision
     let freezeTime = (currentNPC && currentNPC.state === 'WAITING');
     if (!freezeTime && (gameState === 'PLAYING' || gameState === 'ATTACK_REACT' || gameState === 'LOCKDOWN_ALARM' || gameState === 'DIALOGUE' || gameState === 'COMPUTER')) {
-        shiftTimeElapsed += dt;
+        shiftTimeElapsed += dt * (isCheatActive ? 6 : 1);
         if (shiftTimeElapsed >= SHIFT_DURATION) {
             gameState = 'SHIFT_COMPLETE';
             if (shift < maxShifts) saveProgress(shift + 1); else saveProgress(1);
@@ -717,11 +912,92 @@ function draw() {
         return;
     }
 
-    if (gameState === 'CREDITS') {
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-        ctx.font = 'bold 40px "Courier New"'; ctx.fillText('ARCHIVES', GAME_W/2, 200);
-        ctx.font = '24px "Courier New"'; ctx.fillText('MADE BY Player1Zayn', GAME_W/2, 300);
-        ctx.font = '16px "Courier New"'; ctx.fillText('Click anywhere to return', GAME_W/2, 500);
+    if (gameState === 'ARCHIVES') {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, GAME_W, GAME_H);
+        ctx.strokeStyle = '#0f0'; ctx.lineWidth = 2; ctx.strokeRect(10, 10, GAME_W-20, GAME_H-20);
+        
+        ctx.fillStyle = '#0f0'; ctx.textAlign = 'center';
+        ctx.font = 'bold 40px "Courier New"'; ctx.fillText('ARCHIVES', GAME_W/2, 80);
+        
+        if (archivesSubState === 'MAIN') {
+            const btns = [
+                { text: 'NOTES', y: 200 },
+                { text: 'CREDITS', y: 260 },
+                { text: 'EXTRAS', y: 320 },
+                { text: 'BACK', y: 500 }
+            ];
+            btns.forEach(b => {
+                ctx.fillStyle = isHit({x: GAME_W/2 - 150, y: b.y, w: 300, h: 40}) ? '#0f0' : '#040';
+                ctx.fillRect(GAME_W/2 - 150, b.y, 300, 40);
+                ctx.fillStyle = isHit({x: GAME_W/2 - 150, y: b.y, w: 300, h: 40}) ? '#000' : '#0f0';
+                ctx.font = '20px "Courier New"'; ctx.fillText(b.text, GAME_W/2, b.y + 28);
+            });
+        } else if (archivesSubState === 'NOTES') {
+            ctx.textAlign = 'left'; ctx.font = '16px "Courier New"';
+            for (let i = 1; i <= maxShifts; i++) {
+                if (i <= savedShift) {
+                    ctx.fillStyle = selectedNoteShift === i ? '#0f0' : '#040';
+                    ctx.fillRect(100, 150 + (i-1)*50, 200, 40);
+                    ctx.fillStyle = selectedNoteShift === i ? '#000' : '#0f0';
+                    ctx.fillText('SHIFT ' + i, 120, 150 + (i-1)*50 + 28);
+                } else {
+                    ctx.fillStyle = '#222'; ctx.fillText('LOCKED', 120, 150 + (i-1)*50 + 28);
+                }
+            }
+            
+            ctx.fillStyle = '#0f0'; ctx.font = '12px "Courier New"';
+            const msg = getShiftMessage(selectedNoteShift);
+            for (let i = 0; i < msg.length; i++) {
+                ctx.fillText(msg[i], 330, 150 + (i * 18));
+            }
+            
+            ctx.textAlign = 'center';
+            ctx.fillStyle = isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40}) ? '#0f0' : '#040';
+            ctx.fillRect(GAME_W/2 - 100, 500, 200, 40);
+            ctx.fillStyle = isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40}) ? '#000' : '#0f0';
+            ctx.fillText('BACK', GAME_W/2, 528);
+        } else if (archivesSubState === 'CREDITS') {
+            ctx.font = '24px "Courier New"'; ctx.fillText('MADE BY Player1Zayn', GAME_W/2, 300);
+            ctx.fillStyle = isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40}) ? '#0f0' : '#040';
+            ctx.fillRect(GAME_W/2 - 100, 500, 200, 40);
+            ctx.fillStyle = isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40}) ? '#000' : '#0f0';
+            ctx.fillText('BACK', GAME_W/2, 528);
+        } else if (archivesSubState === 'EXTRAS') {
+            ctx.font = '20px "Courier New"'; ctx.fillText('REDEEM CODE', GAME_W/2, 200);
+            ctx.strokeStyle = isExtrasInputFocused ? '#fff' : '#0f0'; 
+            ctx.lineWidth = isExtrasInputFocused ? 3 : 1;
+            ctx.strokeRect(GAME_W/2 - 150, 230, 300, 50);
+            ctx.lineWidth = 1;
+            ctx.font = '30px "Courier New"'; ctx.fillText(redeemCodeInput + (isExtrasInputFocused && Math.floor(Date.now()/500)%2 ? '_' : ''), GAME_W/2, 265);
+            ctx.font = '14px "Courier New"'; ctx.fillText(isExtrasInputFocused ? 'Type the code and press ENTER' : 'Click the box to type', GAME_W/2, 310);
+            
+            if (isCodeRedeemed) {
+                ctx.fillStyle = '#0f0'; ctx.font = '14px "Courier New"';
+                ctx.fillText('CODE ACCEPTED! SHIFT SELECT UNLOCKED.', GAME_W/2, 350);
+                ctx.fillStyle = isHit({x: GAME_W/2 - 150, y: 380, w: 300, h: 40}) ? '#0f0' : '#040';
+                ctx.fillRect(GAME_W/2 - 150, 380, 300, 40);
+                ctx.fillStyle = isHit({x: GAME_W/2 - 150, y: 380, w: 300, h: 40}) ? '#000' : '#0f0';
+                ctx.fillText('GO TO SHIFT SELECT', GAME_W/2, 408);
+            }
+            
+            ctx.fillStyle = isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40}) ? '#0f0' : '#040';
+            ctx.fillRect(GAME_W/2 - 100, 500, 200, 40);
+            ctx.fillStyle = isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40}) ? '#000' : '#0f0';
+            ctx.fillText('BACK', GAME_W/2, 528);
+        } else if (archivesSubState === 'SHIFT_SELECT') {
+            ctx.font = '20px "Courier New"'; ctx.fillText('SELECT A SHIFT', GAME_W/2, 120);
+            for (let i = 1; i <= 5; i++) {
+                ctx.fillStyle = isHit({x: GAME_W/2 - 100, y: 150 + (i-1)*60, w: 200, h: 50}) ? '#0f0' : '#040';
+                ctx.fillRect(GAME_W/2 - 100, 150 + (i-1)*60, 200, 50);
+                ctx.fillStyle = isHit({x: GAME_W/2 - 100, y: 150 + (i-1)*60, w: 200, h: 50}) ? '#000' : '#0f0';
+                ctx.fillText('SHIFT ' + i, GAME_W/2, 150 + (i-1)*60 + 35);
+            }
+            
+            ctx.fillStyle = isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40}) ? '#0f0' : '#040';
+            ctx.fillRect(GAME_W/2 - 100, 500, 200, 40);
+            ctx.fillStyle = isHit({x: GAME_W/2 - 100, y: 500, w: 200, h: 40}) ? '#000' : '#0f0';
+            ctx.fillText('BACK', GAME_W/2, 528);
+        }
         return;
     }
 
@@ -809,6 +1085,119 @@ function draw() {
         return;
     }
 
+    if (gameState === 'WIN') {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, GAME_W, GAME_H);
+        
+        // Background static/glitch
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.05)';
+        for(let i=0; i<100; i++) ctx.fillRect(Math.random()*GAME_W, Math.random()*GAME_H, 2, 2);
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#0f0';
+        ctx.font = 'bold 50px "Courier New"';
+        ctx.fillText('CONGRATULATIONS', GAME_W/2, 150);
+        
+        ctx.font = '24px "Courier New"';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('YOU SURVIVED THE ASYLUM', GAME_W/2, 220);
+        
+        ctx.font = '16px "Courier New"';
+        ctx.fillStyle = '#888';
+        ctx.fillText('The Safe Haven is secure... for now.', GAME_W/2, 260);
+        
+        ctx.font = '18px "Courier New"';
+        ctx.fillStyle = '#0f0';
+        ctx.fillText('All 5 Shifts Completed Successfully', GAME_W/2, 320);
+        
+        ctx.font = '14px "Courier New"';
+        ctx.fillStyle = '#555';
+        ctx.fillText('MADE BY Player1Zayn', GAME_W/2, 360);
+
+        // Back to menu button
+        const bx = GAME_W/2 - 150;
+        const by = 450;
+        const bw = 300;
+        const bh = 50;
+        const hit = mouse.x > bx && mouse.x < bx + bw && mouse.y > by && mouse.y < by + bh;
+        
+        ctx.fillStyle = hit ? '#0f0' : '#040';
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.fillStyle = hit ? '#000' : '#0f0';
+        ctx.font = 'bold 20px "Courier New"';
+        ctx.fillText('CONTINUE', GAME_W/2, by + 32);
+        
+        return;
+    }
+
+    if (gameState === 'ENDING_CUTSCENE') {
+        ctx.save();
+        if (cutsceneShake > 0) ctx.translate(Math.random()*cutsceneShake*2-cutsceneShake, Math.random()*cutsceneShake*2-cutsceneShake);
+        
+        // Grass
+        ctx.fillStyle = '#1a3d1a';
+        ctx.fillRect(0, 0, GAME_W, 250);
+        ctx.fillRect(0, 350, GAME_W, 250);
+        
+        // Path
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 250, GAME_W, 100);
+        
+        // Houses
+        for(let i=0; i<6; i++) {
+            const hx = 30 + i*140;
+            ctx.fillStyle = '#422';
+            ctx.fillRect(hx, 100, 80, 60);
+            ctx.fillStyle = '#633';
+            ctx.beginPath(); ctx.moveTo(hx-10, 100); ctx.lineTo(hx+40, 60); ctx.lineTo(hx+90, 100); ctx.fill();
+            ctx.fillStyle = '#ff0'; ctx.fillRect(hx+15, 115, 15, 15); ctx.fillRect(hx+50, 115, 15, 15);
+        }
+        
+        // NPCs
+        cutsceneNPCs.forEach(n => {
+            const jy = Math.abs(Math.sin(n.jump)) * 25;
+            const y = n.y - jy;
+            if (n.isMonster) {
+                ctx.fillStyle = '#000'; ctx.fillRect(n.x-12, y-12, 24, 24);
+                ctx.fillStyle = '#f00'; ctx.fillRect(n.x-8, y-8, 5, 5); ctx.fillRect(n.x+3, y-8, 5, 5);
+            } else {
+                ctx.fillStyle = '#d4c5b0'; ctx.fillRect(n.x-8, y-15, 16, 15); // Head
+                ctx.fillStyle = '#1a2b4c'; ctx.fillRect(n.x-10, y, 20, 20); // Body
+            }
+        });
+        
+        // Player
+        const py = 280;
+        ctx.fillStyle = '#1a2b4c'; ctx.fillRect(cutscenePlayerX-10, py, 20, 20); // Body
+        ctx.fillStyle = '#d4c5b0'; ctx.fillRect(cutscenePlayerX-6, py-10, 12, 10); // Head
+        
+        // Stalker
+        if (cutsceneStage >= 1) {
+            const sy = 280;
+            if (cutsceneMonsterMode) {
+                ctx.fillStyle = '#000'; ctx.fillRect(cutsceneStalkerX-15, sy-5, 30, 30);
+                ctx.fillStyle = '#f00'; ctx.fillRect(cutsceneStalkerX-10, sy, 8, 8); ctx.fillRect(cutsceneStalkerX+2, sy, 8, 8);
+            } else {
+                ctx.fillStyle = '#1a2b4c'; ctx.fillRect(cutsceneStalkerX-10, sy, 20, 20); // Body
+                ctx.fillStyle = '#d4c5b0'; ctx.fillRect(cutsceneStalkerX-6, sy-10, 12, 10); // Head
+            }
+        }
+        
+        if (cutsceneStage === 3) {
+            ctx.fillStyle = 'rgba(0,0,0,0.9)';
+            ctx.fillRect(0, 0, GAME_W, GAME_H);
+            ctx.fillStyle = '#f00';
+            ctx.font = 'bold 60px Courier';
+            ctx.textAlign = 'center';
+            ctx.fillText('TO BE CONTINUED', GAME_W/2, GAME_H/2);
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px Courier';
+            ctx.fillText('Press any key to return to menu', GAME_W/2, GAME_H/2 + 80);
+        }
+        
+        ctx.restore();
+        return;
+    }
+
     // --- APPLY SCREEN SHAKE FOR EVERYTHING (Main Game + UI) ---
     ctx.save();
     if (attackTimer > 0 || lockdownTimer > 0) ctx.translate(Math.random()*8-4, Math.random()*8-4);
@@ -867,16 +1256,38 @@ function draw() {
     ctx.fillStyle = door.barricaded ? '#311' : (door.isClosed ? '#421' : '#000'); ctx.fillRect(door.x, door.y, door.w, door.h);
     
     ctx.fillStyle = '#222'; ctx.fillRect(desk.x, desk.y, desk.w, desk.h);
-    // Draw Generator
-    ctx.fillStyle = '#444'; ctx.fillRect(generator.x, generator.y, generator.w, generator.h);
-    ctx.fillStyle = '#f90'; ctx.fillRect(generator.x + 10, generator.y + 10, 20, 20);
-    ctx.fillStyle = '#000'; ctx.font = '10px Courier'; ctx.textAlign = 'center'; ctx.fillText("GEN", generator.x + 20, generator.y + 25);
+    
+    // Draw Detailed Generator
+    ctx.fillStyle = '#333'; ctx.fillRect(generator.x, generator.y, generator.w, generator.h);
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 2; ctx.strokeRect(generator.x, generator.y, generator.w, generator.h);
+    
+    // Generator Screen
+    ctx.fillStyle = '#000'; ctx.fillRect(generator.x + 5, generator.y + 5, 30, 20);
+    ctx.fillStyle = '#f90'; ctx.font = 'bold 10px Courier'; ctx.textAlign = 'center';
+    ctx.fillText(Math.floor(power) + "%", generator.x + 20, generator.y + 18);
+    
+    // Generator Wires
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(generator.x + 20, generator.y + 40); ctx.lineTo(generator.x + 20, generator.y + 60); ctx.stroke();
     
     // Draw a more detailed computer
-    ctx.fillStyle = '#111'; ctx.fillRect(desk.x + 15, desk.y + 5, 60, 35); // Monitor base/back
-    ctx.fillStyle = '#0c4'; if(Math.random()>0.1) ctx.fillRect(desk.x + 20, desk.y + 10, 50, 25); // Screen
-    ctx.fillStyle = '#333'; ctx.fillRect(desk.x + 10, desk.y + 42, 70, 15); // Keyboard
-    ctx.fillStyle = '#555'; ctx.fillRect(desk.x + 85, desk.y + 42, 10, 15); // Mouse
+    // Monitor
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(desk.x + 15, desk.y + 5, 60, 40); // Monitor body
+    ctx.fillStyle = '#000'; ctx.fillRect(desk.x + 18, desk.y + 8, 54, 34); // Screen bezel
+    
+    // Screen Glow
+    const screenColor = isCheatActive ? '#f0f' : '#0c4';
+    ctx.fillStyle = screenColor; 
+    if(Math.random()>0.05) ctx.fillRect(desk.x + 21, desk.y + 11, 48, 28); 
+    
+    // Keyboard
+    ctx.fillStyle = '#0a0a0a'; ctx.fillRect(desk.x + 10, desk.y + 45, 70, 12); 
+    ctx.fillStyle = '#222';
+    for(let i=0; i<5; i++) ctx.fillRect(desk.x + 12 + i*14, desk.y + 47, 10, 8); // Keys
+    
+    // Mouse
+    ctx.fillStyle = '#111'; ctx.fillRect(desk.x + 85, desk.y + 45, 12, 12);
+    ctx.strokeStyle = '#000'; ctx.beginPath(); ctx.moveTo(desk.x + 91, desk.y + 45); ctx.lineTo(desk.x + 91, desk.y + 40); ctx.stroke(); // Mouse wire
 
     shelves.forEach(s => {
         ctx.fillStyle = '#2b2118'; ctx.fillRect(s.x, s.y, s.w, s.h);
