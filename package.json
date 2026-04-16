@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:vite --external:express --external:bcryptjs --external:jsonwebtoken --external:dotenv --external:@supabase/supabase-js",
+    "build": "npx vite build && npx esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:vite --external:express --external:bcryptjs --external:jsonwebtoken --external:dotenv --external:@supabase/supabase-js",
     "start": "NODE_ENV=production node dist/server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
