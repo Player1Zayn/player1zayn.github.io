@@ -12,15 +12,18 @@
       transition-timing-function: cubic-bezier(0.15, 0, 0.15, 1);
     }
     #leaderboard-container::-webkit-scrollbar,
-    .custom-scroll::-webkit-scrollbar {
+    .custom-scroll::-webkit-scrollbar,
+    .custom-scrollbar::-webkit-scrollbar {
       width: 4px;
     }
     #leaderboard-container::-webkit-scrollbar-track,
-    .custom-scroll::-webkit-scrollbar-track {
+    .custom-scroll::-webkit-scrollbar-track,
+    .custom-scrollbar::-webkit-scrollbar-track {
       background: rgba(6, 78, 59, 0.1);
     }
     #leaderboard-container::-webkit-scrollbar-thumb,
-    .custom-scroll::-webkit-scrollbar-thumb {
+    .custom-scroll::-webkit-scrollbar-thumb,
+    .custom-scrollbar::-webkit-scrollbar-thumb {
       background: #facc15;
       border-radius: 10px;
     }
@@ -392,7 +395,6 @@
         <div class="p-3 md:p-6 bg-emerald-900 flex flex-row md:flex-col items-center justify-between md:justify-center shrink-0">
           <div class="text-left md:text-center">
             <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-widest md:mb-1"><span id="display-player-name">Player</span>'s Balance</p>
-            <p id="display-player-title" class="hidden text-[8px] md:text-[10px] font-black uppercase mb-1"></p>
             <div class="flex flex-col items-end">
               <div id="display-bananas" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-yellow-400 drop-shadow-lg leading-none">0 🍌</div>
               <div id="display-coins" class="text-lg sm:text-xl md:text-2xl font-black text-yellow-200 drop-shadow-md leading-none mt-1">0 🪙</div>
@@ -405,6 +407,10 @@
                 <div class="absolute inset-0 flex items-center justify-center text-[8px] md:text-[10px] font-black text-white drop-shadow-md uppercase tracking-tighter">
                   LVL <span id="display-level">1</span> • <span id="display-xp-percent">0</span>%
                 </div>
+              </div>
+              <!-- XP Boost Indicator -->
+              <div id="xp-boost-indicator" class="hidden mt-1 flex items-center gap-1 bg-yellow-500/20 border border-yellow-500/40 px-2 py-0.5 rounded-full animate-pulse">
+                <span class="text-[8px] md:text-[10px] text-yellow-400 font-black uppercase tracking-widest">XP BOOST: <span id="xp-boost-time">0:00</span></span>
               </div>
             </div>
           </div>
@@ -443,7 +449,13 @@
               <svg class="text-emerald-400 w-4 h-4 md:w-5 md:h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 14 4-4 4 4"></path><path d="m7 19 5-5 5 5"></path><path d="m7 9 5-5 5 5"></path><path d="M12 19v3"></path></svg>
               TREES (<span id="display-trees">1</span>/20)
             </h3>
-            <span class="text-[10px] text-emerald-400 font-bold bg-emerald-950 px-2 py-1 rounded border border-emerald-800">+<span id="display-tree-income">0.2</span> 🍌/s (Avg)</span>
+            <div class="flex flex-col items-end gap-1">
+              <span class="text-[10px] text-emerald-400 font-bold bg-emerald-950 px-2 py-1 rounded border border-emerald-800">+<span id="display-tree-income">0.2</span> 🍌/s (Avg)</span>
+              <!-- Speed Grove Indicator -->
+              <div id="speed-boost-indicator" class="hidden flex items-center gap-1 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded-full animate-pulse">
+                <span class="text-[8px] md:text-[10px] text-emerald-400 font-black uppercase tracking-widest">SPEED: <span id="speed-boost-time">0:00</span></span>
+              </div>
+            </div>
           </div>
           
           <div id="tree-grid" class="grid grid-cols-5 landscape:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-2 lg:gap-3 mb-0 md:mb-6 shrink-0 pb-4 md:pb-0"></div>
@@ -492,9 +504,14 @@
                 <button id="mute-btn" onclick="toggleMute()" class="bg-emerald-800/50 hover:bg-emerald-700/50 text-emerald-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-emerald-700/50 transition-colors flex items-center gap-1">
                   <span id="mute-icon">🔊</span> SOUND
                 </button>
-                <button onclick="handleLogout()" class="bg-red-900/50 hover:bg-red-800/50 text-red-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-red-700/50 transition-colors">LOGOUT</button>
+                <div class="flex items-center gap-1.5">
+                    <div id="sync-indicator" class="w-1.5 h-1.5 rounded-full bg-emerald-500 hidden animate-pulse"></div>
+                    <div id="sync-status-text" class="hidden md:block text-[8px] text-emerald-500/50 font-black uppercase tracking-widest">In Sync</div>
+                    <button onclick="forceSync(event)" class="bg-emerald-900/50 hover:bg-emerald-800/50 text-emerald-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-emerald-700/50 transition-colors">SYNC</button>
+                    <button onclick="handleLogout()" class="bg-red-900/50 hover:bg-red-800/50 text-red-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-red-700/50 transition-colors">LOGOUT</button>
+                </div>
                 <button onclick="openHistoryModal()" class="bg-emerald-800/50 hover:bg-emerald-700/50 text-emerald-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold border border-emerald-700/50 transition-colors">HISTORY LOG</button>
-                <div class="text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded">V2.3</div>
+                <div class="text-emerald-500 text-[10px] md:text-xs font-mono uppercase rounded">V5.11</div>
               </div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
@@ -502,6 +519,7 @@
               <button onclick="setGameMode('slots')" id="tab-slots" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">SLOTS</button>
               <button onclick="setGameMode('blackjack')" id="tab-blackjack" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">BLACKJACK</button>
               <button onclick="setGameMode('plinko')" id="tab-plinko" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">PLINKO</button>
+              <button onclick="setGameMode('cases')" id="tab-cases" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">CASES</button>
             </div>
         </div>
         
@@ -534,18 +552,41 @@
                 </div>
 
                 <!-- Reels Section -->
-                <div class="flex gap-2 md:gap-4 justify-center items-center bg-zinc-900 p-3 md:p-5 rounded-xl border-4 border-zinc-800 shadow-inner relative">
+                <div id="slots-container" class="grid grid-cols-3 gap-2 md:gap-4 justify-center items-center bg-zinc-900 p-3 md:p-5 rounded-xl border-4 border-zinc-800 shadow-inner relative">
                     <!-- Glass Reflection -->
                     <div class="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/5 pointer-events-none rounded-lg"></div>
                     
-                    <div id="slot-1" class="slot-reel-container w-20 h-24 md:w-28 md:h-32 flex items-center justify-center rounded-lg overflow-hidden">
+                    <!-- Row 1 -->
+                    <div id="slot-1" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden">
                       <span class="slot-icon">🍒</span>
                     </div>
-                    <div id="slot-2" class="slot-reel-container w-20 h-24 md:w-28 md:h-32 flex items-center justify-center rounded-lg overflow-hidden">
+                    <div id="slot-2" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden">
                       <span class="slot-icon">🍋</span>
                     </div>
-                    <div id="slot-3" class="slot-reel-container w-20 h-24 md:w-28 md:h-32 flex items-center justify-center rounded-lg overflow-hidden">
+                    <div id="slot-3" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden">
                       <span class="slot-icon">🔔</span>
+                    </div>
+
+                    <!-- Row 2 (Hidden by default) -->
+                    <div id="slot-4" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
+                      <span class="slot-icon">🍎</span>
+                    </div>
+                    <div id="slot-5" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
+                      <span class="slot-icon">🍎</span>
+                    </div>
+                    <div id="slot-6" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
+                      <span class="slot-icon">🍎</span>
+                    </div>
+
+                    <!-- Row 3 (Hidden by default) -->
+                    <div id="slot-7" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
+                      <span class="slot-icon">🍎</span>
+                    </div>
+                    <div id="slot-8" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
+                      <span class="slot-icon">🍎</span>
+                    </div>
+                    <div id="slot-9" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
+                      <span class="slot-icon">🍎</span>
                     </div>
                 </div>
 
@@ -614,11 +655,86 @@
             </div>
           </div>
 
+          <!-- Game: CASES -->
+          <div id="area-cases" class="w-full h-full flex flex-col items-center justify-start hidden overflow-y-auto custom-scrollbar px-4 pt-12">
+            
+            <!-- Cases Header -->
+            <div id="cases-header" class="w-full max-w-4xl flex items-center justify-between mb-12 mt-12">
+                <h2 class="text-white font-black text-3xl tracking-tighter italic">BANANA CASES</h2>
+                <button onclick="showCasesInventory(true)" class="px-6 py-2 bg-yellow-500 hover:bg-yellow-400 text-emerald-950 font-black rounded-full shadow-[0_4px_0_rgb(161,98,7)] active:translate-y-1 active:shadow-none transition-all text-sm uppercase">My Inventory</button>
+            </div>
+
+            <!-- BUY CASES VIEW -->
+            <div id="case-buy-view" class="flex flex-col items-center gap-4 w-full max-w-2xl mb-12 flex-1 justify-center">
+              <!-- Normal Case -->
+              <div class="w-full bg-emerald-900/40 border-2 border-emerald-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all">
+                <div class="text-5xl group-hover:scale-110 transition-transform shrink-0">📦</div>
+                <div class="flex-1">
+                  <h3 class="text-white font-black text-xl">NORMAL CASE</h3>
+                  <p class="text-emerald-400 text-xs">Basic banana skins</p>
+                </div>
+                <button onclick="openCase('normal')" class="px-6 py-3 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl border-b-4 border-emerald-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap">10,000 🍌</button>
+              </div>
+              <!-- Booster Case -->
+              <div class="w-full bg-blue-900/40 border-2 border-blue-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all">
+                <div class="text-5xl group-hover:scale-110 transition-transform shrink-0">🚀</div>
+                <div class="flex-1">
+                  <h3 class="text-white font-black text-xl">BOOSTER CASE</h3>
+                  <p class="text-blue-400 text-xs">Better odds for Rares</p>
+                </div>
+                <button onclick="openCase('booster')" class="px-6 py-3 bg-blue-700 hover:bg-blue-600 text-white font-bold rounded-xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap">100,000 🍌</button>
+              </div>
+              <!-- Toverland Case -->
+              <div class="w-full bg-purple-900/40 border-2 border-purple-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all">
+                <div class="text-5xl group-hover:scale-110 transition-transform shrink-0">✨</div>
+                <div class="flex-1">
+                  <h3 class="text-white font-black text-xl">TOVERLAND CASE</h3>
+                  <p class="text-purple-400 text-xs">High Mythic/Legendary chance</p>
+                </div>
+                <button onclick="openCase('toverland')" class="px-6 py-3 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-xl border-b-4 border-purple-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap">2,000,000 🍌</button>
+              </div>
+            </div>
+
+            <!-- Case Opening Animation Area -->
+            <div id="case-opening-view" class="hidden w-full max-w-2xl bg-black/60 border-2 border-yellow-500/50 rounded-2xl p-8 my-auto relative overflow-hidden flex-1 flex items-center">
+                <div class="w-full relative">
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-full bg-yellow-500 z-10 shadow-[0_0_15px_rgba(234,179,8,0.5)]"></div>
+                    <div id="case-spinner" class="flex gap-4 items-center transition-transform duration-[4000ms] ease-out">
+                        <!-- Spinner items will be injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unboxed Result Area -->
+            <div id="case-result-view" class="hidden w-full max-w-md bg-emerald-900/60 border-2 border-yellow-500 p-8 rounded-3xl flex flex-col items-center text-center animate-in fade-in zoom-in duration-500 my-auto">
+                <div class="text-emerald-500 text-xs font-black uppercase tracking-widest mb-2">You Unboxed</div>
+                <div id="result-skin-name" class="text-3xl font-black mb-4 tracking-tighter">SKIN NAME</div>
+                <div id="result-skin-rarity" class="px-4 py-1 rounded-full text-[10px] font-black uppercase mb-6">RARITY</div>
+                <button onclick="closeCaseResult()" class="px-8 py-3 bg-yellow-500 hover:bg-yellow-400 text-emerald-950 font-black rounded-xl shadow-[0_4px_0_rgb(161,98,7)] active:translate-y-1 active:shadow-none transition-all uppercase">Awesome!</button>
+            </div>
+
+            <!-- Inventory View -->
+            <div id="case-inventory-view" class="hidden w-full max-w-4xl">
+                <div class="flex items-center justify-between mb-6 border-b border-emerald-800 pb-4 sticky top-0 bg-emerald-950 z-10 pt-2">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-white font-black text-3xl tracking-tighter italic">MY COLLECTION</h2>
+                        <div class="px-3 py-1 bg-emerald-800/50 rounded-full text-emerald-400 font-mono text-xs" id="inventory-count">0 SKINS</div>
+                    </div>
+                    <button onclick="showCasesInventory(false)" class="w-10 h-10 flex items-center justify-center bg-red-500/20 hover:bg-red-500/40 text-red-500 rounded-full transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="inventory-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <!-- Inventory items will be injected here -->
+                </div>
+            </div>
+          </div>
+
           <div id="spin-result-msg" class="mt-2 md:mt-4 h-8 md:h-10 text-base sm:text-xl md:text-2xl font-black text-center text-yellow-400 drop-shadow-md px-2 w-full truncate shrink-0">Welcome to Casino!</div>
         </div>
 
         <!-- Bottom: Betting Controls -->
-        <div class="bg-emerald-900/90 backdrop-blur-md p-3 md:p-6 border-t-2 md:border-t-4 border-yellow-500/20 z-20 shrink-0">
+        <div id="betting-controls-container" class="bg-emerald-900/90 backdrop-blur-md p-3 md:p-6 border-t-2 md:border-t-4 border-yellow-500/20 z-20 shrink-0">
           <div class="max-w-md mx-auto space-y-2 md:space-y-3">
             
             <!-- Roulette Specific Bets -->
@@ -736,6 +852,20 @@
     <div class="text-white font-black text-4xl md:text-6xl uppercase tracking-tighter animate-bounce">Stop cheating</div>
   </div>
 
+  <!-- Server Ban Overlay -->
+  <div id="server-ban-overlay" class="fixed inset-0 bg-black flex flex-col items-center justify-center z-[10000] hidden">
+      <div class="bg-emerald-950 border-2 border-red-500 p-8 rounded-2xl shadow-[0_0_50px_rgba(239,68,68,0.3)] text-center max-w-md mx-4 transform animate-in fade-in zoom-in duration-300">
+          <div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-red-500/50">
+              <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 15c-.77 1.333.192 3 1.732 3z"></path></svg>
+          </div>
+          <h1 class="text-2xl font-black text-white mb-4 uppercase tracking-tighter">Game Offline</h1>
+          <p class="text-emerald-400 font-medium leading-relaxed">Try again later or contact Zayn.</p>
+          <div class="mt-8 flex justify-center">
+              <div class="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+          </div>
+      </div>
+  </div>
+
   <script>
     (function() {
     // Anti-Cheat: Disable Right Click and common console shortcuts (Capture phase for maximum protection)
@@ -751,18 +881,6 @@
     window.addEventListener('keydown', (e) => {
         const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
         const cmdKey = isMac ? e.metaKey : e.ctrlKey;
-
-        // Warning for Tab or Alt instead of immediate ban to prevent accidental bans
-        if (e.key === 'Tab' || e.key === 'Alt') {
-            const warning = document.getElementById('cheat-warning');
-            if (warning) {
-                warning.classList.remove('hidden');
-                setTimeout(() => warning.classList.add('hidden'), 1000);
-            }
-            // We don't preventDefault here to allow normal navigation, 
-            // but we show the "STOP CHEATING" warning as requested.
-            return;
-        }
 
         // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K, Ctrl+U, Ctrl+S, Alt+F, Ctrl+Shift+M, Ctrl+Shift+D
         if (
@@ -823,7 +941,7 @@
         banOverlay.style = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:#064e3b; color:#facc15; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px; z-index:9999;";
         banOverlay.innerHTML = `
             <svg style="width:80px; height:80px; margin-bottom:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-            <h1 style="font-size:3rem; font-weight:900; margin:0;">STOP CHEATING</h1>
+            <h1 style="font-size:3rem; font-weight:900; margin:0;">GAME CLOSED</h1>
             <p style="font-size:1.2rem; opacity:0.8; margin-top:10px;">Security violation detected. The game session is closing.</p>
             <div id="ban-close-timer" style="margin-top:30px; font-weight:bold; color:#ef4444;">Closing page in 1s...</div>
         `;
@@ -850,21 +968,9 @@
     }
 
     async function banUser() {
-        localStorage.setItem('isBanned', 'true');
-        // Call server to ban user
-        if (authToken && userId) {
-            try {
-                await fetch('/api/ban', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ userId })
-                });
-            } catch (e) { console.error("Failed to notify server of ban:", e); }
-        }
-
+        // Ban feature temporarily disabled as requested.
+        // Replacing with page-closing logic.
+        
         // Immediately hide the app to "close down" the game
         const appEl = document.getElementById('app');
         if (appEl) appEl.classList.add('hidden');
@@ -1094,7 +1200,16 @@
     let authToken = localStorage.getItem('bananaAuthToken') || '';
     
     // --- SERVER API CONFIGURATION ---
-    const API_BASE = ""; // Use relative paths
+    // 1. If you are hosting the BACKEND on Render.com, put your Render URL here:
+    const RENDER_URL = "https://player1zayn-github-io.onrender.com"; 
+    
+    // 2. This logic automatically chooses between local development and your deployed Render server
+    const isLocal = window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' || 
+                   window.location.hostname.includes('run.app');
+                   
+    // If we are in the studio/local, use relative paths. Otherwise, use the Render URL.
+    const API_BASE = isLocal ? "" : RENDER_URL;
     
     let view = 'menu';
     let sidebarView = 'trees';
@@ -1106,6 +1221,7 @@
     let bananaBox = 0;
     let coins = 0;
     let isInternalUpdate = false;
+    let isInitialSyncing = true; // Block syncs until server state is fetched or confirmed not logged in
 
     function getXpForLevel(l) {
         return Math.floor(100 * Math.pow(1.25, l - 1));
@@ -1126,7 +1242,12 @@
             return;
         }
         bananas = newVal;
+        if (bananas >= 1000000) unlockTitle('banana_millionaire');
         if (typeof updateGameUI === 'function') updateGameUI();
+        
+        // Auto-sync after 2 seconds of inactivity
+        clearTimeout(syncTimeout);
+        syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
     }
 
     function updateCoins(newVal) {
@@ -1137,6 +1258,10 @@
         }
         coins = newVal;
         if (typeof updateGameUI === 'function') updateGameUI();
+        
+        // Auto-sync after 2 seconds of inactivity
+        clearTimeout(syncTimeout);
+        syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
     }
     
     // DB Sync State Protection
@@ -1182,6 +1307,8 @@
         'lucky_one': { id: 'lucky_one', name: 'The Lucky One', color: 'text-blue-400', group: 'Rare' },
         'unlucky': { id: 'unlucky', name: 'The Unlucky', color: 'text-blue-400', group: 'Rare' },
         'extra_hand': { id: 'extra_hand', name: 'Extra Hand', color: 'text-blue-400', group: 'Rare' },
+        'banana_millionaire': { id: 'banana_millionaire', name: 'Banana Millionaire', color: 'text-purple-500', group: 'Epic' },
+        'high_roller': { id: 'high_roller', name: 'High Roller', color: 'text-purple-500', group: 'Epic' },
         // Limited Edition Titles
         'the_hacker': { id: 'the_hacker', name: 'The Hacker', color: 'text-red-500', group: 'Mythic', limited: true },
         'n1_grinder': { id: 'n1_grinder', name: 'The n1 Grinder', color: 'text-red-500', group: 'Mythic', limited: true },
@@ -1216,7 +1343,9 @@
         { title: 'Increased Chance', cost: 10000, desc: 'Roulette Green chance increased to 16%.' },
         { title: 'Speed reload', cost: 20000, desc: 'Lose a bet: 2s to click "Insurance" for 25% refund.' },
         { title: 'Banana Streak', cost: 100000, desc: 'Win streak of 1+: 2x win multiplier.' },
-        ...Array(6).fill({ title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true })
+        { title: 'More Slots', cost: 250000, desc: '3x3 Slots grid! Win on rows, columns, and diagonals.' },
+        { title: 'Mega Bet', cost: 500000, desc: 'All-in risk: 25% chance for 100x win, 25% chance to lose all (Taxes).' },
+        ...Array(4).fill({ title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true })
     ];
 
     let leaderboard = [];
@@ -1235,10 +1364,75 @@
     let isBonusBet = false;
     let bonusBetAmount = 0;
     let bonusBetSelection = ['🍎', '🍎', '🍎'];
-    const SLOT_ICONS = ['🍎', '🍉', '🥝', '🍐', '🍍'];
+    const SLOT_ICONS = ['🍎', '🍉', '🥝', '🍐', '🍍', '🍇', '🍓', '🍊', '🍋', '🍌'];
     const JACKPOT_ICON = '💰';
 
-    // Blackjack State
+    const SKINS = [
+        // Common (20)
+        { id: 'c1', name: 'Green Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c2', name: 'Blue Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c3', name: 'Red Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c4', name: 'Yellow Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c5', name: 'Orange Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c6', name: 'Purple Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c7', name: 'Pink Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c8', name: 'Brown Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c9', name: 'Black Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c10', name: 'White Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c11', name: 'Gray Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c12', name: 'Cyan Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c13', name: 'Magenta Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c14', name: 'Lime Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c15', name: 'Teal Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c16', name: 'Indigo Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c17', name: 'Violet Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c18', name: 'Silver Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c19', name: 'Bronze Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c20', name: 'Classic Banana', rarity: 'Common', color: '#22c55e' },
+        // Rare (18)
+        { id: 'r1', name: 'Spotted Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r2', name: 'Striped Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r3', name: 'Polka Dot Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r4', name: 'Camo Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r5', name: 'Zebra Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r6', name: 'Leopard Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r7', name: 'Tiger Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r8', name: 'Cheetah Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r9', name: 'Giraffe Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r10', name: 'Snake Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r11', name: 'Crocodile Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r12', name: 'Shark Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r13', name: 'Whale Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r14', name: 'Dolphin Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r15', name: 'Penguin Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r16', name: 'Panda Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r17', name: 'Koala Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r18', name: 'Sloth Banana', rarity: 'Rare', color: '#3b82f6' },
+        // Epic (10)
+        { id: 'e1', name: 'Fire Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e2', name: 'Ice Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e3', name: 'Thunder Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e4', name: 'Wind Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e5', name: 'Earth Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e6', name: 'Water Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e7', name: 'Light Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e8', name: 'Dark Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e9', name: 'Spirit Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e10', name: 'Ghost Banana', rarity: 'Epic', color: '#a855f7' },
+        // Mythic (5)
+        { id: 'm1', name: 'Galaxy Banana', rarity: 'Mythic', color: '#ef4444' },
+        { id: 'm2', name: 'Nebula Banana', rarity: 'Mythic', color: '#ef4444' },
+        { id: 'm3', name: 'Supernova Banana', rarity: 'Mythic', color: '#ef4444' },
+        { id: 'm4', name: 'Black Hole Banana', rarity: 'Mythic', color: '#ef4444' },
+        { id: 'm5', name: 'Cosmic Banana', rarity: 'Mythic', color: '#ef4444' },
+        // Legendary (3)
+        { id: 'l1', name: 'Golden Banana', rarity: 'Legendary', color: '#facc15' },
+        { id: 'l2', name: 'Diamond Banana', rarity: 'Legendary', color: '#facc15' },
+        { id: 'l3', name: 'Rainbow Banana', rarity: 'Legendary', color: '#facc15' }
+    ];
+
+    let inventory = JSON.parse(localStorage.getItem('bananaInventory') || '{}');
+
     let bjState = 'betting'; 
     let bjDeck = [];
     let bjPlayer = [];
@@ -1341,10 +1535,12 @@
     const areaSlots = document.getElementById('area-slots');
     const areaBlackjack = document.getElementById('area-blackjack');
     const areaPlinko = document.getElementById('area-plinko');
+    const areaCases = document.getElementById('area-cases');
     const tabRoulette = document.getElementById('tab-roulette');
     const tabSlots = document.getElementById('tab-slots');
     const tabBlackjack = document.getElementById('tab-blackjack');
     const tabPlinko = document.getElementById('tab-plinko');
+    const tabCases = document.getElementById('tab-cases');
 
     // Controls areas
     const controlColors = document.getElementById('bet-color-picker');
@@ -1357,19 +1553,51 @@
     }
 
     function formatNumber(num) {
-        if (num >= 1e12) return (num / 1e12).toFixed(1).replace(/\.0$/, '') + 'T';
-        if (num >= 1e9) return (num / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
-        if (num >= 1e6) return (num / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-        return num.toLocaleString();
+        const n = typeof num === 'bigint' ? num : BigInt(Math.floor(num || 0));
+        if (n >= 1000000000000n) return (Number(n / 100000000000n) / 10).toFixed(1).replace(/\.0$/, '') + 'T';
+        if (n >= 1000000000n) return (Number(n / 100000000n) / 10).toFixed(1).replace(/\.0$/, '') + 'B';
+        if (n >= 1000000n) return (Number(n / 100000n) / 10).toFixed(1).replace(/\.0$/, '') + 'M';
+        return n.toLocaleString();
+    }
+
+    let serverBanActive = false;
+    async function checkServerStatus() {
+        try {
+            const data = await fetchWithRetry(API_BASE + '/api/server-status', { method: 'GET' }, 1, 500);
+            if (data && data.server_ban === true && !serverBanActive) {
+                serverBanActive = true;
+                const overlay = document.getElementById('server-ban-overlay');
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                    if (typeof playSound === 'function') playSound('error');
+                    setTimeout(() => {
+                        window.location.href = "about:blank";
+                        window.close();
+                    }, 1000);
+                }
+            } else if (data && data.server_ban === false && serverBanActive) {
+                serverBanActive = false;
+                const overlay = document.getElementById('server-ban-overlay');
+                if (overlay) overlay.classList.add('hidden');
+            }
+        } catch (e) {
+            console.error("Failed to check server status:", e);
+        }
     }
 
     window.onload = async () => {
       elWheel.style.background = getWheelBackground();
       loadPersistentData();
       
+      // Initialize server status check
+      await checkServerStatus();
+      setInterval(checkServerStatus, 5000);
+      
       // Initialize leaderboard and auto-login if token exists
       if (authToken) {
           await fetchServerState();
+      } else {
+          isInitialSyncing = false;
       }
       await setupSupabaseListeners();
 
@@ -1427,15 +1655,17 @@
               while(activeGadgets.length < 10) activeGadgets.push(false);
           }
           
-          if (data.level) level = data.level;
-          if (data.xp) xp = data.xp;
-          if (data.unlockedTitles) unlockedTitles = data.unlockedTitles;
-          if (data.equippedTitle) equippedTitle = data.equippedTitle;
-
           if (data.shopStock) shopStock = data.shopStock;
           if (data.shopPurchased) shopPurchased = data.shopPurchased;
           if (data.shopRefreshTime) shopRefreshTime = data.shopRefreshTime;
           if (data.activeBoosts) activeBoosts = data.activeBoosts;
+          
+          // Load Level, XP and Titles
+          if (typeof data.level === 'number') level = data.level;
+          if (typeof data.xp === 'number') xp = data.xp;
+          if (Array.isArray(data.unlockedTitles)) unlockedTitles = data.unlockedTitles;
+          if (data.equippedTitle !== undefined) equippedTitle = data.equippedTitle;
+          if (data.inventory) inventory = data.inventory;
           
           // Data loaded
         } catch (e) { console.error(e); userId = generateId(); savePersistentData(); }
@@ -1445,44 +1675,86 @@
       }
     }
 
-      // Robust fetch with retry
-      const fetchWithRetry = async (url, options = {}, retries = 3, backoff = 1000) => {
-          try {
-              const response = await fetch(url, options);
-              if (!response.ok) {
-                  const errorText = await response.text();
-                  
-                  // Handle ban status
-                  if (response.status === 403) {
-                      try {
-                          const errJson = JSON.parse(errorText);
-                          if (errJson.error && errJson.error.includes("banned")) {
-                              banUser();
-                              throw new Error("Account banned");
-                          }
-                      } catch (e) {
-                          // Not JSON or other error
-                      }
-                  }
-                  
-                  throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
-              }
-              return await response.json();
-          } catch (error) {
-              if (error.message === "Account banned") throw error;
-              if (retries > 0 && (error.name === 'TypeError' || error.message.includes('HTTP 5'))) {
-                  console.warn(`Fetch failed for ${url}, retrying in ${backoff}ms... (${retries} retries left)`, error);
-                  await new Promise(resolve => setTimeout(resolve, backoff));
-                  return fetchWithRetry(url, options, retries - 1, backoff * 2);
-              }
-              throw error;
-          }
-      };
+    // Robust fetch with retry and timeout
+    const fetchWithRetry = async (url, options = {}, retries = 3, backoff = 1000) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        
+        try {
+            const response = await fetch(API_BASE + url, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error('Request timed out after 15 seconds');
+            }
+            if (retries > 0 && (error.name === 'TypeError' || (error.message && error.message.includes('HTTP 5')))) {
+                console.warn(`Fetch failed for ${url}, retrying in ${backoff}ms... (${retries} retries left)`, error);
+                await new Promise(resolve => setTimeout(resolve, backoff));
+                return fetchWithRetry(url, options, retries - 1, backoff * 2);
+            }
+            throw error;
+        }
+    };
+
+    async function forceSync(e) {
+        const btn = e ? e.currentTarget : null;
+        const originalText = btn ? btn.innerHTML : 'SYNC';
+
+        if (!authToken) {
+            if (btn) {
+                btn.innerHTML = '<span>🔑</span> Login to Sync';
+                btn.classList.add('bg-yellow-600');
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('bg-yellow-600');
+                }, 3000);
+            }
+            showAuthStep('login');
+            return;
+        }
+
+        if (btn) {
+            btn.innerHTML = '<span>⏳</span> Syncing...';
+            btn.disabled = true;
+        }
+        
+        try {
+            // Setting expected state to -1 forces the server to accept our current local state
+            expectedDbBananas = -1;
+            expectedDbCoins = -1;
+            await syncData(bananas, trees);
+            
+            // Re-fetch leaderboard to show updated rank
+            await fetchLeaderboard();
+            
+            if (btn) btn.innerHTML = '<span>✅</span> Synced!';
+        } catch (err) {
+            console.error("Force sync failed:", err);
+            if (btn) btn.innerHTML = '<span>❌</span> Failed';
+        } finally {
+            if (btn) {
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        }
+    }
 
     async function fetchServerState() {
       if (!authToken) return;
       try {
-        const data = await fetchWithRetry('/api/me', {
+        const data = await fetchWithRetry(API_BASE + '/api/me', {
             method: 'GET',
             headers: { 
                 'Content-Type': 'application/json',
@@ -1491,6 +1763,7 @@
         });
         
         if (data) {
+          console.log("[FETCH STATE] Server data received:", data.name);
           if (data.id) {
             userId = data.id;
             const currentSave = JSON.parse(localStorage.getItem('bananaCasinoSave') || '{}');
@@ -1503,8 +1776,8 @@
           if (data.score !== undefined) {
             const serverScore = Number(data.score);
             const serverCoins = Number(data.coins || 0);
-            const serverLevel = data.level || 1;
-            const serverXp = data.xp || 0;
+            const serverLevel = Number(data.level || 1);
+            const serverXp = Number(data.xp || 0);
 
             // Sync logic: If server data differs from our last known "expected" state,
             // it means an external change (another tab, admin edit) occurred.
@@ -1513,26 +1786,33 @@
                                    (serverCoins !== expectedDbCoins && expectedDbCoins !== -1);
 
             if (externalChange || expectedDbBananas === -1) {
+                // Parse complex fields for progress checking
+                let serverTrees = [];
+                try { serverTrees = typeof data.trees === 'string' ? JSON.parse(data.trees) : (data.trees || []); } catch(e){}
+                let serverGadgets = [];
+                try { serverGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : (data.gadgets || []); } catch(e){}
+                let serverTitles = [];
+                try { serverTitles = typeof data.unlocked_titles === 'string' ? JSON.parse(data.unlocked_titles) : (data.unlocked_titles || []); } catch(e){}
+
+                const serverHasProgress = serverScore > 0 || serverCoins > 0 || serverLevel > 1 || 
+                                          (Array.isArray(serverTrees) && serverTrees.some((t, i) => i === 0 ? t > 1 : t > 0)) ||
+                                          (Array.isArray(serverGadgets) && serverGadgets.some(g => g)) ||
+                                          (Array.isArray(serverTitles) && serverTitles.length > 0);
+
                 // If expectedDbBananas is -1, it means we don't have a known server state.
-                // In this case, we only overwrite if the server has data.
-                // If we have local progress (bananas > 0) but server is 0, we might want to keep local.
-                // However, for initial login, we should trust the server.
-                
-                const shouldOverwrite = externalChange || (expectedDbBananas === -1 && (serverScore > 0 || serverCoins > 0 || bananas === 0));
+                // We overwrite local with server if the server has ANY progress OR if local is empty.
+                const shouldOverwrite = externalChange || (expectedDbBananas === -1 && (serverHasProgress || bananas <= 150));
 
                 if (shouldOverwrite) {
-                    console.log("Syncing with server data (External change or initial sync)");
+                    console.log("[SYNC] Overwriting local with server data (Progress detected or initial sync)");
                     isInternalUpdate = true;
                     updateBananas(serverScore);
                     updateCoins(serverCoins);
-                    bananaBox = data.banana_box || 0;
+                    bananaBox = Number(data.banana_box || 0);
                     level = serverLevel;
                     updateXp(serverXp);
                     
-                    if (data.unlocked_titles) {
-                        unlockedTitles = typeof data.unlocked_titles === 'string' ? JSON.parse(data.unlocked_titles) : data.unlocked_titles;
-                        if (!Array.isArray(unlockedTitles)) unlockedTitles = [];
-                    }
+                    unlockedTitles = serverTitles;
                     equippedTitle = data.equipped_title || null;
 
                     isInternalUpdate = false;
@@ -1541,25 +1821,20 @@
                     expectedDbBananas = serverScore; 
                     expectedDbCoins = serverCoins;
 
-                    if (data.trees) {
-                        trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
-                        if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
+                    if (Array.isArray(serverTrees) && serverTrees.length > 0) {
+                        trees = serverTrees;
                         while(trees.length < 20) trees.push(0);
-                        
-                        // Ensure at least one tree exists
-                        if (trees.every(t => t === 0)) {
-                            trees[0] = 1;
-                        }
+                        if (trees.every(t => t === 0)) trees[0] = 1;
                     }
-                    if (data.gadgets) {
-                        unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
-                        if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
+                    if (Array.isArray(serverGadgets) && serverGadgets.length > 0) {
+                        unlockedGadgets = serverGadgets;
                         while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
                     }
                     
                     localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
                         userId, id: userId, name: playerName, bananas, coins, trees, 
                         gadgets: unlockedGadgets, activeGadgets, activeBoosts, level, xp,
+                        unlockedTitles, equippedTitle,
                         expectedDbBananas, expectedDbCoins
                     }));
                     updateGameUI();
@@ -1568,7 +1843,8 @@
                     // Set expected state to match server so we can push our local progress.
                     expectedDbBananas = serverScore;
                     expectedDbCoins = serverCoins;
-                    console.log("Local progress detected, preparing to sync to server.");
+                    console.log("[SYNC] Local progress detected on empty server, preparing to migrate to cloud.");
+                    isInitialSyncing = false; // Unlock sync to allow this migration
                     syncData(bananas, trees);
                 }
             }
@@ -1582,115 +1858,155 @@
               authToken = '';
               // Optionally refresh UI or show login modal
           }
+      } finally {
+          isInitialSyncing = false;
       }
     }
 
+    let isSyncing = false;
+    let pendingSync = false;
+    let lastSyncTime = null;
+
     async function syncData(currentBananas, currentTreesArray, nameToSave = playerName) {
-      // Always ensure we have a name before syncing to DB
+      // Prevent sync during initial load to avoid overwriting server data with local starter data
+      if (isInitialSyncing) {
+          console.log("[SYNC] Blocked: Initial sync/fetch in progress.");
+          return;
+      }
+
+      // Prevent overlapping syncs but queue the next one
+      if (isSyncing) {
+          pendingSync = true;
+          return;
+      }
+      
+      const elSyncIndicator = document.getElementById('sync-indicator');
+      const elSyncStatusText = document.getElementById('sync-status-text');
+      
+      const setStatus = (text, type = 'info') => {
+          if (elSyncStatusText) {
+              elSyncStatusText.innerText = text;
+              elSyncStatusText.classList.remove('hidden', 'text-emerald-500/50', 'text-red-500/50', 'text-yellow-500/50');
+              if (type === 'error') elSyncStatusText.classList.add('text-red-500/50');
+              else if (type === 'warning') elSyncStatusText.classList.add('text-yellow-500/50');
+              else elSyncStatusText.classList.add('text-emerald-500/50');
+          }
+          if (elSyncIndicator) {
+              elSyncIndicator.classList.remove('hidden', 'bg-emerald-500', 'bg-red-500', 'bg-yellow-500');
+              if (type === 'error') elSyncIndicator.classList.add('bg-red-500');
+              else if (type === 'warning') elSyncIndicator.classList.add('bg-yellow-500');
+              else elSyncIndicator.classList.add('bg-emerald-500');
+          }
+      };
+
+      if (!authToken || !userId) {
+          // Only show warning if userId is missing (bug) or if we were expecting to sync
+          if (!userId) console.error("[SYNC] Critical Error: No userId found.");
+          return;
+      }
+
+      isSyncing = true;
+      pendingSync = false;
+      
+      setStatus('Saving...');
+
       const finalName = nameToSave || playerName || 'Unknown Monkey';
       
-      localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
-          id: userId,
-          userId, 
-          name: finalName, 
-          bananas: currentBananas, 
-          bananaBox: bananaBox,
-          coins: coins,
-          trees: currentTreesArray, 
-          gadgets: unlockedGadgets, 
-          activeGadgets,
-          level,
-          xp,
-          unlockedTitles,
-          equippedTitle,
-          shopStock,
-          shopPurchased,
-          shopRefreshTime,
-          activeBoosts,
-          expectedDbBananas,
-          expectedDbCoins
-      }));
+      // Update local storage first
+      const saveData = { 
+          id: userId, userId, name: finalName, bananas: currentBananas, bananaBox, coins,
+          trees: currentTreesArray, gadgets: unlockedGadgets, activeGadgets, level, xp,
+          unlockedTitles, equippedTitle, inventory, shopStock, shopPurchased, shopRefreshTime, activeBoosts,
+          expectedDbBananas, expectedDbCoins
+      };
+      localStorage.setItem('bananaCasinoSave', JSON.stringify(saveData));
 
-      if (authToken && userId) {
-        try { 
-            const result = await fetchWithRetry('/api/save', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
-                },
-                body: JSON.stringify({
-                    userId,
-                    name: finalName,
-                    score: currentBananas,
-                    coins: coins,
-                    bananaBox: bananaBox,
-                    trees: currentTreesArray,
-                    gadgets: unlockedGadgets,
-                    level,
-                    xp,
-                    unlocked_titles: unlockedTitles,
-                    equipped_title: equippedTitle,
-                    expectedScore: expectedDbBananas,
-                    expectedCoins: expectedDbCoins
-                })
-            });
-            
-            if (result.success) {
-                expectedDbBananas = currentBananas; 
-                expectedDbCoins = coins;
-            } else if (result.user) {
-                // External change detected! Sync with server data
-                const serverData = result.user;
-                isInternalUpdate = true;
-                updateBananas(Number(serverData.score));
-                updateCoins(Number(serverData.coins || 0));
-                bananaBox = serverData.banana_box || 0;
-                level = serverData.level || 1;
-                updateXp(serverData.xp || 0);
-                
-                if (serverData.unlocked_titles) {
-                    unlockedTitles = typeof serverData.unlocked_titles === 'string' ? JSON.parse(serverData.unlocked_titles) : serverData.unlocked_titles;
-                    if (!Array.isArray(unlockedTitles)) unlockedTitles = [];
-                }
-                equippedTitle = serverData.equipped_title || null;
+      try { 
+          const result = await fetchWithRetry(API_BASE + '/api/save', {
+              method: 'POST',
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+              },
+              body: JSON.stringify({
+                  userId,
+                  name: finalName,
+                  score: String(currentBananas),
+                  coins: String(coins),
+                  bananaBox: String(bananaBox),
+                  trees: currentTreesArray,
+                  gadgets: unlockedGadgets,
+                  level: Number(level),
+                  xp: String(xp),
+                  unlocked_titles: unlockedTitles,
+                  equipped_title: equippedTitle,
+                  inventory: inventory,
+                  expectedScore: String(expectedDbBananas),
+                  expectedCoins: String(expectedDbCoins)
+              })
+          });
+          
+          if (result && result.success) {
+              console.log(`[SYNC SUCCESS] Score: ${currentBananas}`);
+              expectedDbBananas = currentBananas; 
+              expectedDbCoins = coins;
+              lastSyncTime = new Date();
+              setStatus('Saved');
+              
+              if (result.user) {
+                  const serverData = result.user;
+                  expectedDbBananas = Number(serverData.score);
+                  expectedDbCoins = Number(serverData.coins || 0);
+              }
 
-                isInternalUpdate = false;
-                
-                expectedDbBananas = Number(serverData.score); 
-                expectedDbCoins = Number(serverData.coins || 0);
+              // Refresh leaderboard
+              fetchLeaderboard();
+          } else if (result && result.user) {
+              console.warn("[SYNC CONFLICT] Updating local state from server.");
+              const serverData = result.user;
+              isInternalUpdate = true;
+              updateBananas(Number(serverData.score));
+              updateCoins(Number(serverData.coins || 0));
+              bananaBox = Number(serverData.banana_box || 0);
+              level = Number(serverData.level || 1);
+              updateXp(Number(serverData.xp || 0));
+              
+              if (serverData.unlocked_titles) {
+                  unlockedTitles = typeof serverData.unlocked_titles === 'string' ? JSON.parse(serverData.unlocked_titles) : serverData.unlocked_titles;
+              }
+              equippedTitle = serverData.equipped_title || null;
+              isInternalUpdate = false;
+              
+              expectedDbBananas = Number(serverData.score); 
+              expectedDbCoins = Number(serverData.coins || 0);
 
-                if (serverData.trees) {
-                    trees = typeof serverData.trees === 'string' ? JSON.parse(serverData.trees) : serverData.trees;
-                    if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
-                    while(trees.length < 20) trees.push(0);
-                    
-                    // Ensure at least one tree exists
-                    if (trees.every(t => t === 0)) {
-                        trees[0] = 1;
-                    }
-                }
-                if (serverData.gadgets) {
-                    unlockedGadgets = typeof serverData.gadgets === 'string' ? JSON.parse(serverData.gadgets) : serverData.gadgets;
-                    if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
-                    while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
-                }
-                
-                localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
-                    userId, id: userId, name: playerName, bananas, coins, trees, 
-                    gadgets: unlockedGadgets, activeGadgets, activeBoosts, level, xp 
-                }));
-                updateGameUI();
-                console.log("External change detected and synchronized from server.");
-            }
-        } catch (e) { 
-            console.error("Sync error:", e); 
-            if (e.message && (e.message.includes('HTTP 401') || e.message.includes('HTTP 403'))) {
-                localStorage.removeItem('bananaAuthToken');
-                localStorage.removeItem('bananaAuthPass');
-                authToken = '';
-            }
-        }
+              if (serverData.trees) {
+                  trees = typeof serverData.trees === 'string' ? JSON.parse(serverData.trees) : serverData.trees;
+              }
+              
+              setStatus('Synced');
+              updateGameUI();
+          } else {
+              throw new Error(result?.error || 'Unknown server error');
+          }
+      } catch (e) { 
+          console.error("[SYNC ERROR]", e); 
+          setStatus('Sync Error', 'error');
+          
+          if (e.message && (e.message.includes('HTTP 401') || e.message.includes('HTTP 403'))) {
+              authToken = '';
+              localStorage.removeItem('bananaAuthToken');
+          }
+      } finally {
+          isSyncing = false;
+          // Hide indicator after 3 seconds if not syncing
+          setTimeout(() => {
+              if (!isSyncing && elSyncIndicator) elSyncIndicator.classList.add('hidden');
+          }, 3000);
+
+          if (pendingSync) {
+              setTimeout(() => syncData(bananas, trees), 500);
+          }
       }
     }
 
@@ -1702,6 +2018,10 @@
       view = newView;
       Object.keys(views).forEach(k => views[k]?.classList.add('hidden'));
       views[view]?.classList.remove('hidden');
+      
+      if (view === 'menu') {
+          fetchLeaderboard();
+      }
       
       if (view === 'name_entry') {
           showAuthStep('choice');
@@ -1758,7 +2078,7 @@
         elLoading.classList.remove('hidden');
 
         try {
-            const response = await fetch('/api/register', {
+            const response = await fetch(API_BASE + '/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, id: generateId(), password: pass })
@@ -1782,8 +2102,6 @@
             activeGadgets = Array(10).fill(false);
             level = 1;
             xp = 0;
-            unlockedTitles = [];
-            equippedTitle = null;
 
             await syncData(bananas, trees);
             finalizeEntry();
@@ -1807,7 +2125,7 @@
         elLoading.classList.remove('hidden');
 
         try {
-            const response = await fetch('/api/login', {
+            const response = await fetch(API_BASE + '/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, password: pass })
@@ -1826,12 +2144,16 @@
 
             userId = data.id;
             playerName = data.name;
-            bananaBox = data.banana_box || 0;
+            bananaBox = Number(data.banana_box || 0);
             isInternalUpdate = true;
-            updateBananas(data.score);
-            updateCoins(data.coins || 0);
-            level = data.level || 1;
-            updateXp(data.xp || 0);
+            updateBananas(Number(data.score || 0));
+            updateCoins(Number(data.coins || 0));
+            level = Number(data.level || 1);
+            updateXp(Number(data.xp || 0));
+            
+            // Reset expected state to sync correctly next time
+            expectedDbBananas = Number(data.score || 0);
+            expectedDbCoins = Number(data.coins || 0);
             if (data.unlocked_titles) {
                 unlockedTitles = typeof data.unlocked_titles === 'string' ? JSON.parse(data.unlocked_titles) : data.unlocked_titles;
                 if (!Array.isArray(unlockedTitles)) unlockedTitles = [];
@@ -1839,6 +2161,9 @@
                 unlockedTitles = [];
             }
             equippedTitle = data.equipped_title || null;
+            if (data.inventory) {
+                inventory = typeof data.inventory === 'string' ? JSON.parse(data.inventory) : data.inventory;
+            }
             isInternalUpdate = false;
             
             await syncData(bananas, trees);
@@ -1878,7 +2203,6 @@
 
     function finalizeEntry() {
       elLoading.classList.add('hidden');
-      elDisplayUserId.value = userId;
       // Clear inputs
       elRegName.value = ''; elRegPass.value = '';
       elLoginName.value = ''; elLoginPass.value = '';
@@ -1888,23 +2212,38 @@
     }
 
     function copyUserId() {
-        elDisplayUserId.select();
-        document.execCommand('copy');
+        if (!userId) return;
+        
         const btn = elDisplayUserId.nextElementSibling;
         const originalText = btn.innerText;
-        btn.innerText = "COPIED!";
-        btn.classList.add('bg-green-600');
-        setTimeout(() => {
-            btn.innerText = originalText;
-            btn.classList.remove('bg-green-600');
-        }, 1500);
+
+        const performCopy = (text) => {
+            btn.innerText = "COPIED!";
+            btn.classList.add('bg-green-600');
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove('bg-green-600');
+            }, 1500);
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(userId).then(() => performCopy(userId));
+        } else {
+            const tempInput = document.createElement('input');
+            tempInput.value = userId;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            performCopy(userId);
+        }
     }
 
 
     async function addLog(action, amount, balanceAfter, details = '') {
         if (!authToken || !userId) return;
         try {
-            await fetch('/api/logs', {
+            await fetch(API_BASE + '/api/logs', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -1934,7 +2273,7 @@
         }
 
         try {
-            const response = await fetch('/api/logs', {
+            const response = await fetch(API_BASE + '/api/logs', {
                 method: 'GET',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -1985,12 +2324,17 @@
     }
 
 
+    let leaderboardLastUpdated = null;
+    let fetchLeaderboard = async () => {};
+
     async function setupSupabaseListeners() {
-      const fetchLeaderboard = async () => {
+      fetchLeaderboard = async () => {
         try {
-            const data = await fetchWithRetry('/api/leaderboard');
+            const url = userId ? `/api/leaderboard?userId=${userId}` : '/api/leaderboard';
+            const data = await fetchWithRetry(url);
             if (data) { 
                 leaderboard = data; 
+                leaderboardLastUpdated = new Date();
                 renderLeaderboard(); 
             }
             
@@ -2064,7 +2408,7 @@
             changed = true;
         }
         
-        // Update UI Indicators
+        // Update UI Indicators (Shop View)
         if (elActiveBoostsContainer && elActiveBoostsList) {
             let html = '';
             if (activeBoosts.xp > now) {
@@ -2091,6 +2435,35 @@
                 elActiveBoostsContainer.classList.remove('hidden');
             } else {
                 elActiveBoostsContainer.classList.add('hidden');
+            }
+        }
+
+        // Update Main View Indicators
+        const xpInd = document.getElementById('xp-boost-indicator');
+        const xpTime = document.getElementById('xp-boost-time');
+        if (xpInd && xpTime) {
+            if (activeBoosts.xp > now) {
+                const rem = Math.ceil((activeBoosts.xp - now) / 1000);
+                const min = Math.floor(rem / 60);
+                const sec = rem % 60;
+                xpTime.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+                xpInd.classList.remove('hidden');
+            } else {
+                xpInd.classList.add('hidden');
+            }
+        }
+
+        const speedInd = document.getElementById('speed-boost-indicator');
+        const speedTime = document.getElementById('speed-boost-time');
+        if (speedInd && speedTime) {
+            if (activeBoosts.speed > now) {
+                const rem = Math.ceil((activeBoosts.speed - now) / 1000);
+                const min = Math.floor(rem / 60);
+                const sec = rem % 60;
+                speedTime.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+                speedInd.classList.remove('hidden');
+            } else {
+                speedInd.classList.add('hidden');
             }
         }
 
@@ -2169,7 +2542,7 @@
     function renderShop() {
         const grid = document.getElementById('shop-items-grid');
         const balanceEl = document.getElementById('shop-balance');
-        balanceEl.innerText = `${formatNumber(bananas)} 🍌 | ${formatNumber(coins)} 🪙`;
+        balanceEl.innerText = `${bananas.toLocaleString()} 🍌 | ${coins.toLocaleString()} 🪙`;
 
         let html = '';
         SHOP_ITEMS.forEach((item, i) => {
@@ -2188,7 +2561,7 @@
                 statusHtml = `<div class="bg-emerald-500/20 text-emerald-400 font-black uppercase text-xs px-4 py-2 rounded-xl border border-emerald-500/30">PURCHASED</div>`;
                 cardClass = 'bg-black/60 border-emerald-900/20';
             } else {
-                statusHtml = `<button onclick="buyShopItem(${i})" class="w-full py-4 rounded-2xl font-black text-lg transition-all active:translate-y-1 ${canAfford ? 'bg-amber-500 text-amber-950 shadow-[0_6px_0_rgb(180,83,9)] hover:bg-amber-400' : 'bg-stone-800 text-stone-500 cursor-not-allowed opacity-50 shadow-none'}" ${canAfford ? '' : 'disabled'}>BUY FOR ${formatNumber(item.cost)} 🪙</button>`;
+                statusHtml = `<button onclick="buyShopItem(${i})" class="w-full py-4 rounded-2xl font-black text-lg transition-all active:translate-y-1 ${canAfford ? 'bg-amber-500 text-amber-950 shadow-[0_6px_0_rgb(180,83,9)] hover:bg-amber-400' : 'bg-stone-800 text-stone-500 cursor-not-allowed opacity-50 shadow-none'}" ${canAfford ? '' : 'disabled'}>BUY FOR ${item.cost.toLocaleString()} 🪙</button>`;
                 cardClass = 'bg-black/40 border-amber-900/30 hover:border-amber-500/50 hover:bg-black/50';
             }
 
@@ -2412,7 +2785,9 @@
             }
             
             syncData(bananas, trees);
-            if (unlockedGadgets.every(g => g)) unlockTitle('extra_hand');
+            const availableGadgetsCount = GADGET_DATA.filter(g => !g.locked).length;
+            const unlockedCount = unlockedGadgets.filter(g => g).length;
+            if (unlockedCount >= availableGadgetsCount) unlockTitle('extra_hand');
             updateGameUI();
             addLog('purchase', gadget.cost, bananas, `Buy Gadget: ${gadget.name}`);
             playSound('purchase');
@@ -2476,25 +2851,45 @@
         return defaultMessage;
     }
 
-    function applyWin(amount) {
+    function applyWin(amount, megaBetEligible = false) {
         let multiplier = 1;
         if (activeGadgets[3] && winStreak >= 1) {
             multiplier = 2;
         }
-        const finalAmount = amount * multiplier;
-        isInternalUpdate = true;
-        updateBananas(bananas + finalAmount);
         
-        const xpGain = activeBoosts.xp > 0 ? 50 : 25;
-        updateXp(xp + xpGain);
-        while (xp >= getXpForLevel(level)) {
-            updateXp(xp - getXpForLevel(level));
-            level++;
+        let finalAmount = amount * multiplier;
+        
+        // Mega Bet Logic (25% 100x, 25% Taxes, 50% Nothing)
+        if (megaBetEligible && amount > 0) {
+            const r = Math.random();
+            if (r < 0.25) {
+                finalAmount *= 100;
+            } else if (r < 0.50) {
+                finalAmount = 0; // Taxes
+            }
         }
-        isInternalUpdate = false;
-        winStreak++;
 
-        playSound('win');
+        if (finalAmount > 0) {
+            isInternalUpdate = true;
+            updateBananas(bananas + finalAmount);
+            
+            const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+            updateXp(xp + xpGain);
+            while (xp >= getXpForLevel(level)) {
+                updateXp(xp - getXpForLevel(level));
+                level++;
+            }
+            isInternalUpdate = false;
+            winStreak++;
+            playSound('win');
+        } else if (megaBetEligible && amount > 0) {
+            // Taxes case
+            winStreak = 0;
+            playSound('loss');
+        } else {
+            winStreak++;
+        }
+
         return finalAmount;
     }
 
@@ -2531,7 +2926,7 @@
         const treesOwned = trees.filter(l => l > 0).length;
         
         document.getElementById('tree-modal-title').innerHTML = `🌴 Tree Level ${level}`;
-        document.getElementById('tree-modal-current').innerHTML = `${formatNumber(currentData.reward)} 🍌 <span class="text-sm text-emerald-300">/ ${currentData.ticks}s</span>`;
+        document.getElementById('tree-modal-current').innerHTML = `${currentData.reward.toLocaleString()} 🍌 <span class="text-sm text-emerald-300">/ ${currentData.ticks}s</span>`;
         
         const btn = document.getElementById('tree-modal-btn');
         const sellBtn = document.getElementById('tree-modal-sell-btn');
@@ -2543,7 +2938,7 @@
             sellBtn.classList.add('hidden');
         } else {
             const sellValue = Math.floor(currentData.cost * 0.25);
-            sellBtn.innerText = `SELL TREE (+${formatNumber(sellValue)} 🍌)`;
+            sellBtn.innerText = `SELL TREE (+${sellValue.toLocaleString()} 🍌)`;
             sellBtn.classList.remove('hidden');
         }
 
@@ -2553,8 +2948,8 @@
         } else {
             nextContainer.classList.remove('hidden');
             btn.classList.remove('hidden');
-            document.getElementById('tree-modal-next').innerHTML = `${formatNumber(nextData.reward)} 🍌 <span class="text-sm text-yellow-200/50">/ ${nextData.ticks}s</span>`;
-            document.getElementById('tree-modal-cost').innerText = `Cost: ${formatNumber(nextData.cost)} 🍌`;
+            document.getElementById('tree-modal-next').innerHTML = `${nextData.reward.toLocaleString()} 🍌 <span class="text-sm text-yellow-200/50">/ ${nextData.ticks}s</span>`;
+            document.getElementById('tree-modal-cost').innerText = `Cost: ${nextData.cost.toLocaleString()} 🍌`;
             
             const conditionMet = !nextData.reqAllTrees || treesOwned === 20;
             const canAfford = bananas >= nextData.cost;
@@ -2629,8 +3024,23 @@
     function setGameMode(mode) {
       if (isPlaying || bjState === 'playing' || bjState === 'dealerTurn') return; 
       gameMode = mode;
-      spinResultMsg = `Ready to play ${mode.toUpperCase()}`;
+      spinResultMsg = mode === 'cases' ? "Choose a case to open!" : `Ready to play ${mode.toUpperCase()}`;
       if (mode === 'blackjack') bjState = 'betting';
+      
+      if (mode === 'cases') {
+          const buyView = document.getElementById('case-buy-view');
+          const header = document.getElementById('cases-header');
+          const invView = document.getElementById('case-inventory-view');
+          const openingView = document.getElementById('case-opening-view');
+          const resultView = document.getElementById('case-result-view');
+          
+          if (buyView) buyView.classList.remove('hidden');
+          if (header) header.classList.remove('hidden');
+          if (invView) invView.classList.add('hidden');
+          if (openingView) openingView.classList.add('hidden');
+          if (resultView) resultView.classList.add('hidden');
+      }
+
       updateGameUI();
       playSound('click');
     }
@@ -2672,6 +3082,7 @@
       if (isPlaying || bananas <= 0 || betAmount <= 0 || betAmount > bananas) return;
       
       unlockTitle('newbie_monkey');
+      if (betAmount >= 500000) unlockTitle('high_roller');
       
       // Hide insurance if active
       document.getElementById('insurance-btn').classList.add('hidden');
@@ -2696,22 +3107,48 @@
     }
 
     // --- PLINKO LOGIC ---
-    function playPlinko() {
+    async function playPlinko() {
       if (isPlaying) return;
       isPlaying = true;
       spinResultMsg = "Dropping ball...";
       updateGameUI();
 
-      const ball = {
-        x: 150,
-        y: 20,
-        vx: (Math.random() - 0.5) * 2,
-        vy: 2,
-        row: 0
-      };
+      try {
+          const response = await fetch(API_BASE + '/api/play', {
+              method: 'POST',
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+              },
+              body: JSON.stringify({
+                  gameMode: 'plinko',
+                  betAmount,
+                  activeGadgets
+              })
+          });
 
-      plinkoBalls.push(ball);
-      requestAnimationFrame(animatePlinko);
+          const data = await response.json();
+          if (!data.success) throw new Error(data.error || "Server error");
+
+          const ball = {
+            x: 150,
+            y: 20,
+            vx: (Math.random() - 0.5) * 2,
+            vy: 2,
+            row: 0,
+            targetBucket: data.result.bucketIndex,
+            serverData: data
+          };
+
+          plinkoBalls.push(ball);
+          requestAnimationFrame(animatePlinko);
+
+      } catch (err) {
+          console.error("Plinko error:", err);
+          isPlaying = false;
+          spinResultMsg = "Error: " + err.message;
+          updateGameUI();
+      }
     }
 
     function animatePlinko() {
@@ -2792,31 +3229,34 @@
 
         // Check if reached bottom
         if (ball.y > 335) {
-          const bucketAreaWidth = 220; // 260 - 40
-          const relativeX = (ball.x - 40) / bucketAreaWidth;
-          const totalWeight = PLINKO_BUCKET_WEIGHTS.reduce((a, b) => a + b, 0);
-          let accumulatedWeight = 0;
-          let bucketIndex = 0;
-          for (let k = 0; k < PLINKO_BUCKET_WEIGHTS.length; k++) {
-            accumulatedWeight += PLINKO_BUCKET_WEIGHTS[k] / totalWeight;
-            if (relativeX <= accumulatedWeight) {
-              bucketIndex = k;
-              break;
-            }
-            if (k === PLINKO_BUCKET_WEIGHTS.length - 1) bucketIndex = k;
-          }
-          const mult = PLINKO_MULTIPLIERS[bucketIndex];
+          const data = ball.serverData;
+          const bucketIndex = data.result.bucketIndex;
+          const mult = data.result.multiplier;
+          const winVal = Number(data.winAmount);
+
+          isInternalUpdate = true;
+          updateBananas(Number(data.newBalance));
+          isInternalUpdate = false;
           
           if (mult > 1) {
-            const profit = Math.round(betAmount * (mult - 1));
-            const finalProfit = applyWin(profit);
-            spinResultMsg = `Landed on ${mult}x! Won ${formatNumber(finalProfit + betAmount)} 🍌!`;
-            addLog('win', finalProfit + betAmount, bananas, `Plinko: ${mult}x`);
+              spinResultMsg = `Landed on ${mult}x! Won ${formatNumber(winVal)} 🍌!`;
+              addLog('win', winVal, bananas, `Plinko: ${mult}x`);
+              
+              // XP Gain
+              const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+              updateXp(xp + xpGain);
+              while (xp >= getXpForLevel(level)) {
+                  updateXp(xp - getXpForLevel(level));
+                  level++;
+              }
+              playSound('win');
           } else if (mult < 1) {
-            const loss = Math.round(betAmount * (1 - mult));
+            const loss = betAmount - winVal;
             if (betAmount > 100000) unlockTitle('unlucky');
-            spinResultMsg = processLoss(loss, betAmount, `Landed on ${mult}x. Lost ${formatNumber(loss)} 🍌.`);
+            spinResultMsg = `Landed on ${mult}x. Lost ${formatNumber(loss)} 🍌.`;
             addLog('loss', loss, bananas, `Plinko: ${mult}x`);
+            if (activeGadgets[2]) showInsuranceButton(loss);
+            playSound('loss');
           } else {
             spinResultMsg = `Landed on 1x. Push!`;
             addLog('push', 0, bananas, 'Plinko: 1x');
@@ -2826,6 +3266,16 @@
           endGameTurn();
         }
       }
+
+      // Guide ball towards target bucket visually if it's close to the bottom
+      plinkoBalls.forEach(ball => {
+          if (ball.y > 250 && ball.targetBucket !== undefined) {
+              const bucketAreaWidth = 220;
+              const targetX = 40 + (ball.targetBucket + 0.5) * (bucketAreaWidth / 11);
+              const dx = targetX - ball.x;
+              ball.vx += dx * 0.05; // Gentle pull towards target
+          }
+      });
 
       if (plinkoBalls.length > 0) {
         requestAnimationFrame(animatePlinko);
@@ -2874,80 +3324,103 @@
     function setBetColor(color) { if (!isPlaying) { betColor = color; updateGameUI(); } }
     
     async function playRoulette() {
+      if (isPlaying) return;
       isPlaying = true;
       spinResultMsg = "Spinning...";
       updateGameUI();
 
+      // Start visual spin immediately
+      const startSpinTime = Date.now();
+      let visualRotation = wheelRotation + 360 * 2; // Spin at least twice visually
+      elWheel.style.transition = "transform 4s cubic-bezier(0.15, 0, 0.15, 1)";
+      elWheel.style.transform = `rotate(${visualRotation}deg)`;
+
       try {
-        const response = await fetch('/api/game/roulette', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ userId, betAmount, betColor, gadgets: unlockedGadgets })
-        });
-        
-        if (response.status === 403) {
-            const result = await response.json().catch(() => ({ error: "Forbidden" }));
-            if (result.error && result.error.includes("banned")) {
-                banUser();
-                return;
-            }
-        }
+          const response = await fetch(API_BASE + '/api/play', {
+              method: 'POST',
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+              },
+              body: JSON.stringify({
+                  gameMode: 'roulette',
+                  betAmount,
+                  betColor,
+                  activeGadgets
+              })
+          });
 
-        const result = await response.json();
-        if (!result.success) {
-          alert(result.error || "Roulette failed");
-          isPlaying = false;
-          updateGameUI();
-          return;
-        }
+          const data = await response.json();
+          if (!data.success) throw new Error(data.error || "Server error");
 
-        const winningColor = result.winningColor;
-        const winAmount = result.winAmount;
+          const winningColor = data.result.winningColor;
+          const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
+          const matchingIndices = WHEEL_COLORS.map((c, i) => c === winningColor ? i : -1).filter(i => i !== -1);
+          const targetIndex = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
+          
+          const sliceCenterAngle = targetIndex * 18 + 9;
+          const baseTargetRotation = 360 - sliceCenterAngle;
+          
+          // Calculate final rotation to land on target
+          const currentRotationMod = visualRotation % 360;
+          const finalRotation = visualRotation + (360 * 3) + (baseTargetRotation - currentRotationMod);
+          
+          // Wait a bit if server was too fast to make it look natural
+          const elapsed = Date.now() - startSpinTime;
+          const minWait = 1000;
+          if (elapsed < minWait) await new Promise(r => setTimeout(r, minWait - elapsed));
 
-        const WHEEL_COLORS = ['red', 'black', 'green', 'red', 'black', 'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black', 'red', 'black'];
-        const matchingIndices = WHEEL_COLORS.map((c, i) => c === winningColor ? i : -1).filter(i => i !== -1);
-        const targetIndex = matchingIndices[Math.floor(Math.random() * matchingIndices.length)];
-        
-        const sliceCenterAngle = targetIndex * 18 + 9;
-        const baseTargetRotation = 360 - sliceCenterAngle;
-        const nextRotation = wheelRotation + (360 * 5) + (baseTargetRotation - (wheelRotation % 360));
-        wheelRotation = nextRotation;
-        elWheel.style.transform = `rotate(${wheelRotation}deg)`;
+          wheelRotation = finalRotation;
+          elWheel.style.transition = "transform 3s cubic-bezier(0.2, 0, 0.2, 1)";
+          elWheel.style.transform = `rotate(${wheelRotation}deg)`;
 
-        setTimeout(() => {
-          if (winAmount > 0) {
-            if (winningColor === 'green') {
-              consecutiveGreens++;
-              if (consecutiveGreens >= 3) unlockTitle('lucky_one');
+          setTimeout(() => {
+            isInternalUpdate = true;
+            updateBananas(Number(data.newBalance));
+            isInternalUpdate = false;
+
+            if (betColor === winningColor) {
+              if (winningColor === 'green') {
+                consecutiveGreens++;
+                if (consecutiveGreens >= 3) unlockTitle('lucky_one');
+              } else {
+                consecutiveGreens = 0;
+              }
+              
+              if (data.result.megaBet === 'taxes') {
+                  spinResultMsg = "TAXES! The jungle government took your entire win!";
+                  addLog('loss', betAmount, bananas, 'Roulette Mega Bet Taxes');
+              } else {
+                  const winVal = Number(data.winAmount);
+                  spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${formatNumber(winVal)} 🍌!`;
+                  addLog('win', winVal, bananas, `Roulette ${winningColor.toUpperCase()}`);
+                  
+                  // XP Gain
+                  const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+                  updateXp(xp + xpGain);
+                  while (xp >= getXpForLevel(level)) {
+                      updateXp(xp - getXpForLevel(level));
+                      level++;
+                  }
+              }
+              playSound('win');
             } else {
               consecutiveGreens = 0;
+              if (betAmount > 100000) unlockTitle('unlucky');
+              spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Lost ${formatNumber(betAmount)} 🍌.`;
+              addLog('loss', betAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
+              
+              if (activeGadgets[2]) showInsuranceButton(betAmount);
+              playSound('loss');
             }
-            bananas = result.newScore;
-            xp = result.newXp;
-            level = result.newLevel;
-            spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${formatNumber(winAmount)} 🍌!`;
-            addLog('win', winAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
-          } else {
-            consecutiveGreens = 0;
-            if (betAmount > 100000) unlockTitle('unlucky');
-            bananas = result.newScore;
-            xp = result.newXp;
-            level = result.newLevel;
-            spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Lost ${formatNumber(betAmount)} 🍌.`;
-            addLog('loss', betAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
-          }
+            endGameTurn();
+          }, 3200);
+
+      } catch (err) {
+          console.error("Roulette error:", err);
           isPlaying = false;
-          savePersistentData();
+          spinResultMsg = "Error: " + err.message;
           updateGameUI();
-          endGameTurn();
-        }, 4000);
-      } catch (e) {
-        console.error("Roulette error:", e);
-        isPlaying = false;
-        updateGameUI();
       }
     }
     
@@ -3003,7 +3476,7 @@
         }
         
         actualBet += currentBonusBet;
-        bonusBetAmount = currentBonusBet; // Store for finalize
+        bonusBetAmount = currentBonusBet;
       } else {
         bonusBetAmount = 0;
       }
@@ -3016,213 +3489,360 @@
       isPlaying = true;
       spinResultMsg = "Spinning slots...";
       
-      // Add spinning visual state
-      const slots = [document.getElementById('slot-1'), document.getElementById('slot-2'), document.getElementById('slot-3')];
-      slots.forEach(s => {
-        s.classList.add('slot-spinning');
-        s.classList.remove('slot-win');
-      });
+      const isMoreSlots = activeGadgets[4];
+      const slotCount = isMoreSlots ? 9 : 3;
+      const slots = [];
+      for (let i = 1; i <= slotCount; i++) {
+          const s = document.getElementById(`slot-${i}`);
+          slots.push(s);
+          s.classList.add('slot-spinning');
+          s.classList.remove('slot-win');
+      }
       
       updateGameUI();
+
+      // Start visual spinning
+      let ticks = 0;
+      let slotAnimInterval = setInterval(() => {
+        slots.forEach(s => {
+          s.querySelector('span').innerText = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
+        });
+        ticks++;
+      }, 70);
 
       try {
-        const response = await fetch('/api/game/slots', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ 
-            userId, 
-            betAmount, 
-            isBonusBet, 
-            bonusBetAmount, 
-            bonusBetSelection 
-          })
-        });
-        
-        if (response.status === 403) {
-            const result = await response.json().catch(() => ({ error: "Forbidden" }));
-            if (result.error && result.error.includes("banned")) {
-                banUser();
-                return;
-            }
-        }
-
-        const result = await response.json();
-        if (!result.success) {
-          alert(result.error || "Slots failed");
-          isPlaying = false;
-          slots.forEach(s => s.classList.remove('slot-spinning'));
-          updateGameUI();
-          return;
-        }
-
-        let ticks = 0;
-        let slotAnimInterval = setInterval(() => {
-          slots.forEach(s => {
-            s.querySelector('span').innerText = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
+          const response = await fetch(API_BASE + '/api/play', {
+              method: 'POST',
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+              },
+              body: JSON.stringify({
+                  gameMode: 'slots',
+                  betAmount,
+                  isBonusBet,
+                  bonusBetAmount: currentBonusBet,
+                  bonusBetSelection,
+                  activeGadgets
+              })
           });
-          ticks++;
-          if (ticks > 30) {
-            clearInterval(slotAnimInterval);
-            slots.forEach(s => s.classList.remove('slot-spinning'));
-            finalizeSlotsServer(result);
+
+          const data = await response.json();
+          if (!data.success) throw new Error(data.error || "Server error");
+
+          // Ensure minimum spin time
+          const minTicks = 20;
+          if (ticks < minTicks) await new Promise(r => setTimeout(r, (minTicks - ticks) * 70));
+
+          clearInterval(slotAnimInterval);
+          slots.forEach(s => s.classList.remove('slot-spinning'));
+
+          const resultSlots = data.result.slots;
+          slots.forEach((s, i) => {
+              s.querySelector('span').innerText = resultSlots[i];
+          });
+
+          // Highlight wins (we can still do this client side for visuals)
+          let winningIndices = new Set();
+          const checkLine = (indices) => {
+              const icons = indices.map(idx => resultSlots[idx]);
+              if (icons.every(icon => icon === icons[0])) {
+                  indices.forEach(idx => winningIndices.add(idx));
+              } else {
+                  const counts = {};
+                  icons.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
+                  if (Object.values(counts).some(c => c >= 2)) {
+                      const matchingIcon = Object.keys(counts).find(icon => counts[icon] >= 2);
+                      indices.forEach(idx => { if (resultSlots[idx] === matchingIcon) winningIndices.add(idx); });
+                  }
+              }
+          };
+
+          if (isMoreSlots) {
+              [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ].forEach(checkLine);
+          } else {
+              checkLine([0, 1, 2]);
           }
-        }, 70);
-      } catch (e) {
-        console.error("Slots error:", e);
-        isPlaying = false;
-        slots.forEach(s => s.classList.remove('slot-spinning'));
-        updateGameUI();
+          winningIndices.forEach(idx => slots[idx].classList.add('slot-win'));
+
+          isInternalUpdate = true;
+          updateBananas(Number(data.newBalance));
+          isInternalUpdate = false;
+
+          const winVal = Number(data.winAmount);
+          if (winVal > 0) {
+              if (data.result.megaBet === 'taxes') {
+                  spinResultMsg = "TAXES! The jungle government took your entire win!";
+                  addLog('loss', betAmount, bananas, 'Slots Mega Bet Taxes');
+              } else {
+                  spinResultMsg = `JACKPOT! You won ${formatNumber(winVal)} 🍌!`;
+                  addLog('win', winVal, bananas, 'Slots Win');
+                  
+                  // XP Gain
+                  const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+                  updateXp(xp + xpGain);
+                  while (xp >= getXpForLevel(level)) {
+                      updateXp(xp - getXpForLevel(level));
+                      level++;
+                  }
+              }
+              playSound('win');
+          } else {
+              spinResultMsg = `No luck this time. Lost ${formatNumber(actualBet)} 🍌.`;
+              addLog('loss', actualBet, bananas, 'Slots Loss');
+              if (activeGadgets[2]) showInsuranceButton(actualBet);
+              playSound('loss');
+          }
+          endGameTurn();
+
+      } catch (err) {
+          console.error("Slots error:", err);
+          clearInterval(slotAnimInterval);
+          slots.forEach(s => s.classList.remove('slot-spinning'));
+          isPlaying = false;
+          spinResultMsg = "Error: " + err.message;
+          updateGameUI();
       }
-    }
-
-    function finalizeSlotsServer(result) {
-      const resultSlots = result.resultSlots;
-      const outcome = result.outcome;
-      const netProfit = result.netProfit;
-      const bonusWin = result.bonusWin;
-
-      const slots = [document.getElementById('slot-1'), document.getElementById('slot-2'), document.getElementById('slot-3')];
-      slots.forEach((s, i) => {
-        s.querySelector('span').innerText = resultSlots[i];
-      });
-
-      if (outcome === 'jackpot') {
-        consecutiveJackpots++;
-        if (consecutiveJackpots >= 3) unlockTitle('lucky_one');
-      } else {
-        consecutiveJackpots = 0;
-      }
-
-      if (outcome === 'partial') {
-        slots.forEach((s, i) => {
-          const counts = {};
-          resultSlots.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
-          const matchingIcon = Object.keys(counts).find(icon => counts[icon] >= 2);
-          if (resultSlots[i] === matchingIcon) s.classList.add('slot-win');
-        });
-      } else if (outcome === 'win' || outcome === 'jackpot') {
-        slots.forEach(s => s.classList.add('slot-win'));
-      }
-
-      bananas = result.newScore;
-      xp = result.newXp;
-      level = result.newLevel;
-
-      if (netProfit > 0) {
-        spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${formatNumber(netProfit)} 🍌!` : `WIN! Won ${formatNumber(netProfit)} 🍌!`;
-        addLog('win', netProfit, bananas, bonusWin ? 'Slots: Bonus Prediction Win' : 'Slots Win');
-        playSound('win');
-      } else if (netProfit < 0) {
-        const finalLoss = Math.abs(netProfit);
-        if (betAmount > 100000) unlockTitle('unlucky');
-        spinResultMsg = `Loss. Lost ${formatNumber(finalLoss)} 🍌.`;
-        addLog('loss', finalLoss, bananas, 'Slots Loss');
-        playSound('loss');
-      } else {
-        spinResultMsg = "Push! No change.";
-        addLog('push', 0, bananas, 'Slots Push');
-      }
-
-      isPlaying = false;
-      savePersistentData();
-      updateGameUI();
-      endGameTurn();
     }
     
-    function finalizeSlots(normalBet) {
-      let r = Math.random() * 105;
-      let outcome, resultSlots = [];
-      
-      if (r < 45) { 
-        outcome = 'lose';
-        let temp = [...SLOT_ICONS].sort(() => Math.random() - 0.5);
-        resultSlots = [temp[0], temp[1], temp[2]];
-      } else if (r < 75) { 
-        outcome = 'partial';
-        let icon = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
-        let other = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
-        while (other === icon) other = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
-        resultSlots = [icon, icon, other].sort(() => Math.random() - 0.5);
-      } else if (r < 98) { 
-        outcome = 'win';
-        let icon = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
-        resultSlots = [icon, icon, icon];
-      } else { 
-        outcome = 'jackpot';
-        resultSlots = [JACKPOT_ICON, JACKPOT_ICON, JACKPOT_ICON];
-      }
+    // --- CASES LOGIC ---
+    function showCasesInventory(show) {
+        const buyView = document.getElementById('case-buy-view');
+        const invView = document.getElementById('case-inventory-view');
+        const header = document.getElementById('cases-header');
+        const resultView = document.getElementById('case-result-view');
+        const openingView = document.getElementById('case-opening-view');
 
-      const slots = [document.getElementById('slot-1'), document.getElementById('slot-2'), document.getElementById('slot-3')];
-      slots.forEach((s, i) => {
-        s.querySelector('span').innerText = resultSlots[i];
-      });
-
-      // Check Bonus Bet
-      let bonusWin = false;
-      if (isBonusBet && bonusBetAmount > 0) {
-        if (resultSlots[0] === bonusBetSelection[0] && 
-            resultSlots[1] === bonusBetSelection[1] && 
-            resultSlots[2] === bonusBetSelection[2]) {
-          bonusWin = true;
+        if (show) {
+            buyView.classList.add('hidden');
+            header.classList.add('hidden');
+            resultView.classList.add('hidden');
+            openingView.classList.add('hidden');
+            invView.classList.remove('hidden');
+            renderInventory();
+        } else {
+            invView.classList.add('hidden');
+            header.classList.remove('hidden');
+            buyView.classList.remove('hidden');
         }
-      }
+    }
 
-      if (outcome === 'jackpot') {
-        consecutiveJackpots++;
-        if (consecutiveJackpots >= 3) unlockTitle('lucky_one');
-      } else {
-        consecutiveJackpots = 0;
-      }
+    function closeCaseResult() {
+        document.getElementById('case-result-view').classList.add('hidden');
+        document.getElementById('case-buy-view').classList.remove('hidden');
+        document.getElementById('cases-header').classList.remove('hidden');
+    }
 
-      const totalBet = normalBet + bonusBetAmount;
-      
-      // NEW LOGIC: Only subtract on loss, add profit on win
-      let netProfit = 0;
-      let netLoss = 0;
+    async function openCase(caseType) {
+        if (isPlaying) return;
+        
+        const costs = { 'normal': 10000, 'booster': 100000, 'toverland': 2000000 };
+        const cost = costs[caseType];
+        
+        if (bananas < cost) {
+            alert("Not enough bananas!");
+            return;
+        }
 
-      if (outcome === 'partial') {
-        netProfit += Math.round(normalBet * 0.5);
-        slots.forEach((s, i) => {
-          const counts = {};
-          resultSlots.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
-          const matchingIcon = Object.keys(counts).find(icon => counts[icon] >= 2);
-          if (resultSlots[i] === matchingIcon) s.classList.add('slot-win');
+        isPlaying = true;
+        
+        // Hide UI for opening
+        document.getElementById('case-buy-view').classList.add('hidden');
+        document.getElementById('cases-header').classList.add('hidden');
+        document.getElementById('case-inventory-view').classList.add('hidden');
+        document.getElementById('case-result-view').classList.add('hidden');
+
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    gameMode: 'cases',
+                    caseType: caseType
+                })
+            });
+
+            const data = await response.json();
+            if (!data.success) {
+                isPlaying = false;
+                document.getElementById('case-buy-view').classList.remove('hidden');
+                document.getElementById('cases-header').classList.remove('hidden');
+                throw new Error(data.error || "Server error");
+            }
+
+            // Start animation
+            const spinner = document.getElementById('case-spinner');
+            const view = document.getElementById('case-opening-view');
+            view.classList.remove('hidden');
+            spinner.innerHTML = '';
+            spinner.style.transition = 'none';
+            spinner.style.transform = 'translateX(0px)';
+
+            // Generate 50 random items for the spinner
+            const items = [];
+            for (let i = 0; i < 50; i++) {
+                const randomSkin = SKINS[Math.floor(Math.random() * SKINS.length)];
+                items.push(randomSkin);
+            }
+            // Set the winning item at index 45
+            const winningSkin = data.result.skin;
+            items[45] = winningSkin;
+
+            items.forEach((skin, i) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = `w-32 h-32 shrink-0 bg-emerald-900/50 border-2 rounded-xl flex flex-col items-center justify-center p-2 text-center`;
+                itemEl.style.borderColor = skin.color;
+                itemEl.innerHTML = `
+                    <div class="text-3xl mb-1">🍌</div>
+                    <div class="text-[10px] font-black uppercase" style="color: ${skin.color}">${skin.rarity}</div>
+                    <div class="text-[12px] font-bold text-white leading-tight">${skin.name}</div>
+                `;
+                spinner.appendChild(itemEl);
+            });
+
+            // Trigger animation
+            setTimeout(() => {
+                const itemWidth = 128 + 16; // w-32 (128px) + gap-4 (16px)
+                const offset = (45 * itemWidth) - (view.offsetWidth / 2) + (itemWidth / 2);
+                spinner.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)';
+                spinner.style.transform = `translateX(-${offset}px)`;
+            }, 50);
+
+            setTimeout(() => {
+                isInternalUpdate = true;
+                updateBananas(Number(data.newBalance));
+                isInternalUpdate = false;
+
+                // Add to inventory
+                inventory[winningSkin.id] = (inventory[winningSkin.id] || 0) + 1;
+                localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+
+                playSound('win');
+                isPlaying = false;
+                
+                // Hide animation and show result
+                view.classList.add('hidden');
+                const resultView = document.getElementById('case-result-view');
+                document.getElementById('result-skin-name').innerText = winningSkin.name;
+                document.getElementById('result-skin-name').style.color = winningSkin.color;
+                const rarityEl = document.getElementById('result-skin-rarity');
+                rarityEl.innerText = winningSkin.rarity;
+                rarityEl.style.backgroundColor = winningSkin.color + '33'; // 20% opacity
+                rarityEl.style.color = winningSkin.color;
+                rarityEl.style.border = `1px solid ${winningSkin.color}`;
+                
+                resultView.classList.remove('hidden');
+            }, 4500);
+
+        } catch (err) {
+            console.error("Case error:", err);
+            isPlaying = false;
+            document.getElementById('case-buy-view').classList.remove('hidden');
+            document.getElementById('cases-header').classList.remove('hidden');
+            spinResultMsg = "Error: " + err.message;
+            updateGameUI();
+        }
+    }
+
+    let selectedInventorySkin = null;
+
+    function renderInventory() {
+        const grid = document.getElementById('inventory-grid');
+        const countEl = document.getElementById('inventory-count');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+        let totalSkins = 0;
+
+        const sellPrices = {
+            'Common': 1000,
+            'Rare': 15000,
+            'Epic': 200000,
+            'Mythic': 1000000,
+            'Legendary': 10000000
+        };
+
+        // Group by rarity for display
+        const rarities = ['Legendary', 'Mythic', 'Epic', 'Rare', 'Common'];
+        
+        rarities.forEach(rarity => {
+            const raritySkins = SKINS.filter(s => s.rarity === rarity);
+            raritySkins.forEach(skin => {
+                const count = inventory[skin.id] || 0;
+                if (count > 0) {
+                    totalSkins += count;
+                    const itemEl = document.createElement('div');
+                    const isSelected = selectedInventorySkin === skin.id;
+                    itemEl.className = `bg-emerald-950/80 border-2 p-3 rounded-xl flex flex-col items-center text-center relative group hover:scale-105 transition-all cursor-pointer ${isSelected ? 'ring-2 ring-white' : ''}`;
+                    itemEl.style.borderColor = skin.color;
+                    
+                    let innerHTML = `
+                        <div class="absolute top-1 right-2 text-[10px] font-mono text-emerald-500">x${count}</div>
+                        <div class="text-2xl mb-1">🍌</div>
+                        <div class="text-[8px] font-black uppercase" style="color: ${skin.color}">${skin.rarity}</div>
+                        <div class="text-[10px] font-bold text-white leading-tight">${skin.name}</div>
+                    `;
+
+                    if (isSelected) {
+                        innerHTML += `
+                            <button onclick="event.stopPropagation(); sellSkin('${skin.id}')" class="mt-2 w-full py-1 bg-red-600 hover:bg-red-500 text-white text-[9px] font-black rounded-lg uppercase transition-all shadow-lg">
+                                Sell for ${formatNumber(sellPrices[skin.rarity])}
+                            </button>
+                        `;
+                    }
+
+                    itemEl.innerHTML = innerHTML;
+                    itemEl.onclick = () => {
+                        selectedInventorySkin = isSelected ? null : skin.id;
+                        renderInventory();
+                    };
+                    grid.appendChild(itemEl);
+                }
+            });
         });
-      } else if (outcome === 'win') {
-        netProfit += normalBet * 2;
-        slots.forEach(s => s.classList.add('slot-win'));
-      } else if (outcome === 'jackpot') {
-        netProfit += normalBet * 14;
-        slots.forEach(s => s.classList.add('slot-win'));
-      } else {
-        netLoss += normalBet;
-      }
 
-      if (bonusWin) {
-        netProfit += bonusBetAmount * 19;
-        slots.forEach(s => s.classList.add('slot-win'));
-      } else if (isBonusBet) {
-        netLoss += bonusBetAmount;
-      }
+        countEl.innerText = `${totalSkins} SKINS`;
+        if (totalSkins === 0) {
+            grid.innerHTML = `<div class="col-span-full py-12 text-center text-emerald-800 font-bold italic uppercase tracking-widest">Your inventory is empty. Open some cases!</div>`;
+        }
+    }
 
-      if (netProfit > netLoss) {
-        const finalWin = applyWin(netProfit - netLoss);
-        spinResultMsg = bonusWin ? `BONUS WIN! Predicted correctly! Won ${formatNumber(finalWin)} 🍌!` : `WIN! Won ${formatNumber(finalWin)} 🍌!`;
-        addLog('win', finalWin, bananas, bonusWin ? 'Slots: Bonus Prediction Win' : 'Slots Win');
-      } else if (netLoss > netProfit) {
-        const finalLoss = netLoss - netProfit;
-        if (totalBet > 100000) unlockTitle('unlucky');
-        spinResultMsg = processLoss(finalLoss, totalBet, `Loss. Lost ${formatNumber(finalLoss)} 🍌.`);
-        addLog('loss', finalLoss, bananas, 'Slots Loss');
-      } else {
-        spinResultMsg = "Push! No change.";
-        addLog('push', 0, bananas, 'Slots Push');
-      }
+    function sellSkin(skinId) {
+        const skin = SKINS.find(s => s.id === skinId);
+        if (!skin || !inventory[skinId] || inventory[skinId] <= 0) return;
 
-      endGameTurn();
+        const sellPrices = {
+            'Common': 1000,
+            'Rare': 15000,
+            'Epic': 200000,
+            'Mythic': 1000000,
+            'Legendary': 10000000
+        };
+
+        const price = sellPrices[skin.rarity] || 0;
+        
+        // Remove 1 skin
+        inventory[skinId]--;
+        if (inventory[skinId] === 0) delete inventory[skinId];
+        
+        // Update balance securely
+        isInternalUpdate = true;
+        updateBananas(bananas + price);
+        isInternalUpdate = false;
+        
+        // Visual feedback
+        playSound('collect');
+        
+        // If no more of this skin, deselect it
+        if (!inventory[skinId]) {
+            selectedInventorySkin = null;
+        }
+        
+        savePersistentData();
+        renderInventory();
     }
 
     // --- BLACKJACK LOGIC ---
@@ -3302,25 +3922,43 @@
     }
     function bjEndGame(reason, multiplier) {
       let change = Math.round(betAmount * multiplier);
+      const isMegaBet = activeGadgets[5];
+      const megaBetEligible = isMegaBet && (betAmount >= bananas);
+
       if (reason === 'bust') { 
           if (betAmount > 100000) unlockTitle('unlucky');
           spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${formatNumber(betAmount)} 🍌.`); 
           addLog('loss', betAmount, bananas, 'Blackjack: Bust');
       }
       else if (reason === 'dealerBust') { 
-        const finalWin = applyWin(change);
-        spinResultMsg = `Dealer bust! Won ${formatNumber(finalWin)} 🍌!`; 
-        addLog('win', finalWin, bananas, 'Blackjack: Dealer Bust');
+        const finalWin = applyWin(change, megaBetEligible);
+        if (finalWin === 0 && megaBetEligible) {
+            spinResultMsg = "TAXES! Lost win to jungle government!";
+            addLog('loss', change, bananas, 'Blackjack Mega Bet Taxes');
+        } else {
+            spinResultMsg = `Dealer bust! Won ${formatNumber(finalWin)} 🍌!`; 
+            addLog('win', finalWin, bananas, 'Blackjack: Dealer Bust');
+        }
       }
       else if (reason === 'blackjack') { 
-        const finalWin = applyWin(change);
-        spinResultMsg = `Blackjack! Won ${formatNumber(finalWin)} 🍌!`; 
-        addLog('win', finalWin, bananas, 'Blackjack: BLACKJACK');
+        const finalWin = applyWin(change, megaBetEligible);
+        if (finalWin === 0 && megaBetEligible) {
+            spinResultMsg = "TAXES! Lost win to jungle government!";
+            addLog('loss', change, bananas, 'Blackjack Mega Bet Taxes');
+        } else {
+            spinResultMsg = `Blackjack! Won ${formatNumber(finalWin)} 🍌!`; 
+            addLog('win', finalWin, bananas, 'Blackjack: BLACKJACK');
+        }
       }
       else if (reason === 'win') { 
-        const finalWin = applyWin(change);
-        spinResultMsg = `You win! Won ${formatNumber(finalWin)} 🍌!`; 
-        addLog('win', finalWin, bananas, 'Blackjack: Win');
+        const finalWin = applyWin(change, megaBetEligible);
+        if (finalWin === 0 && megaBetEligible) {
+            spinResultMsg = "TAXES! Lost win to jungle government!";
+            addLog('loss', change, bananas, 'Blackjack Mega Bet Taxes');
+        } else {
+            spinResultMsg = `You win! Won ${formatNumber(finalWin)} 🍌!`; 
+            addLog('win', finalWin, bananas, 'Blackjack: Win');
+        }
       }
       else if (reason === 'lose') { 
           if (betAmount > 100000) unlockTitle('unlucky');
@@ -3369,19 +4007,10 @@
 
     window.updateGameUI = function() {
       elDisplayPlayerName.innerText = playerName;
-      
-      const elDisplayTitle = document.getElementById('display-player-title');
-      if (elDisplayTitle) {
-          if (equippedTitle && TITLES[equippedTitle]) {
-              elDisplayTitle.innerText = TITLES[equippedTitle].name;
-              elDisplayTitle.className = `text-[8px] md:text-[10px] font-black uppercase ${TITLES[equippedTitle].color || 'text-emerald-400'}`;
-              elDisplayTitle.classList.remove('hidden');
-          } else {
-              elDisplayTitle.classList.add('hidden');
-          }
-      }
-      
       elDisplayBananas.innerText = `${formatNumber(bananas)} 🍌`;
+      if (elDisplayUserId) {
+          elDisplayUserId.value = userId ? (userId.substring(0, 10) + '...') : 'Loading...';
+      }
       const elDisplayCoins = document.getElementById('display-coins');
       if (elDisplayCoins) elDisplayCoins.innerText = `${formatNumber(coins)} 🪙`;
       
@@ -3432,17 +4061,41 @@
       renderGadgets();
       
       // Update Tab Styling
-      [tabRoulette, tabSlots, tabBlackjack, tabPlinko].forEach(t => { t.classList.remove('bg-emerald-800', 'text-white', 'border-transparent'); t.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); });
+      [tabRoulette, tabSlots, tabBlackjack, tabPlinko, tabCases].forEach(t => { 
+        if (!t) return;
+        t.classList.remove('bg-emerald-800', 'text-white', 'border-transparent'); 
+        t.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); 
+      });
       if (gameMode === 'roulette') { tabRoulette.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabRoulette.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'slots') { tabSlots.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabSlots.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'blackjack') { tabBlackjack.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabBlackjack.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'plinko') { tabPlinko.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabPlinko.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
+      if (gameMode === 'cases') { tabCases.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabCases.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       
       // Toggle Areas
       areaRoulette.classList.toggle('hidden', gameMode !== 'roulette');
       areaSlots.classList.toggle('hidden', gameMode !== 'slots');
       areaBlackjack.classList.toggle('hidden', gameMode !== 'blackjack');
       areaPlinko.classList.toggle('hidden', gameMode !== 'plinko');
+      areaCases.classList.toggle('hidden', gameMode !== 'cases');
+
+      const elBettingControls = document.getElementById('betting-controls-container');
+      if (elBettingControls) {
+          elBettingControls.classList.toggle('hidden', gameMode === 'cases');
+      }
+
+      // More Slots Gadget (Index 4)
+      const isMoreSlots = activeGadgets[4];
+      const slotsContainer = document.getElementById('slots-container');
+      if (slotsContainer) {
+          for (let i = 4; i <= 9; i++) {
+              const s = document.getElementById(`slot-${i}`);
+              if (s) {
+                  if (isMoreSlots) s.classList.remove('hidden');
+                  else s.classList.add('hidden');
+              }
+          }
+      }
       
       controlColors.classList.toggle('hidden', gameMode !== 'roulette');
       controlBonus.classList.toggle('hidden', gameMode !== 'slots');
@@ -3590,7 +4243,7 @@
             } else if (!isOwned) {
                 btnHtml = `<button onclick="buyGadget(${i})" class="px-3 py-1.5 rounded font-bold text-[10px] transition-transform active:scale-95 border-b-2 ${canAfford ? 'bg-yellow-400 text-yellow-900 border-yellow-600 hover:bg-yellow-300' : 'bg-emerald-800/50 text-emerald-700 border-emerald-900 cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>BUY (${g.cost} 🍌)</button>`;
             } else if (isActive) {
-                btnHtml = `<button onclick="toggleGadget(${i})" class="px-3 py-1.5 rounded bg-emerald-500 text-emerald-950 font-bold text-[10px] border-b-2 border-emerald-700 hover:bg-emerald-400">ACTIVE</button>`;
+                btnHtml = `<button onclick="toggleGadget(${i})" class="px-3 py-1.5 rounded bg-emerald-500 text-emerald-950 font-bold text-[10px] border-b-2 border-emerald-700 hover:bg-emerald-400">UNEQUIP</button>`;
             } else {
                 const canEquip = activeCount < 2;
                 btnHtml = `<button onclick="toggleGadget(${i})" class="px-3 py-1.5 rounded font-bold text-[10px] border-b-2 ${canEquip ? 'bg-emerald-800 text-emerald-300 border-emerald-900 hover:bg-emerald-700' : 'bg-slate-800 text-slate-500 border-slate-900 cursor-not-allowed'}" ${canEquip ? '' : 'disabled'}>EQUIP</button>`;
@@ -3622,23 +4275,64 @@
     }
 
     function renderLeaderboard() {
-      if (leaderboard.length === 0) { elLeaderboardContainer.innerHTML = `<div class="text-center text-emerald-600 text-xs py-10 italic">No rankings yet.</div>`; return; }
+      if (!leaderboard || leaderboard.length === 0) { 
+        elLeaderboardContainer.innerHTML = `<div class="text-center text-emerald-600 text-xs py-10 italic">No rankings yet.</div>`; 
+        return; 
+      }
+      
       let html = '';
+      
+      // Add a small header with last updated time
+      if (leaderboardLastUpdated) {
+          const timeStr = leaderboardLastUpdated.toLocaleTimeString();
+          html += `<div class="text-[9px] text-emerald-700/50 uppercase font-black text-center mb-2 tracking-widest">Last Updated: ${timeStr}</div>`;
+      }
+
       leaderboard.forEach((lbUser, index) => {
         const isMe = lbUser.id === userId;
         const userLevel = lbUser.level || 1;
-        html += `<div class="flex justify-between items-center p-2 md:p-3 rounded-lg bg-emerald-950 border ${isMe ? 'border-yellow-400 ring-1 ring-yellow-400' : 'border-emerald-800/50'}">
-            <div class="flex items-center gap-1 md:gap-2">
-                <span class="text-emerald-500 font-mono text-[10px] md:text-xs">#${index + 1}</span>
+        const userRank = lbUser.rank || (index + 1);
+        
+        // Handle BIGINT strings from Supabase
+        const score = typeof lbUser.score === 'string' ? BigInt(lbUser.score) : BigInt(lbUser.score || 0);
+        const coinsVal = typeof lbUser.coins === 'string' ? BigInt(lbUser.coins) : BigInt(lbUser.coins || 0);
+        
+        // If it's a tail entry (user outside top 50), show a separator
+        if (lbUser.isTail) {
+            html += `<div class="py-2 flex flex-col items-center gap-1">
+                <div class="h-px w-full bg-gradient-to-r from-transparent via-emerald-800/50 to-transparent"></div>
+                <span class="text-[8px] text-emerald-700 font-bold uppercase">Your Current Position</span>
+            </div>`;
+        }
+
+        const rankColor = userRank === 1 ? 'text-yellow-400' : userRank === 2 ? 'text-gray-300' : userRank === 3 ? 'text-amber-600' : 'text-emerald-500';
+        const rankBg = isMe ? 'bg-emerald-900/40 border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.1)]' : 'bg-emerald-950/50 border-emerald-800/30';
+
+        html += `<div class="flex justify-between items-center p-2 md:p-3 rounded-lg border ${rankBg} transition-all hover:border-emerald-700/50 group">
+            <div class="flex items-center gap-2 md:gap-3">
+                <div class="flex flex-col items-center justify-center min-w-[24px] md:min-w-[32px]">
+                    <span class="${rankColor} font-black text-xs md:text-sm">#${userRank}</span>
+                </div>
                 <div class="flex flex-col">
-                    <span class="font-medium text-emerald-100 text-xs md:text-sm truncate max-w-[60px] md:max-w-[80px]">${lbUser.name}</span>
-                    ${lbUser.equipped_title ? `<span class="text-[8px] md:text-[9px] font-black uppercase ${TITLES[lbUser.equipped_title]?.color || 'text-emerald-400'}">${TITLES[lbUser.equipped_title]?.name || ''}</span>` : ''}
-                    <span class="text-[8px] md:text-[10px] text-emerald-500 font-black uppercase">LVL ${userLevel}</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-bold ${isMe ? 'text-yellow-400' : 'text-emerald-100'} text-xs md:text-sm truncate max-w-[80px] md:max-w-[120px]">${lbUser.name}</span>
+                        ${isMe ? '<span class="bg-yellow-500 text-black text-[7px] font-black px-1 rounded-sm">YOU</span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        ${lbUser.equipped_title ? `<span class="text-[8px] md:text-[9px] font-black uppercase ${TITLES[lbUser.equipped_title]?.color || 'text-emerald-400'}">${TITLES[lbUser.equipped_title]?.name || ''}</span>` : ''}
+                        <span class="text-[8px] md:text-[9px] text-emerald-600 font-bold">LVL ${userLevel}</span>
+                    </div>
                 </div>
             </div>
             <div class="flex flex-col items-end">
-                <span class="text-yellow-400 font-bold text-xs md:text-sm">${formatNumber(lbUser.score || 0)} 🍌</span>
-                <span class="text-yellow-200 font-bold text-[10px] md:text-xs">${formatNumber(lbUser.coins || 0)} 🪙</span>
+                <div class="flex items-center gap-1">
+                    <span class="text-emerald-400 font-black text-xs md:text-sm group-hover:text-emerald-300 transition-colors">${formatNumber(score)}</span>
+                    <span class="text-[10px]">🍌</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="text-yellow-500/80 font-mono text-[9px] md:text-[10px]">${formatNumber(coinsVal)}</span>
+                    <span class="text-[8px]">🪙</span>
+                </div>
             </div>
         </div>`;
       });
@@ -3654,7 +4348,7 @@
         claimInsurance, bjHit, bjStand, copyUserId, handleTreeClick, buyGadget,
         claimBananas,
         toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
-        handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle
+        handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle, forceSync, openCase, showCasesInventory, closeCaseResult, sellSkin
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
