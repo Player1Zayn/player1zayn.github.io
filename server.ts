@@ -29,7 +29,11 @@ function getSupabase() {
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
     if (!url || !key) {
-      throw new Error("CRITICAL ERROR: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing in environment variables. Please add them to your Render dashboard.");
+      const missing = [];
+      if (!url) missing.push("SUPABASE_URL");
+      if (!key) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+      console.error(`[CRITICAL] Missing environment variables: ${missing.join(", ")}`);
+      throw new Error(`CRITICAL ERROR: ${missing.join(" and ")} are missing. Please add them to your Render.com dashboard under 'Environment'.`);
     }
     supabaseClient = createClient(url, key);
   }
