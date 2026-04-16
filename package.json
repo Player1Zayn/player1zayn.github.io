@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:vite --external:express --external:bcryptjs --external:jsonwebtoken --external:dotenv --external:@supabase/supabase-js --external:cors",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:vite --external:express --external:bcryptjs --external:jsonwebtoken --external:dotenv --external:@supabase/supabase-js",
     "start": "NODE_ENV=production node dist/server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
@@ -27,6 +27,7 @@
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
+    "parse5": "^8.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "vite": "^6.2.0"
