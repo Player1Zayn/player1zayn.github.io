@@ -108,7 +108,11 @@
 
   <div id="loading-screen" class="fixed inset-0 bg-slate-900 flex flex-col items-center justify-center z-50">
     <div class="text-yellow-400 font-bold text-2xl mb-4" id="loading-text">Loading Casino...</div>
-    <div class="w-12 h-12 border-4 border-emerald-800 border-t-yellow-400 rounded-full animate-spin"></div>
+    <div class="w-12 h-12 border-4 border-emerald-800 border-t-yellow-400 rounded-full animate-spin mb-8"></div>
+    <div id="loading-fallback" class="hidden flex flex-col items-center animate-fade-in">
+        <p class="text-emerald-500 text-xs mb-4 text-center max-w-xs">The server is taking a while to wake up (Render free tier). Please wait or try again.</p>
+        <button onclick="window.location.reload()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors shadow-lg">Retry Connection</button>
+    </div>
   </div>
 
   <!-- History Modal -->
@@ -1563,7 +1567,7 @@
     let serverBanActive = false;
     async function checkServerStatus() {
         try {
-            const data = await fetchWithRetry(API_BASE + '/api/server-status', { method: 'GET' }, 1, 500);
+            const data = await fetchWithRetry('/api/server-status', { method: 'GET' }, 1, 500);
             if (data && data.server_ban === true && !serverBanActive) {
                 serverBanActive = true;
                 const overlay = document.getElementById('server-ban-overlay');
@@ -1676,9 +1680,9 @@
     }
 
     // Robust fetch with retry and timeout
-    const fetchWithRetry = async (url, options = {}, retries = 3, backoff = 1000) => {
+    const fetchWithRetry = async (url, options = {}, retries = 5, backoff = 2000) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for Render cold starts
         
         try {
             const response = await fetch(API_BASE + url, {
@@ -1694,13 +1698,18 @@
             return await response.json();
         } catch (error) {
             clearTimeout(timeoutId);
+            
+            // Show fallback UI if it's taking too long
+            const fallback = document.getElementById('loading-fallback');
+            if (fallback) fallback.classList.remove('hidden');
+
             if (error.name === 'AbortError') {
                 throw new Error('Request timed out after 15 seconds');
             }
             if (retries > 0 && (error.name === 'TypeError' || (error.message && error.message.includes('HTTP 5')))) {
                 console.warn(`Fetch failed for ${url}, retrying in ${backoff}ms... (${retries} retries left)`, error);
                 await new Promise(resolve => setTimeout(resolve, backoff));
-                return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                return fetchWithRetry(url, options, retries - 1, backoff * 1.5);
             }
             throw error;
         }
@@ -1754,7 +1763,7 @@
     async function fetchServerState() {
       if (!authToken) return;
       try {
-        const data = await fetchWithRetry(API_BASE + '/api/me', {
+        const data = await fetchWithRetry('/api/me', {
             method: 'GET',
             headers: { 
                 'Content-Type': 'application/json',
@@ -1922,7 +1931,7 @@
       localStorage.setItem('bananaCasinoSave', JSON.stringify(saveData));
 
       try { 
-          const result = await fetchWithRetry(API_BASE + '/api/save', {
+          const result = await fetchWithRetry('/api/save', {
               method: 'POST',
               headers: { 
                   'Content-Type': 'application/json',
