@@ -15,9 +15,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
-app.use(cors());
+app.use(cors()); // Allow all origins for maximum compatibility with AI Studio and GX.games
 app.use(express.json());
 
 // Supabase Setup (Lazy Initialization)
@@ -47,23 +47,8 @@ const authenticateToken = (req: any, res: any, next: any) => {
 
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) return res.status(403).json({ error: "Forbidden" });
-    
-    // Check if user is banned
-    const supabase = getSupabase();
-    supabase.from('database').select('banned').eq('id', user.userId).maybeSingle()
-      .then(({ data: userData }: any) => {
-        if (userData && userData.banned) {
-          return res.status(403).json({ error: "Account banned for cheating" });
-        }
-        req.user = user;
-        next();
-      })
-      .catch((e: any) => {
-        console.error("Error checking ban status:", e);
-        // If database check fails, we still allow the request but log the error
-        req.user = user;
-        next();
-      });
+    req.user = user;
+    next();
   });
 };
 
@@ -112,6 +97,7 @@ app.post("/api/register", async (req, res) => {
       gadgets: JSON.stringify(Array(10).fill(false)),
       unlocked_titles: JSON.stringify([]),
       equipped_title: null,
+      inventory: JSON.stringify({}),
       banned: false
     });
 
@@ -178,7 +164,7 @@ app.post("/api/login", async (req, res) => {
 
 // Save Data
 app.post("/api/save", authenticateToken, async (req: any, res) => {
-  const { userId, name, score, coins, bananaBox, trees, gadgets, level, xp, unlocked_titles, equipped_title } = req.body;
+  const { userId, name, score, coins, bananaBox, trees, gadgets, level, xp, unlocked_titles, equipped_title, inventory } = req.body;
 
   if (req.user.userId !== userId) {
     return res.status(403).json({ error: "Cannot save data for another user" });
@@ -186,64 +172,92 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
 
   try {
     const supabase = getSupabase();
-    // Optimistic Concurrency Control: Check if the score on server matches what client expects
+    console.log(`[SAVE REQUEST] User: ${userId} (${name}), Score: ${score}, Coins: ${coins}, Expected: ${req.body.expectedScore}/${req.body.expectedCoins}`);
+    
+    // 1. Fetch current state to check for conflicts
     const { data: current, error: fetchError } = await supabase
       .from('database')
-      .select('score, coins, unlocked_titles')
+      .select('score, coins, unlocked_titles, updated_at')
       .eq('id', userId)
       .maybeSingle();
 
+    if (fetchError) {
+        console.error(`[SAVE ERROR] Fetch failed for ${userId}:`, fetchError);
+    }
+
     const { expectedScore, expectedCoins } = req.body;
+    const isForceSync = String(expectedScore) === "-1" || String(expectedCoins) === "-1";
     
-    if (current && expectedScore !== undefined && expectedCoins !== undefined && expectedScore !== -1 && expectedCoins !== -1) {
-        if (Number(current.score) !== Number(expectedScore) || Number(current.coins) !== Number(expectedCoins)) {
-            // External change detected, return current data instead of overwriting
+    // 2. Conflict Detection (Optimistic Concurrency Control)
+    if (current && !isForceSync && expectedScore !== undefined && expectedCoins !== undefined) {
+        const serverScore = String(current.score);
+        const serverCoins = String(current.coins);
+        const clientExpectedScore = String(expectedScore);
+        const clientExpectedCoins = String(expectedCoins);
+
+        if (serverScore !== clientExpectedScore || serverCoins !== clientExpectedCoins) {
+            console.warn(`[SYNC CONFLICT] User ${userId}. Server: ${serverScore}/${serverCoins}, Client Expected: ${clientExpectedScore}/${clientExpectedCoins}. Last updated: ${current.updated_at}`);
+            
+            // Return current server data so client can resync
             const { data: fullUser } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
-            const { password: _, ...userData } = fullUser;
-            return res.json({ success: false, error: "External change detected", user: userData });
+            if (fullUser) {
+                const { password: _, ...userData } = fullUser;
+                // Ensure BIGINTs are strings for JSON
+                userData.score = String(userData.score);
+                userData.coins = String(userData.coins);
+                userData.xp = String(userData.xp);
+                userData.banana_box = String(userData.banana_box);
+                return res.json({ success: false, error: "Conflict detected", user: userData });
+            }
         }
     }
 
-    // Merge unlocked_titles to prevent overwriting manual admin edits
+    // 3. Merge unlocked_titles
     let finalUnlockedTitles = unlocked_titles || [];
     if (current && current.unlocked_titles) {
         const serverTitles = typeof current.unlocked_titles === 'string' ? JSON.parse(current.unlocked_titles) : current.unlocked_titles;
         if (Array.isArray(serverTitles)) {
-            // Keep all server titles (including manually added ones) and add any new ones from client
             finalUnlockedTitles = Array.from(new Set([...serverTitles, ...finalUnlockedTitles]));
         }
     }
 
-    const { error } = await supabase.from('database').upsert({
+    // 4. Perform Upsert
+    console.log(`[UPSERT START] User: ${userId}`);
+    const { error: upsertError } = await supabase.from('database').upsert({
       id: userId,
       name,
-      score,
-      coins,
-      banana_box: bananaBox || 0,
+      score: String(score), 
+      coins: String(coins), 
+      banana_box: String(bananaBox || 0),
       trees: JSON.stringify(trees),
       gadgets: JSON.stringify(gadgets),
-      level,
-      xp,
+      level: Number(level || 1),
+      xp: String(xp || 0),
       unlocked_titles: JSON.stringify(finalUnlockedTitles),
       equipped_title: equipped_title || null,
+      inventory: inventory ? JSON.stringify(inventory) : JSON.stringify({}),
       updated_at: new Date().toISOString()
     });
 
-    if (error) throw error;
-    
-    // Fetch and return the updated data to ensure client is in sync
-    const { data: updatedUser, error: finalFetchError } = await supabase
-      .from('database')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-      
-    if (finalFetchError || !updatedUser) {
-        res.json({ success: true });
-    } else {
-        const { password: _, ...userData } = updatedUser;
-        res.json({ success: true, user: userData });
+    if (upsertError) {
+        console.error(`[SAVE ERROR] Upsert failed for ${userId}:`, upsertError);
+        return res.status(500).json({ error: upsertError.message });
     }
+    
+    console.log(`[SAVE SUCCESS] User: ${userId} (${name})`);
+
+    // 5. Return updated state
+    const { data: updatedUser } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+    if (updatedUser) {
+        const { password: _, ...userData } = updatedUser;
+        userData.score = String(userData.score);
+        userData.coins = String(userData.coins);
+        userData.xp = String(userData.xp);
+        userData.banana_box = String(userData.banana_box);
+        return res.json({ success: true, user: userData });
+    }
+    
+    res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -251,177 +265,344 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
 
 // Ban User
 app.post("/api/ban", authenticateToken, async (req: any, res) => {
-  const { userId } = req.body;
-  if (req.user.userId !== userId) {
-    return res.status(403).json({ error: "Unauthorized" });
-  }
-
-  try {
-    const supabase = getSupabase();
-    await supabase.from('database').update({ banned: true }).eq('id', userId);
-    res.json({ success: true, message: "User banned successfully" });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// --- GAME LOGIC ENDPOINTS ---
-
-const SLOT_ICONS = ['🍌', '🍒', '🍋', '🔔', '💎', '7️⃣'];
-const JACKPOT_ICON = '7️⃣';
-
-// Roulette
-app.post("/api/game/roulette", authenticateToken, async (req: any, res) => {
-  const { userId, betAmount, betColor, gadgets } = req.body;
-  if (req.user.userId !== userId) return res.status(403).json({ error: "Unauthorized" });
-
-  try {
-    const supabase = getSupabase();
-    const { data: user } = await supabase.from('database').select('score, xp, level').eq('id', userId).maybeSingle();
-    if (!user || user.score < betAmount) return res.status(400).json({ error: "Insufficient balance" });
-
-    const rand = Math.random();
-    const pRed = gadgets && gadgets[1] ? 0.42 : 0.46;
-    const pBlack = gadgets && gadgets[1] ? 0.42 : 0.46;
-    
-    let winningColor;
-    if (rand < pRed) winningColor = 'red';
-    else if (rand < pRed + pBlack) winningColor = 'black';
-    else winningColor = 'green';
-
-    let winAmount = 0;
-    if (betColor === winningColor) {
-      const mult = winningColor === 'green' ? 3 : 1;
-      winAmount = betAmount * mult;
-    } else {
-      winAmount = -betAmount;
-    }
-
-    let newScore = Number(user.score);
-    let newXp = Number(user.xp);
-    let newLevel = Number(user.level);
-
-    if (winAmount > 0) {
-      const bonus = Math.floor(winAmount * (newLevel - 1) * 0.05);
-      const totalWin = winAmount + bonus;
-      newScore += totalWin;
-      
-      // Update XP
-      const xpGain = Math.floor(totalWin / 10);
-      newXp += xpGain;
-      
-      // Check level up
-      while (newXp >= newLevel * 1000) {
-        newXp -= newLevel * 1000;
-        newLevel++;
-      }
-      winAmount = totalWin; // Return total win including bonus
-    } else {
-      newScore += winAmount; // winAmount is negative here
-    }
-
-    await supabase.from('database').update({ 
-      score: newScore,
-      xp: newXp,
-      level: newLevel
-    }).eq('id', userId);
-
-    res.json({ success: true, winningColor, winAmount, newScore, newXp, newLevel });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Slots
-app.post("/api/game/slots", authenticateToken, async (req: any, res) => {
-  const { userId, betAmount, isBonusBet, bonusBetAmount, bonusBetSelection } = req.body;
-  if (req.user.userId !== userId) return res.status(403).json({ error: "Unauthorized" });
-
-  const totalBet = betAmount + (isBonusBet ? bonusBetAmount : 0);
-
-  try {
-    const supabase = getSupabase();
-    const { data: user } = await supabase.from('database').select('score, xp, level').eq('id', userId).maybeSingle();
-    if (!user || user.score < totalBet) return res.status(400).json({ error: "Insufficient balance" });
-
-    let r = Math.random() * 105;
-    let outcome, resultSlots = [];
-    
-    if (r < 45) { 
-      outcome = 'lose';
-      let temp = [...SLOT_ICONS].sort(() => Math.random() - 0.5);
-      resultSlots = [temp[0], temp[1], temp[2]];
-    } else if (r < 75) { 
-      outcome = 'partial';
-      let icon = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
-      let other = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
-      while (other === icon) other = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
-      resultSlots = [icon, icon, other].sort(() => Math.random() - 0.5);
-    } else if (r < 98) { 
-      outcome = 'win';
-      let icon = SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)];
-      resultSlots = [icon, icon, icon];
-    } else { 
-      outcome = 'jackpot';
-      resultSlots = [JACKPOT_ICON, JACKPOT_ICON, JACKPOT_ICON];
-    }
-
-    let bonusWin = false;
-    if (isBonusBet && bonusBetAmount > 0 && bonusBetSelection) {
-      if (resultSlots[0] === bonusBetSelection[0] && 
-          resultSlots[1] === bonusBetSelection[1] && 
-          resultSlots[2] === bonusBetSelection[2]) {
-        bonusWin = true;
-      }
-    }
-
-    let netProfit = 0;
-    if (outcome === 'partial') netProfit += Math.round(betAmount * 0.5);
-    else if (outcome === 'win') netProfit += betAmount * 2;
-    else if (outcome === 'jackpot') netProfit += betAmount * 14;
-    else netProfit -= betAmount;
-
-    if (bonusWin) netProfit += bonusBetAmount * 19;
-    else if (isBonusBet) netProfit -= bonusBetAmount;
-
-    let newScore = Number(user.score);
-    let newXp = Number(user.xp);
-    let newLevel = Number(user.level);
-
-    if (netProfit > 0) {
-      const bonus = Math.floor(netProfit * (newLevel - 1) * 0.05);
-      const totalWin = netProfit + bonus;
-      newScore += totalWin;
-      
-      // Update XP
-      const xpGain = Math.floor(totalWin / 10);
-      newXp += xpGain;
-      
-      // Check level up
-      while (newXp >= newLevel * 1000) {
-        newXp -= newLevel * 1000;
-        newLevel++;
-      }
-      netProfit = totalWin; // Return total win including bonus
-    } else {
-      newScore += netProfit; // netProfit is negative here
-    }
-
-    await supabase.from('database').update({ 
-      score: newScore,
-      xp: newXp,
-      level: newLevel
-    }).eq('id', userId);
-
-    res.json({ success: true, outcome, resultSlots, bonusWin, netProfit, newScore, newXp, newLevel });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+  // Ban feature temporarily disabled as requested
+  res.json({ success: true, message: "Ban feature is currently disabled" });
 });
 
 // Health Check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
+});
+
+// --- GAME LOGIC CONSTANTS ---
+const SLOT_ICONS = ['🍎', '🍉', '🥝', '🍐', '🍍', '🍇', '🍓', '🍊', '🍋', '🍌'];
+const JACKPOT_ICON = '💰';
+
+const SKINS = [
+    // Common (20)
+    { id: 'c1', name: 'Green Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c2', name: 'Blue Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c3', name: 'Red Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c4', name: 'Yellow Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c5', name: 'Orange Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c6', name: 'Purple Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c7', name: 'Pink Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c8', name: 'Brown Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c9', name: 'Black Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c10', name: 'White Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c11', name: 'Gray Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c12', name: 'Cyan Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c13', name: 'Magenta Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c14', name: 'Lime Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c15', name: 'Teal Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c16', name: 'Indigo Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c17', name: 'Violet Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c18', name: 'Silver Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c19', name: 'Bronze Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c20', name: 'Classic Banana', rarity: 'Common', color: '#22c55e' },
+    // Rare (18)
+    { id: 'r1', name: 'Spotted Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r2', name: 'Striped Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r3', name: 'Polka Dot Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r4', name: 'Camo Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r5', name: 'Zebra Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r6', name: 'Leopard Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r7', name: 'Tiger Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r8', name: 'Cheetah Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r9', name: 'Giraffe Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r10', name: 'Snake Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r11', name: 'Crocodile Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r12', name: 'Shark Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r13', name: 'Whale Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r14', name: 'Dolphin Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r15', name: 'Penguin Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r16', name: 'Panda Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r17', name: 'Koala Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r18', name: 'Sloth Banana', rarity: 'Rare', color: '#3b82f6' },
+    // Epic (10)
+    { id: 'e1', name: 'Fire Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e2', name: 'Ice Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e3', name: 'Thunder Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e4', name: 'Wind Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e5', name: 'Earth Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e6', name: 'Water Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e7', name: 'Light Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e8', name: 'Dark Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e9', name: 'Spirit Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e10', name: 'Ghost Banana', rarity: 'Epic', color: '#a855f7' },
+    // Mythic (5)
+    { id: 'm1', name: 'Galaxy Banana', rarity: 'Mythic', color: '#ef4444' },
+    { id: 'm2', name: 'Nebula Banana', rarity: 'Mythic', color: '#ef4444' },
+    { id: 'm3', name: 'Supernova Banana', rarity: 'Mythic', color: '#ef4444' },
+    { id: 'm4', name: 'Black Hole Banana', rarity: 'Mythic', color: '#ef4444' },
+    { id: 'm5', name: 'Cosmic Banana', rarity: 'Mythic', color: '#ef4444' },
+    // Legendary (3)
+    { id: 'l1', name: 'Golden Banana', rarity: 'Legendary', color: '#facc15' },
+    { id: 'l2', name: 'Diamond Banana', rarity: 'Legendary', color: '#facc15' },
+    { id: 'l3', name: 'Rainbow Banana', rarity: 'Legendary', color: '#facc15' }
+];
+
+// Get Server Status
+app.get("/api/server-status", async (req, res) => {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('server_status')
+      .select('server_ban')
+      .eq('id', 1)
+      .maybeSingle();
+
+    if (error) {
+        // If table doesn't exist yet, default to false
+        if (error.code === 'PGRST116' || error.message.includes('relation "server_status" does not exist')) {
+            return res.json({ server_ban: false });
+        }
+        throw error;
+    }
+    
+    res.json({ server_ban: data ? data.server_ban : false });
+  } catch (error: any) {
+    console.error("Server status error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Play Game (Server-side result generation)
+app.post("/api/play", authenticateToken, async (req: any, res) => {
+    const { gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets } = req.body;
+    const userId = req.user.userId;
+
+    try {
+        const supabase = getSupabase();
+
+        // Global Server Ban Check
+        const { data: status } = await supabase.from('server_status').select('server_ban').eq('id', 1).maybeSingle();
+        if (status?.server_ban) {
+            return res.status(503).json({ error: "Game Offline. Try again later or contact Zayn." });
+        }
+
+        const { data: user, error: fetchError } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+        
+        if (fetchError || !user) return res.status(404).json({ error: "User not found" });
+        if (user.banned) return res.status(403).json({ error: "Banned" });
+
+        let currentBananas = BigInt(user.score);
+        
+        // Ensure betAmount is a valid number/string before converting to BigInt
+        // In 'cases' mode, betAmount might be undefined, so we default to 0
+        const bet = BigInt(betAmount || 0);
+        const bonusBet = BigInt(bonusBetAmount || 0);
+        const totalBet = bet + (isBonusBet ? bonusBet : 0n);
+
+        if (gameMode !== 'cases' && currentBananas < totalBet) {
+            // CHEAT DETECTION: If they try to bet more than they have, it's likely a manipulated request
+            await supabase.from('database').update({ banned: true, ban_reason: 'Attempted to bet more than balance (Cheat Detection)' }).eq('id', userId);
+            return res.status(400).json({ error: "Cheat detected. You have been banned." });
+        }
+
+        const unlockedGadgets = typeof user.gadgets === 'string' ? JSON.parse(user.gadgets) : (user.gadgets || []);
+        // We use client-provided activeGadgets for UI state, but we should validate they are owned
+        // For simplicity, we'll trust the client's activeGadgets choice but only if they own the gadget
+        const activeGadgets = (clientActiveGadgets || []).map((active: boolean, i: number) => active && unlockedGadgets[i]);
+
+        let winAmount = 0n;
+        let resultData: any = {};
+
+        if (gameMode === 'roulette') {
+            const rand = Math.random();
+            const pRed = unlockedGadgets[1] ? 0.42 : 0.46;
+            const pBlack = unlockedGadgets[1] ? 0.42 : 0.46;
+            
+            let winningColor;
+            if (rand < pRed) winningColor = 'red';
+            else if (rand < pRed + pBlack) winningColor = 'black';
+            else winningColor = 'green';
+
+            resultData.winningColor = winningColor;
+
+            if (betColor === winningColor) {
+                const mult = winningColor === 'green' ? 3n : 1n;
+                let baseWin = bet * mult;
+                
+                // Mega Bet logic
+                const isMegaBet = activeGadgets[5];
+                const megaBetEligible = isMegaBet && (bet >= currentBananas) && winningColor === 'green';
+                
+                if (megaBetEligible) {
+                    const r = Math.random();
+                    if (r < 0.25) {
+                        winAmount = baseWin * 100n;
+                        resultData.megaBet = 'win';
+                    } else if (r < 0.50) {
+                        winAmount = 0n; // Taxes
+                        resultData.megaBet = 'taxes';
+                    } else {
+                        winAmount = baseWin;
+                        resultData.megaBet = 'none';
+                    }
+                } else {
+                    winAmount = baseWin;
+                }
+            } else {
+                winAmount = 0n;
+            }
+        } else if (gameMode === 'slots') {
+            const isMoreSlots = activeGadgets[4];
+            const slotCount = isMoreSlots ? 9 : 3;
+            const resultSlots = [];
+            
+            for (let i = 0; i < slotCount; i++) {
+                let r = Math.random() * 100;
+                if (r < 2) resultSlots.push(JACKPOT_ICON);
+                else resultSlots.push(SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)]);
+            }
+            resultData.slots = resultSlots;
+
+            let totalWinMultiplier = 0;
+            const checkLine = (indices: number[]) => {
+                const icons = indices.map(idx => resultSlots[idx]);
+                if (icons.every(icon => icon === icons[0])) {
+                    if (icons[0] === JACKPOT_ICON) return 15;
+                    return 3;
+                }
+                const counts: any = {};
+                icons.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
+                if (Object.values(counts).some((c: any) => c >= 2)) return 0.5;
+                return 0;
+            };
+
+            if (isMoreSlots) {
+                totalWinMultiplier += checkLine([0, 1, 2]);
+                totalWinMultiplier += checkLine([3, 4, 5]);
+                totalWinMultiplier += checkLine([6, 7, 8]);
+                totalWinMultiplier += checkLine([0, 3, 6]);
+                totalWinMultiplier += checkLine([1, 4, 7]);
+                totalWinMultiplier += checkLine([2, 5, 8]);
+                totalWinMultiplier += checkLine([0, 4, 8]);
+                totalWinMultiplier += checkLine([2, 4, 6]);
+            } else {
+                totalWinMultiplier += checkLine([0, 1, 2]);
+            }
+
+            let baseWin = BigInt(Math.round(Number(bet) * totalWinMultiplier));
+            
+            // Bonus Bet
+            let bonusWin = false;
+            if (isBonusBet && bonusBetAmount > 0 && bonusBetSelection) {
+                const checkBonus = (indices: number[]) => {
+                    return indices.every((idx, i) => resultSlots[idx] === bonusBetSelection[i]);
+                };
+                if (isMoreSlots) {
+                    if (checkBonus([0, 1, 2]) || checkBonus([3, 4, 5]) || checkBonus([6, 7, 8])) bonusWin = true;
+                } else {
+                    if (checkBonus([0, 1, 2])) bonusWin = true;
+                }
+            }
+
+            if (bonusWin) {
+                baseWin += BigInt(bonusBetAmount) * 50n;
+                resultData.bonusWin = true;
+            }
+
+            // Mega Bet logic for slots
+            const isMegaBet = activeGadgets[5];
+            const megaBetEligible = isMegaBet && (bet >= currentBananas) && totalWinMultiplier >= 3;
+            
+            if (megaBetEligible) {
+                const r = Math.random();
+                if (r < 0.25) {
+                    winAmount = baseWin * 100n;
+                    resultData.megaBet = 'win';
+                } else if (r < 0.50) {
+                    winAmount = 0n;
+                    resultData.megaBet = 'taxes';
+                } else {
+                    winAmount = baseWin;
+                    resultData.megaBet = 'none';
+                }
+            } else {
+                winAmount = baseWin;
+            }
+        } else if (gameMode === 'plinko') {
+            // Plinko probabilities (simplified)
+            const buckets = [0, 0.2, 0.5, 1, 2, 5, 2, 1, 0.5, 0.2, 0];
+            const rand = Math.random();
+            let cumulative = 0;
+            let bucketIndex = 0;
+            
+            // For a 300px wide board with 11 buckets
+            // We'll just pick a bucket and let the client simulate landing there
+            bucketIndex = Math.floor(Math.random() * buckets.length);
+            const multiplier = buckets[bucketIndex];
+            winAmount = BigInt(Math.round(Number(bet) * multiplier));
+            resultData.bucketIndex = bucketIndex;
+            resultData.multiplier = multiplier;
+        } else if (gameMode === 'cases') {
+            const caseType = req.body.caseType; // 'normal', 'booster', 'toverland'
+            const costs: any = { 'normal': 10000n, 'booster': 100000n, 'toverland': 2000000n };
+            const cost = costs[caseType] || 0n;
+            
+            if (currentBananas < cost) return res.status(400).json({ error: "Not enough bananas" });
+            
+            // Generate result based on probabilities
+            const r = Math.random() * 100;
+            let rarity = 'Common';
+            
+            if (caseType === 'toverland') {
+                if (r < 15) rarity = 'Legendary';
+                else if (r < 40) rarity = 'Mythic';
+                else if (r < 70) rarity = 'Epic';
+                else if (r < 90) rarity = 'Rare';
+                else rarity = 'Common';
+            } else if (caseType === 'booster') {
+                if (r < 3) rarity = 'Legendary';
+                else if (r < 10) rarity = 'Mythic';
+                else if (r < 20) rarity = 'Epic';
+                else if (r < 50) rarity = 'Rare';
+                else rarity = 'Common';
+            } else {
+                // Normal Case
+                if (r < 0.1) rarity = 'Legendary';
+                else if (r < 1) rarity = 'Mythic';
+                else if (r < 5) rarity = 'Epic';
+                else if (r < 20) rarity = 'Rare';
+                else rarity = 'Common';
+            }
+
+            // Select a random skin from that rarity
+            const skinPool = SKINS.filter(s => s.rarity === rarity);
+            const selectedSkin = skinPool[Math.floor(Math.random() * skinPool.length)];
+            
+            winAmount = 0n; // Cases cost money, they don't give bananas back directly
+            // We need to subtract the cost
+            currentBananas -= cost;
+            
+            resultData.skin = selectedSkin;
+            resultData.rarity = rarity;
+            resultData.cost = String(cost);
+        }
+
+        // Update balance
+        const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
+        
+        const { error: updateError } = await supabase.from('database').update({
+            score: String(newBananas),
+            updated_at: new Date().toISOString()
+        }).eq('id', userId);
+
+        if (updateError) throw updateError;
+
+        res.json({
+            success: true,
+            winAmount: String(winAmount),
+            newBalance: String(newBananas),
+            result: resultData
+        });
+
+    } catch (error: any) {
+        console.error("Play error:", error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Get Current User Data
@@ -491,23 +672,85 @@ app.post("/api/logs", authenticateToken, async (req: any, res) => {
   }
 });
 
+// Debug Endpoint
+app.get("/api/debug", authenticateToken, async (req: any, res) => {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('database')
+      .select('*')
+      .eq('id', req.user.userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    res.json({ 
+        userId: req.user.userId,
+        dbData: data,
+        env: {
+            hasUrl: !!process.env.SUPABASE_URL,
+            hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+        }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get Leaderboard
 app.get("/api/leaderboard", async (req, res) => {
   try {
-    console.log("Fetching leaderboard...");
+    const { userId } = req.query;
     const supabase = getSupabase();
-    const { data, error } = await supabase
-      .from('leaderboard')
+    
+    // 1. Fetch Top 50
+    // We query the 'database' table directly to ensure 100% accuracy
+    const { data: top50, error: top50Error } = await supabase
+      .from('database')
       .select('id, name, score, level, coins, equipped_title')
+      .or('banned.eq.false,banned.is.null')
       .order('score', { ascending: false })
       .limit(50);
 
-    if (error) {
-      console.error("Supabase leaderboard error:", error);
-      throw error;
+    if (top50Error) {
+      console.error("Supabase top50 error:", top50Error);
+      throw top50Error;
     }
-    console.log(`Leaderboard fetched: ${data?.length || 0} entries`);
-    res.json(data || []);
+
+    let result = top50 || [];
+
+    // 2. If userId is provided, find their actual rank
+    if (userId && typeof userId === 'string' && userId !== '') {
+      const isInTop50 = result.some(u => u.id === userId);
+      
+      if (!isInTop50) {
+        // Fetch user entry
+        const { data: userEntry, error: userError } = await supabase
+          .from('database')
+          .select('id, name, score, level, coins, equipped_title')
+          .eq('id', userId)
+          .maybeSingle();
+          
+        if (userEntry && !userError) {
+          // Calculate actual rank
+          const { count, error: countError } = await supabase
+            .from('database')
+            .select('*', { count: 'exact', head: true })
+            .or('banned.eq.false,banned.is.null')
+            .gt('score', userEntry.score);
+            
+          const rank = (count || 0) + 1;
+          result.push({ ...userEntry, isTail: true, rank });
+        }
+      } else {
+        // Add rank to the top 50 entries for consistency
+        result = result.map((u, i) => ({ ...u, rank: i + 1 }));
+      }
+    } else {
+      // Add rank to the top 50 entries
+      result = result.map((u, i) => ({ ...u, rank: i + 1 }));
+    }
+    
+    res.json(result);
   } catch (error: any) {
     console.error("Leaderboard API error:", error);
     res.status(500).json({ error: error.message });
