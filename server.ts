@@ -761,6 +761,256 @@ app.get("/api/leaderboard", async (req, res) => {
   }
 });
 
+
+// --- TRADING SYSTEM ---
+
+const SKIN_VALUES: Record<string, number> = {
+  'Common': 1000,
+  'Rare': 15000,
+  'Epic': 200000,
+  'Mythic': 1000000,
+  'Legendary': 10000000
+};
+
+const SKINS_METADATA: Record<string, string> = {
+  'c1': 'Common', 'c2': 'Common', 'c3': 'Common', 'c4': 'Common', 'c5': 'Common',
+  'c6': 'Common', 'c7': 'Common', 'c8': 'Common', 'c9': 'Common', 'c10': 'Common',
+  'c11': 'Common', 'c12': 'Common', 'c13': 'Common', 'c14': 'Common', 'c15': 'Common',
+  'c16': 'Common', 'c17': 'Common', 'c18': 'Common', 'c19': 'Common', 'c20': 'Common',
+  'r1': 'Rare', 'r2': 'Rare', 'r3': 'Rare', 'r4': 'Rare', 'r5': 'Rare',
+  'r6': 'Rare', 'r7': 'Rare', 'r8': 'Rare', 'r9': 'Rare', 'r10': 'Rare',
+  'r11': 'Rare', 'r12': 'Rare', 'r13': 'Rare', 'r14': 'Rare', 'r15': 'Rare',
+  'r16': 'Rare', 'r17': 'Rare', 'r18': 'Rare',
+  'e1': 'Epic', 'e2': 'Epic', 'e3': 'Epic', 'e4': 'Epic', 'e5': 'Epic',
+  'e6': 'Epic', 'e7': 'Epic', 'e8': 'Epic', 'e9': 'Epic', 'e10': 'Epic',
+  'm1': 'Mythic', 'm2': 'Mythic', 'm3': 'Mythic', 'm4': 'Mythic', 'm5': 'Mythic',
+  'l1': 'Legendary', 'l2': 'Legendary', 'l3': 'Legendary'
+};
+
+function calculateTradeValue(skins: string[]) {
+  return skins.reduce((total, id) => {
+    const rarity = SKINS_METADATA[id] || 'Common';
+    return total + (SKIN_VALUES[rarity] || 0);
+  }, 0);
+}
+
+// Request a trade
+app.post("/api/trade/request", authenticateToken, async (req: any, res) => {
+  const { receiverId } = req.body;
+  const senderId = req.user.userId;
+
+  if (senderId === receiverId) {
+    return res.status(400).json({ error: "Cannot trade with yourself" });
+  }
+
+  try {
+    const supabase = getSupabase();
+    
+    // Check if there is already a pending trade between these two
+    const { data: existing } = await supabase
+      .from('trades')
+      .select('id')
+      .eq('sender_id', senderId)
+      .eq('receiver_id', receiverId)
+      .in('status', ['pending', 'active'])
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(400).json({ error: "Trade request already pending" });
+    }
+
+    const { data, error } = await supabase
+      .from('trades')
+      .insert({
+        sender_id: senderId,
+        receiver_id: receiverId,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all trade requests for user
+app.get("/api/trade/requests", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('trades')
+      .select(`
+        *,
+        sender:sender_id(name),
+        receiver:receiver_id(name)
+      `)
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .in('status', ['pending', 'active'])
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update trade (skins or ready status)
+app.post("/api/trade/update", authenticateToken, async (req: any, res) => {
+  const { tradeId, skins, ready } = req.body;
+  const userId = req.user.userId;
+
+  try {
+    const supabase = getSupabase();
+    const { data: trade, error: fetchError } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('id', tradeId)
+        .single();
+
+    if (fetchError || !trade) return res.status(404).json({ error: "Trade not found" });
+    if (trade.status !== 'pending' && trade.status !== 'active') {
+        return res.status(400).json({ error: "Trade is no longer active" });
+    }
+
+    const isSender = trade.sender_id === userId;
+    const isReceiver = trade.receiver_id === userId;
+
+    if (!isSender && !isReceiver) return res.status(403).json({ error: "Unauthorized" });
+
+    const update: any = { 
+        status: 'active',
+        updated_at: new Date().toISOString()
+    };
+
+    if (skins !== undefined) {
+        if (isSender) update.sender_skins = skins;
+        else update.receiver_skins = skins;
+        // Reset ready status if skins change
+        update.sender_ready = false;
+        update.receiver_ready = false;
+    }
+
+    if (ready !== undefined) {
+        if (isSender) update.sender_ready = ready;
+        else update.receiver_ready = ready;
+    }
+
+    const { data: updatedTrade, error: updateError } = await supabase
+        .from('trades')
+        .update(update)
+        .eq('id', tradeId)
+        .select(`
+            *,
+            sender:sender_id(name),
+            receiver:receiver_id(name)
+        `)
+        .single();
+
+    if (updateError) throw updateError;
+    res.json(updatedTrade);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Execute trade
+app.post("/api/trade/execute", authenticateToken, async (req: any, res) => {
+  const { tradeId } = req.body;
+  const userId = req.user.userId;
+
+  try {
+    const supabase = getSupabase();
+    
+    // 1. Get trade data
+    const { data: trade, error: fetchError } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('id', tradeId)
+        .single();
+
+    if (fetchError || !trade) return res.status(404).json({ error: "Trade not found" });
+    if (trade.status !== 'active') return res.status(400).json({ error: "Trade is not active" });
+    if (!trade.sender_ready || !trade.receiver_ready) return res.status(400).json({ error: "Both players must be ready" });
+
+    // 2. Validate move logic (30% value diff)
+    const senderSkins = trade.sender_skins || [];
+    const receiverSkins = trade.receiver_skins || [];
+    const v1 = calculateTradeValue(senderSkins);
+    const v2 = calculateTradeValue(receiverSkins);
+
+    const maxV = Math.max(v1, v2);
+    const minV = Math.min(v1, v2);
+
+    if (maxV > 0 && minV < 0.7 * maxV) {
+      return res.status(400).json({ error: "Trade value difference is too high (max 30%)" });
+    }
+
+    // 3. Atomically update inventories
+    // Fetch both users
+    const { data: users, error: usersError } = await supabase
+        .from('database')
+        .select('id, inventory')
+        .in('id', [trade.sender_id, trade.receiver_id]);
+
+    if (usersError || !users || users.length !== 2) throw new Error("Could not fetch user data");
+
+    const sender = users.find(u => u.id === trade.sender_id);
+    const receiver = users.find(u => u.id === trade.receiver_id);
+
+    const senderInv = typeof sender.inventory === 'string' ? JSON.parse(sender.inventory) : (sender.inventory || {});
+    const receiverInv = typeof receiver.inventory === 'string' ? JSON.parse(receiver.inventory) : (receiver.inventory || {});
+
+    // Remove sender skins from sender, add to receiver
+    senderSkins.forEach((sid: string) => {
+        if (senderInv[sid] > 0) {
+            senderInv[sid]--;
+            receiverInv[sid] = (receiverInv[sid] || 0) + 1;
+        }
+    });
+
+    // Remove receiver skins from receiver, add to sender
+    receiverSkins.forEach((sid: string) => {
+        if (receiverInv[sid] > 0) {
+            receiverInv[sid]--;
+            senderInv[sid] = (senderInv[sid] || 0) + 1;
+        }
+    });
+
+    // Update both users and trade status in one "go" (not a real transaction but sequential is okay here for basic app)
+    await supabase.from('database').update({ inventory: JSON.stringify(senderInv) }).eq('id', trade.sender_id);
+    await supabase.from('database').update({ inventory: JSON.stringify(receiverInv) }).eq('id', trade.receiver_id);
+    await supabase.from('trades').update({ status: 'completed' }).eq('id', tradeId);
+
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Cancel trade
+app.post("/api/trade/cancel", authenticateToken, async (req: any, res) => {
+    const { tradeId } = req.body;
+    const userId = req.user.userId;
+    try {
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from('trades')
+            .update({ status: 'cancelled' })
+            .eq('id', tradeId)
+            .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // --- VITE MIDDLEWARE ---
 
 async function startServer() {
