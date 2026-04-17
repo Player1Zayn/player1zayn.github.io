@@ -81,6 +81,16 @@
       from { transform: scale(1); filter: brightness(1) drop-shadow(0 0 10px gold); }
       to { transform: scale(1.15); filter: brightness(1.8) drop-shadow(0 0 30px gold); }
     }
+    @keyframes slide-in {
+      from { transform: translateX(120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slide-out {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(120%); opacity: 0; }
+    }
+    .animate-slide-in { animation: slide-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    .animate-slide-out { animation: slide-out 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     .slot-machine-body {
       background: linear-gradient(135deg, #444 0%, #222 50%, #111 100%);
       border: 4px solid #555;
@@ -206,6 +216,70 @@
       <p class="mt-6 text-[10px] text-red-500 font-bold uppercase opacity-50">Failure to enter will close the page</p>
     </div>
   </div>
+
+    </div>
+  </div>
+
+  <!-- Trading Modal -->
+  <div id="trade-modal" class="fixed inset-0 bg-black/95 z-[500] items-center justify-center hidden backdrop-blur-md p-4 overflow-y-auto">
+    <div class="bg-emerald-950 border-4 border-emerald-500 w-full max-w-5xl rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col min-h-[80vh]">
+      <div class="p-6 bg-emerald-900 border-b border-emerald-700 flex justify-between items-center">
+          <h2 class="text-3xl font-black text-yellow-400 uppercase tracking-tighter italic">Trading Center</h2>
+          <button onclick="cancelCurrentTrade()" class="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all shadow-lg active:scale-95">CANCEL TRADE</button>
+      </div>
+      
+      <div class="flex-1 flex flex-col md:flex-row p-6 gap-6 overflow-hidden">
+          <!-- Left Side: My Offer -->
+          <div class="flex-1 bg-emerald-900/40 rounded-3xl p-6 border-2 border-emerald-800 flex flex-col h-[500px]">
+              <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-white font-black text-xl uppercase italic">Your Offer</h3>
+                  <span id="trade-my-value" class="text-yellow-400 font-bold text-sm">Value: 0 🍌</span>
+              </div>
+              <div id="trade-my-slots" class="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 overflow-y-auto custom-scrollbar p-2 bg-black/20 rounded-xl">
+                  <!-- Selected skins here -->
+              </div>
+              <div id="trade-my-ready" class="mt-4 p-3 bg-red-900/30 rounded-xl text-center font-black uppercase text-xs tracking-widest text-red-500 border border-red-900/50">Not Ready</div>
+          </div>
+
+          <!-- Center: Status -->
+          <div class="w-full md:w-48 flex flex-col items-center justify-center gap-4">
+              <div id="trade-visual-state" class="text-6xl animate-pulse">🤝</div>
+              <div id="trade-countdown" class="hidden text-6xl font-black text-yellow-500 animate-bounce">5</div>
+              <div id="trade-status-msg" class="text-center text-emerald-400 font-bold text-[10px] uppercase px-2 mb-2 leading-tight">Players are preparing...</div>
+              <div class="w-full h-1 bg-emerald-800 rounded-full overflow-hidden">
+                  <div id="trade-value-bar" class="h-full bg-yellow-500 transition-all duration-500" style="width: 50%"></div>
+              </div>
+              <p id="trade-value-diff" class="text-[10px] text-emerald-500 font-bold uppercase">Diff: 0%</p>
+              <p id="trade-value-warning" class="hidden text-[10px] text-red-500 font-black uppercase text-center bg-red-950 p-1 rounded border border-red-900">Diff too high! (Max 30%)</p>
+              
+              <button id="trade-accept-btn" onclick="toggleTradeReady()" class="w-full py-4 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-black text-xl rounded-2xl shadow-[0_6px_0_rgb(180,83,9)] active:translate-y-1 active:shadow-none transition-all mt-4 disabled:opacity-50 disabled:grayscale">READY</button>
+          </div>
+
+          <!-- Right Side: Their Offer -->
+          <div class="flex-1 bg-emerald-900/40 rounded-3xl p-6 border-2 border-emerald-800 flex flex-col h-[500px]">
+              <div class="flex justify-between items-center mb-4">
+                  <h3 id="trade-opponent-name" class="text-white font-black text-xl uppercase italic sm:truncate sm:max-w-[100px]">Opponent</h3>
+                  <span id="trade-their-value" class="text-yellow-400 font-bold text-sm">Value: 0 🍌</span>
+              </div>
+              <div id="trade-their-slots" class="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 overflow-y-auto custom-scrollbar p-2 bg-black/20 rounded-xl">
+                  <!-- Opponent's skins here -->
+              </div>
+              <div id="trade-their-ready" class="mt-4 p-3 bg-red-900/30 rounded-xl text-center font-black uppercase text-xs tracking-widest text-red-500 border border-red-900/50">Not Ready</div>
+          </div>
+      </div>
+
+      <!-- Inventory Selector Section -->
+      <div class="h-48 bg-black/40 border-t border-emerald-800 p-4 flex flex-col shrink-0">
+          <h4 class="text-emerald-500 font-black text-[10px] uppercase tracking-[0.3em] mb-4">Select items from your inventory:</h4>
+          <div id="trade-inventory-list" class="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+              <!-- Inventory items here -->
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Container -->
+  <div id="notification-container" class="fixed top-6 right-6 z-[1000] flex flex-col gap-3 pointer-events-none"></div>
 
   <div id="app" class="w-full h-full max-w-[1600px] bg-emerald-950 relative shadow-2xl flex flex-col hidden">
     
@@ -662,6 +736,14 @@
           <!-- Game: CASES -->
           <div id="area-cases" class="w-full h-full flex flex-col items-center justify-start hidden overflow-y-auto custom-scrollbar px-4 pt-12">
             
+            <!-- Trade Notifications (Visible in Cases view) -->
+            <div id="trade-notifications" class="w-full max-w-2xl mb-8 space-y-3 hidden">
+                <h3 class="text-emerald-500 font-black text-xs uppercase tracking-widest italic border-l-4 border-yellow-500 pl-3">Incoming Trade Requests</h3>
+                <div id="trade-requests-list" class="space-y-2">
+                    <!-- Trade request items here -->
+                </div>
+            </div>
+
             <!-- Cases Header -->
             <div id="cases-header" class="w-full max-w-4xl flex items-center justify-between mb-12 mt-12">
                 <h2 class="text-white font-black text-3xl tracking-tighter italic">BANANA CASES</h2>
@@ -1564,6 +1646,30 @@
         return n.toLocaleString();
     }
 
+    function showNotification(message, type = 'info') {
+        const container = document.getElementById('notification-container');
+        if (!container) return;
+
+        const el = document.createElement('div');
+        const bg = type === 'success' ? 'bg-emerald-600' : (type === 'error' ? 'bg-red-600' : 'bg-blue-600');
+        el.className = `${bg} text-white px-6 py-4 rounded-2xl shadow-2xl font-black uppercase text-xs tracking-widest flex items-center gap-3 animate-slide-in pointer-events-auto cursor-pointer border-2 border-white/20`;
+        el.innerHTML = `
+            <span>${type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️')}</span>
+            <span>${message}</span>
+        `;
+        
+        container.appendChild(el);
+        
+        const close = () => {
+            el.classList.add('animate-slide-out');
+            setTimeout(() => el.remove(), 500);
+        };
+
+        el.onclick = close;
+        setTimeout(close, 5000);
+    }
+    window.showNotification = showNotification;
+
     let serverBanActive = false;
     async function checkServerStatus() {
         try {
@@ -2022,6 +2128,403 @@
     function savePersistentData() {
         syncData(bananas, trees);
     }
+
+    // --- TRADING LOGIC ---
+    let currentActiveTrade = null;
+    let tradePollingInterval = null;
+    let tradeCountdownInterval = null;
+    let selectedTradeSkins = []; // My skins for the trade
+
+    const TRADE_SKIN_VALUES = {
+        'Common': 1000,
+        'Rare': 15000,
+        'Epic': 200000,
+        'Mythic': 1000000,
+        'Legendary': 10000000
+    };
+
+    function calculateTradeTotal(skinIds) {
+        if (!skinIds) return 0;
+        return skinIds.reduce((total, id) => {
+            const skin = SKINS.find(s => s.id === id);
+            return total + (TRADE_SKIN_VALUES[skin?.rarity || 'Common'] || 0);
+        }, 0);
+    }
+
+    async function sendTradeRequest(targetId) {
+        try {
+            const data = await fetchWithRetry('/api/trade/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({ receiverId: targetId })
+            });
+            if (data.error) throw new Error(data.error);
+            showNotification("🤝 Trade request sent!", "success");
+            setGameMode('cases'); // Go to cases to see it
+        } catch (e) {
+            showNotification(e.message, "error");
+        }
+    }
+
+    async function pollTrades() {
+        if (!authToken) return;
+        try {
+            const data = await fetchWithRetry('/api/trade/requests', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            
+            if (!data || data.error) return;
+
+            renderTradeRequests(data);
+
+            // If we are in an active trade, refresh its state
+            if (currentActiveTrade) {
+                const refreshed = data.find(t => t.id === currentActiveTrade.id);
+                if (refreshed) {
+                    if (refreshed.status === 'completed') {
+                        finishTrade();
+                    } else if (refreshed.status === 'cancelled') {
+                        closeTradeModal();
+                        showNotification("Trade was cancelled.", "error");
+                    } else {
+                        currentActiveTrade = refreshed;
+                        updateTradeUI(refreshed);
+                    }
+                } else {
+                    // Current trade not found in active list (likely cancelled or completed)
+                    closeTradeModal();
+                }
+            }
+        } catch (e) {
+            console.error("Trade poll error:", e);
+        }
+    }
+
+    function renderTradeRequests(trades) {
+        const listEl = document.getElementById('trade-requests-list');
+        const containerEl = document.getElementById('trade-notifications');
+        if (!listEl || !containerEl) return;
+
+        const pending = trades.filter(t => t.status === 'pending' || t.status === 'active');
+        
+        if (pending.length === 0) {
+            containerEl.classList.add('hidden');
+            return;
+        }
+
+        containerEl.classList.remove('hidden');
+        listEl.innerHTML = pending.map(t => {
+            const isSender = t.sender_id === userId;
+            const otherName = isSender ? (t.receiver?.name || 'Loading...') : (t.sender?.name || 'Loading...');
+            const statusLabel = t.status === 'active' ? 'IN PROGRESS' : 'PENDING REQUEST';
+            const isInvite = !isSender && t.status === 'pending';
+            
+            return `
+                <div class="bg-emerald-900/40 border border-emerald-800 p-3 rounded-xl flex justify-between items-center group animate-fade-in shadow-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-emerald-800 flex items-center justify-center text-lg shadow-inner">${isInvite ? '📩' : '🤝'}</div>
+                        <div>
+                            <p class="text-white font-black text-sm uppercase tracking-tight">${otherName}</p>
+                            <p class="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">${statusLabel}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openTrade('${t.id}')" class="px-5 py-2 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-black text-[10px] rounded-lg transition-all active:scale-95 shadow-md uppercase">${isInvite ? 'Accept' : 'View'}</button>
+                        <button onclick="cancelTradeRequest('${t.id}')" class="px-3 py-2 bg-red-900/50 hover:bg-red-800 text-red-100 text-[10px] font-bold rounded-lg border border-red-800/50 uppercase">Cancel</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function openTrade(tradeId) {
+        try {
+            const data = await fetchWithRetry('/api/trade/requests', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            const trade = data.find(t => t.id === tradeId);
+            if (!trade) return;
+
+            currentActiveTrade = trade;
+            selectedTradeSkins = (trade.sender_id === userId ? (trade.sender_skins || []) : (trade.receiver_skins || []));
+            
+            document.getElementById('trade-modal').classList.remove('hidden');
+            document.getElementById('trade-modal').classList.add('flex');
+            
+            updateTradeUI(trade);
+            renderTradeInventorySelection();
+        } catch (e) {
+            showNotification(e.message, "error");
+        }
+    }
+
+    function updateTradeUI(trade) {
+        const isSender = trade.sender_id === userId;
+        const mySkins = isSender ? (trade.sender_skins || []) : (trade.receiver_skins || []);
+        const theirSkins = isSender ? (trade.receiver_skins || []) : (trade.sender_skins || []);
+        const myReady = isSender ? trade.sender_ready : trade.receiver_ready;
+        const theirReady = isSender ? trade.receiver_ready : trade.sender_ready;
+        const otherName = isSender ? (trade.receiver?.name || 'Opponent') : (trade.sender?.name || 'Opponent');
+
+        // Update Names and Values
+        document.getElementById('trade-opponent-name').innerText = otherName;
+        const myVal = calculateTradeTotal(mySkins);
+        const theirVal = calculateTradeTotal(theirSkins);
+        document.getElementById('trade-my-value').innerText = `Value: ${myVal.toLocaleString()} 🍌`;
+        document.getElementById('trade-their-value').innerText = `Value: ${theirVal.toLocaleString()} 🍌`;
+
+        // Update Slots
+        renderTradeSlots('trade-my-slots', mySkins, true);
+        renderTradeSlots('trade-their-slots', theirSkins, false);
+
+        // Update Ready States
+        const myReadyEl = document.getElementById('trade-my-ready');
+        myReadyEl.innerText = myReady ? 'READY' : 'NOT READY';
+        myReadyEl.className = `mt-4 p-3 rounded-xl text-center font-black uppercase text-xs tracking-widest border transition-all ${
+            myReady ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-red-900/30 text-red-500 border-red-900/50'
+        }`;
+
+        const theirReadyEl = document.getElementById('trade-their-ready');
+        theirReadyEl.innerText = theirReady ? 'READY' : 'NOT READY';
+        theirReadyEl.className = `mt-4 p-3 rounded-xl text-center font-black uppercase text-xs tracking-widest border transition-all ${
+            theirReady ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-red-900/30 text-red-500 border-red-900/50'
+        }`;
+
+        // Value Difference Check
+        const maxV = Math.max(myVal, theirVal);
+        const minV = Math.min(myVal, theirVal);
+        const diff = maxV > 0 ? Math.round((1 - (minV / maxV)) * 100) : 0;
+        
+        document.getElementById('trade-value-diff').innerText = `Diff: ${diff}%`;
+        const warningEl = document.getElementById('trade-value-warning');
+        const acceptBtn = document.getElementById('trade-accept-btn');
+        
+        const isDiffTooHigh = diff > 30 && maxV > 0;
+        if (isDiffTooHigh) {
+            warningEl.classList.remove('hidden');
+            if (!myReady) acceptBtn.disabled = true; // Can't go ready if diff too high
+        } else {
+            warningEl.classList.add('hidden');
+            acceptBtn.disabled = false;
+        }
+
+        // Value Bar
+        const barWidth = maxV === 0 ? 50 : (isSender ? (myVal / (myVal + theirVal)) * 100 : (theirVal / (myVal + theirVal)) * 100);
+        document.getElementById('trade-value-bar').style.width = `${barWidth || 50}%`;
+
+        // Ready button state
+        acceptBtn.innerText = myReady ? 'UNREADY' : 'READY';
+        acceptBtn.classList.remove('bg-yellow-400', 'bg-red-600');
+        acceptBtn.classList.add(myReady ? 'bg-red-600' : 'bg-yellow-400');
+
+        // Countdown Logic
+        if (myReady && theirReady) {
+            startTradeCountdown();
+        } else {
+            stopTradeCountdown();
+        }
+    }
+
+    function renderTradeSlots(containerId, skinIds, isMine) {
+        const el = document.getElementById(containerId);
+        if (!skinIds || skinIds.length === 0) {
+            el.innerHTML = '<div class="col-span-full h-full flex items-center justify-center text-emerald-800 text-[10px] font-bold uppercase italic opacity-30">No items offered</div>';
+            return;
+        }
+        el.innerHTML = skinIds.map((sid, idx) => {
+            const skin = SKINS.find(s => s.id === sid);
+            return `
+                <div ${isMine ? `onclick="removeSkinFromTrade('${sid}', ${idx})"` : ''} class="aspect-square bg-emerald-950 border-2 rounded-xl p-2 flex flex-col items-center justify-center ${isMine ? 'cursor-pointer hover:border-red-500' : ''} transition-all group relative border-opacity-50" style="border-color: ${skin?.color || '#555'}">
+                    <div class="text-3xl mb-1">🍌</div>
+                    <p class="text-[8px] font-black uppercase" style="color: ${skin?.color}">${skin?.rarity || 'Common'}</p>
+                    <p class="text-[8px] font-bold text-white text-center leading-tight truncate w-full">${skin?.name || 'Unknown'}</p>
+                    ${isMine ? `<div class="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] px-1.5 rounded-full font-black opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">X</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderTradeInventorySelection() {
+        const el = document.getElementById('trade-inventory-list');
+        const inv = inventory; // global inventory
+        
+        const myItems = Object.keys(inv).filter(id => inv[id] > 0);
+        
+        if (myItems.length === 0) {
+            el.innerHTML = '<p class="text-emerald-700 text-xs italic py-4">Your inventory is empty.</p>';
+            return;
+        }
+
+        // Sort items by rarity (legendary to common)
+        const sortedItems = myItems.sort((a, b) => {
+            const rarities = ['Legendary', 'Mythic', 'Epic', 'Rare', 'Common'];
+            const rA = SKINS.find(s => s.id === a)?.rarity || 'Common';
+            const rB = SKINS.find(s => s.id === b)?.rarity || 'Common';
+            return rarities.indexOf(rA) - rarities.indexOf(rB);
+        });
+
+        el.innerHTML = sortedItems.map(sid => {
+            const skin = SKINS.find(s => s.id === sid);
+            const countInTrade = selectedTradeSkins.filter(id => id === sid).length;
+            const available = inv[sid] - countInTrade;
+            
+            return `
+                <div onclick="${available > 0 ? `addSkinToTrade('${sid}')` : ''}" class="min-w-[100px] h-[120px] bg-emerald-900 border-2 rounded-2xl p-3 flex flex-col items-center justify-center transition-all ${available > 0 ? 'border-emerald-700 hover:border-yellow-400 cursor-pointer hover:-translate-y-1' : 'border-emerald-950 opacity-40 grayscale'}" style="${available > 0 ? `border-color: ${skin?.color}44` : ''}">
+                    <div class="text-3xl mb-1">🍌</div>
+                    <p class="text-[8px] font-black uppercase mb-0.5" style="color: ${skin?.color}">${skin?.rarity}</p>
+                    <p class="text-[9px] text-white font-black text-center truncate w-full mb-2">${skin?.name}</p>
+                    <div class="bg-black/60 px-3 py-0.5 rounded-full text-[10px] font-black ${available > 0 ? 'text-yellow-400' : 'text-emerald-800'}">x${available}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    window.addSkinToTrade = async function(skinId) {
+        if (!currentActiveTrade || (currentActiveTrade.sender_id === userId ? currentActiveTrade.sender_ready : currentActiveTrade.receiver_ready)) return;
+        const countInTrade = selectedTradeSkins.filter(id => id === skinId).length;
+        if (inventory[skinId] <= countInTrade) return;
+
+        selectedTradeSkins.push(skinId);
+        await updateTradeOnServer();
+    };
+
+    window.removeSkinFromTrade = async function(skinId, index) {
+        if (!currentActiveTrade || (currentActiveTrade.sender_id === userId ? currentActiveTrade.sender_ready : currentActiveTrade.receiver_ready)) return;
+        selectedTradeSkins.splice(index, 1);
+        await updateTradeOnServer();
+    };
+
+    async function updateTradeOnServer() {
+        try {
+            const data = await fetchWithRetry('/api/trade/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({ tradeId: currentActiveTrade.id, skins: selectedTradeSkins })
+            });
+            if (data.error) throw new Error(data.error);
+            currentActiveTrade = data;
+            updateTradeUI(data);
+            renderTradeInventorySelection();
+        } catch (e) {
+            showNotification(e.message, "error");
+        }
+    }
+
+    window.toggleTradeReady = async function() {
+        if (!currentActiveTrade) return;
+        const isSender = currentActiveTrade.sender_id === userId;
+        const isReady = isSender ? !currentActiveTrade.sender_ready : !currentActiveTrade.receiver_ready;
+
+        try {
+            const data = await fetchWithRetry('/api/trade/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({ tradeId: currentActiveTrade.id, ready: isReady })
+            });
+            if (data.error) throw new Error(data.error);
+            currentActiveTrade = data;
+            updateTradeUI(data);
+        } catch (e) {
+            showNotification(e.message, "error");
+        }
+    };
+
+    function startTradeCountdown() {
+        if (tradeCountdownInterval) return;
+        
+        const countdownEl = document.getElementById('trade-countdown');
+        const visualEl = document.getElementById('trade-visual-state');
+        const msgEl = document.getElementById('trade-status-msg');
+        
+        countdownEl.classList.remove('hidden');
+        visualEl.classList.add('hidden');
+        msgEl.innerText = "TRADE IN PROGRESS...";
+        
+        let counter = 5;
+        countdownEl.innerText = counter;
+        
+        tradeCountdownInterval = setInterval(async () => {
+            counter--;
+            countdownEl.innerText = counter;
+            
+            if (counter <= 0) {
+                clearInterval(tradeCountdownInterval);
+                tradeCountdownInterval = null;
+                await finalizeTrade();
+            }
+        }, 1000);
+    }
+
+    function stopTradeCountdown() {
+        if (!tradeCountdownInterval) return;
+        clearInterval(tradeCountdownInterval);
+        tradeCountdownInterval = null;
+        
+        document.getElementById('trade-countdown').classList.add('hidden');
+        document.getElementById('trade-visual-state').classList.remove('hidden');
+        document.getElementById('trade-status-msg').innerText = "Players are preparing...";
+    }
+
+    async function finalizeTrade() {
+        try {
+            const data = await fetchWithRetry('/api/trade/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({ tradeId: currentActiveTrade.id })
+            });
+            if (data.error) throw new Error(data.error);
+            
+            showNotification("TRADE SUCCESSFUL!", "success");
+            finishTrade();
+        } catch (e) {
+            showNotification(e.message, "error");
+            stopTradeCountdown();
+        }
+    }
+
+    function finishTrade() {
+        closeTradeModal();
+        fetchServerState();
+        fetchLeaderboard();
+        pollTrades();
+        renderInventory();
+    }
+
+    window.closeTradeModal = function() {
+        document.getElementById('trade-modal').classList.add('hidden');
+        document.getElementById('trade-modal').classList.remove('flex');
+        currentActiveTrade = null;
+        selectedTradeSkins = [];
+        stopTradeCountdown();
+    };
+
+    window.cancelTradeRequest = async function(tradeId) {
+        try {
+            await fetchWithRetry('/api/trade/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({ tradeId })
+            });
+            pollTrades();
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    window.cancelCurrentTrade = function() {
+        if (currentActiveTrade) {
+            cancelTradeRequest(currentActiveTrade.id);
+            closeTradeModal();
+        }
+    };
+
+    window.sendTradeRequest = sendTradeRequest;
+    window.openTrade = openTrade;
+
+    // Start polling trades
+    setInterval(pollTrades, 3000);
 
     function setView(newView) {
       view = newView;
@@ -4326,6 +4829,7 @@
                     <div class="flex items-center gap-1.5">
                         <span class="font-bold ${isMe ? 'text-yellow-400' : 'text-emerald-100'} text-xs md:text-sm truncate max-w-[80px] md:max-w-[120px]">${lbUser.name}</span>
                         ${isMe ? '<span class="bg-yellow-500 text-black text-[7px] font-black px-1 rounded-sm">YOU</span>' : ''}
+                        ${!isMe ? `<button onclick="sendTradeRequest('${lbUser.id}')" class="ml-auto hidden group-hover:flex bg-yellow-500 hover:bg-yellow-400 text-yellow-950 text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm items-center gap-1 transition-all active:scale-95 whitespace-nowrap">🤝 TRADE</button>` : ''}
                     </div>
                     <div class="flex items-center gap-1.5 mt-0.5">
                         ${lbUser.equipped_title ? `<span class="text-[8px] md:text-[9px] font-black uppercase ${TITLES[lbUser.equipped_title]?.color || 'text-emerald-400'}">${TITLES[lbUser.equipped_title]?.name || ''}</span>` : ''}
