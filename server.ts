@@ -764,7 +764,33 @@ app.get("/api/leaderboard", async (req, res) => {
 
 // --- TRADING SYSTEM ---
 
-const SKIN_VALUES: Record<string, number> = {
+let DYNAMIC_SKIN_VALUES: Record<string, number> = {};
+
+async function refreshSkinValues() {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from('skin_values').select('id, value');
+    if (error) throw error;
+    
+    if (data) {
+      const newValues: Record<string, number> = {};
+      data.forEach((item: any) => {
+        newValues[item.id] = Number(item.value);
+      });
+      DYNAMIC_SKIN_VALUES = newValues;
+      console.log(`[SKIN VALUES] Refreshed ${data.length} skin values.`);
+    }
+  } catch (error) {
+    console.error("[SKIN VALUES] Failed to refresh values:", error);
+    // Fallback if table doesn't exist or error
+    if (Object.keys(DYNAMIC_SKIN_VALUES).length === 0) {
+      DYNAMIC_SKIN_VALUES = {}; // Fallback initialized below
+    }
+  }
+}
+
+// Initial fallback values (matching SKINS rarity logic)
+const DEFAULT_RARITY_VALUES: Record<string, number> = {
   'Common': 1000,
   'Rare': 15000,
   'Epic': 200000,
@@ -789,10 +815,27 @@ const SKINS_METADATA: Record<string, string> = {
 
 function calculateTradeValue(skins: string[]) {
   return skins.reduce((total, id) => {
+    // 1. Try dynamic value from DB
+    if (DYNAMIC_SKIN_VALUES[id] !== undefined) {
+      return total + DYNAMIC_SKIN_VALUES[id];
+    }
+    // 2. Fallback to rarity defaults
     const rarity = SKINS_METADATA[id] || 'Common';
-    return total + (SKIN_VALUES[rarity] || 0);
+    return total + (DEFAULT_RARITY_VALUES[rarity] || 0);
   }, 0);
 }
+
+// Global loop to refresh values every 5 minutes
+setInterval(refreshSkinValues, 5 * 60 * 1000);
+
+// Endpoint to get all skin values
+app.get("/api/skin-values", async (req, res) => {
+  // Ensure we have some values, if not try to refresh
+  if (Object.keys(DYNAMIC_SKIN_VALUES).length === 0) {
+    await refreshSkinValues();
+  }
+  res.json(DYNAMIC_SKIN_VALUES);
+});
 
 // Request a trade
 app.post("/api/trade/request", authenticateToken, async (req: any, res) => {
@@ -1049,8 +1092,10 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "0.0.0.0", async () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    // Refresh skin values on startup
+    await refreshSkinValues();
   });
 }
 
