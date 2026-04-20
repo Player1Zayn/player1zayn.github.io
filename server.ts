@@ -267,6 +267,43 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
   }
 });
 
+// Global Inventory Stats
+app.get("/api/global-inventory", async (req, res) => {
+  try {
+    const supabase = getSupabase();
+    // Fetch only inventory column to be efficient
+    const { data, error } = await supabase.from('database').select('inventory');
+    
+    if (error) throw error;
+    
+    const totals: Record<string, number> = {};
+    
+    data.forEach((row: any) => {
+      let inv = row.inventory;
+      if (typeof inv === 'string') {
+        try {
+          inv = JSON.parse(inv);
+        } catch (e) {
+          inv = {};
+        }
+      }
+      
+      if (inv && typeof inv === 'object' && inv !== null) {
+        for (const skinId in inv) {
+          const count = Number(inv[skinId]);
+          if (!isNaN(count)) {
+            totals[skinId] = (totals[skinId] || 0) + count;
+          }
+        }
+      }
+    });
+    
+    res.json({ success: true, totals });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Ban User
 app.post("/api/ban", authenticateToken, async (req: any, res) => {
   // Ban feature temporarily disabled as requested
@@ -555,16 +592,26 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 winAmount = baseWin;
             }
         } else if (gameMode === 'plinko') {
-            // Plinko probabilities (simplified)
-            const buckets = [0, 0.2, 0.5, 1, 2, 5, 2, 1, 0.5, 0.2, 0];
-            const rand = Math.random();
-            let cumulative = 0;
-            let bucketIndex = 0;
+            // Plinko probabilities (matching client V5.11 multipliers)
+            // Multipliers: [10, 1.5, 1.1, 1.0, 0.5, 0.3, 0.2, 0.3, 0.5, 1.0, 1.1, 1.5, 10]
+            const plinkoMults = [10, 1.5, 1.1, 1.0, 0.5, 0.3, 0.2, 0.3, 0.5, 1.0, 1.1, 1.5, 10];
             
-            // For a 300px wide board with 11 buckets
-            // We'll just pick a bucket and let the client simulate landing there
-            bucketIndex = Math.floor(Math.random() * buckets.length);
-            const multiplier = buckets[bucketIndex];
+            // Use a binomial distribution logic or weighted random
+            // For now, weighted random favoring middle but still purely luck based
+            const weights = [1, 2, 4, 8, 12, 16, 20, 16, 12, 8, 4, 2, 1]; // Binomial-like
+            const totalWeight = weights.reduce((a, b) => a + b, 0);
+            let rand = Math.random() * totalWeight;
+            
+            let bucketIndex = 0;
+            for (let i = 0; i < weights.length; i++) {
+                if (rand < weights[i]) {
+                    bucketIndex = i;
+                    break;
+                }
+                rand -= weights[i];
+            }
+            
+            const multiplier = plinkoMults[bucketIndex];
             winAmount = BigInt(Math.round(Number(bet) * multiplier));
             resultData.bucketIndex = bucketIndex;
             resultData.multiplier = multiplier;
