@@ -278,6 +278,49 @@
     </div>
   </div>
 
+  <!-- Skin Values Modal -->
+  <div id="skin-values-modal" class="fixed inset-0 bg-black/95 z-[600] items-center justify-center hidden backdrop-blur-md p-4 overflow-y-auto">
+    <div class="bg-emerald-950 border-4 border-yellow-500 w-full max-w-4xl rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-6 bg-emerald-900 border-b border-emerald-700 flex justify-between items-center">
+          <h2 class="text-3xl font-black text-yellow-400 uppercase tracking-tighter italic">Banana Skins Registry</h2>
+          <button onclick="closeSkinValuesModal()" class="w-10 h-10 flex items-center justify-center bg-red-500/20 hover:bg-red-500/40 text-red-500 rounded-full transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+      </div>
+      
+      <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
+          <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <p class="text-emerald-400 text-sm italic">"The values below are the current market rates. Global count shows the total number of these bananas in circulation."</p>
+              <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Sort by:</span>
+                  <select onchange="updateSkinValuesTable(this.value)" class="bg-emerald-900 border border-emerald-700 text-white text-xs p-2 rounded-lg outline-none cursor-pointer">
+                      <option value="rarity">Rarity (High to Low)</option>
+                      <option value="name">Name (A-Z)</option>
+                      <option value="value">Value (High to Low)</option>
+                      <option value="count">Global Count (High to Low)</option>
+                  </select>
+              </div>
+          </div>
+
+          <div class="overflow-x-auto">
+              <table class="w-full text-left border-separate border-spacing-y-2">
+                  <thead>
+                      <tr class="text-[10px] text-emerald-500 font-black uppercase tracking-[0.2em]">
+                          <th class="px-4 py-2">Banana Skin</th>
+                          <th class="px-4 py-2">Rarity</th>
+                          <th class="px-4 py-2 text-right">Value</th>
+                          <th class="px-4 py-2 text-right">In System</th>
+                      </tr>
+                  </thead>
+                  <tbody id="skin-values-tbody">
+                      <!-- Rows will be injected here -->
+                  </tbody>
+              </table>
+          </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Container -->
   <div id="notification-container" class="fixed top-6 right-6 z-[1000] flex flex-col gap-3 pointer-events-none"></div>
 
@@ -747,7 +790,10 @@
             <!-- Cases Header -->
             <div id="cases-header" class="w-full max-w-4xl flex items-center justify-between mb-12 mt-12">
                 <h2 class="text-white font-black text-3xl tracking-tighter italic">BANANA CASES</h2>
-                <button onclick="showCasesInventory(true)" class="px-6 py-2 bg-yellow-500 hover:bg-yellow-400 text-emerald-950 font-black rounded-full shadow-[0_4px_0_rgb(161,98,7)] active:translate-y-1 active:shadow-none transition-all text-sm uppercase">My Inventory</button>
+                <div class="flex gap-3">
+                    <button onclick="openSkinValuesModal()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-full shadow-[0_4px_0_rgb(6,78,59)] active:translate-y-1 active:shadow-none transition-all text-sm uppercase">Skins Registry</button>
+                    <button onclick="showCasesInventory(true)" class="px-6 py-2 bg-yellow-500 hover:bg-yellow-400 text-emerald-950 font-black rounded-full shadow-[0_4px_0_rgb(161,98,7)] active:translate-y-1 active:shadow-none transition-all text-sm uppercase">My Inventory</button>
+                </div>
             </div>
 
             <!-- BUY CASES VIEW -->
@@ -1250,6 +1296,7 @@
         
         if (authToken) {
             await fetchServerState(); 
+            fetchGlobalInventory(); // Pre-load counts for the table
         }
         await setupSupabaseListeners();
 
@@ -1528,7 +1575,7 @@
     let plinkoBalls = [];
     const PLINKO_MULTIPLIERS = [10, 1.5, 1.1, 1.0, 0.5, 0.3, 0.2, 0.3, 0.5, 1.0, 1.1, 1.5, 10];
     const PLINKO_BUCKET_WEIGHTS = [0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5];
-    const PLINKO_ROWS = 10;
+    const PLINKO_ROWS = 12;
     const PLINKO_PIN_RADIUS = 3;
     const PLINKO_BALL_RADIUS = 5;
     const PLINKO_ROW_SPACING = 26;
@@ -3676,13 +3723,14 @@
           if (!data.success) throw new Error(data.error || "Server error");
 
           const ball = {
-            x: 150,
+            x: 150 + (Math.random() - 0.5) * 5,
             y: 20,
-            vx: (Math.random() - 0.5) * 2,
+            vx: (Math.random() - 0.5) * 1.5,
             vy: 2,
             row: 0,
             targetBucket: data.result.bucketIndex,
-            serverData: data
+            serverData: data,
+            trail: []
           };
 
           plinkoBalls.push(ball);
@@ -3708,119 +3756,123 @@
       plinkoCtx.clearRect(0, 0, 300, 350);
       drawPlinkoBoard();
 
+      const bucketAreaWidth = 220;
+      const startX_Buckets = 150 - bucketAreaWidth / 2;
+
       for (let i = plinkoBalls.length - 1; i >= 0; i--) {
         const ball = plinkoBalls[i];
-        ball.y += ball.vy;
-        ball.x += ball.vx;
-        ball.vy += 0.15; // Gravity
-        ball.vx *= 0.99; // Air resistance
-
-        // Check collision with pins
-        const currentRow = Math.floor((ball.y - 50) / PLINKO_ROW_SPACING);
-        if (currentRow >= 0 && currentRow > ball.row && currentRow < PLINKO_ROWS) {
-          ball.row = currentRow;
-          const pinsInRow = currentRow + 1;
-          const rowWidth = pinsInRow * PLINKO_PIN_X_SPACING;
-          const startX = 150 - rowWidth / 2 + PLINKO_PIN_X_SPACING / 2;
-          
-          let closestPinX = startX;
-          let minDist = Math.abs(ball.x - startX);
-          for (let p = 1; p < pinsInRow; p++) {
-            const px = startX + p * PLINKO_PIN_X_SPACING;
-            const d = Math.abs(ball.x - px);
-            if (d < minDist) {
-              minDist = d;
-              closestPinX = px;
-            }
-          }
-
-          if (minDist < 15) {
-            ball.vx = (ball.x > closestPinX ? 1 : -1) * (1 + Math.random() * 2);
-            ball.vy = 1.5;
-            playSound('plinko');
-          }
+        
+        // Physics update
+        ball.vy += 0.25; // Slightly stronger gravity for realism
+        ball.vx *= 0.992; // Air resistance
+        
+        // Target pulling logic (magnet) - ONLY at the very bottom
+        if (ball.y > 270 && ball.targetBucket !== undefined) {
+             const targetX = startX_Buckets + (ball.targetBucket + 0.5) * (bucketAreaWidth / 13);
+             const distToTarget = targetX - ball.x;
+             // Gradually increase pull as we get lower
+             const strength = Math.min(0.08, (ball.y - 270) * 0.002);
+             ball.vx += distToTarget * strength;
         }
 
-        // Extra blocker pins collision
-        const extraPinY = 315;
-        const leftExtraX = 40 + (220 / 18);
-        const rightExtraX = 260 - (220 / 18);
-        [leftExtraX, rightExtraX].forEach(px => {
-          const dx = ball.x - px;
-          const dy = ball.y - extraPinY;
-          if (Math.sqrt(dx*dx + dy*dy) < (PLINKO_PIN_RADIUS + PLINKO_BALL_RADIUS + 2)) {
-            if (ball.y < extraPinY + 5) { // Only bounce if hitting top/side
-              ball.vx = (ball.x > px ? 1 : -1) * (1 + Math.random() * 2);
-              ball.vy = 1.5;
-              ball.y = extraPinY - 5; // Prevent getting stuck
-              playSound('plinko');
+        ball.y += ball.vy;
+        ball.x += ball.vx;
+
+        // Wall collisions
+        if (ball.x < 15) { ball.x = 15; ball.vx *= -0.3; }
+        if (ball.x > 285) { ball.x = 285; ball.vx *= -0.3; }
+
+        // Pin collisions (Pyramid Logic)
+        const rowHeight = PLINKO_ROW_SPACING;
+        const startY = 60;
+        
+        for (let r = 0; r < PLINKO_ROWS; r++) {
+            const py = startY + r * rowHeight;
+            const pinsInRow = r + 3;
+            const rowWidth = (pinsInRow - 1) * PLINKO_PIN_X_SPACING;
+            const rowStartX = 150 - rowWidth / 2;
+
+            for (let p = 0; p < pinsInRow; p++) {
+                const px = rowStartX + p * PLINKO_PIN_X_SPACING;
+                const dx = ball.x - px;
+                const dy = ball.y - py;
+                const distSq = dx * dx + dy * dy;
+                const minDist = PLINKO_PIN_RADIUS + PLINKO_BALL_RADIUS;
+
+                if (distSq < minDist * minDist) {
+                    const dist = Math.sqrt(distSq);
+                    // Normal vector
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+
+                    // Resolve overlap
+                    ball.x = px + nx * minDist;
+                    ball.y = py + ny * minDist;
+
+                    // Bounce velocity
+                    const dot = ball.vx * nx + ball.vy * ny;
+                    const bounce = 0.4; // Restitution
+                    ball.vx -= (1 + bounce) * dot * nx;
+                    ball.vy -= (1 + bounce) * dot * ny;
+
+                    // Add slight random jitter to prevent perfect stacking/flinging
+                    ball.vx += (Math.random() - 0.5) * 0.1;
+                    
+                    if (Math.abs(dot) > 1) playSound('plinko');
+                }
             }
-          }
-        });
+        }
 
-        // Keep in bounds (Tighter walls)
-        if (ball.x < 40) { ball.x = 40; ball.vx *= -0.5; }
-        if (ball.x > 260) { ball.x = 260; ball.vx *= -0.5; }
-
-        // Draw ball
+        // Draw ball (moved back into loop)
         plinkoCtx.beginPath();
         plinkoCtx.arc(ball.x, ball.y, PLINKO_BALL_RADIUS, 0, Math.PI * 2);
         plinkoCtx.fillStyle = '#facc15';
-        plinkoCtx.shadowBlur = 10;
-        plinkoCtx.shadowColor = 'rgba(250, 204, 21, 0.5)';
+        plinkoCtx.shadowBlur = 8;
+        plinkoCtx.shadowColor = 'rgba(250, 204, 21, 0.4)';
         plinkoCtx.fill();
         plinkoCtx.closePath();
         plinkoCtx.shadowBlur = 0;
 
         // Check if reached bottom
-        if (ball.y > 335) {
+        if (ball.y > 330) {
           const data = ball.serverData;
-          const bucketIndex = data.result.bucketIndex;
-          const mult = data.result.multiplier;
-          const winVal = Number(data.winAmount);
+          if (data) {
+              const mult = data.result.multiplier;
+              const winVal = Number(data.winAmount);
 
-          isInternalUpdate = true;
-          updateBananas(Number(data.newBalance));
-          isInternalUpdate = false;
-          
-          if (mult > 1) {
-              spinResultMsg = `Landed on ${mult}x! Won ${formatNumber(winVal)} 🍌!`;
-              addLog('win', winVal, bananas, `Plinko: ${mult}x`);
+              isInternalUpdate = true;
+              updateBananas(Number(data.newBalance));
+              isInternalUpdate = false;
               
-              // XP Gain
-              const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
-              updateXp(xp + xpGain);
-              while (xp >= getXpForLevel(level)) {
-                  updateXp(xp - getXpForLevel(level));
-                  level++;
+              if (mult > 1) {
+                  spinResultMsg = `Landed on ${mult}x! Won ${formatNumber(winVal)} 🍌!`;
+                  addLog('win', winVal, bananas, `Plinko: ${mult}x`);
+                  
+                  // XP Gain
+                  const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+                  updateXp(xp + xpGain);
+                  while (xp >= getXpForLevel(level)) {
+                      updateXp(xp - getXpForLevel(level));
+                      level++;
+                  }
+                  playSound('win');
+              } else if (mult < 1) {
+                const loss = (BigInt(betAmount) - BigInt(winVal)).toString();
+                if (betAmount > 100000) unlockTitle('unlucky');
+                spinResultMsg = `Landed on ${mult}x. Lost ${formatNumber(loss)} 🍌.`;
+                addLog('loss', Number(loss), bananas, `Plinko: ${mult}x`);
+                if (activeGadgets[2]) showInsuranceButton(Number(loss));
+                playSound('loss');
+              } else {
+                spinResultMsg = `Landed on 1x. Push!`;
+                addLog('push', 0, bananas, 'Plinko: 1x');
               }
-              playSound('win');
-          } else if (mult < 1) {
-            const loss = betAmount - winVal;
-            if (betAmount > 100000) unlockTitle('unlucky');
-            spinResultMsg = `Landed on ${mult}x. Lost ${formatNumber(loss)} 🍌.`;
-            addLog('loss', loss, bananas, `Plinko: ${mult}x`);
-            if (activeGadgets[2]) showInsuranceButton(loss);
-            playSound('loss');
-          } else {
-            spinResultMsg = `Landed on 1x. Push!`;
-            addLog('push', 0, bananas, 'Plinko: 1x');
           }
           
           plinkoBalls.splice(i, 1);
           endGameTurn();
         }
       }
-
-      // Guide ball towards target bucket visually if it's close to the bottom
-      plinkoBalls.forEach(ball => {
-          if (ball.y > 250 && ball.targetBucket !== undefined) {
-              const bucketAreaWidth = 220;
-              const targetX = 40 + (ball.targetBucket + 0.5) * (bucketAreaWidth / 11);
-              const dx = targetX - ball.x;
-              ball.vx += dx * 0.05; // Gentle pull towards target
-          }
-      });
 
       if (plinkoBalls.length > 0) {
         requestAnimationFrame(animatePlinko);
@@ -3832,20 +3884,22 @@
       plinkoCtx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
       plinkoCtx.lineWidth = 2;
       plinkoCtx.beginPath();
-      plinkoCtx.moveTo(40, 0);
-      plinkoCtx.lineTo(40, 350);
-      plinkoCtx.moveTo(260, 0);
-      plinkoCtx.lineTo(260, 350);
+      plinkoCtx.moveTo(15, 0);
+      plinkoCtx.lineTo(15, 330);
+      plinkoCtx.moveTo(285, 0);
+      plinkoCtx.lineTo(285, 330);
       plinkoCtx.stroke();
 
       plinkoCtx.fillStyle = '#10b981';
-      for (let row = 0; row < PLINKO_ROWS; row++) {
-        const pinsInRow = row + 1;
-        const rowY = 50 + row * PLINKO_ROW_SPACING;
-        const rowWidth = pinsInRow * PLINKO_PIN_X_SPACING;
-        const startX = 150 - rowWidth / 2 + PLINKO_PIN_X_SPACING / 2;
-        for (let pin = 0; pin < pinsInRow; pin++) {
-          const pinX = startX + pin * PLINKO_PIN_X_SPACING;
+      const startY = 60;
+      for (let r = 0; r < PLINKO_ROWS; r++) {
+        const rowY = startY + r * PLINKO_ROW_SPACING;
+        const pinsInRow = r + 3;
+        const rowWidth = (pinsInRow - 1) * PLINKO_PIN_X_SPACING;
+        const rowStartX = 150 - rowWidth / 2;
+        
+        for (let p = 0; p < pinsInRow; p++) {
+          const pinX = rowStartX + p * PLINKO_PIN_X_SPACING;
           plinkoCtx.beginPath();
           plinkoCtx.arc(pinX, rowY, PLINKO_PIN_RADIUS, 0, Math.PI * 2);
           plinkoCtx.fill();
@@ -3853,15 +3907,18 @@
         }
       }
 
-      // Draw extra blocker pins
-      const extraPinY = 315;
-      const leftExtraX = 40 + (220 / 18);
-      const rightExtraX = 260 - (220 / 18);
-      [leftExtraX, rightExtraX].forEach(px => {
-        plinkoCtx.beginPath();
-        plinkoCtx.arc(px, extraPinY, PLINKO_PIN_RADIUS, 0, Math.PI * 2);
-        plinkoCtx.fill();
-        plinkoCtx.closePath();
+      // Draw multipliers at bottom
+      plinkoCtx.font = 'bold 8px Inter';
+      plinkoCtx.textAlign = 'center';
+      const bucketAreaWidth = 220;
+      const startX_Buckets = 150 - bucketAreaWidth / 2;
+      const bucketWidth = bucketAreaWidth / 13;
+      
+      PLINKO_MULTIPLIERS.forEach((m, idx) => {
+          const bx = startX_Buckets + (idx + 0.5) * bucketWidth;
+          const by = 345;
+          plinkoCtx.fillStyle = m >= 1 ? '#fbbf24' : '#10b981';
+          plinkoCtx.fillText(m + 'x', bx, by);
       });
     }
 
@@ -4399,6 +4456,81 @@
         
         savePersistentData();
         renderInventory();
+    }
+
+    // --- SKIN REGISTRY LOGIC ---
+    let globalSkinTotals = {};
+
+    async function fetchGlobalInventory() {
+        try {
+            const data = await fetchWithRetry('/api/global-inventory', { method: 'GET' });
+            if (data && data.success) {
+                globalSkinTotals = data.totals;
+                console.log("[REGISTRY] Loaded global inventory totals.");
+            }
+        } catch (e) {
+            console.error("Failed to fetch global inventory:", e);
+        }
+    }
+
+    function openSkinValuesModal() {
+        const modal = document.getElementById('skin-values-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Fetch fresh data
+        fetchSkinValues();
+        fetchGlobalInventory().then(() => updateSkinValuesTable());
+    }
+
+    function closeSkinValuesModal() {
+        const modal = document.getElementById('skin-values-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function updateSkinValuesTable(sortBy = 'rarity') {
+        const tbody = document.getElementById('skin-values-tbody');
+        if (!tbody) return;
+
+        let sortedSkins = [...SKINS];
+
+        const rarityOrder = { 'Legendary': 5, 'Mythic': 4, 'Epic': 3, 'Rare': 2, 'Common': 1 };
+
+        if (sortBy === 'rarity') {
+            sortedSkins.sort((a, b) => rarityOrder[b.rarity] - rarityOrder[a.rarity]);
+        } else if (sortBy === 'name') {
+            sortedSkins.sort((a, b) => a.name.localeCompare(b.name));
+        } else if (sortBy === 'value') {
+            sortedSkins.sort((a, b) => {
+                const valA = dynamicSkinValues[a.id] || TRADE_RARITY_DEFAULTS[a.rarity] || 0;
+                const valB = dynamicSkinValues[b.id] || TRADE_RARITY_DEFAULTS[b.rarity] || 0;
+                return valB - valA;
+            });
+        } else if (sortBy === 'count') {
+            sortedSkins.sort((a, b) => (globalSkinTotals[b.id] || 0) - (globalSkinTotals[a.id] || 0));
+        }
+
+        tbody.innerHTML = sortedSkins.map(skin => {
+            const count = globalSkinTotals[skin.id] || 0;
+            const value = dynamicSkinValues[skin.id] || TRADE_RARITY_DEFAULTS[skin.rarity] || 0;
+            
+            return `
+                <tr class="bg-emerald-900/30 hover:bg-emerald-900/50 transition-colors">
+                    <td class="px-4 py-3 rounded-l-xl">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-black/20 rounded-lg flex items-center justify-center text-xl" style="border: 1px solid ${skin.color}">🍌</div>
+                            <div class="font-bold text-white">${skin.name}</div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-xs font-black uppercase" style="color: ${skin.color}">${skin.rarity}</td>
+                    <td class="px-4 py-3 text-right font-mono text-yellow-400 font-bold">${value.toLocaleString()} 🍌</td>
+                    <td class="px-4 py-3 text-right rounded-r-xl">
+                        <span class="bg-emerald-950 px-2 py-1 rounded text-[10px] font-bold text-emerald-500 border border-emerald-800">x${count.toLocaleString()}</span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     // --- BLACKJACK LOGIC ---
