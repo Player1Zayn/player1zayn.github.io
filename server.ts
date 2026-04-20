@@ -411,6 +411,12 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
 
         let winAmount = 0n;
         let resultData: any = {};
+        
+        let newInventory = user.inventory;
+        if (typeof newInventory === 'string') {
+            try { newInventory = JSON.parse(newInventory); } catch(e) { newInventory = {}; }
+        }
+        if (!newInventory || typeof newInventory !== 'object') newInventory = {};
 
         if (gameMode === 'roulette') {
             const rand = Math.random();
@@ -457,21 +463,40 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             
             for (let i = 0; i < slotCount; i++) {
                 let r = Math.random() * 100;
-                if (r < 2) resultSlots.push(JACKPOT_ICON);
-                else resultSlots.push(SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)]);
+                // Buffed Jackpot chance from 2% to 5%
+                if (r < 5) {
+                    resultSlots.push(JACKPOT_ICON);
+                } else {
+                    // Pity/Luck factor: if it's the 2nd or 3rd slot in a line, 
+                    // give a 15% chance to force it to match the previous slot for more wins
+                    if (i % 3 > 0 && Math.random() < 0.15) {
+                        resultSlots.push(resultSlots[i - 1]);
+                    } else {
+                        resultSlots.push(SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)]);
+                    }
+                }
             }
             resultData.slots = resultSlots;
 
             let totalWinMultiplier = 0;
+            let winType = 'none';
+
             const checkLine = (indices: number[]) => {
                 const icons = indices.map(idx => resultSlots[idx]);
                 if (icons.every(icon => icon === icons[0])) {
-                    if (icons[0] === JACKPOT_ICON) return 15;
-                    return 3;
+                    if (icons[0] === JACKPOT_ICON) {
+                        winType = 'jackpot';
+                        return 3; // 3x for 3 Jackpots
+                    }
+                    winType = 'triple';
+                    return 2; // 2x for 3 of the same
                 }
                 const counts: any = {};
                 icons.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
-                if (Object.values(counts).some((c: any) => c >= 2)) return 0.5;
+                if (Object.values(counts).some((c: any) => c >= 2)) {
+                    if (winType === 'none') winType = 'double';
+                    return 0.5; // 0.5x for 2 of the same
+                }
                 return 0;
             };
 
@@ -487,6 +512,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             } else {
                 totalWinMultiplier += checkLine([0, 1, 2]);
             }
+            
+            resultData.winType = winType;
 
             let baseWin = BigInt(Math.round(Number(bet) * totalWinMultiplier));
             
@@ -581,6 +608,9 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             // We need to subtract the cost
             currentBananas -= cost;
             
+            // Update inventory on server
+            newInventory[selectedSkin.id] = (newInventory[selectedSkin.id] || 0) + 1;
+            
             resultData.skin = selectedSkin;
             resultData.rarity = rarity;
             resultData.cost = String(cost);
@@ -589,10 +619,16 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         // Update balance
         const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
         
-        const { error: updateError } = await supabase.from('database').update({
+        const updatePayload: any = {
             score: String(newBananas),
             updated_at: new Date().toISOString()
-        }).eq('id', userId);
+        };
+        
+        if (gameMode === 'cases') {
+            updatePayload.inventory = JSON.stringify(newInventory);
+        }
+
+        const { error: updateError } = await supabase.from('database').update(updatePayload).eq('id', userId);
 
         if (updateError) throw updateError;
 
