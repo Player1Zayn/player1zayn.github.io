@@ -1932,6 +1932,15 @@
                     
                     unlockedTitles = serverTitles;
                     equippedTitle = data.equipped_title || null;
+                    if (data.inventory) {
+                        try {
+                            inventory = typeof data.inventory === 'string' ? JSON.parse(data.inventory) : data.inventory;
+                            if (typeof inventory !== 'object' || inventory === null) inventory = {};
+                        } catch (e) {
+                            console.error("Failed to parse inventory from server:", e);
+                            inventory = {};
+                        }
+                    }
 
                     isInternalUpdate = false;
                     
@@ -1952,9 +1961,11 @@
                     localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
                         userId, id: userId, name: playerName, bananas, coins, trees, 
                         gadgets: unlockedGadgets, activeGadgets, activeBoosts, level, xp,
-                        unlockedTitles, equippedTitle,
+                        unlockedTitles, equippedTitle, inventory,
                         expectedDbBananas, expectedDbCoins
                     }));
+                    // Also update the dedicated key just in case
+                    localStorage.setItem('bananaInventory', JSON.stringify(inventory));
                     updateGameUI();
                 } else if (expectedDbBananas === -1) {
                     // We have local progress but server is empty. 
@@ -2038,6 +2049,7 @@
           expectedDbBananas, expectedDbCoins
       };
       localStorage.setItem('bananaCasinoSave', JSON.stringify(saveData));
+      localStorage.setItem('bananaInventory', JSON.stringify(inventory));
 
       try { 
           const result = await fetchWithRetry('/api/save', {
@@ -4108,7 +4120,15 @@
                   spinResultMsg = "TAXES! The jungle government took your entire win!";
                   addLog('loss', betAmount, bananas, 'Slots Mega Bet Taxes');
               } else {
-                  spinResultMsg = `JACKPOT! You won ${formatNumber(winVal)} 🍌!`;
+                  if (data.result.winType === 'jackpot') {
+                      spinResultMsg = `JACKPOT! WON 3X YOUR BET! (${formatNumber(winVal)} 🍌)`;
+                  } else if (data.result.winType === 'triple') {
+                      spinResultMsg = `3 of the same! Won 2x your bet! (${formatNumber(winVal)} 🍌)`;
+                  } else if (data.result.winType === 'double') {
+                      spinResultMsg = `2 of the same! Won half your bet! (${formatNumber(winVal)} 🍌)`;
+                  } else {
+                      spinResultMsg = `You won ${formatNumber(winVal)} 🍌!`;
+                  }
                   addLog('win', winVal, bananas, 'Slots Win');
                   
                   // XP Gain
@@ -4252,6 +4272,7 @@
                 // Add to inventory
                 inventory[winningSkin.id] = (inventory[winningSkin.id] || 0) + 1;
                 localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+                savePersistentData();
 
                 playSound('win');
                 isPlaying = false;
@@ -4365,6 +4386,8 @@
         isInternalUpdate = true;
         updateBananas(bananas + price);
         isInternalUpdate = false;
+        
+        savePersistentData();
         
         // Visual feedback
         playSound('collect');
