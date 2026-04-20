@@ -805,7 +805,13 @@
                   <h3 class="text-white font-black text-xl">NORMAL CASE</h3>
                   <p class="text-emerald-400 text-xs">Basic banana skins</p>
                 </div>
-                <button onclick="openCase('normal')" class="px-6 py-3 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl border-b-4 border-emerald-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap">10,000 🍌</button>
+                <div class="flex flex-col gap-2">
+                    <button onclick="openCase('normal')" id="btn-open-normal-1" class="px-6 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl border-b-4 border-emerald-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap text-sm">1x: 10,000 🍌</button>
+                    <div class="flex gap-2">
+                        <button onclick="massOpenCase('normal', 5)" id="btn-open-normal-5" class="flex-1 py-1.5 bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-emerald-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">5x Auto</button>
+                        <button onclick="massOpenCase('normal', 10)" id="btn-open-normal-10" class="flex-1 py-1.5 bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-emerald-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">10x Auto</button>
+                    </div>
+                </div>
               </div>
               <!-- Booster Case -->
               <div class="w-full bg-blue-900/40 border-2 border-blue-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all">
@@ -814,7 +820,13 @@
                   <h3 class="text-white font-black text-xl">BOOSTER CASE</h3>
                   <p class="text-blue-400 text-xs">Better odds for Rares</p>
                 </div>
-                <button onclick="openCase('booster')" class="px-6 py-3 bg-blue-700 hover:bg-blue-600 text-white font-bold rounded-xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap">100,000 🍌</button>
+                <div class="flex flex-col gap-2">
+                    <button onclick="openCase('booster')" id="btn-open-booster-1" class="px-6 py-2 bg-blue-700 hover:bg-blue-600 text-white font-bold rounded-xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap text-sm">1x: 100,000 🍌</button>
+                    <div class="flex gap-2">
+                        <button onclick="massOpenCase('booster', 5)" id="btn-open-booster-5" class="flex-1 py-1.5 bg-blue-800/80 hover:bg-blue-700 text-blue-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-blue-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">5x Auto</button>
+                        <button onclick="massOpenCase('booster', 10)" id="btn-open-booster-10" class="flex-1 py-1.5 bg-blue-800/80 hover:bg-blue-700 text-blue-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-blue-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">10x Auto</button>
+                    </div>
+                </div>
               </div>
               <!-- Toverland Case -->
               <div class="w-full bg-purple-900/40 border-2 border-purple-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all">
@@ -823,7 +835,13 @@
                   <h3 class="text-white font-black text-xl">TOVERLAND CASE</h3>
                   <p class="text-purple-400 text-xs">High Mythic/Legendary chance</p>
                 </div>
-                <button onclick="openCase('toverland')" class="px-6 py-3 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-xl border-b-4 border-purple-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap">2,000,000 🍌</button>
+                <div class="flex flex-col gap-2">
+                    <button onclick="openCase('toverland')" id="btn-open-toverland-1" class="px-6 py-2 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-xl border-b-4 border-purple-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap text-sm">1x: 2M 🍌</button>
+                    <div class="flex gap-2">
+                        <button onclick="massOpenCase('toverland', 5)" id="btn-open-toverland-5" class="flex-1 py-1.5 bg-purple-800/80 hover:bg-purple-700 text-purple-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-purple-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">5x Auto</button>
+                        <button onclick="massOpenCase('toverland', 10)" id="btn-open-toverland-10" class="flex-1 py-1.5 bg-purple-800/80 hover:bg-purple-700 text-purple-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-purple-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">10x Auto</button>
+                    </div>
+                </div>
               </div>
             </div>
 
@@ -4263,7 +4281,7 @@
         document.getElementById('case-result-view').classList.add('hidden');
 
         try {
-            const response = await fetch(API_BASE + '/api/play', {
+            const data = await fetchWithRetry('/api/play', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -4275,7 +4293,6 @@
                 })
             });
 
-            const data = await response.json();
             if (!data.success) {
                 isPlaying = false;
                 document.getElementById('case-buy-view').classList.remove('hidden');
@@ -4283,70 +4300,20 @@
                 throw new Error(data.error || "Server error");
             }
 
-            // Start animation
-            const spinner = document.getElementById('case-spinner');
-            const view = document.getElementById('case-opening-view');
-            view.classList.remove('hidden');
-            spinner.innerHTML = '';
-            spinner.style.transition = 'none';
-            spinner.style.transform = 'translateX(0px)';
-
-            // Generate 50 random items for the spinner
-            const items = [];
-            for (let i = 0; i < 50; i++) {
-                const randomSkin = SKINS[Math.floor(Math.random() * SKINS.length)];
-                items.push(randomSkin);
-            }
-            // Set the winning item at index 45
             const winningSkin = data.result.skin;
-            items[45] = winningSkin;
+            await runCaseOpeningAnimation(winningSkin, data.newBalance);
 
-            items.forEach((skin, i) => {
-                const itemEl = document.createElement('div');
-                itemEl.className = `w-32 h-32 shrink-0 bg-emerald-900/50 border-2 rounded-xl flex flex-col items-center justify-center p-2 text-center`;
-                itemEl.style.borderColor = skin.color;
-                itemEl.innerHTML = `
-                    <div class="text-3xl mb-1">🍌</div>
-                    <div class="text-[10px] font-black uppercase" style="color: ${skin.color}">${skin.rarity}</div>
-                    <div class="text-[12px] font-bold text-white leading-tight">${skin.name}</div>
-                `;
-                spinner.appendChild(itemEl);
-            });
-
-            // Trigger animation
-            setTimeout(() => {
-                const itemWidth = 128 + 16; // w-32 (128px) + gap-4 (16px)
-                const offset = (45 * itemWidth) - (view.offsetWidth / 2) + (itemWidth / 2);
-                spinner.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)';
-                spinner.style.transform = `translateX(-${offset}px)`;
-            }, 50);
-
-            setTimeout(() => {
-                isInternalUpdate = true;
-                updateBananas(Number(data.newBalance));
-                isInternalUpdate = false;
-
-                // Add to inventory
-                inventory[winningSkin.id] = (inventory[winningSkin.id] || 0) + 1;
-                localStorage.setItem('bananaInventory', JSON.stringify(inventory));
-                savePersistentData();
-
-                playSound('win');
-                isPlaying = false;
-                
-                // Hide animation and show result
-                view.classList.add('hidden');
-                const resultView = document.getElementById('case-result-view');
-                document.getElementById('result-skin-name').innerText = winningSkin.name;
-                document.getElementById('result-skin-name').style.color = winningSkin.color;
-                const rarityEl = document.getElementById('result-skin-rarity');
-                rarityEl.innerText = winningSkin.rarity;
-                rarityEl.style.backgroundColor = winningSkin.color + '33'; // 20% opacity
-                rarityEl.style.color = winningSkin.color;
-                rarityEl.style.border = `1px solid ${winningSkin.color}`;
-                
-                resultView.classList.remove('hidden');
-            }, 4500);
+            // Show result
+            document.getElementById('result-skin-name').innerText = winningSkin.name;
+            document.getElementById('result-skin-name').style.color = winningSkin.color;
+            const rarityEl = document.getElementById('result-skin-rarity');
+            rarityEl.innerText = winningSkin.rarity;
+            rarityEl.style.backgroundColor = winningSkin.color + '33';
+            rarityEl.style.color = winningSkin.color;
+            rarityEl.style.border = `1px solid ${winningSkin.color}`;
+            
+            document.getElementById('case-result-view').classList.remove('hidden');
+            isPlaying = false;
 
         } catch (err) {
             console.error("Case error:", err);
@@ -4356,6 +4323,114 @@
             spinResultMsg = "Error: " + err.message;
             updateGameUI();
         }
+    }
+
+    async function massOpenCase(caseType, count) {
+        if (isPlaying) return;
+        const costs = { 'normal': 10000, 'booster': 100000, 'toverland': 2000000 };
+        const totalCost = costs[caseType] * count;
+        
+        if (bananas < totalCost) {
+            alert(`Not enough bananas! You need ${formatNumber(totalCost)} 🍌 for ${count}x opening.`);
+            return;
+        }
+
+        isPlaying = true;
+        document.getElementById('case-buy-view').classList.add('hidden');
+        document.getElementById('cases-header').classList.add('hidden');
+        document.getElementById('case-inventory-view').classList.add('hidden');
+        document.getElementById('case-result-view').classList.add('hidden');
+
+        for (let i = 0; i < count; i++) {
+            try {
+                const data = await fetchWithRetry('/api/play', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ gameMode: 'cases', caseType: caseType })
+                });
+
+                if (!data.success) throw new Error(data.error || "Server error");
+
+                const winningSkin = data.result.skin;
+                await runCaseOpeningAnimation(winningSkin, data.newBalance);
+
+                // Show result for 1 second
+                const resultView = document.getElementById('case-result-view');
+                document.getElementById('result-skin-name').innerText = `[${i + 1}/${count}] ${winningSkin.name}`;
+                document.getElementById('result-skin-name').style.color = winningSkin.color;
+                const rarityEl = document.getElementById('result-skin-rarity');
+                rarityEl.innerText = winningSkin.rarity;
+                rarityEl.style.backgroundColor = winningSkin.color + '33';
+                rarityEl.style.color = winningSkin.color;
+                rarityEl.style.border = `1px solid ${winningSkin.color}`;
+                
+                resultView.classList.remove('hidden');
+                
+                // 1 second delay to look at the skin
+                await new Promise(r => setTimeout(r, 1000));
+                
+                if (i < count - 1) {
+                    resultView.classList.add('hidden');
+                }
+            } catch (err) {
+                showNotification("Mass opening stopped: " + err.message, "error");
+                break;
+            }
+        }
+
+        isPlaying = false;
+        // Keep the last result visible, show button to go back
+    }
+
+    async function runCaseOpeningAnimation(winningSkin, newBalance) {
+        const spinner = document.getElementById('case-spinner');
+        const view = document.getElementById('case-opening-view');
+        view.classList.remove('hidden');
+        spinner.innerHTML = '';
+        spinner.style.transition = 'none';
+        spinner.style.transform = 'translateX(0px)';
+
+        const items = [];
+        for (let i = 0; i < 50; i++) {
+            const randomSkin = SKINS[Math.floor(Math.random() * SKINS.length)];
+            items.push(randomSkin);
+        }
+        items[45] = winningSkin;
+
+        items.forEach((skin, i) => {
+            const itemEl = document.createElement('div');
+            itemEl.className = `w-32 h-32 shrink-0 bg-emerald-900/50 border-2 rounded-xl flex flex-col items-center justify-center p-2 text-center`;
+            itemEl.style.borderColor = skin.color;
+            itemEl.innerHTML = `
+                <div class="text-3xl mb-1">🍌</div>
+                <div class="text-[10px] font-black uppercase" style="color: ${skin.color}">${skin.rarity}</div>
+                <div class="text-[12px] font-bold text-white leading-tight">${skin.name}</div>
+            `;
+            spinner.appendChild(itemEl);
+        });
+
+        return new Promise(resolve => {
+            setTimeout(() => {
+                const itemWidth = 128 + 16;
+                const offset = (45 * itemWidth) - (view.offsetWidth / 2) + (itemWidth / 2);
+                spinner.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)';
+                spinner.style.transform = `translateX(-${offset}px)`;
+            }, 50);
+
+            setTimeout(() => {
+                isInternalUpdate = true;
+                updateBananas(Number(newBalance));
+                isInternalUpdate = false;
+
+                inventory[winningSkin.id] = (inventory[winningSkin.id] || 0) + 1;
+                localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+                savePersistentData();
+
+                playSound('win');
+                view.classList.add('hidden');
+                resolve();
+            }, 4500);
+        });
     }
 
     let selectedInventorySkin = null;
@@ -4745,6 +4820,17 @@
           elClaimBananasBtnMobile.disabled = bananaBox <= 0;
       }
 
+      // Update Case Buttons Disabling
+      const costs = { 'normal': 10000, 'booster': 100000, 'toverland': 2000000 };
+      ['normal', 'booster', 'toverland'].forEach(c => {
+          const btn1 = document.getElementById(`btn-open-${c}-1`);
+          const btn5 = document.getElementById(`btn-open-${c}-5`);
+          const btn10 = document.getElementById(`btn-open-${c}-10`);
+          if (btn1) btn1.disabled = bananas < costs[c];
+          if (btn5) btn5.disabled = bananas < costs[c] * 5;
+          if (btn10) btn10.disabled = bananas < costs[c] * 10;
+      });
+
       renderTreeGrid();
       renderGadgets();
       
@@ -5037,7 +5123,7 @@
         claimInsurance, bjHit, bjStand, copyUserId, handleTreeClick, buyGadget,
         claimBananas,
         toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
-        handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle, forceSync, openCase, showCasesInventory, closeCaseResult, sellSkin,
+        handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle, forceSync, openCase, massOpenCase, showCasesInventory, closeCaseResult, sellSkin,
         openSkinValuesModal, closeSkinValuesModal, updateSkinValuesTable
     };
 
