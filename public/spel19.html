@@ -1702,6 +1702,9 @@
       // Initialize server status check
       await checkServerStatus();
       setInterval(checkServerStatus, 5000);
+
+      // Fetch dynamic skin values for trading
+      await fetchSkinValues();
       
       // Initialize leaderboard and auto-login if token exists
       if (authToken) {
@@ -2134,8 +2137,21 @@
     let tradePollingInterval = null;
     let tradeCountdownInterval = null;
     let selectedTradeSkins = []; // My skins for the trade
+    let dynamicSkinValues = {}; // Fetched from server
 
-    const TRADE_SKIN_VALUES = {
+    async function fetchSkinValues() {
+        try {
+            const data = await fetchWithRetry('/api/skin-values', { method: 'GET' });
+            if (data && !data.error) {
+                dynamicSkinValues = data;
+                console.log("[SKIN VALUES] Loaded dynamic values.");
+            }
+        } catch (e) {
+            console.error("Failed to fetch skin values:", e);
+        }
+    }
+
+    const TRADE_RARITY_DEFAULTS = {
         'Common': 1000,
         'Rare': 15000,
         'Epic': 200000,
@@ -2146,8 +2162,13 @@
     function calculateTradeTotal(skinIds) {
         if (!skinIds) return 0;
         return skinIds.reduce((total, id) => {
+            // 1. Try dynamic value
+            if (dynamicSkinValues[id] !== undefined) {
+                return total + dynamicSkinValues[id];
+            }
+            // 2. Fallback to rarity
             const skin = SKINS.find(s => s.id === id);
-            return total + (TRADE_SKIN_VALUES[skin?.rarity || 'Common'] || 0);
+            return total + (TRADE_RARITY_DEFAULTS[skin?.rarity || 'Common'] || 0);
         }, 0);
     }
 
