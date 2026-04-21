@@ -468,7 +468,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             resultData.winningColor = winningColor;
 
             if (betColor === winningColor) {
-                const mult = winningColor === 'green' ? 3n : 1n;
+                // Multipliers are TOTAL PAYOUT (Bet + Profit)
+                const mult = winningColor === 'green' ? 14n : 2n;
                 let baseWin = bet * mult;
                 
                 // Mega Bet logic
@@ -523,16 +524,16 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 if (icons.every(icon => icon === icons[0])) {
                     if (icons[0] === JACKPOT_ICON) {
                         winType = 'jackpot';
-                        return 3; // 3x for 3 Jackpots
+                        return 10; // 10x Total Payout for Jackpot
                     }
                     winType = 'triple';
-                    return 2; // 2x for 3 of the same
+                    return 3; // 3x Total Payout for 3 of the same
                 }
                 const counts: any = {};
                 icons.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
                 if (Object.values(counts).some((c: any) => c >= 2)) {
                     if (winType === 'none') winType = 'double';
-                    return 0.5; // 0.5x for 2 of the same
+                    return 1; // 1x Total Payout (Push) for 2 of the same
                 }
                 return 0;
             };
@@ -591,6 +592,18 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             } else {
                 winAmount = baseWin;
             }
+        } else if (gameMode === 'blackjack') {
+            const bjResult = req.body.bjResult; // 'win', 'blackjack', 'dealerBust', 'lose', 'bust', 'push'
+            if (bjResult === 'win' || bjResult === 'dealerBust') {
+                winAmount = totalBet * 2n;
+            } else if (bjResult === 'blackjack') {
+                winAmount = totalBet * 5n / 2n; // 2.5x
+            } else if (bjResult === 'push') {
+                winAmount = totalBet;
+            } else {
+                winAmount = 0n;
+            }
+            resultData.reason = bjResult;
         } else if (gameMode === 'plinko') {
             // Plinko probabilities (matching client V5.11 multipliers)
             // Multipliers: [10, 1.5, 1.1, 1.0, 0.5, 0.3, 0.2, 0.3, 0.5, 1.0, 1.1, 1.5, 10]
@@ -666,11 +679,25 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         // Update balance
         const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
         
-        const updatePayload: any = {
+        let updatePayload: any = {
             score: String(newBananas),
             updated_at: new Date().toISOString()
         };
         
+        // Royal Banana Pass Progress
+        let earnedRoyalXP = 0;
+        if (gameMode !== 'cases') {
+            const isWin = winAmount > totalBet;
+            // Only count wins if the bet was more than 5% of entire balance
+            const isEligibleBet = currentBananas > 0n && totalBet >= currentBananas / 20n;
+            
+            if (isWin && isEligibleBet) {
+                updatePayload.royal_xp = (user.royal_xp || 0) + 1;
+                updatePayload.wins_since_royal_xp = 0; // Reset wins-since counter as it's no longer used for award
+                earnedRoyalXP = 1;
+            }
+        }
+
         if (gameMode === 'cases') {
             updatePayload.inventory = JSON.stringify(newInventory);
         }
@@ -683,7 +710,9 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             success: true,
             winAmount: String(winAmount),
             newBalance: String(newBananas),
-            result: resultData
+            result: resultData,
+            royalXP: updatePayload.royal_xp,
+            earnedRoyalXP: earnedRoyalXP
         });
 
     } catch (error: any) {
@@ -1148,6 +1177,155 @@ async function startServer() {
   process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception thrown:', err);
   });
+
+// --- ROYAL BANANA PASS ---
+
+app.get("/api/royal-pass/status", authenticateToken, async (req: any, res) => {
+    try {
+        const supabase = getSupabase();
+        const userId = req.user.userId;
+
+        // 1. Get Config
+        const { data: config, error: configError } = await supabase
+            .from('royal_pass_config')
+            .select('*')
+            .eq('active', true)
+            .order('end_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (configError) throw configError;
+
+        // 2. Get Rewards
+        const { data: rewards, error: rewardsError } = await supabase
+            .from('royal_pass_rewards')
+            .select('*')
+            .order('level', { ascending: true });
+
+        if (rewardsError) throw rewardsError;
+
+        // 3. Get User Progress
+        const { data: user, error: userError } = await supabase
+            .from('database')
+            .select('royal_xp, royal_claimed')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (userError) throw userError;
+
+        res.json({
+            config,
+            rewards,
+            user: {
+                royal_xp: user?.royal_xp || 0,
+                royal_claimed: user?.royal_claimed || []
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post("/api/royal-pass/claim", authenticateToken, async (req: any, res) => {
+    const { level } = req.body;
+    const userId = req.user.userId;
+
+    try {
+        const supabase = getSupabase();
+
+        // 1. Validate Level
+        const { data: reward, error: rewardError } = await supabase
+            .from('royal_pass_rewards')
+            .select('*')
+            .eq('level', level)
+            .maybeSingle();
+
+        if (rewardError || !reward) return res.status(404).json({ error: "Reward not found" });
+
+        // 2. Validate User Progress
+        const { data: user, error: userError } = await supabase
+            .from('database')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (userError || !user) return res.status(404).json({ error: "User not found" });
+
+        if ((user.royal_xp || 0) < level * 10) {
+            return res.status(400).json({ error: "Not enough Royal XP (Need 10 per level)" });
+        }
+
+        const claimed = user.royal_claimed || [];
+        if (claimed.includes(level)) {
+            return res.status(400).json({ error: "Reward already claimed" });
+        }
+
+        // 3. Check if Pass is Active
+        const { data: config } = await supabase
+            .from('royal_pass_config')
+            .select('end_date, active')
+            .eq('active', true)
+            .maybeSingle();
+
+        if (!config || !config.active || new Date() > new Date(config.end_date)) {
+            return res.status(403).json({ error: "Royal Banana Pass is not currently active" });
+        }
+
+        // 4. Update User Data based on Reward Type
+        let updatePayload: any = {
+            royal_claimed: [...claimed, level]
+        };
+
+        if (reward.type === 'bananas') {
+            updatePayload.score = String(BigInt(user.score) + BigInt(reward.amount));
+        } else if (reward.type === 'coins') {
+            updatePayload.coins = (user.coins || 0) + Number(reward.amount);
+        } else if (reward.type === 'gadget') {
+            const inventory = typeof user.gadgets === 'string' ? JSON.parse(user.gadgets) : (user.gadgets || []);
+            // Map reward.item_id to index if needed, or just push. 
+            // The gadget system uses boolean array for indices.
+            const gadgetMap: Record<string, number> = {
+                'lucky_monkey': 1,
+                'xp_bar': 2,
+                'streak_booster': 3,
+                'more_slots': 4,
+                'mega_bet': 5
+            };
+            const idx = gadgetMap[reward.item_id] || -1;
+            if (idx !== -1) {
+                inventory[idx] = true;
+                updatePayload.gadgets = JSON.stringify(inventory);
+            }
+        } else if (reward.type === 'skin') {
+            const inventory = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : (user.inventory || {});
+            inventory[reward.item_id] = (inventory[reward.item_id] || 0) + 1;
+            updatePayload.inventory = JSON.stringify(inventory);
+        } else if (reward.type === 'title') {
+            const titles = typeof user.unlocked_titles === 'string' ? JSON.parse(user.unlocked_titles) : (user.unlocked_titles || []);
+            if (!titles.includes(reward.item_id)) {
+                titles.push(reward.item_id);
+                updatePayload.unlocked_titles = JSON.stringify(titles);
+            }
+        } else if (reward.type === 'xp_boost') {
+            const hours = parseInt(reward.item_id) || 1;
+            const current = user.active_xp_boost ? new Date(user.active_xp_boost) : new Date();
+            const base = current > new Date() ? current : new Date();
+            updatePayload.active_xp_boost = new Date(base.getTime() + hours * 60 * 60 * 1000).toISOString();
+        } else if (reward.type === 'speed_grove') {
+            const hours = parseInt(reward.item_id) || 1;
+            const current = user.active_speed_boost ? new Date(user.active_speed_boost) : new Date();
+            const base = current > new Date() ? current : new Date();
+            updatePayload.active_speed_boost = new Date(base.getTime() + hours * 60 * 60 * 1000).toISOString();
+        }
+
+        const { error: updateError } = await supabase.from('database').update(updatePayload).eq('id', userId);
+        if (updateError) throw updateError;
+
+        res.json({ success: true, reward });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
