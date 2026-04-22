@@ -28,7 +28,16 @@
       border-radius: 10px;
     }
     
-    /* Mobile UI Fixes */
+    /* General Mobile UI Fixes */
+    @media (max-width: 767px) {
+      #game-viewing-area { padding-top: 2rem !important; }
+      .slot-machine-body { scale: 0.85; margin-bottom: 0 !important; }
+      #area-roulette > div { scale: 0.85; }
+      #area-plinko { scale: 0.85; }
+      #area-blackjack { scale: 0.85; }
+      #betting-controls-container { padding-bottom: calc(env(safe-area-inset-bottom) + 1rem) !important; }
+    }
+
     @media (max-width: 767px) and (orientation: landscape) {
       .slot-machine-body { transform: scale(0.7); transform-origin: center; margin-bottom: -2rem !important; }
       #area-roulette > div { transform: scale(0.75); transform-origin: center; }
@@ -324,6 +333,74 @@
   <!-- Notification Container -->
   <div id="notification-container" class="fixed top-6 right-6 z-[1000] flex flex-col gap-3 pointer-events-none"></div>
 
+    <!-- Mobile Options Menu -->
+    <div id="mobile-options-menu" class="fixed inset-0 z-[1000] bg-emerald-950/95 backdrop-blur-xl flex flex-col hidden p-6 overflow-y-auto">
+      <div class="flex justify-between items-center mb-8 shrink-0">
+        <h2 class="text-3xl font-black text-yellow-400 uppercase tracking-tighter italic">GAME OPTIONS</h2>
+        <button onclick="toggleMobileOptions()" class="w-12 h-12 flex items-center justify-center bg-emerald-900 border-2 border-yellow-500 text-yellow-500 rounded-full text-2xl font-black shadow-lg">
+          &times;
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 flex-1 pb-10">
+        <!-- Trees Section -->
+        <div class="bg-emerald-900/50 p-6 rounded-3xl border border-emerald-800">
+           <div class="flex justify-between items-center mb-4">
+              <h3 class="text-xl font-bold text-emerald-100 flex items-center gap-2">🌴 GROVE</h3>
+              <span class="text-xs text-emerald-400 font-bold bg-emerald-950 px-3 py-1 rounded-full border border-emerald-800">+<span id="display-tree-income-mobile">0</span> 🍌/s</span>
+           </div>
+           <div id="tree-grid-mobile" class="grid grid-cols-5 gap-2 mb-6"></div>
+           <button onclick="handleBuyTree(); toggleMobileOptions();" id="buy-tree-btn-mobile-opt" class="w-full py-4 rounded-xl font-black bg-emerald-800 text-emerald-100 shadow-lg flex flex-col items-center">
+             <span class="text-sm">BUY NEW TREE</span>
+             <span class="text-[10px] opacity-70">(-100 🍌)</span>
+           </button>
+        </div>
+
+        <!-- Gadgets Section -->
+        <div class="bg-emerald-900/50 p-6 rounded-3xl border border-emerald-800">
+          <h3 class="text-xl font-bold text-emerald-100 mb-4 flex items-center gap-2">⚙️ UPGRADES</h3>
+          <div id="gadgets-list-mobile" class="space-y-3"></div>
+        </div>
+
+        <!-- Global Scoreboard -->
+        <div class="bg-emerald-900/50 p-6 rounded-3xl border border-emerald-800">
+          <h3 class="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">🏆 SCOREBOARD</h3>
+          <div id="leaderboard-container-mobile" class="space-y-2 max-h-60 overflow-y-auto custom-scroll p-2">
+            <div class="text-center text-emerald-600 animate-pulse text-sm py-4">Syncing...</div>
+          </div>
+        </div>
+
+        <!-- Utility Buttons -->
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Game Modes in Options -->
+          <div class="col-span-2 bg-emerald-900/50 p-6 rounded-3xl border border-emerald-800">
+            <h3 class="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">🕹️ SWITCH GAME</h3>
+            <div class="grid grid-cols-2 gap-3">
+              <button onclick="setGameMode('roulette'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">ROULETTE</button>
+              <button onclick="setGameMode('slots'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">SLOTS</button>
+              <button onclick="setGameMode('blackjack'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">BLACKJACK</button>
+              <button onclick="setGameMode('plinko'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">PLINKO</button>
+              <button onclick="setGameMode('cases'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all col-span-2">CASES</button>
+            </div>
+          </div>
+
+          <button onclick="setView('shop'); toggleMobileOptions();" class="bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-500 font-black py-5 rounded-2xl border-2 border-yellow-500/50 flex flex-col items-center justify-center gap-2 transition-all">
+             <span class="text-4xl text-yellow-500">🛒</span>
+             <span class="text-xs uppercase tracking-widest">Shop</span>
+          </button>
+          <button onclick="openHistoryModal(); toggleMobileOptions();" class="bg-emerald-800/20 text-emerald-400 font-black py-5 rounded-2xl border-2 border-emerald-700/50 flex flex-col items-center justify-center gap-2 transition-all">
+             <span class="text-4xl text-emerald-400">📜</span>
+             <span class="text-xs uppercase tracking-widest">History</span>
+          </button>
+          <button onclick="toggleMute();" class="bg-emerald-800/20 text-emerald-400 font-black py-5 rounded-2xl border-2 border-emerald-700/50 flex flex-col items-center justify-center gap-2 transition-all col-span-2">
+             <span id="mute-icon-mobile" class="text-4xl">🔊</span>
+             <span class="text-xs uppercase tracking-widest">Sound Toggle</span>
+          </button>
+          <button onclick="handleLogout()" class="bg-red-900/20 text-red-500 font-black py-4 rounded-2xl border-2 border-red-900/50 col-span-2 uppercase text-sm tracking-[0.2em]">Logout</button>
+        </div>
+      </div>
+    </div>
+
   <div id="app" class="w-full h-full max-w-[1600px] bg-emerald-950 relative shadow-2xl flex flex-col hidden">
     
     <!-- VIEW: MENU -->
@@ -586,10 +663,15 @@
     </div>
 
     <!-- VIEW: GAME -->
-    <div id="view-game" class="flex-1 flex flex-col landscape:flex-row md:flex-row overflow-hidden hidden">
+    <div id="view-game" class="flex-1 flex flex-col sm:landscape:flex-row md:flex-row overflow-hidden hidden relative">
       
-      <!-- Right Sidebar (Moved to Top on Mobile): Trees & Gadgets -->
-      <div class="order-1 landscape:order-3 md:order-3 landscape:w-[28%] md:w-[28%] bg-emerald-900/50 border-b landscape:border-b-0 md:border-b-0 landscape:border-l md:border-l border-emerald-800 flex flex-col max-h-[30vh] landscape:max-h-none md:max-h-none shrink-0 z-20">
+      <!-- Mobile Options FAB -->
+      <button onclick="toggleMobileOptions()" class="md:hidden fixed bottom-6 right-6 z-50 w-16 h-16 bg-yellow-500 text-yellow-950 rounded-full shadow-[0_8px_0_rgb(180,83,9)] flex items-center justify-center text-3xl font-black transition-all active:translate-y-2 active:shadow-none animate-bounce hover:bg-yellow-400">
+        ⚙️
+      </button>
+
+      <!-- Right Sidebar (Trees & Gadgets) - Hidden on Mobile -->
+      <div class="hidden md:flex order-1 landscape:order-3 md:order-3 landscape:w-[28%] md:w-[28%] bg-emerald-900/50 border-b landscape:border-b-0 md:border-b-0 landscape:border-l md:border-l border-emerald-800 flex-col max-h-[30vh] landscape:max-h-none md:max-h-none shrink-0 z-20">
         <div class="p-3 md:p-6 bg-emerald-900 flex flex-row md:flex-col items-center justify-between md:justify-center shrink-0">
           <div class="text-left md:text-center">
             <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-widest md:mb-1"><span id="display-player-name">Player</span>'s Balance</p>
@@ -693,9 +775,9 @@
       <!-- Middle: Games -->
       <div class="order-2 md:order-2 flex-1 flex flex-col bg-emerald-950 overflow-hidden relative border-y md:border-y-0 md:border-x border-emerald-800/30">
         
-        <!-- Gamemode Tabs Overlay -->
-        <div class="absolute top-0 left-0 right-0 z-30 pointer-events-auto bg-emerald-900/90 backdrop-blur-sm border-b border-emerald-800 flex flex-col">
-            <div class="flex justify-between items-center px-2 py-1 md:px-4 md:py-2 bg-black/20">
+        <!-- Gamemode Tabs Overlay - Compact on Mobile (Hidden on Mobile) -->
+        <div class="absolute top-0 left-0 right-0 z-30 pointer-events-auto bg-emerald-900/90 backdrop-blur-sm border-b border-emerald-800 flex flex-col hidden md:flex">
+            <div class="hidden md:flex justify-between items-center px-2 py-1 md:px-4 md:py-2 bg-black/20">
               <button onclick="setView('menu')" class="text-emerald-500 hover:text-emerald-300 text-[10px] md:text-xs font-bold rounded flex items-center gap-1"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg> MENU</button>
               <div class="text-emerald-500 text-[10px] md:text-xs font-bold uppercase select-none">GAMEMODE</div>
               <div class="flex items-center gap-2">
@@ -722,7 +804,7 @@
         </div>
         
         <!-- Main Game Viewing Area -->
-        <div class="flex-1 flex flex-col items-center justify-center p-2 min-h-0 relative mt-4 landscape:mt-16 md:mt-24">
+        <div id="game-viewing-area" class="flex-1 flex flex-col items-center justify-center p-2 min-h-0 relative mt-4 md:mt-24">
           
           <!-- Game: ROULETTE -->
           <div id="area-roulette" class="w-full h-full flex flex-col items-center justify-center">
@@ -1053,8 +1135,8 @@
         </div>
       </div>
 
-      <!-- Left Sidebar (Moved to Bottom on Mobile): Scoreboard -->
-      <div class="order-3 landscape:order-1 md:order-1 landscape:w-[22%] md:w-[22%] bg-emerald-900/50 border-t landscape:border-t-0 md:border-t-0 landscape:border-r md:border-r border-emerald-800 flex flex-col h-[20vh] landscape:h-full md:h-full shrink-0 z-20">
+      <!-- Left Sidebar (Scoreboard) - Hidden on Mobile -->
+      <div class="hidden md:flex order-3 landscape:order-1 md:order-1 landscape:w-[22%] md:w-[22%] bg-emerald-900/50 border-t landscape:border-t-0 md:border-t-0 landscape:border-r md:border-r border-emerald-800 flex-col h-[20vh] landscape:h-full md:h-full shrink-0 z-20">
         <div class="p-2 md:p-4 bg-emerald-900 border-b border-emerald-800 flex items-center justify-center md:justify-start gap-2 shrink-0">
           <svg class="text-yellow-400 w-4 h-4 md:w-6 md:h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
           <h2 class="font-bold text-yellow-400 text-[10px] md:text-sm uppercase tracking-widest">Global Scoreboard</h2>
@@ -1151,8 +1233,7 @@
     window.addEventListener('resize', () => {
         // Skip resize detection in iframes as outerWidth/Height reflect the parent window
         if (window.self !== window.top) return;
-
-        const threshold = 160;
+        if (isMobile()) return; // Skip for mobile to prevent orientation tilt resets
         if (Math.abs(window.outerWidth - lastWidth) > threshold || Math.abs(window.outerHeight - lastHeight) > threshold) {
             addCheatTicket();
         }
@@ -1229,6 +1310,7 @@
     setInterval(() => {
         // Skip resize detection in iframes as outerWidth/Height reflect the parent window
         if (window.self !== window.top) return;
+        if (isMobile()) return; // Skip for mobile to prevent orientation tilt bans
 
         const widthThreshold = window.outerWidth - window.innerWidth > threshold;
         const heightThreshold = window.outerHeight - window.innerHeight > threshold;
@@ -1690,6 +1772,7 @@
     let winStreak = 0;
     let isAutoBetting = false;
     let autoBetTimer = null;
+    let mobileOptionsOpen = false;
 
     // Royal Banana Pass State
     let royalXP = 0;
@@ -5202,6 +5285,17 @@
       handleTreeBtnUpdate(document.getElementById('buy-tree-btn-mobile'), document.getElementById('buy-tree-title-mobile'), document.getElementById('buy-tree-subtitle-mobile'), false);
     }
 
+    function toggleMobileOptions() {
+        mobileOptionsOpen = !mobileOptionsOpen;
+        const menu = document.getElementById('mobile-options-menu');
+        if (mobileOptionsOpen) {
+            menu.classList.remove('hidden');
+            updateGameUI();
+        } else {
+            menu.classList.add('hidden');
+        }
+    }
+
     function renderTreeGrid() {
       let html = '';
       const firstEmpty = trees.indexOf(0);
@@ -5236,7 +5330,42 @@
         
         html += `<div onclick="handleTreeClick(${i})" class="aspect-square rounded-xl md:rounded-2xl flex items-center justify-center border-2 transition-transform ${bgClass} ${cursor} ${animation} relative">${content}</div>`;
       }
-      elTreeGrid.innerHTML = html;
+      
+      const treeGrid = document.getElementById('tree-grid');
+      const treeGridMobile = document.getElementById('tree-grid-mobile');
+      if (treeGrid) treeGrid.innerHTML = html;
+      if (treeGridMobile) treeGridMobile.innerHTML = html;
+
+      // Update tree income mobile
+      const elDisplayTreeIncomeMobile = document.getElementById('display-tree-income-mobile');
+      if (elDisplayTreeIncomeMobile) {
+          let avgBps = 0;
+          trees.forEach(l => {
+              if (l > 0) avgBps += (TREE_DATA[l].reward / TREE_DATA[l].ticks);
+          });
+          elDisplayTreeIncomeMobile.innerText = parseFloat(avgBps.toFixed(2));
+      }
+
+      // Update mobile option buy btn
+      const buyTreeBtnMobileOpt = document.getElementById('buy-tree-btn-mobile-opt');
+      if (buyTreeBtnMobileOpt) {
+          const isFull = trees.filter(l => l > 0).length >= 20;
+          if (isFull) {
+              buyTreeBtnMobileOpt.disabled = true;
+              buyTreeBtnMobileOpt.classList.add('opacity-50', 'grayscale');
+              buyTreeBtnMobileOpt.innerHTML = `<span class="text-sm">GROVE IS FULL</span>`;
+          } else {
+              const canAfford = bananas >= TREE_DATA[1].cost;
+              buyTreeBtnMobileOpt.disabled = !canAfford;
+              if (canAfford) {
+                  buyTreeBtnMobileOpt.classList.remove('bg-emerald-800', 'text-emerald-100', 'opacity-50');
+                  buyTreeBtnMobileOpt.classList.add('bg-emerald-500', 'text-emerald-950');
+              } else {
+                  buyTreeBtnMobileOpt.classList.add('bg-emerald-800', 'text-emerald-100', 'opacity-50');
+                  buyTreeBtnMobileOpt.classList.remove('bg-emerald-500', 'text-emerald-950');
+              }
+          }
+      }
     }
 
     function renderGadgets() {
@@ -5283,6 +5412,12 @@
         </div>`;
         
         document.getElementById('gadgets-list').innerHTML = headerHtml + html;
+        const gadgetsListMobile = document.getElementById('gadgets-list-mobile');
+        if (gadgetsListMobile) gadgetsListMobile.innerHTML = headerHtml + html;
+
+        // Update mute icon mobile
+        const muteIconMobile = document.getElementById('mute-icon-mobile');
+        if (muteIconMobile) muteIconMobile.innerText = isMuted ? '🔇' : '🔊';
     }
 
     function renderLeaderboard() {
@@ -5349,6 +5484,8 @@
         </div>`;
       });
       elLeaderboardContainer.innerHTML = html;
+      const lbMobile = document.getElementById('leaderboard-container-mobile');
+      if (lbMobile) lbMobile.innerHTML = html;
     }
 
     async function openRoyalPass() {
