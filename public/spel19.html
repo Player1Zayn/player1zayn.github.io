@@ -666,9 +666,31 @@
     <div id="view-game" class="flex-1 flex flex-col sm:landscape:flex-row md:flex-row overflow-hidden hidden relative">
       
       <!-- Mobile Options FAB -->
-      <button onclick="toggleMobileOptions()" class="md:hidden fixed bottom-6 right-6 z-50 w-16 h-16 bg-yellow-500 text-yellow-950 rounded-full shadow-[0_8px_0_rgb(180,83,9)] flex items-center justify-center text-3xl font-black transition-all active:translate-y-2 active:shadow-none animate-bounce hover:bg-yellow-400">
+      <button onclick="toggleMobileOptions()" class="md:hidden fixed top-20 right-4 z-50 w-14 h-14 bg-yellow-500 text-yellow-950 rounded-full shadow-[0_6px_0_rgb(180,83,9)] flex items-center justify-center text-2xl font-black transition-all active:translate-y-1 active:shadow-none animate-pulse hover:bg-yellow-400">
         ⚙️
       </button>
+
+      <!-- Mobile Balance & Level Header -->
+      <div class="md:hidden flex items-center justify-between px-4 py-2 bg-emerald-900 border-b border-emerald-800 shrink-0 z-40">
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <span id="display-bananas-mobile" class="text-lg font-black text-yellow-400">0 🍌</span>
+            <span id="display-coins-mobile" class="text-xs font-black text-yellow-200">0 🪙</span>
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <div class="w-16 h-1.5 bg-emerald-950 rounded-full overflow-hidden border border-emerald-800">
+               <div id="level-bar-progress-mobile" class="h-full bg-yellow-500" style="width: 0%"></div>
+            </div>
+            <span class="text-[8px] font-black text-emerald-400 uppercase">LVL <span id="display-level-mobile">1</span></span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+           <div id="win-streak-badge-mobile" class="hidden bg-yellow-500 text-yellow-950 px-1.5 py-0.5 rounded-full text-[8px] font-bold animate-pulse">🔥 <span id="win-streak-count-mobile">0</span></div>
+           <button onclick="claimBananas()" id="claim-bananas-btn-mobile-header" class="px-3 py-1 rounded-lg bg-yellow-400 text-yellow-900 font-black text-[10px] shadow-sm flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50" disabled>
+             📦 <span id="display-banana-box-mobile-header">0</span>
+           </button>
+        </div>
+      </div>
 
       <!-- Right Sidebar (Trees & Gadgets) - Hidden on Mobile -->
       <div class="hidden md:flex order-1 landscape:order-3 md:order-3 landscape:w-[28%] md:w-[28%] bg-emerald-900/50 border-b landscape:border-b-0 md:border-b-0 landscape:border-l md:border-l border-emerald-800 flex-col max-h-[30vh] landscape:max-h-none md:max-h-none shrink-0 z-20">
@@ -5084,11 +5106,16 @@
     window.updateGameUI = function() {
       elDisplayPlayerName.innerText = playerName;
       elDisplayBananas.innerText = `${formatNumber(bananas)} 🍌`;
+      const elDisplayBananasMobileHeader = document.getElementById('display-bananas-mobile');
+      if (elDisplayBananasMobileHeader) elDisplayBananasMobileHeader.innerText = `${formatNumber(bananas)} 🍌`;
+
       if (elDisplayUserId) {
           elDisplayUserId.value = userId ? (userId.substring(0, 10) + '...') : 'Loading...';
       }
       const elDisplayCoins = document.getElementById('display-coins');
+      const elDisplayCoinsMobileHeader = document.getElementById('display-coins-mobile');
       if (elDisplayCoins) elDisplayCoins.innerText = `${formatNumber(coins)} 🪙`;
+      if (elDisplayCoinsMobileHeader) elDisplayCoinsMobileHeader.innerText = `${formatNumber(coins)} 🪙`;
       
       // Update Level UI
       document.getElementById('display-level').innerText = level;
@@ -5097,13 +5124,25 @@
       document.getElementById('level-bar-progress').style.width = `${xpPercent}%`;
       document.getElementById('display-xp-percent').innerText = xpPercent;
 
+      // Update Mobile Header Level
+      const elLevelMobile = document.getElementById('display-level-mobile');
+      if (elLevelMobile) elLevelMobile.innerText = level;
+      const elLevelBarMobile = document.getElementById('level-bar-progress-mobile');
+      if (elLevelBarMobile) elLevelBarMobile.style.width = `${xpPercent}%`;
+
       const streakBadge = document.getElementById('win-streak-badge');
       const streakCount = document.getElementById('win-streak-count');
+      const streakBadgeMobileHeader = document.getElementById('win-streak-badge-mobile');
+      const streakCountMobileHeader = document.getElementById('win-streak-count-mobile');
+      
       if (winStreak > 0 && activeGadgets[3]) {
-          streakBadge.classList.remove('hidden');
-          streakCount.innerText = winStreak;
+          if (streakBadge) streakBadge.classList.remove('hidden');
+          if (streakCount) streakCount.innerText = winStreak;
+          if (streakBadgeMobileHeader) streakBadgeMobileHeader.classList.remove('hidden');
+          if (streakCountMobileHeader) streakCountMobileHeader.innerText = winStreak;
       } else {
-          streakBadge.classList.add('hidden');
+          if (streakBadge) streakBadge.classList.add('hidden');
+          if (streakBadgeMobileHeader) streakBadgeMobileHeader.classList.add('hidden');
       }
       
       const treesOwned = trees.filter(l => l > 0).length;
@@ -5120,17 +5159,23 @@
       // Update Banana Box UI
       const elDisplayBananaBox = document.getElementById('display-banana-box');
       const elDisplayBananaBoxMobile = document.getElementById('display-banana-box-mobile');
+      const elDisplayBananaBoxMobileHeader = document.getElementById('display-banana-box-mobile-header');
       const elClaimBananasBtn = document.getElementById('claim-bananas-btn');
       const elClaimBananasBtnMobile = document.getElementById('claim-bananas-btn-mobile');
+      const elClaimBananasBtnMobileHeader = document.getElementById('claim-bananas-btn-mobile-header');
       
       if (elDisplayBananaBox) elDisplayBananaBox.innerText = `${formatNumber(bananaBox)} 🍌`;
       if (elDisplayBananaBoxMobile) elDisplayBananaBoxMobile.innerText = `${formatNumber(bananaBox)} 🍌`;
+      if (elDisplayBananaBoxMobileHeader) elDisplayBananaBoxMobileHeader.innerText = formatNumber(bananaBox);
       
       if (elClaimBananasBtn) {
           elClaimBananasBtn.disabled = bananaBox <= 0;
       }
       if (elClaimBananasBtnMobile) {
           elClaimBananasBtnMobile.disabled = bananaBox <= 0;
+      }
+      if (elClaimBananasBtnMobileHeader) {
+          elClaimBananasBtnMobileHeader.disabled = bananaBox <= 0;
       }
 
       // Refresh shop if active to show new titles/balance
@@ -5646,6 +5691,7 @@
         closeHistoryModal, closeTreeModal, upgradeTree, handleSellTree, setView,
         enterCasino: () => {}, // Deprecated but kept for safety
         handleBuyTree, setSidebarView, toggleMute, openHistoryModal,
+        toggleMobileOptions,
         openRoyalPass, closeRoyalPass, claimRoyalReward,
         setGameMode, setBetColor, setMaxBet, toggleAutoBet, handleMainAction,
         claimInsurance, bjHit, bjStand, copyUserId, handleTreeClick, buyGadget,
