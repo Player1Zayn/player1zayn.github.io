@@ -164,22 +164,60 @@ app.post("/api/register", async (req, res) => {
 
 app.post("/api/login", async (req, res) => {
   const { name, password } = req.body;
+  console.log(`[LOGIN ATTEMPT] Name: "${name}"`);
+
   try {
     const supabase = getSupabase();
-    if (!supabase) return res.status(503).json({ error: "Database offline" });
-    const { data: user, error } = await supabase.from('database').select('*').eq('name', name).maybeSingle();
-    if (error || !user) return res.status(401).json({ error: "Invalid credentials" });
-    let validPassword = await bcrypt.compare(password, user.password).catch(() => false);
+    if (!supabase) {
+      console.error("[LOGIN ERROR] Supabase client not initialized. Check ENV variables.");
+      return res.status(503).json({ error: "Database offline" });
+    }
+
+    const { data: user, error } = await supabase
+      .from('database')
+      .select('*')
+      .eq('name', name)
+      .maybeSingle();
+
+    if (error) {
+      console.error(`[LOGIN ERROR] Supabase query failed: ${error.message} (Code: ${error.code})`);
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    if (!user) {
+      console.warn(`[LOGIN FAIL] No user found with name: "${name}"`);
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    let validPassword = false;
+    try {
+      validPassword = await bcrypt.compare(password, user.password).catch(() => false);
+    } catch (e) {
+      console.error("[LOGIN ERROR] Bcrypt comparison crashed:", e);
+      validPassword = false;
+    }
+
+    // Migration logic for plain text passwords
     if (!validPassword && password === user.password) {
+        console.log(`[LOGIN INFO] Plain text match for "${name}". Migrating to hash...`);
         validPassword = true;
         const hashedPassword = await bcrypt.hash(password, 10);
         await supabase.from('database').update({ password: hashedPassword }).eq('id', user.id);
     }
-    if (!validPassword) return res.status(401).json({ error: "Invalid credentials" });
+
+    if (!validPassword) {
+      console.warn(`[LOGIN FAIL] Password mismatch for user: "${name}"`);
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    console.log(`[LOGIN SUCCESS] User authenticated: "${name}"`);
     const token = jwt.sign({ userId: user.id, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
     const { password: _, ...userData } = user;
     res.json({ token, ...userData });
-  } catch (error: any) { res.status(500).json({ error: error.message }); }
+  } catch (error: any) {
+    console.error(`[LOGIN CRITICAL] Internal Server Error: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.post("/api/save", authenticateToken, async (req: any, res) => {
