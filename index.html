@@ -1,14 +1,403 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Game Portal</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%233b82f6' /%3E%3Cstop offset='100%25' stop-color='%23a855f7' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='6' width='20' height='12' rx='2' stroke='url(%23grad)'%3E%3C/rect%3E%3Cline x1='6' y1='12' x2='10' y2='12' stroke='url(%23grad)'%3E%3C/line%3E%3Cline x1='8' y1='10' x2='8' y2='14' stroke='url(%23grad)'%3E%3C/line%3E%3Cline x1='15' y1='13' x2='15.01' y2='13' stroke='url(%23grad)'%3E%3C/line%3E%3Cline x1='18' y1='11' x2='18.01' y2='11' stroke='url(%23grad)'%3E%3C/line%3E%3C/svg%3E">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
 
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Portal</title>
+    
+    <!-- Cool SVG Favicon istället för ett "ark" -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%233b82f6' /%3E%3Cstop offset='100%25' stop-color='%23a855f7' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='6' width='20' height='12' rx='2' stroke='url(%23grad)'%3E%3C/rect%3E%3Cline x1='6' y1='12' x2='10' y2='12' stroke='url(%23grad)'%3E%3C/line%3E%3Cline x1='8' y1='10' x2='8' y2='14' stroke='url(%23grad)'%3E%3C/line%3E%3Cline x1='15' y1='13' x2='15.01' y2='13' stroke='url(%23grad)'%3E%3C/line%3E%3Cline x1='18' y1='11' x2='18.01' y2='11' stroke='url(%23grad)'%3E%3C/line%3E%3C/svg%3E">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase Bibliotek -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+        h1, h2, .game-font { font-family: 'Orbitron', sans-serif; }
+        .game-card:hover {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+            border-color: #60a5fa;
+        }
+        .custom-scroll::-webkit-scrollbar { width: 8px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="w-full p-6 bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i data-lucide="gamepad-2" class="text-blue-500 w-8 h-8"></i>
+                <h1 class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+                    GAME HUB
+                </h1>
+            </div>
+            <div id="mod-indicator" class="hidden text-xs font-bold text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/50 animate-pulse">
+                System Edit Enable
+            </div>
+            
+            <!-- NEDLADDNINGSLÄNKEN -->
+            <a href="https://github.com/Player1Zayn/player1zayn.github.io/releases/tag/v1.0" download class="text-sm text-slate-400 hidden sm:block hover:text-blue-400 transition-colors cursor-pointer text-right">
+                Nothing to read here.<br>
+                Sub to Player1ZaynYT
+            </a>
+            
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-10">
+        
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-bold mb-4">Welcome! (or not)</h2>
+            <p class="text-slate-400 max-w-2xl mx-auto">
+                Click on a game below to open it in a new tab. Have fun!<br>
+                [Chat rules:] Only write 'bout bugs and what game u want. Nothing else or yall get banned.
+            </p>
+        </div>
+
+        <!-- Developer Message Section -->
+        <div class="max-w-4xl mx-auto mb-8 p-6 bg-slate-800/50 border-l-4 border-blue-500 rounded-r-xl backdrop-blur-sm shadow-lg hover:bg-slate-800/70 transition-colors">
+            <div class="flex items-start gap-4">
+                <div class="p-3 bg-blue-500/10 rounded-lg hidden sm:block">
+                    <i data-lucide="terminal" class="w-6 h-6 text-blue-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-blue-400 mb-2 game-font flex items-center gap-2">
+                        <span class="sm:hidden"><i data-lucide="terminal" class="w-4 h-4 inline"></i></span>
+                        Update from Developer
+                    </h3>
+                    <div class="prose prose-invert text-slate-300 leading-relaxed text-sm">
+                        <p>Sup and welcome to the Game Portal 🎮 Enable F11 for best experience.</p>
+                        <p class="mt-2 text-red-400 font-bold">
+                            I've implemented a BAN and VERIFY system. I can ban people who misuses the chat. People who write crap will BE BANNED.
+                            I also added some new games. Viewing the chat requires having a VPN or ur own wifi (the school doesnt allow you).
+                            Go to the top right corner for a download link to PROTON VPN.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500 font-mono">
+                        <i data-lucide="clock" class="w-3 h-3"></i>
+                        <span>Latest updated: 05/3 2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="max-w-4xl mx-auto mb-16">
+            <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
+                <div class="p-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+                    <h3 onclick="promptAdmin()" class="text-lg font-bold text-slate-200 flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
+                        <i data-lucide="message-square" class="w-5 h-5 text-purple-400"></i>
+                        Community-chat
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <div id="status-dot" class="w-2 h-2 rounded-full bg-red-500"></div>
+                        <span id="chat-status" class="text-xs text-slate-500">Loading...</span>
+                    </div>
+                </div>
+
+                <div id="comments-list" class="p-6 h-80 overflow-y-auto custom-scroll space-y-4 bg-slate-900/50">
+                    <div class="text-center text-slate-500 py-10 italic">Loading Messages...</div>
+                </div>
+
+                <div class="p-4 bg-slate-800 border-t border-slate-700">
+                    <div class="flex flex-col gap-3">
+                        <div class="flex gap-3">
+                            <input type="text" id="username-input" placeholder="Name" class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-1/3 p-2.5" maxlength="15">
+                            <input type="text" id="comment-input" placeholder="Write message (follow chat rules)" class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5">
+                        </div>
+                        <button onclick="postComment()" id="send-btn" class="w-full sm:w-auto self-end bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2 justify-center">
+                            <i data-lucide="send" class="w-4 h-4"></i> Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Grid -->
+        <div id="game-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6"></div>
+
+    </main>
+
+    <footer class="bg-slate-900 py-6 mt-auto border-t border-slate-800">
+        <div class="container mx-auto text-center text-slate-500 text-sm">
+            <p>&copy; 2026 Game Portal. Built by the one and only Zayn.</p>
+        </div>
+    </footer>
+
+    <script>
+        
+        const SUPABASE_URL = 'https://bqdbgsvcrpjqxflhupsn.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ElL56Wu9aJJppRv-ECWLbw_K_CfLWwk';
+        const _systemToken = 'systemTokenNull'; 
+        
+        let _db;
+        let _isMod = localStorage.getItem('isMod') === 'true';
+        let _myId = localStorage.getItem('myChatId');
+        
+        // Återställ sparat användarnamn
+        const savedName = localStorage.getItem('chatUsername');
+        if (savedName) {
+            document.getElementById('username-input').value = savedName;
+        }
+
+        // Spara användarnamn när det ändras
+        document.getElementById('username-input').addEventListener('input', (e) => {
+            localStorage.setItem('chatUsername', e.target.value);
+        });
+        
+        // Skapa ett unikt ID om det inte finns
+        if (!_myId) {
+            _myId = 'u_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('myChatId', _myId);
+        }
+
+        if (_isMod) document.getElementById('mod-indicator').classList.remove('hidden');
+
+        // Initiera Supabase
+        try {
+            _db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            startChat();
+        } catch (e) {
+            console.error("Supabase init error:", e);
+        }
+
+        function promptAdmin() {
+            const pw = prompt("System reboot code:");
+            if (pw === _systemToken) {
+                _isMod = true;
+                localStorage.setItem('isMod', 'true');
+                document.getElementById('mod-indicator').classList.remove('hidden');
+                alert("System reboot active!");
+                renderChat();
+            } else if (pw !== null) {
+                alert("Wrong PIN.");
+            }
+        }
+
+        async function startChat() {
+            document.getElementById('chat-status').innerText = "Live";
+            document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-green-500";
+            
+            renderChat();
+            
+            // Realtids-uppdatering
+            _db.channel('chat-room')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => renderChat())
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'banned_users' }, () => renderChat())
+                .subscribe();
+        }
+
+        async function renderChat() {
+            if (!_db) return;
+
+            // 1. Kolla om JAG är bannad (tyst kontroll)
+            const { data: myBan } = await _db
+                .from('banned_users')
+                .select('user_id')
+                .eq('user_id', _myId)
+                .maybeSingle();
+
+            const isMeBanned = !!myBan;
+
+            if (isMeBanned) {
+                document.getElementById('comment-input').disabled = true;
+                document.getElementById('comment-input').placeholder = "YOU GOT BANNED.";
+                document.getElementById('send-btn').disabled = true;
+                document.getElementById('send-btn').classList.add('opacity-50');
+            } else {
+                document.getElementById('comment-input').disabled = false;
+                document.getElementById('comment-input').placeholder = "Write a message...";
+                document.getElementById('send-btn').disabled = false;
+                document.getElementById('send-btn').classList.remove('opacity-50');
+            }
+
+            // 2. Hämta alla bans för att markera andra användare i chatten
+            const { data: allBans } = await _db.from('banned_users').select('user_id');
+            const bannedIds = allBans ? allBans.map(b => b.user_id) : [];
+
+            // 3. Hämta meddelanden
+            const { data: msgs, error } = await _db.from('comments')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            const list = document.getElementById('comments-list');
+            if (error) {
+                console.error("Fetch error:", error);
+                list.innerHTML = `<div class="text-center text-red-500 p-4">Kunde inte hämta chatten. Kontrollera RLS-inställningar i Supabase.</div>`;
+                return;
+            }
+
+            if (!msgs || msgs.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-600 py-10 italic">Inga meddelanden än. Skriv något!</div>';
+                return;
+            }
+
+            list.innerHTML = '';
+            // Vänd på ordningen för att visa senaste nederst
+            [...msgs].reverse().forEach(m => {
+                const userIsBanned = bannedIds.includes(m.user_id);
+                
+                // Om användaren är bannad, visa endast för moderatorer
+                if (userIsBanned && !_isMod) return;
+
+                const name = (m.username || 'Spelare').replace(/</g, "&lt;");
+                const text = (m.text || '').replace(/</g, "&lt;");
+                const isMe = m.user_id === _myId;
+                
+                // Formatera tidsstämpel
+                const timeStr = m.created_at ? new Date(m.created_at).toLocaleTimeString('sv-SE', {hour: '2-digit', minute:'2-digit'}) : '';
+
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-lg border transition-all flex gap-3 group relative ${userIsBanned ? 'bg-red-900/20 border-red-900/50' : 'bg-slate-800 border-slate-700'}`;
+                
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 shrink-0">
+                        <span class="text-xs font-bold ${isMe ? 'text-blue-400' : 'text-purple-400'}">${name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div class="w-full">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-bold text-sm flex items-center gap-1 ${isMe ? 'text-blue-400' : 'text-purple-400'}">
+                                ${name} 
+                                <span class="text-xs text-slate-500 ml-2 font-normal">${timeStr}</span>
+                                ${m.verified ? '<i data-lucide="check-circle" class="w-3.5 h-3.5 text-blue-400 ml-1"></i>' : ''}
+                                ${userIsBanned ? '<span class="text-red-500 text-[10px] ml-1 font-mono uppercase">[Bannad]</span>' : ''}
+                            </span>
+                            ${_isMod ? `
+                                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="handleVerify('${m.id}', ${!m.verified})" class="text-green-500 hover:text-green-400 transition-colors" title="${m.verified ? 'Ta bort checkmark' : 'Lägg till checkmark'}">
+                                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="handleBan('${m.user_id}')" class="text-orange-500 hover:text-orange-400 transition-colors" title="Banna">
+                                        <i data-lucide="user-x" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="handleDelete('${m.id}')" class="text-red-500 hover:text-red-400 transition-colors" title="Radera">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <p class="text-sm text-slate-300 break-words">${text}</p>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            
+            lucide.createIcons();
+            list.scrollTop = list.scrollHeight;
+        }
+
+        window.postComment = async function() {
+            const input = document.getElementById('comment-input');
+            const text = input.value.trim();
+            const user = document.getElementById('username-input').value.trim() || 'Spelare';
+            
+            if (!text || !_db) return;
+
+            const { error } = await _db.from('comments').insert([{ 
+                username: user, 
+                text: text, 
+                user_id: _myId 
+            }]);
+
+            if (error) {
+                console.error("Insert error:", error);
+                alert("Fel vid sändning: " + error.message);
+            } else {
+                input.value = '';
+                renderChat();
+            }
+        }
+
+        window.handleDelete = async function(id) {
+            if (!_isMod) return;
+            if (confirm("Radera meddelande?")) {
+                await _db.from('comments').delete().eq('id', id);
+                renderChat();
+            }
+        }
+
+        window.handleBan = async function(uid) {
+            if (!_isMod) return;
+            if (uid === _myId) return alert("Du kan inte banna dig själv!");
+            if (confirm("Vill du banna denna användare permanent?")) {
+                const { error } = await _db.from('banned_users').insert([{ user_id: uid, reason: 'Moderator-ban' }]);
+                if (error) alert("Kunde inte banna: " + error.message);
+                renderChat();
+            }
+        }
+
+        window.handleVerify = async function(id, setVerified) {
+            if (!_isMod) return;
+            const { error } = await _db.from('comments').update({ verified: setVerified }).eq('id', id);
+            if (error) {
+                alert("Kunde inte verifiera: " + error.message + "\n\n(Glöm inte att du måste lägga till kolumnen 'verified' (boolean) i din 'comments'-tabell i Supabase!)");
+            } else {
+                renderChat();
+            }
+        }
+
+        // --- SPEL-GRID ---
+        const games = [
+            { id: 1, name: "Last Defence", color: "from-blue-500 to-cyan-400", icon: "skull" },
+            { id: 2, name: "Tank Survival", color: "from-green-500 to-emerald-400", icon: "truck" },
+            { id: 3, name: "Retro Bowl (new)", color: "from-red-500 to-orange-400", icon: "crosshair" },
+            { id: 4, name: "Escape Road", color: "from-purple-500 to-pink-400", icon: "car" },
+            { id: 5, name: "FPS (not working)", color: "from-gray-600 to-gray-400", icon: "sword" },
+            { id: 6, name: "Snakey", color: "from-yellow-500 to-orange-400", icon: "activity" },
+            { id: 7, name: "The Backrooms", color: "from-indigo-500 to-purple-400", icon: "trees" },
+            { id: 8, name: "Zelda (new)", color: "from-slate-500 to-zinc-400", icon: "wind" },
+            { id: 9, name: "Clanker Defence", color: "from-rose-500 to-red-400", icon: "heart" },
+            { id: 10, name: "Clash Royale Clone", color: "from-amber-500 to-yellow-300", icon: "crown" },
+            { id: 11, name: "Night Horror", color: "from-yellow-400 to-yellow-600", icon: "flashlight" },
+            { id: 12, name: "RPS Online", color: "from-blue-600 to-blue-800", icon: "hammer" },
+            { id: 13, name: "Geometry Dash", color: "from-lime-400 to-lime-600", icon: "alien" },
+            { id: 14, name: "Super Mario 64", color: "from-fuchsia-500 to-purple-600", icon: "zap" },
+            { id: 15, name: "Monkey Mart", color: "from-slate-300 to-slate-500", icon: "milestone" },
+            { id: 16, name: "Snow Rider", color: "from-orange-300 to-orange-500", icon: "bot" },
+            { id: 17, name: "Baldis Basics", color: "from-indigo-900 to-purple-900", icon: "ghost" },
+            { id: 18, name: "Bacon May Die", color: "from-blue-800 to-blue-900", icon: "anchor" },
+            { id: 19, name: "Banana Casino", color: "from-sky-400 to-sky-200", icon: "banana" },
+            { id: 20, name: "Night Horror 2: Asylum", color: "from-teal-400 to-emerald-500", icon: "flashlight" }
+        ];
+
+        const grid = document.getElementById('game-grid');
+        games.forEach(game => {
+            const card = document.createElement('div');
+            card.className = "game-card bg-slate-800 border border-slate-700 rounded-xl p-6 flex flex-col items-center justify-between transition-all duration-300 transform hover:-translate-y-2 cursor-pointer group relative overflow-hidden";
+            card.onclick = () => window.open(`spel${game.id}.html`, '_blank');
+            card.innerHTML = `
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${game.color}"></div>
+                <div class="w-16 h-16 mb-4 rounded-full bg-slate-900 flex items-center justify-center border border-slate-600 group-hover:border-white transition-colors">
+                    <i data-lucide="${game.icon}" class="w-8 h-8 text-gray-300 group-hover:text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2 game-font text-center">${game.name}</h3>
+                <span class="text-xs text-slate-500 mb-6">Spel ${game.id}</span>
+                <button class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 transition-transform hover:opacity-90">
+                    SPELA NU
+                </button>
+            `;
+            grid.appendChild(card);
+        });
+
+        document.getElementById('comment-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') postComment();
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
