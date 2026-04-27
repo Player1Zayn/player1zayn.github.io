@@ -102,6 +102,7 @@ app.post("/api/register", async (req, res) => {
       unlocked_titles: JSON.stringify([]),
       equipped_title: null,
       inventory: JSON.stringify({}),
+      active_gadgets: JSON.stringify(Array(10).fill(false)),
       banned: false
     });
 
@@ -240,6 +241,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
       unlocked_titles: JSON.stringify(finalUnlockedTitles),
       equipped_title: equipped_title || null,
       inventory: inventory ? JSON.stringify(inventory) : JSON.stringify({}),
+      active_gadgets: req.body.active_gadgets ? JSON.stringify(req.body.active_gadgets) : JSON.stringify(Array(10).fill(false)),
       updated_at: new Date().toISOString()
     });
 
@@ -341,6 +343,16 @@ const SKINS = [
     { id: 'c18', name: 'Silver Banana', rarity: 'Common', color: '#22c55e' },
     { id: 'c19', name: 'Bronze Banana', rarity: 'Common', color: '#22c55e' },
     { id: 'c20', name: 'Classic Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c21', name: 'Sky Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c22', name: 'Grass Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c23', name: 'Wood Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c24', name: 'Sand Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c25', name: 'Rock Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c26', name: 'Leaf Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c27', name: 'Mist Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c28', name: 'Coral Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c29', name: 'Autumn Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c30', name: 'Spring Banana', rarity: 'Common', color: '#22c55e' },
     // Rare (18)
     { id: 'r1', name: 'Spotted Banana', rarity: 'Rare', color: '#3b82f6' },
     { id: 'r2', name: 'Striped Banana', rarity: 'Rare', color: '#3b82f6' },
@@ -360,6 +372,16 @@ const SKINS = [
     { id: 'r16', name: 'Panda Banana', rarity: 'Rare', color: '#3b82f6' },
     { id: 'r17', name: 'Koala Banana', rarity: 'Rare', color: '#3b82f6' },
     { id: 'r18', name: 'Sloth Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r19', name: 'Marble Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r20', name: 'Splattered Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r21', name: 'Tartan Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r22', name: 'Hexagon Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r23', name: 'Circuit Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r24', name: 'Pixel Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r25', name: 'Glitch Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r26', name: 'Neon Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r27', name: 'Pastel Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r28', name: 'Metallic Banana', rarity: 'Rare', color: '#3b82f6' },
     // Epic (10)
     { id: 'e1', name: 'Fire Banana', rarity: 'Epic', color: '#a855f7' },
     { id: 'e2', name: 'Ice Banana', rarity: 'Epic', color: '#a855f7' },
@@ -371,6 +393,16 @@ const SKINS = [
     { id: 'e8', name: 'Dark Banana', rarity: 'Epic', color: '#a855f7' },
     { id: 'e9', name: 'Spirit Banana', rarity: 'Epic', color: '#a855f7' },
     { id: 'e10', name: 'Ghost Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e11', name: 'Solar Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e12', name: 'Lunar Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e13', name: 'Plasma Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e14', name: 'Radioactive Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e15', name: 'Cyber Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e16', name: 'Steampunk Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e17', name: 'Holographic Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e18', name: 'Ethereal Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e19', name: 'Void Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e20', name: 'Pulsing Banana', rarity: 'Epic', color: '#a855f7' },
     // Mythic (5)
     { id: 'm1', name: 'Galaxy Banana', rarity: 'Mythic', color: '#ef4444' },
     { id: 'm2', name: 'Nebula Banana', rarity: 'Mythic', color: '#ef4444' },
@@ -640,23 +672,23 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             let rarity = 'Common';
             
             if (caseType === 'toverland') {
-                if (r < 15) rarity = 'Legendary';
-                else if (r < 40) rarity = 'Mythic';
-                else if (r < 70) rarity = 'Epic';
-                else if (r < 90) rarity = 'Rare';
+                if (r < 20) rarity = 'Legendary';
+                else if (r < 50) rarity = 'Mythic';
+                else if (r < 80) rarity = 'Epic';
+                else if (r < 95) rarity = 'Rare';
                 else rarity = 'Common';
             } else if (caseType === 'booster') {
-                if (r < 3) rarity = 'Legendary';
-                else if (r < 10) rarity = 'Mythic';
-                else if (r < 20) rarity = 'Epic';
-                else if (r < 50) rarity = 'Rare';
+                if (r < 5) rarity = 'Legendary';
+                else if (r < 15) rarity = 'Mythic';
+                else if (r < 30) rarity = 'Epic';
+                else if (r < 70) rarity = 'Rare';
                 else rarity = 'Common';
             } else {
                 // Normal Case
-                if (r < 0.1) rarity = 'Legendary';
-                else if (r < 1) rarity = 'Mythic';
-                else if (r < 5) rarity = 'Epic';
-                else if (r < 20) rarity = 'Rare';
+                if (r < 0.5) rarity = 'Legendary';
+                else if (r < 2) rarity = 'Mythic';
+                else if (r < 10) rarity = 'Epic';
+                else if (r < 30) rarity = 'Rare';
                 else rarity = 'Common';
             }
 
