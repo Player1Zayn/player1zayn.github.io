@@ -59,6 +59,12 @@
       #fullscreen-entry-overlay .mb-8 { margin-bottom: 1rem !important; }
     }
     
+    @keyframes mega-shake {
+      0%, 100% { transform: translateX(-50%) rotate(0deg); }
+      25% { transform: translateX(-52%) rotate(-2deg); }
+      75% { transform: translateX(-48%) rotate(2deg); }
+    }
+    .animate-mega-shake { animation: mega-shake 0.1s infinite; }
     .slot-icon {
       display: inline-flex;
       align-items: center;
@@ -135,6 +141,15 @@
   </div>
 
   <!-- History Modal -->
+  <div id="mega-bet-alert" class="fixed top-20 left-1/2 -translate-x-1/2 z-[200] pointer-events-none hidden flex flex-col items-center gap-2">
+    <div class="bg-yellow-500 text-yellow-950 font-black text-4xl px-8 py-4 rounded-2xl shadow-[0_10px_0_rgb(180,83,9)] animate-bounce uppercase italic tracking-tighter">100X MEGA WIN!</div>
+    <div class="text-yellow-400 font-bold text-lg drop-shadow-lg">The Mega Bet Gadget triggered!</div>
+  </div>
+  <div id="mega-bet-taxes-alert" class="fixed top-20 left-1/2 -translate-x-1/2 z-[200] pointer-events-none hidden flex flex-col items-center gap-2">
+    <div class="bg-red-600 text-white font-black text-4xl px-8 py-4 rounded-2xl shadow-[0_10px_0_rgb(153,27,27)] animate-mega-shake uppercase italic tracking-tighter">TAXES!!!</div>
+    <div class="text-red-400 font-bold text-lg drop-shadow-lg">The jungle government took your win!</div>
+  </div>
+
   <div id="history-modal" class="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center hidden backdrop-blur-sm p-4 transition-opacity" onclick="if(event.target===this) closeHistoryModal()">
     <div class="bg-emerald-950 border-2 border-emerald-500 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
       <div class="p-4 border-b border-emerald-800 flex justify-between items-center bg-emerald-900/30">
@@ -1168,6 +1183,7 @@
 
         <!-- Bottom: Betting Controls -->
         <div id="betting-controls-container" class="bg-emerald-900/90 backdrop-blur-md p-3 md:p-6 border-t-2 md:border-t-4 border-yellow-500/20 z-20 shrink-0">
+          <div id="mega-bet-active-indicator" class="hidden text-center mb-2 px-3 py-1 bg-yellow-500 text-yellow-950 text-[10px] font-black rounded-full animate-pulse uppercase tracking-widest mx-auto w-fit">Mega Bet Active</div>
           <div class="max-w-md mx-auto space-y-2 md:space-y-3">
             
             <!-- Roulette Specific Bets -->
@@ -2038,6 +2054,44 @@
         if (n >= 1000000000n) return (Number(n / 100000000n) / 10).toFixed(1).replace(/\.0$/, '') + 'B';
         if (n >= 1000000n) return (Number(n / 100000n) / 10).toFixed(1).replace(/\.0$/, '') + 'M';
         return n.toLocaleString();
+    }
+
+    function handleMegaBetEffect(data) {
+        if (!data || !data.result || !data.result.megaBet || data.result.megaBet === 'none') {
+            document.getElementById('mega-bet-alert')?.classList.add('hidden');
+            document.getElementById('mega-bet-taxes-alert')?.classList.add('hidden');
+            return;
+        }
+
+        if (data.result.megaBet === 'win') {
+            const elWin = document.getElementById('mega-bet-alert');
+            if (elWin) {
+                elWin.classList.remove('hidden');
+                setTimeout(() => elWin.classList.add('hidden'), 4000);
+            }
+        } else if (data.result.megaBet === 'taxes') {
+            const elTaxes = document.getElementById('mega-bet-taxes-alert');
+            if (elTaxes) {
+                elTaxes.classList.remove('hidden');
+                setTimeout(() => elTaxes.classList.add('hidden'), 4000);
+            }
+        }
+    }
+
+    function parseError(err) {
+        if (!err || !err.message) return "Unknown Error";
+        let msg = err.message;
+        if (msg.includes('HTTP 400:') || msg.includes('HTTP 403:')) {
+            try {
+                const jsonStr = msg.substring(msg.indexOf('{'));
+                const errorObj = JSON.parse(jsonStr);
+                if (errorObj.reason) return `${errorObj.error}: ${errorObj.reason}`;
+                return errorObj.error || msg;
+            } catch (e) {
+                return msg;
+            }
+        }
+        return msg;
     }
 
     function showNotification(message, type = 'info') {
@@ -4147,7 +4201,7 @@
           isInternalUpdate = true;
           updateBananas(bananas + betAmount);
           isInternalUpdate = false;
-          spinResultMsg = "Error: " + err.message;
+          spinResultMsg = "Error: " + parseError(err);
           updateGameUI();
       }
     }
@@ -4254,6 +4308,8 @@
               isInternalUpdate = false;
               
               if (data.winStreak !== undefined) winStreak = data.winStreak;
+              
+              handleMegaBetEffect(data);
 
               if (data.earnedRoyalXP) {
                   royalXP = Number(data.royalXP);
@@ -4261,7 +4317,11 @@
                   showNotification("+1 Royal XP! Check the pass in Ludvig's shop.", "success");
               }
               
-              if (mult > 1) {
+              if (data.result.megaBet === 'taxes') {
+                  spinResultMsg = "TAXES! The jungle government took your entire win!";
+                  addLog('loss', betAmount, bananas, "Plinko: Mega Bet Taxes");
+                  playSound('loss');
+              } else if (mult > 1) {
                   spinResultMsg = `Landed on ${mult}x! Won ${formatNumber(winVal)} 🍌!`;
                   addLog('win', winVal, bananas, `Plinko: ${mult}x`);
                   
@@ -4407,6 +4467,8 @@
             
             if (data.winStreak !== undefined) winStreak = data.winStreak;
 
+            handleMegaBetEffect(data);
+
             if (data.earnedRoyalXP) {
                 royalXP = Number(data.royalXP);
                 document.getElementById('rp-current-xp').innerText = formatNumber(royalXP);
@@ -4457,7 +4519,7 @@
           isInternalUpdate = true;
           updateBananas(bananas + betAmount);
           isInternalUpdate = false;
-          spinResultMsg = "Error: " + err.message;
+          spinResultMsg = "Error: " + parseError(err);
           updateGameUI();
       }
     }
@@ -4616,6 +4678,8 @@
            
            if (data.winStreak !== undefined) winStreak = data.winStreak;
 
+           handleMegaBetEffect(data);
+
            if (data.earnedRoyalXP) {
               royalXP = Number(data.royalXP);
               document.getElementById('rp-current-xp').innerText = formatNumber(royalXP);
@@ -4665,7 +4729,7 @@
           isInternalUpdate = true;
           updateBananas(bananas + actualBet);
           isInternalUpdate = false;
-          spinResultMsg = "Error: " + err.message;
+          spinResultMsg = "Error: " + parseError(err);
           updateGameUI();
       }
     }
@@ -5194,6 +5258,8 @@
           
           if (data.winStreak !== undefined) winStreak = data.winStreak;
 
+          handleMegaBetEffect(data);
+
           if (data.earnedRoyalXP) {
               royalXP = Number(data.royalXP);
               document.getElementById('rp-current-xp').innerText = formatNumber(royalXP);
@@ -5203,7 +5269,12 @@
           const winVal = Number(data.winAmount);
           const profit = winVal - betAmount;
 
-          if (reason === 'bust') { 
+          if (data.result.megaBet === 'taxes') {
+              spinResultMsg = "TAXES! The jungle government took your entire win!";
+              addLog('loss', betAmount, bananas, 'Blackjack: Mega Bet Taxes');
+              playSound('loss');
+          }
+          else if (reason === 'bust') { 
               if (betAmount > 100000) unlockTitle('unlucky');
               spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${formatNumber(betAmount)} 🍌.`); 
               addLog('loss', betAmount, bananas, 'Blackjack: Bust');
@@ -5231,7 +5302,7 @@
 
       } catch (err) {
           console.error("Blackjack sync error:", err);
-          spinResultMsg = "Internal Sync Error: " + err.message;
+          spinResultMsg = "Sync Error: " + parseError(err);
       }
       
       endGameTurn();
@@ -5444,6 +5515,11 @@
       if (isBonusBet) {
         const bonusInput = document.getElementById('bonus-bet-amount-input');
         currentBonusBet = parseInt(bonusInput?.value) || 0;
+      }
+
+      const megaBetIndicator = document.getElementById('mega-bet-active-indicator');
+      if (megaBetIndicator) {
+          megaBetIndicator.classList.toggle('hidden', !activeGadgets[5]);
       }
 
       let canAction = !isPlaying && bananas > 0 && betAmount > 0;
