@@ -45,7 +45,22 @@
         }
         
         .ui-element {
-            pointer-events: auto !important;
+            pointer-events: auto;
+        }
+
+        .menu-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(15, 23, 42, 0.95);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 450px;
+            z-index: 50;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .menu-button {
@@ -62,7 +77,6 @@
             cursor: pointer;
             transition: all 0.2s ease;
             text-align: center;
-            pointer-events: auto !important;
         }
         
         .menu-button:hover:not(:disabled) {
@@ -462,6 +476,7 @@
         const troopSelectCancelBtn = document.getElementById('troop-select-cancel-btn');
         const troopMissionButtons = troopSelectMenu.querySelectorAll('.troop-mission-btn');
         const startGameIntroBtn = document.getElementById('start-game-intro-btn'); 
+        const continueSavedBtn = document.getElementById('continue-saved-btn');
         const continueGameBtn = document.getElementById('continue-game-btn'); 
         const sandboxGameBtn = document.getElementById('sandbox-game-btn');
         const controlsBtn = document.getElementById('controls-btn');
@@ -469,20 +484,6 @@
         const creditsBackBtn = document.getElementById('credits-back-btn'); 
         const controlsBackBtn = document.getElementById('controls-back-btn');
         const gameOverBackBtn = document.getElementById('game-over-back-btn');
-        const uiTooltip = document.getElementById('ui-tooltip');
-        
-        // --- Core Listeners (Moved up to ensure they are attached even if later script fails) ---
-        if (startGameIntroBtn) startGameIntroBtn.addEventListener('click', () => { SoundSystem.init(); hideAllScreens(); introScreen.classList.remove('hidden'); SoundSystem.startMusic(); });
-        if (continueGameBtn) continueGameBtn.addEventListener('click', () => initGame('NORMAL'));
-        if (sandboxGameBtn) sandboxGameBtn.addEventListener('click', () => initGame('SANDBOX'));
-        if (creditsBtn) creditsBtn.addEventListener('click', () => { hideAllScreens(); creditsScreen.classList.remove('hidden'); });
-        if (creditsBackBtn) creditsBackBtn.addEventListener('click', returnToMenu);
-        if (controlsBtn) controlsBtn.addEventListener('click', () => { hideAllScreens(); controlsMenu.classList.remove('hidden'); });
-        if (controlsBackBtn) controlsBackBtn.addEventListener('click', returnToMenu);
-        if (gameOverBackBtn) gameOverBackBtn.addEventListener('click', returnToMenu);
-        if (pauseContinueBtn) pauseContinueBtn.addEventListener('click', () => { gameState = savedGameState; pauseMenu.classList.add('hidden'); lastTime = performance.now(); requestAnimationFrame(gameLoop); });
-        if (pauseHomeBtn) pauseHomeBtn.addEventListener('click', returnToMenu);
-        if (continueSavedBtn) continueSavedBtn.addEventListener('click', loadGame);
         
         // Building buttons
         const buildTowerBtn = document.getElementById('build-tower-btn');
@@ -513,6 +514,7 @@
         const inhabitantsValue = document.getElementById('inhabitants-value');
         const monsterWasteValue = document.getElementById('monster-waste-value');
         const bonemealValue = document.getElementById('bonemeal-value');
+        const uiTooltip = document.getElementById('ui-tooltip');
 
 
         // --- SoundSystem (Uppdaterad med oändlig loop) ---
@@ -654,20 +656,7 @@
         const ABANDONED_HOUSE_SPAWN_RATE = 20000;
         const INHABITANT_GROW_RATE = 5000; 
 
-        let resources = {
-            metal: 0,
-            wood: 0,
-            earth: 0,
-            reinforcedMetal: 0,
-            monsterWaste: 0,
-            boneMeal: 0,
-            kills: 0,
-            bullets: 0,
-            food: 0,
-            inhabitants: 0,
-            maxInhabitants: 0,
-            troops: 0
-        };
+        let resources = {};
         
         // --- Placement Mode State ---
         let placementMode = false;
@@ -2068,6 +2057,7 @@
         controlsBackBtn.addEventListener('click', returnToMenu);
         gameOverBackBtn.addEventListener('click', returnToMenu);
         pauseContinueBtn.addEventListener('click', () => { gameState = savedGameState; pauseMenu.classList.add('hidden'); lastTime = performance.now(); requestAnimationFrame(gameLoop); });
+        pauseControlsBtn.addEventListener('click', () => { hideAllScreens(); controlsMenu.classList.remove('hidden'); });
         pauseHomeBtn.addEventListener('click', returnToMenu);
 
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; if(gameState==='GAME') render(); }
