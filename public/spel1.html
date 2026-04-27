@@ -1,52 +1,5 @@
-<!DOCTYPE html>
-<html lang="sv">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Last Defence</title>
-
-<style>
-    body {
-        margin: 0;
-        background: black;
-        overflow: hidden;
-    }
-
-    #game-container {
-        width: 100vw;
-        height: 100vh;
-        background: black;
-    }
-
-    /* Flyttad till höger nedre hörn */
-    .back {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(0,0,0,0.5);
-        padding: 10px 16px;
-        border-radius: 8px;
-        color: white;
-        text-decoration: none;
-        border: 2px solid #666;
-        z-index: 9999;
-        font-size: 18px;
-        cursor: pointer;
-    }
-
-    .back:hover {
-        background: rgba(40,40,40,0.6);
-    }
-</style>
-</head>
-<body>
-
-<!-- Stäng-knapp som stänger fliken -->
-<button class="back" onclick="window.close()">✖ Stäng</button>
-
-<div id="game-container">
     <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -202,7 +155,7 @@
         }
         .action-button:hover { background-color: #475569; }
 
-        /* menyer i spelet */
+        /* Game menus */
         #build-menu, #troop-select-menu, #building-menu, #attack-menu {
             position: absolute;
             background-color: rgba(15, 23, 42, 0.98);
@@ -242,6 +195,77 @@
         .bg-info { background-color: #1e3a8a !important; border-color: #1e40af !important; }
         .bg-info:hover { background-color: #1e40af !important; }
 
+        /* UI Buttons Sidebar */
+        .sidebar-actions {
+            position: absolute;
+            right: 20px;
+            bottom: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 40;
+        }
+
+        .sidebar-btn {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(15, 23, 42, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            transition: all 0.2s ease;
+            pointer-events: auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .sidebar-btn:hover {
+            transform: scale(1.1);
+            background-color: rgba(30, 41, 59, 1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .sidebar-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Placement controls */
+        #placement-controls {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .confirm-btn {
+            width: 60px;
+            height: 60px;
+            background-color: #16a34a;
+            border-radius: 50%;
+            border: 3px solid white;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .cancel-btn {
+            width: 60px;
+            height: 60px;
+            background-color: #dc2626;
+            border-radius: 50%;
+            border: 3px solid white;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -253,61 +277,60 @@
         <div id="start-menu" class="menu-screen ui-element">
             <h1 class="text-4xl font-extrabold text-center mb-2 text-red-500 tracking-wider">LAST DEFENCE</h1>
             <p class="text-center text-gray-400 mb-8 text-sm uppercase tracking-widest">Survival & Conquest</p>
-            <button id="start-game-intro-btn" class="menu-button bg-green-800 hover:bg-green-700 border-green-700">Starta Spel (Normal)</button>
-            <button id="sandbox-game-btn" class="menu-button bg-yellow-800 hover:bg-yellow-700 border-yellow-700">Sandbox Läge</button>
-            <button id="controls-btn" class="menu-button">Kontroller</button>
+            <button id="start-game-intro-btn" class="menu-button bg-green-800 hover:bg-green-700 border-green-700">Start Game (Normal)</button>
+            <button id="sandbox-game-btn" class="menu-button bg-yellow-800 hover:bg-yellow-700 border-yellow-700">Sandbox Mode</button>
+            <button id="controls-btn" class="menu-button">Controls</button>
             <button id="credits-btn" class="menu-button bg-gray-700 hover:bg-gray-600">Credits</button>
         </div>
 
         <div id="intro-screen" class="menu-screen ui-element hidden">
-            <h1 class="text-2xl font-bold text-center mb-6 text-red-400">Nödsignal Mottagen...</h1>
+            <h1 class="text-2xl font-bold text-center mb-6 text-red-400">Distress Signal Received...</h1>
             <div class="letter-style text-sm mb-6">
-                <p>Kära ledare,</p>
-                <p class="mt-4 indent-4">Världen har fallit. Monstrum härjar i vildmarken. Vi har lyckats upprätta en bas, men vi är inte ensamma.</p>
-                <p class="mt-4">Andra fraktioner slåss om de sista resurserna. Lita inte på någon.</p>
-                <p class="mt-4">Bygg upp ditt försvar. Skapa en armé. <br><b>Överlev till varje pris.</b></p>
-                <p class="mt-4 text-right">Lycka till,</p>
-                <p class="text-right">- Rådet</p>
+                <p>Dear Leader,</p>
+                <p class="mt-4 indent-4">The world has fallen. Monsters roam the wilderness. We have established a base, but we are not alone.</p>
+                <p class="mt-4">Other factions fight for the last resources. Trust no one.</p>
+                <p class="mt-4">Build your defenses. Create an army. <br><b>Survive at all costs.</b></p>
+                <p class="mt-4 text-right">Good luck,</p>
+                <p class="text-right">- The Council</p>
             </div>
-            <button id="continue-game-btn" class="menu-button bg-green-700 hover:bg-green-600">Upprätta Bas</button>
+            <button id="continue-game-btn" class="menu-button bg-green-700 hover:bg-green-600">Establish Base</button>
         </div>
 
         <div id="credits-screen" class="menu-screen ui-element hidden">
             <h1 class="text-2xl font-bold text-center mb-6">Credits</h1>
-            <p class="text-center mb-6 text-xl">Design & Kod:</p>
+            <p class="text-center mb-6 text-xl">Design & Code:</p>
             <p class="text-center text-4xl font-bold text-yellow-400 mb-8">Zayn Lilak</p>
-            <button id="credits-back-btn" class="menu-button">Tillbaka</button>
+            <button id="credits-back-btn" class="menu-button">Back</button>
         </div>
 
         <div id="controls-menu" class="menu-screen ui-element hidden">
-            <h1 class="text-2xl font-bold text-center mb-6">Kontroller</h1>
+            <h1 class="text-2xl font-bold text-center mb-6">Controls</h1>
             <ul class="list-disc list-inside space-y-3 mb-8 text-sm text-gray-300">
-                <li><span class="font-bold text-white">WASD / Pilar:</span> Panorera kameran</li>
-                <li><span class="font-bold text-white">Scrollhjul:</span> Zooma in/ut</li>
-                <li><span class="font-bold text-white">Vänsterklick:</span> Bygg / Markera mark</li>
-                <li><span class="font-bold text-white">Högerklick (Byggnad):</span> <span class="text-yellow-400">Meny för Uppgradera/Reparera/Förstör</span></li>
-                <li><span class="font-bold text-white">Högerklick (Fiendebas):</span> Attackmeny</li>
-                <li><span class="font-bold text-white">Högerklick (Övergett Hus):</span> Rädda invånare</li>
-                <li><span class="font-bold text-white">Y:</span> Visa/Dölj Crafting-menyn</li>
-                <li><span class="font-bold text-white">L:</span> Pausa Spel</li>
+                <li><span class="font-bold text-white">WASD / Arrows:</span> Pan camera (or move hologram during placement)</li>
+                <li><span class="font-bold text-white">Scroll Wheel:</span> Zoom in/out</li>
+                <li><span class="font-bold text-white">Left Click:</span> Select tile / Build</li>
+                <li><span class="font-bold text-white">Right Click (Building):</span> <span class="text-yellow-400">Upgrade / Repair / Destroy Menu</span></li>
+                <li><span class="font-bold text-white">Right Click (Abandoned House):</span> Rescue Inhabitants</li>
+                <li><span class="font-bold text-white">Y:</span> Toggle Crafting Menu</li>
+                <li><span class="font-bold text-white">L:</span> Pause Game</li>
             </ul>
-            <button id="controls-back-btn" class="menu-button">Tillbaka</button>
+            <button id="controls-back-btn" class="menu-button">Back</button>
         </div>
         
         <div id="pause-menu" class="menu-screen ui-element hidden">
-            <h1 class="text-3xl font-bold text-center mb-8 text-blue-400 tracking-widest">PAUSAD</h1>
-            <button id="pause-continue-btn" class="menu-button bg-green-700 hover:bg-green-600">Fortsätt</button>
-            <button id="pause-controls-btn" class="menu-button">Se Kontroller</button>
-            <button id="pause-home-btn" class="menu-button bg-red-800 hover:bg-red-700">Avsluta till Meny</button>
+            <h1 class="text-3xl font-bold text-center mb-8 text-blue-400 tracking-widest">PAUSED</h1>
+            <button id="pause-continue-btn" class="menu-button bg-green-700 hover:bg-green-600">Continue</button>
+            <button id="pause-controls-btn" class="menu-button">View Controls</button>
+            <button id="pause-home-btn" class="menu-button bg-red-800 hover:bg-red-700">Quit to Menu</button>
         </div>
 
         <div id="game-over-screen" class="menu-screen ui-element hidden">
             <h1 class="text-4xl font-extrabold text-center mb-4 text-red-600">GAME OVER</h1>
-            <p class="text-center mb-8 text-lg text-gray-300">Din bas har blivit överrumplad.</p>
+            <p class="text-center mb-8 text-lg text-gray-300">Your base has been overrun.</p>
             <div class="text-center mb-8">
-                <p class="text-sm text-gray-500">Överlevda vågor: <span id="final-score" class="text-white font-bold">0</span></p>
+                <p class="text-sm text-gray-500">Kills: <span id="final-score" class="text-white font-bold">0</span></p>
             </div>
-            <button id="game-over-back-btn" class="menu-button">Till Huvudmenyn</button>
+            <button id="game-over-back-btn" class="menu-button">To Main Menu</button>
         </div>
 
         <div id="game-ui" class="hidden">
@@ -317,7 +340,7 @@
                 <span class="label">Wood:</span><span id="wood-value" class="value">0</span>
                 <span class="label">Earth:</span><span id="earth-value" class="value">0</span>
                 <span class="label">Reinf. Metal:</span><span id="reinforced-metal-value" class="value">0</span>
-                <span class="label text-purple-400">M.Waste:</span><span id="monster-waste-value" class="value text-purple-400">0</span>
+                <span class="label text-purple-400">Waste:</span><span id="monster-waste-value" class="value text-purple-400">0</span>
                 <span class="label text-yellow-200">Bonemeal:</span><span id="bonemeal-value" class="value text-yellow-200">0</span>
             </div>
 
@@ -330,24 +353,30 @@
                 <span class="label">Troops:</span><span id="troops-value" class="value">0</span>
             </div>
 
+            <div class="sidebar-actions ui-element">
+                <button id="open-build-btn" class="sidebar-btn" title="Building Menu">🔨</button>
+                <button id="open-craft-btn" class="sidebar-btn" title="Crafting Menu">📜</button>
+            </div>
+
             <div id="actions-board" class="ui-element hidden">
-                <h4 class="text-lg font-bold mb-4 text-center text-blue-300 border-b border-gray-600 pb-2">Crafting & Rekrytering</h4>
+                <h4 class="text-lg font-bold mb-4 text-center text-blue-300 border-b border-gray-600 pb-2">Crafting & Recruitment</h4>
                 <button id="train-troop-btn" class="action-button bg-blue-900 border-blue-800 hover:bg-blue-800">
-                    <span class="font-bold">Träna Trupp</span><br><span class="text-xs text-gray-400">1 Inb, 10 Mat</span>
+                    <span class="font-bold">Train Troop</span><br><span class="text-xs text-gray-400">1 Inh, 10 Food</span>
                 </button>
                 <button id="craft-bullets-btn" class="action-button">
-                    <span class="font-bold">Skapa Skott</span><br><span class="text-xs text-gray-400">1 Metal -> 10 Skott</span>
+                    <span class="font-bold">Craft Bullets</span><br><span class="text-xs text-gray-400">1 Metal -> 10 Bullets</span>
                 </button>
                 <button id="craft-reinforced-btn" class="action-button">
-                    <span class="font-bold">Förstärk Metall</span><br><span class="text-xs text-gray-400">2 Metal -> 1 F.Me</span>
+                    <span class="font-bold">Reinforce Metal</span><br><span class="text-xs text-gray-400">2 Metal -> 1 Re.Me</span>
                 </button>
                 <button id="craft-bonemeal-btn" class="action-button text-yellow-100 border-yellow-900 bg-yellow-900 hover:bg-yellow-800">
-                    <span class="font-bold">Krossa Ben</span><br><span class="text-xs text-yellow-200">1 Waste -> 5 Bone</span>
+                    <span class="font-bold">Crush Bone</span><br><span class="text-xs text-yellow-200">1 Waste -> 5 Bone</span>
                 </button>
+                <button id="close-craft-btn" class="menu-button text-sm bg-gray-600 mt-4">Close</button>
             </div>
 
             <div id="build-menu" class="ui-element hidden">
-                <h3 class="text-lg font-bold mb-2 text-center text-green-400">Konstruktion</h3>
+                <h3 class="text-lg font-bold mb-2 text-center text-green-400">Construction</h3>
                 <button id="build-tower-btn" class="menu-button text-sm"></button>
                 <button id="build-wall-btn" class="menu-button text-sm"></button>
                 <button id="build-house-btn" class="menu-button text-sm"></button>
@@ -355,47 +384,42 @@
                 <button id="build-barracks-btn" class="menu-button text-sm"></button>
                 <button id="build-farm-btn" class="menu-button text-sm text-yellow-200"></button>
                 <button id="build-mine-btn" class="menu-button text-sm text-gray-300"></button>
-                <button id="build-cancel-btn" class="menu-button text-sm bg-gray-600 mt-2">Avbryt</button>
+                <button id="build-cancel-btn" class="menu-button text-sm bg-gray-600 mt-2">Cancel</button>
+            </div>
+
+            <div id="placement-controls" class="ui-element hidden">
+                <button id="confirm-placement-btn" class="confirm-btn">✔</button>
+                <button id="cancel-placement-btn" class="cancel-btn">✖</button>
             </div>
             
             <div id="troop-select-menu" class="ui-element hidden">
-                <h4 class="text-sm font-bold mb-2 text-yellow-400 text-center uppercase tracking-wide">Räddningsuppdrag</h4>
-                <p class="text-xs mb-3 text-gray-400 text-center">Skicka trupper för att säkra civila.<br>(Kostar 5 Mat)</p>
-                <button data-troops="1" class="menu-button text-xs py-2 troop-mission-btn">1 Trupp (Liten belöning)</button>
-                <button data-troops="5" class="menu-button text-xs py-2 troop-mission-btn">5 Trupper (Mellan belöning)</button>
-                <button data-troops="10" class="menu-button text-xs py-2 troop-mission-btn">10 Trupper (Stor belöning)</button>
-                <button id="troop-select-cancel-btn" class="menu-button text-xs bg-gray-600 mt-2">Avbryt</button>
-            </div>
-
-            <div id="attack-menu" class="ui-element hidden">
-                <h4 class="text-sm font-bold mb-2 text-red-500 text-center uppercase tracking-wide">Invasion</h4>
-                <p class="text-xs mb-3 text-gray-400 text-center">Välj arméstorlek för attack:</p>
-                <button data-attack="5" class="menu-button text-xs py-2 attack-btn bg-red-900 border-red-800 hover:bg-red-800">Skicka 5 Trupper</button>
-                <button data-attack="10" class="menu-button text-xs py-2 attack-btn bg-red-900 border-red-800 hover:bg-red-800">Skicka 10 Trupper</button>
-                <button data-attack="50" class="menu-button text-xs py-2 attack-btn bg-red-900 border-red-800 hover:bg-red-800">Skicka 50 Trupper</button>
-                <button data-attack="100" class="menu-button text-xs py-2 attack-btn bg-red-900 border-red-800 hover:bg-red-800">Skicka 100 Trupper</button>
-                <button id="attack-menu-cancel-btn" class="menu-button text-xs bg-gray-600 mt-2">Avbryt</button>
+                <h4 class="text-sm font-bold mb-2 text-yellow-400 text-center uppercase tracking-wide">Rescue Mission</h4>
+                <p class="text-xs mb-3 text-gray-400 text-center">Send troops to secure civilians.<br>(Costs 5 Food)</p>
+                <button data-troops="1" class="menu-button text-xs py-2 troop-mission-btn">1 Troop (Small reward)</button>
+                <button data-troops="5" class="menu-button text-xs py-2 troop-mission-btn">5 Troops (Medium reward)</button>
+                <button data-troops="10" class="menu-button text-xs py-2 troop-mission-btn">10 Troops (Large reward)</button>
+                <button id="troop-select-cancel-btn" class="menu-button text-xs bg-gray-600 mt-2">Cancel</button>
             </div>
 
             <div id="building-menu" class="ui-element hidden">
-                <h4 id="building-menu-title" class="text-lg font-bold text-center text-blue-300">Byggnad</h4>
+                <h4 id="building-menu-title" class="text-lg font-bold text-center text-blue-300">Building</h4>
                 <button id="repair-btn" class="menu-button text-sm bg-success hidden">
-                    <span>Reparera</span> <span class="text-xs opacity-75">(1 F.Me)</span>
+                    <span>Repair</span> <span class="text-xs opacity-75">(1 Re.Me)</span>
                 </button>
                 <button id="upgrade-btn" class="menu-button text-sm bg-info">
-                    <span>Uppgradera</span>
+                    <span>Upgrade</span>
                 </button>
                 <button id="destroy-btn" class="menu-button text-sm bg-danger">
-                    <span>Riv Byggnad</span>
+                    <span>Demolish</span>
                 </button>
                 <button id="building-menu-cancel-btn" class="menu-button text-sm bg-gray-600 justify-center hover:bg-gray-500">
-                    Stäng Meny
+                    Close Menu
                 </button>
             </div>
         </div>
         
         <div id="sandbox-message" class="hidden ui-element absolute bottom-10 left-1/2 -translate-x-1/2 bg-yellow-600 text-black p-3 rounded-lg font-bold text-center border border-yellow-400 shadow-lg">
-            Sandbox-läge: Tryck 'M' för slumpmässig fiende, 'B' för Boss. Tryck 'Y' för Åtgärdsmeny.
+            Sandbox Mode: Press 'M' for random enemy, 'B' for Boss. Press 'Y' for Action Menu.
         </div>
 
     </div>
@@ -418,7 +442,6 @@
         const sandboxMessage = document.getElementById('sandbox-message');
         const actionsBoard = document.getElementById('actions-board');
         const troopSelectMenu = document.getElementById('troop-select-menu');
-        const attackMenu = document.getElementById('attack-menu');
         const pauseMenu = document.getElementById('pause-menu');
         const buildingMenu = document.getElementById('building-menu');
         
@@ -434,9 +457,7 @@
         const pauseControlsBtn = document.getElementById('pause-controls-btn');
         const pauseHomeBtn = document.getElementById('pause-home-btn');
         const troopSelectCancelBtn = document.getElementById('troop-select-cancel-btn');
-        const attackMenuCancelBtn = document.getElementById('attack-menu-cancel-btn');
         const troopMissionButtons = troopSelectMenu.querySelectorAll('.troop-mission-btn');
-        const attackButtons = attackMenu.querySelectorAll('.attack-btn');
         const startGameIntroBtn = document.getElementById('start-game-intro-btn'); 
         const continueGameBtn = document.getElementById('continue-game-btn'); 
         const sandboxGameBtn = document.getElementById('sandbox-game-btn');
@@ -446,7 +467,7 @@
         const controlsBackBtn = document.getElementById('controls-back-btn');
         const gameOverBackBtn = document.getElementById('game-over-back-btn');
         
-        // Byggknappar
+        // Building buttons
         const buildTowerBtn = document.getElementById('build-tower-btn');
         const buildWallBtn = document.getElementById('build-wall-btn');
         const buildHouseBtn = document.getElementById('build-house-btn');
@@ -581,7 +602,7 @@
         };
 
 
-        // Spelvariabler
+        // Game variables
         let gameState = 'MENU';
         let gameMode = 'NORMAL';
         let savedGameState = null; 
@@ -590,9 +611,8 @@
 
         // FRAKTIONER
         const FACTION = { PLAYER: 'PLAYER', NEUTRAL: 'NEUTRAL' };
-        let enemyFactions = []; 
 
-        // Spelobjekt
+        // Game objects
         let world = {}; 
         let base;
         let towers = [];
@@ -610,8 +630,6 @@
         let selectedTile = null;
         let targetAbandonedHouse = null; 
         let focusedBuilding = null;
-        let targetEnemyBase = null; 
-
         let monsterSpawnTimer = 0;
         let abandonedHouseSpawnTimer = 0;
         let inhabitantGrowTimer = 0;
@@ -620,6 +638,12 @@
         const INHABITANT_GROW_RATE = 5000; 
 
         let resources = {};
+        
+        // --- Placement Mode State ---
+        let placementMode = false;
+        let ghostType = null;
+        let ghostX = 0;
+        let ghostY = 0;
         
         // Kostnader
         const COSTS = {
@@ -640,7 +664,7 @@
             BARRACKS: { level2: { wood: 75, metal: 50 }, level3: { wood: 150, metal: 100 } },
             FARM: { level2: { earth: 50, boneMeal: 40 }, level3: { earth: 100, boneMeal: 80 } }, 
             MINE: { level2: { wood: 100, reinforcedMetal: 5 }, level3: { wood: 200, reinforcedMetal: 10 } },
-            BASE: { } // Dynamisk hantering för basen
+            BASE: { } // Dynamic handling for the base
         };
         
         const TROOP_RESCUE_FOOD_COST = 5; 
@@ -654,110 +678,31 @@
         };
 
         function updateBuildButtonLabels() {
-            buildTowerBtn.textContent = `Torn (${COSTS.TOWER.metal} Me, ${COSTS.TOWER.wood} Tr)`;
-            buildWallBtn.textContent = `Mur (${COSTS.WALL.wood} Tr, ${COSTS.WALL.reinforcedMetal} F.Me)`;
-            buildHouseBtn.textContent = `Hus (${COSTS.HOUSE.wood} Tr, ${COSTS.HOUSE.earth} Jo)`;
-            buildGreenhouseBtn.textContent = `Växthus (${COSTS.GREENHOUSE.earth} Jo, ${COSTS.GREENHOUSE.wood} Tr)`;
-            buildBarracksBtn.textContent = `Barack (${COSTS.BARRACKS.wood} Tr, ${COSTS.BARRACKS.metal} Me)`;
-            buildFarmBtn.textContent = `Farm (${COSTS.FARM.earth} Jo, ${COSTS.FARM.boneMeal} Ben)`;
-            buildMineBtn.textContent = `Gruva (${COSTS.MINE.wood} Tr)`;
+            buildTowerBtn.textContent = `Tower (${COSTS.TOWER.metal} Me, ${COSTS.TOWER.wood} Wo)`;
+            buildWallBtn.textContent = `Wall (${COSTS.WALL.wood} Wo, ${COSTS.WALL.reinforcedMetal} Re.Me)`;
+            buildHouseBtn.textContent = `House (${COSTS.HOUSE.wood} Wo, ${COSTS.HOUSE.earth} Ea)`;
+            buildGreenhouseBtn.textContent = `Greenhouse (${COSTS.GREENHOUSE.earth} Ea, ${COSTS.GREENHOUSE.wood} Wo)`;
+            buildBarracksBtn.textContent = `Barracks (${COSTS.BARRACKS.wood} Wo, ${COSTS.BARRACKS.metal} Me)`;
+            buildFarmBtn.textContent = `Farm (${COSTS.FARM.earth} Ea, ${COSTS.FARM.boneMeal} Bone)`;
+            buildMineBtn.textContent = `Mine (${COSTS.MINE.wood} Wo)`;
+
+            // Grey out unaffordable buttons
+            [
+                { btn: buildTowerBtn, cost: COSTS.TOWER },
+                { btn: buildWallBtn, cost: COSTS.WALL },
+                { btn: buildHouseBtn, cost: COSTS.HOUSE },
+                { btn: buildGreenhouseBtn, cost: COSTS.GREENHOUSE },
+                { btn: buildBarracksBtn, cost: COSTS.BARRACKS },
+                { btn: buildFarmBtn, cost: COSTS.FARM },
+                { btn: buildMineBtn, cost: COSTS.MINE }
+            ].forEach(item => {
+                const canAfford = checkCost(item.cost);
+                item.btn.disabled = !canAfford;
+            });
         }
 
         // --- Klasser ---
         
-        class BotAI {
-            constructor(factionId, baseX, baseY) {
-                this.faction = factionId;
-                this.baseX = baseX;
-                this.baseY = baseY;
-                this.resources = { metal: 200, wood: 200, earth: 200, reinforcedMetal: 5, boneMeal: 10, monsterWaste: 0 };
-                this.buildTimer = 0;
-                this.attackTimer = 0;
-                this.base = new Base(baseX, baseY, this.faction);
-                occupyTile(baseX, baseY, 2, this.base);
-            }
-
-            update(deltaTime) {
-                if (!this.base || this.base.hp <= 0) return;
-                this.resources.metal += 0.05; this.resources.wood += 0.05; this.resources.earth += 0.02;
-
-                this.buildTimer += deltaTime;
-                if (this.buildTimer > 3000) { 
-                    this.buildTimer = 0;
-                    this.manageEconomyAndBuild();
-                }
-
-                this.attackTimer += deltaTime;
-                if (this.attackTimer > 60000) { 
-                    this.attackTimer = 0;
-                    if (Math.random() < 0.4) this.launchAttackOnPlayer();
-                }
-            }
-
-            manageEconomyAndBuild() {
-                const rand = Math.random();
-                if (rand < 0.5) this.tryBuildEconomy();
-                else if (rand < 0.8) this.tryBuildDefenses();
-            }
-
-            tryBuildEconomy() {
-                const types = ['MINE', 'FARM', 'HOUSE', 'GREENHOUSE', 'BARRACKS'];
-                const type = types[Math.floor(Math.random() * types.length)];
-                const cost = COSTS[type];
-                if (this.canAfford(cost)) {
-                    const pos = this.findBuildSpot();
-                    if (pos) {
-                        this.payCost(cost);
-                        let b;
-                        if (type === 'MINE') { b = new Mine(pos.x, pos.y, this.faction); mines.push(b); }
-                        else if (type === 'FARM') { b = new Farm(pos.x, pos.y, this.faction); farms.push(b); }
-                        else if (type === 'HOUSE') { b = new House(pos.x, pos.y, this.faction); houses.push(b); }
-                        else if (type === 'GREENHOUSE') { b = new Greenhouse(pos.x, pos.y, this.faction); greenhouses.push(b); }
-                        else if (type === 'BARRACKS') { b = new Barracks(pos.x, pos.y, this.faction); barracks.push(b); }
-                        occupyTile(pos.x, pos.y, 1, b);
-                    }
-                }
-            }
-
-            tryBuildDefenses() {
-                const pos = this.findBuildSpot();
-                if (!pos) return;
-                if (this.canAfford(COSTS.TOWER) && Math.random() > 0.5) {
-                    this.payCost(COSTS.TOWER);
-                    const t = new Tower(pos.x, pos.y, this.faction);
-                    towers.push(t);
-                    occupyTile(pos.x, pos.y, 1, t);
-                } else if (this.canAfford(COSTS.WALL)) {
-                    this.payCost(COSTS.WALL);
-                    const w = new Wall(pos.x, pos.y, this.faction);
-                    walls.push(w);
-                    occupyTile(pos.x, pos.y, 1, w);
-                }
-            }
-
-            findBuildSpot() {
-                const radius = Math.floor(Math.random() * 8) + 3;
-                const angle = Math.random() * Math.PI * 2;
-                const tx = Math.floor(this.baseX + Math.cos(angle) * radius);
-                const ty = Math.floor(this.baseY + Math.sin(angle) * radius);
-                if (!isTileOccupied(tx, ty)) return {x: tx, y: ty};
-                return null;
-            }
-
-            canAfford(cost) {
-                for (const [res, amt] of Object.entries(cost)) if ((this.resources[res] || 0) < amt) return false;
-                return true;
-            }
-            payCost(cost) { for (const [res, amt] of Object.entries(cost)) this.resources[res] -= amt; }
-            
-            launchAttackOnPlayer() {
-                const startPos = this.base.getPixelPos();
-                const count = Math.floor(Math.random() * 8) + 4;
-                const t = new Troop(startPos.x, startPos.y, base, count, 'ATTACK', this.faction);
-                troops.push(t);
-            }
-        }
-
         class Building {
             constructor(x, y, type, initialCost, baseMaxHp = 50, faction = FACTION.PLAYER) {
                 this.x = x; this.y = y; this.type = type;
@@ -802,8 +747,7 @@
             }
 
             destroy() {
-                if (this instanceof Base && this.faction !== FACTION.PLAYER && resources.kills !== undefined) handleBaseConquest(this);
-                else if (this instanceof Base && this.faction === FACTION.PLAYER) { gameOver(); return; }
+                if (this instanceof Base && this.faction === FACTION.PLAYER) { gameOver(); return; }
 
                 delete world[this.key];
                 const lists = [towers, walls, houses, greenhouses, barracks, farms, mines];
@@ -812,11 +756,6 @@
                     if(idx > -1) list.splice(idx, 1);
                 });
                 
-                if (this instanceof Base) {
-                   const enemyIdx = enemyFactions.findIndex(e => e.base === this);
-                   if (enemyIdx > -1) enemyFactions.splice(enemyIdx, 1);
-                }
-
                 if (this instanceof House && this.faction === FACTION.PLAYER) {
                     resources.maxInhabitants -= this.inhabitantCapacity;
                     resources.inhabitants = Math.min(resources.inhabitants, resources.maxInhabitants);
@@ -824,17 +763,6 @@
             }
         }
         
-        function handleBaseConquest(destroyedBase) {
-            const bot = enemyFactions.find(b => b.base === destroyedBase);
-            if (bot) {
-                resources.metal += Math.floor(bot.resources.metal * 0.5);
-                resources.wood += Math.floor(bot.resources.wood * 0.5);
-                resources.earth += Math.floor(bot.resources.earth * 0.5);
-                const allBuildings = [...towers, ...walls, ...houses, ...greenhouses, ...barracks, ...farms, ...mines];
-                allBuildings.forEach(b => { if (b.faction === bot.faction) b.faction = FACTION.PLAYER; });
-            }
-        }
-
         class Base extends Building {
             constructor(x, y, faction = FACTION.PLAYER) {
                 super(x, y, 'BASE', {}, 100, faction);
@@ -854,11 +782,11 @@
                 const baseSize = this.size * ts;
 
                 // Bunker bas
-                ctx.fillStyle = this.faction === FACTION.PLAYER ? '#334155' : '#450a0a'; 
+                ctx.fillStyle = '#334155'; 
                 ctx.fillRect(x + 2, y + 2, baseSize - 4, baseSize - 4); 
                 
                 // Förstärkningar (X-mönster)
-                ctx.strokeStyle = this.faction === FACTION.PLAYER ? '#475569' : '#7f1d1d';
+                ctx.strokeStyle = '#475569';
                 ctx.lineWidth = 4;
                 ctx.beginPath();
                 ctx.moveTo(x, y); ctx.lineTo(x + baseSize, y + baseSize);
@@ -869,7 +797,7 @@
                 ctx.save();
                 ctx.translate(x + baseSize / 2, y + baseSize / 2);
                 ctx.rotate(this.radarAngle);
-                ctx.fillStyle = this.faction === FACTION.PLAYER ? '#0ea5e9' : '#ef4444';
+                ctx.fillStyle = '#0ea5e9';
                 ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = 'rgba(255,255,255,0.2)';
                 ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0, 30, -0.5, 0.5); ctx.fill();
@@ -888,7 +816,7 @@
             update(deltaTime) { this.turret.update(deltaTime); }
             draw(ctx) {
                 super.draw(ctx);
-                ctx.fillStyle = this.faction === FACTION.PLAYER ? '#64748b' : '#7f1d1d'; 
+                ctx.fillStyle = '#64748b'; 
                 ctx.strokeStyle = '#0f172a';
                 ctx.lineWidth = 2;
                 ctx.fillRect(this.x * TILE_SIZE, this.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
@@ -1292,7 +1220,7 @@
         // --- Hjälpfunktioner ---
         
         function getAllBuildings() {
-            return [base, ...enemyFactions.map(f => f.base), ...towers, ...walls, ...houses, ...greenhouses, ...barracks, ...farms, ...mines];
+            return [base, ...towers, ...walls, ...houses, ...greenhouses, ...barracks, ...farms, ...mines];
         }
 
         function getDistance(obj1, obj2) {
@@ -1321,7 +1249,7 @@
         }
         
         function spawnMonster() {
-            const targets = [base, ...enemyFactions.map(f => f.base)].filter(b => b.hp > 0);
+            const targets = [base].filter(b => b.hp > 0);
             if (targets.length === 0) return;
             const targetBase = targets[Math.floor(Math.random() * targets.length)];
 
@@ -1353,21 +1281,6 @@
             }
         }
         
-        function spawnEnemyFactions() {
-            for(let i=0; i<2; i++) {
-                let x, y, dist;
-                do {
-                    x = Math.floor((Math.random() * 80) - 40); 
-                    y = Math.floor((Math.random() * 80) - 40);
-                    dist = Math.sqrt(Math.pow(x - base.x, 2) + Math.pow(y - base.y, 2));
-                } while (dist < 30 || isTileOccupied(x, y)); 
-                
-                const factionId = `ENEMY_${i+1}`;
-                const bot = new BotAI(factionId, x, y);
-                enemyFactions.push(bot);
-            }
-        }
-
         function updateUI() {
             const inf = '∞';
             const isSandbox = gameMode === 'SANDBOX';
@@ -1399,7 +1312,6 @@
             buildMenu.classList.add('hidden');
             actionsBoard.classList.add('hidden'); 
             troopSelectMenu.classList.add('hidden');
-            attackMenu.classList.add('hidden');
             buildingMenu.classList.add('hidden'); 
             pauseMenu.classList.add('hidden'); 
             canvas.style.display = 'none'; 
@@ -1462,7 +1374,6 @@
             buildMenu.classList.add('hidden');
             troopSelectMenu.classList.add('hidden');
             buildingMenu.classList.add('hidden');
-            attackMenu.classList.add('hidden');
             // Vi nollställer inte selectedTile etc här alltid för att vissa menyer behöver datan,
             // men vi gömmer de visuella elementen.
         }
@@ -1493,14 +1404,24 @@
             return UPGRADE_COSTS[building.type][nextLevelKey] || null;
         }
 
-        // --- Spel-logik ---
+        // Game logic
 
         function update(deltaTime) {
             const cameraSpeed = 500 / camera.zoom;
-            if (keysPressed['w'] || keysPressed['ArrowUp']) camera.y -= cameraSpeed * (deltaTime / 1000);
-            if (keysPressed['s'] || keysPressed['ArrowDown']) camera.y += cameraSpeed * (deltaTime / 1000);
-            if (keysPressed['a'] || keysPressed['ArrowLeft']) camera.x -= cameraSpeed * (deltaTime / 1000);
-            if (keysPressed['d'] || keysPressed['ArrowRight']) camera.x += cameraSpeed * (deltaTime / 1000);
+            
+            if (placementMode) {
+                // In placement mode, WASD moves the ghost
+                const ghostSpeed = 15; // tiles per second
+                if (keysPressed['w'] || keysPressed['ArrowUp']) ghostY -= ghostSpeed * (deltaTime / 1000);
+                if (keysPressed['s'] || keysPressed['ArrowDown']) ghostY += ghostSpeed * (deltaTime / 1000);
+                if (keysPressed['a'] || keysPressed['ArrowLeft']) ghostX -= ghostSpeed * (deltaTime / 1000);
+                if (keysPressed['d'] || keysPressed['ArrowRight']) ghostX += ghostSpeed * (deltaTime / 1000);
+            } else {
+                if (keysPressed['w'] || keysPressed['ArrowUp']) camera.y -= cameraSpeed * (deltaTime / 1000);
+                if (keysPressed['s'] || keysPressed['ArrowDown']) camera.y += cameraSpeed * (deltaTime / 1000);
+                if (keysPressed['a'] || keysPressed['ArrowLeft']) camera.x -= cameraSpeed * (deltaTime / 1000);
+                if (keysPressed['d'] || keysPressed['ArrowRight']) camera.x += cameraSpeed * (deltaTime / 1000);
+            }
 
             if (gameMode === 'NORMAL') {
                 monsterSpawnTimer += deltaTime;
@@ -1513,9 +1434,6 @@
             inhabitantGrowTimer += deltaTime;
             if (inhabitantGrowTimer >= INHABITANT_GROW_RATE && resources.inhabitants < resources.maxInhabitants) { inhabitantGrowTimer = 0; resources.inhabitants++; }
             
-            // Uppdatera AI
-            enemyFactions.forEach(bot => bot.update(deltaTime));
-
             // Uppdatera enheter
             const allUpdateables = getAllBuildings();
             [...allUpdateables, ...troops, ...projectiles, ...monsters].forEach(obj => {
@@ -1529,7 +1447,6 @@
             abandonedHouses = abandonedHouses.filter(ah => world[ah.key]);
             walls = walls.filter(w => w.hp > 0); 
             towers = towers.filter(t => t.hp > 0);
-            enemyFactions = enemyFactions.filter(b => b.base.hp > 0); 
 
             updateUI();
         }
@@ -1564,6 +1481,29 @@
             
             allObjects.forEach(obj => { if(obj) obj.draw(ctx); });
             
+            if (placementMode && ghostType) {
+                const gx = Math.floor(ghostX);
+                const gy = Math.floor(ghostY);
+                const isOccupied = isTileOccupied(gx, gy);
+                
+                ctx.save();
+                ctx.globalAlpha = 0.5;
+                ctx.fillStyle = isOccupied ? 'rgba(239, 68, 68, 0.4)' : 'rgba(34, 197, 94, 0.4)';
+                ctx.strokeStyle = isOccupied ? '#ef4444' : '#22c55e';
+                ctx.lineWidth = 3;
+                
+                ctx.fillRect(gx * TILE_SIZE, gy * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                ctx.strokeRect(gx * TILE_SIZE, gy * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                
+                // Draw a small preview of the building type
+                ctx.fillStyle = isOccupied ? '#991b1b' : '#166534';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(ghostType, (gx + 0.5) * TILE_SIZE, (gy + 0.5) * TILE_SIZE);
+                
+                ctx.restore();
+            }
+
             if (selectedTile) {
                 ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
                 ctx.strokeStyle = '#38bdf8';
@@ -1577,6 +1517,7 @@
 
         function gameLoop(timestamp) {
             if (gameState === 'GAME' || gameState === 'SANDBOX') {
+                if (!lastTime) lastTime = timestamp;
                 let deltaTime = timestamp - lastTime;
                 if (deltaTime > 100) deltaTime = 100; 
                 lastTime = timestamp;
@@ -1599,27 +1540,23 @@
             if (gameMode === 'SANDBOX') sandboxMessage.classList.remove('hidden');
             
             targetAbandonedHouse = null;
-            targetEnemyBase = null;
             focusedBuilding = null; 
             selectedTile = null;
 
             world = {};
             towers = []; walls = []; houses = []; greenhouses = []; barracks = []; farms = []; mines = []; abandonedHouses = [];
-            monsters = []; projectiles = []; troops = []; enemyFactions = [];
+            monsters = []; projectiles = []; troops = []; 
             
             base = new Base(-1, -1, FACTION.PLAYER);
             occupyTile(-1, -1, base.size, base);
             
-            // Spawna fiendebaser
-            spawnEnemyFactions();
-
             resources = {
                 kills: 0, troops: 10, metal: 100, wood: 100, earth: 100, bullets: 500, food: 50,
                 reinforcedMetal: 0, monsterWaste: 0, boneMeal: 0, inhabitants: 5, maxInhabitants: 5
             };
             
-            camera.x = 0; camera.y = 0; camera.zoom = 1;
-            lastTime = performance.now();
+            camera.x = 25; camera.y = 25; camera.zoom = 1;
+            lastTime = 0;
             requestAnimationFrame(gameLoop);
         }
         
@@ -1654,6 +1591,51 @@
             selectedTile = null;
         }
 
+        function enterPlacementMode(type) {
+            placementMode = true;
+            ghostType = type;
+            // Start ghost at center of screen
+            const center = screenToWorld(canvas.width / 2, canvas.height / 2);
+            const grid = worldToGrid(center.x, center.y);
+            ghostX = grid.tileX;
+            ghostY = grid.tileY;
+            
+            buildMenu.classList.add('hidden');
+            document.getElementById('placement-controls').classList.remove('hidden');
+        }
+
+        function confirmPlacement() {
+            if (!placementMode || !ghostType) return;
+            const gx = Math.floor(ghostX);
+            const gy = Math.floor(ghostY);
+            
+            if (isTileOccupied(gx, gy)) return; // Can't build here
+            
+            const cost = COSTS[ghostType];
+            if (!checkCost(cost)) return;
+            
+            let newBuilding;
+            if (ghostType === 'TOWER') { newBuilding = new Tower(gx, gy); towers.push(newBuilding); } 
+            else if (ghostType === 'WALL') { newBuilding = new Wall(gx, gy); walls.push(newBuilding); } 
+            else if (ghostType === 'HOUSE') { newBuilding = new House(gx, gy); houses.push(newBuilding); resources.maxInhabitants += newBuilding.inhabitantCapacity; } 
+            else if (ghostType === 'GREENHOUSE') { newBuilding = new Greenhouse(gx, gy); greenhouses.push(newBuilding); } 
+            else if (ghostType === 'BARRACKS') { newBuilding = new Barracks(gx, gy); barracks.push(newBuilding); } 
+            else if (ghostType === 'FARM') { newBuilding = new Farm(gx, gy); farms.push(newBuilding); } 
+            else if (ghostType === 'MINE') { newBuilding = new Mine(gx, gy); mines.push(newBuilding); } 
+            
+            if (newBuilding) {
+                payCost(cost);
+                occupyTile(gx, gy, 1, newBuilding);
+                cancelPlacement();
+            }
+        }
+
+        function cancelPlacement() {
+            placementMode = false;
+            ghostType = null;
+            document.getElementById('placement-controls').classList.add('hidden');
+        }
+
         // Mouse Events
         canvas.addEventListener('contextmenu', (e) => {
             e.preventDefault(); 
@@ -1669,18 +1651,13 @@
             selectedTile = null;
             targetAbandonedHouse = null;
             focusedBuilding = null;
-            targetEnemyBase = null;
 
             if (targetObject instanceof AbandonedHouse) {
                 targetAbandonedHouse = targetObject; 
                 positionMenu(troopSelectMenu, e.clientX, e.clientY);
             } 
-            else if (targetObject instanceof Base && targetObject.faction !== FACTION.PLAYER) {
-                targetEnemyBase = targetObject;
-                positionMenu(attackMenu, e.clientX, e.clientY);
-            }
             else if (targetObject instanceof Building && targetObject.faction === FACTION.PLAYER) {
-                // Hantera egna byggnader (inklusive Bas)
+                // Handle player buildings (including Base)
                 focusedBuilding = targetObject;
                 if (focusedBuilding.hp < focusedBuilding.maxHp) {
                     repairBtn.classList.remove('hidden');
@@ -1689,18 +1666,18 @@
 
                 const cost = getUpgradeCost(focusedBuilding);
                 
-                // Visa alltid uppgraderingsknappen för Base (eller andra byggnader med uppgraderingar)
+                // Show upgrade button for buildings with upgrade paths
                 if (cost) {
                     const costString = `(${Object.entries(cost).map(([res, amt]) => `${amt} ${res.substring(0, 2)}`).join(', ')})`;
-                    upgradeBtn.querySelector('span').textContent = `Uppgradera ${costString}`;
+                    upgradeBtn.querySelector('span').textContent = `Upgrade ${costString}`;
                     upgradeBtn.classList.remove('hidden');
                     upgradeBtn.disabled = !checkCost(cost);
                 } else {
-                    // Max level nådd för vanliga byggnader
+                    // Max level reached or no upgrades available
                     upgradeBtn.classList.add('hidden');
                 }
                 
-                // Man ska inte kunna förstöra sin egen bas
+                // Prevent demolishing the base
                 destroyBtn.classList.toggle('hidden', focusedBuilding instanceof Base);
                 positionMenu(buildingMenu, e.clientX, e.clientY);
             }
@@ -1716,15 +1693,14 @@
                 const worldPos = screenToWorld(e.clientX, e.clientY);
                 const gridPos = worldToGrid(worldPos.x, worldPos.y);
                 
-                // Om vi klickar på tom mark -> Öppna byggmeny
+                // Close menus if we click on ground
+                closeContextMenus();
+                
                 if (!isTileOccupied(gridPos.tileX, gridPos.tileY)) { 
-                    closeContextMenus(); // Stäng andra menyer
+                    // No longer auto-opening build menu on click, using button instead
+                    // but we can still select the tile if we want.
                     selectedTile = gridPos; 
-                    positionMenu(buildMenu, e.clientX, e.clientY); 
                 } else {
-                    // Om vi klickar på något annat (t.ex. bara markera eller dra)
-                    // Stäng menyer om vi klickar "bredvid"
-                    closeContextMenus();
                     camera.isDragging = true; 
                     camera.lastMouse = { x: e.clientX, y: e.clientY }; 
                 }
@@ -1757,22 +1733,6 @@
             }
         }));
 
-        attackButtons.forEach(btn => btn.addEventListener('click', (e) => {
-            if (targetEnemyBase) {
-                const count = parseInt(e.currentTarget.getAttribute('data-attack'));
-                if (resources.troops >= count) {
-                    resources.troops -= count;
-                    const sp = base.getPixelPos();
-                    troops.push(new Troop(sp.x, sp.y, targetEnemyBase, count, 'ATTACK'));
-                    console.log(`Skickar ${count} trupper mot fienden!`);
-                } else {
-                    console.log("Inte tillräckligt med trupper!");
-                }
-                attackMenu.classList.add('hidden');
-            }
-        }));
-
-        attackMenuCancelBtn.addEventListener('click', () => attackMenu.classList.add('hidden'));
         troopSelectCancelBtn.addEventListener('click', () => troopSelectMenu.classList.add('hidden'));
         buildingMenuCancelBtn.addEventListener('click', () => buildingMenu.classList.add('hidden'));
         buildCancelBtn.addEventListener('click', () => buildMenu.classList.add('hidden'));
@@ -1825,14 +1785,37 @@
         craftReinforcedBtn.addEventListener('click', () => { if(resources.metal >= 2) { resources.metal-=2; resources.reinforcedMetal++; } });
         craftBonemealBtn.addEventListener('click', () => { if(resources.monsterWaste >= 1) { resources.monsterWaste--; resources.boneMeal+=5; } });
 
-        // Bygg
-        buildTowerBtn.addEventListener('click', () => tryBuild('TOWER'));
-        buildWallBtn.addEventListener('click', () => tryBuild('WALL'));
-        buildHouseBtn.addEventListener('click', () => tryBuild('HOUSE'));
-        buildGreenhouseBtn.addEventListener('click', () => tryBuild('GREENHOUSE'));
-        buildBarracksBtn.addEventListener('click', () => tryBuild('BARRACKS'));
-        buildFarmBtn.addEventListener('click', () => tryBuild('FARM'));
-        buildMineBtn.addEventListener('click', () => tryBuild('MINE'));
+        // Building logic
+        buildTowerBtn.addEventListener('click', () => enterPlacementMode('TOWER'));
+        buildWallBtn.addEventListener('click', () => enterPlacementMode('WALL'));
+        buildHouseBtn.addEventListener('click', () => enterPlacementMode('HOUSE'));
+        buildGreenhouseBtn.addEventListener('click', () => enterPlacementMode('GREENHOUSE'));
+        buildBarracksBtn.addEventListener('click', () => enterPlacementMode('BARRACKS'));
+        buildFarmBtn.addEventListener('click', () => enterPlacementMode('FARM'));
+        buildMineBtn.addEventListener('click', () => enterPlacementMode('MINE'));
+
+        // Sidebar buttons
+        document.getElementById('open-build-btn').addEventListener('click', () => {
+            closeContextMenus();
+            updateBuildButtonLabels();
+            buildMenu.classList.remove('hidden');
+            buildMenu.style.position = 'fixed';
+            buildMenu.style.right = '90px';
+            buildMenu.style.bottom = '160px';
+            buildMenu.style.top = 'auto';
+            buildMenu.style.left = 'auto';
+        });
+
+        document.getElementById('open-craft-btn').addEventListener('click', () => {
+            actionsBoard.classList.toggle('hidden');
+        });
+
+        document.getElementById('close-craft-btn').addEventListener('click', () => {
+            actionsBoard.classList.add('hidden');
+        });
+
+        document.getElementById('confirm-placement-btn').addEventListener('click', confirmPlacement);
+        document.getElementById('cancel-placement-btn').addEventListener('click', cancelPlacement);
 
         // Tangenter
         window.addEventListener('keydown', (e) => {
@@ -1842,14 +1825,20 @@
                 if (gameState === 'GAME' || gameState === 'SANDBOX') { savedGameState = gameState; gameState = 'PAUSED'; pauseMenu.classList.remove('hidden'); }
                 else if (gameState === 'PAUSED') { gameState = savedGameState; pauseMenu.classList.add('hidden'); lastTime = performance.now(); requestAnimationFrame(gameLoop); }
             }
-            if (gameState === 'SANDBOX') {
-                if (k === 'm') spawnMonster();
-                if (k === 'b') { monsters.push(new Monster(base.getPixelPos().x + 500, base.getPixelPos().y, 'BOSS')); }
+            if (gameState === 'SANDBOX' || gameState === 'GAME') {
+                if (k === 'm' && gameMode === 'SANDBOX') spawnMonster();
+                if (k === 'b' && gameMode === 'SANDBOX') { monsters.push(new Monster(base.getPixelPos().x + 500, base.getPixelPos().y, 'BOSS')); }
             }
-            if (k === 'y') {
+            if (k === 'y' && !placementMode) {
                 actionsBoard.classList.toggle('hidden');
-                // Vi stänger inte andra menyer med Y, så man kan ha den öppen medan man bygger om man vill,
-                // men enligt önskemål ska de inte täcka varandra, vilket positionMenu hanterar.
+            }
+            if (k === 'escape') {
+                if (placementMode) cancelPlacement();
+                else {
+                    buildMenu.classList.add('hidden');
+                    actionsBoard.classList.add('hidden');
+                    closeContextMenus();
+                }
             }
         });
         window.addEventListener('keyup', (e) => keysPressed[e.key.toLowerCase()] = false);
@@ -1871,9 +1860,5 @@
         resize(); updateBuildButtonLabels(); hideAllScreens(); startMenu.classList.remove('hidden');
 
     </script>
-</body>
-</html>
-</div>
-
 </body>
 </html>
