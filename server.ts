@@ -460,6 +460,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         if (user.banned) return res.status(403).json({ error: "Banned" });
 
         let currentBananas = BigInt(user.score);
+        let winStreak = Number(user.win_streak || 0);
         
         // Ensure betAmount is a valid number/string before converting to BigInt
         // In 'cases' mode, betAmount might be undefined, so we default to 0
@@ -709,10 +710,33 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         }
 
         // Update balance
+        let isWin = false;
+        let isPush = false;
+        
+        if (gameMode !== 'cases') {
+            isWin = winAmount > totalBet;
+            isPush = winAmount === totalBet;
+            
+            // Banana Streak Gadget (Multiplier)
+            // User: "when you have a 1+ win streak (so when you have won 2 times in a row) ... get a 2x multiplier"
+            // Translation: If winStreak >= 1 (they have won at least once before), double the win.
+            if (activeGadgets[3] && winStreak >= 1 && isWin) {
+                winAmount = winAmount * 2n;
+            }
+            
+            // Update streak counter
+            if (isWin) {
+                winStreak++;
+            } else if (!isPush) {
+                winStreak = 0;
+            }
+        }
+
         const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
         
         let updatePayload: any = {
             score: String(newBananas),
+            win_streak: winStreak,
             updated_at: new Date().toISOString()
         };
         
@@ -742,6 +766,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             success: true,
             winAmount: String(winAmount),
             newBalance: String(newBananas),
+            winStreak: winStreak,
             result: resultData,
             royalXP: updatePayload.royal_xp,
             earnedRoyalXP: earnedRoyalXP
