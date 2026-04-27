@@ -45,22 +45,7 @@
         }
         
         .ui-element {
-            pointer-events: auto;
-        }
-
-        .menu-screen {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(15, 23, 42, 0.95);
-            border-radius: 12px;
-            padding: 2rem;
-            width: 90%;
-            max-width: 450px;
-            z-index: 50;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            pointer-events: auto !important;
         }
 
         .menu-button {
@@ -77,6 +62,7 @@
             cursor: pointer;
             transition: all 0.2s ease;
             text-align: center;
+            pointer-events: auto !important;
         }
         
         .menu-button:hover:not(:disabled) {
@@ -232,6 +218,21 @@
             transform: scale(0.95);
         }
 
+        /* Tooltip style */
+        .tooltip {
+            position: absolute;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: none;
+        }
+
         /* Placement controls */
         #placement-controls {
             position: absolute;
@@ -277,7 +278,8 @@
         <div id="start-menu" class="menu-screen ui-element">
             <h1 class="text-4xl font-extrabold text-center mb-2 text-red-500 tracking-wider">LAST DEFENCE</h1>
             <p class="text-center text-gray-400 mb-8 text-sm uppercase tracking-widest">Survival & Conquest</p>
-            <button id="start-game-intro-btn" class="menu-button bg-green-800 hover:bg-green-700 border-green-700">Start Game (Normal)</button>
+            <button id="start-game-intro-btn" class="menu-button bg-green-800 hover:bg-green-700 border-green-700">New Expedition</button>
+            <button id="continue-saved-btn" class="menu-button bg-blue-800 hover:bg-blue-700 border-blue-700 hidden">Continue Mission</button>
             <button id="sandbox-game-btn" class="menu-button bg-yellow-800 hover:bg-yellow-700 border-yellow-700">Sandbox Mode</button>
             <button id="controls-btn" class="menu-button">Controls</button>
             <button id="credits-btn" class="menu-button bg-gray-700 hover:bg-gray-600">Credits</button>
@@ -416,6 +418,7 @@
                     Close Menu
                 </button>
             </div>
+            <div id="ui-tooltip" class="tooltip"></div>
         </div>
         
         <div id="sandbox-message" class="hidden ui-element absolute bottom-10 left-1/2 -translate-x-1/2 bg-yellow-600 text-black p-3 rounded-lg font-bold text-center border border-yellow-400 shadow-lg">
@@ -466,6 +469,20 @@
         const creditsBackBtn = document.getElementById('credits-back-btn'); 
         const controlsBackBtn = document.getElementById('controls-back-btn');
         const gameOverBackBtn = document.getElementById('game-over-back-btn');
+        const uiTooltip = document.getElementById('ui-tooltip');
+        
+        // --- Core Listeners (Moved up to ensure they are attached even if later script fails) ---
+        if (startGameIntroBtn) startGameIntroBtn.addEventListener('click', () => { SoundSystem.init(); hideAllScreens(); introScreen.classList.remove('hidden'); SoundSystem.startMusic(); });
+        if (continueGameBtn) continueGameBtn.addEventListener('click', () => initGame('NORMAL'));
+        if (sandboxGameBtn) sandboxGameBtn.addEventListener('click', () => initGame('SANDBOX'));
+        if (creditsBtn) creditsBtn.addEventListener('click', () => { hideAllScreens(); creditsScreen.classList.remove('hidden'); });
+        if (creditsBackBtn) creditsBackBtn.addEventListener('click', returnToMenu);
+        if (controlsBtn) controlsBtn.addEventListener('click', () => { hideAllScreens(); controlsMenu.classList.remove('hidden'); });
+        if (controlsBackBtn) controlsBackBtn.addEventListener('click', returnToMenu);
+        if (gameOverBackBtn) gameOverBackBtn.addEventListener('click', returnToMenu);
+        if (pauseContinueBtn) pauseContinueBtn.addEventListener('click', () => { gameState = savedGameState; pauseMenu.classList.add('hidden'); lastTime = performance.now(); requestAnimationFrame(gameLoop); });
+        if (pauseHomeBtn) pauseHomeBtn.addEventListener('click', returnToMenu);
+        if (continueSavedBtn) continueSavedBtn.addEventListener('click', loadGame);
         
         // Building buttons
         const buildTowerBtn = document.getElementById('build-tower-btn');
@@ -637,7 +654,20 @@
         const ABANDONED_HOUSE_SPAWN_RATE = 20000;
         const INHABITANT_GROW_RATE = 5000; 
 
-        let resources = {};
+        let resources = {
+            metal: 0,
+            wood: 0,
+            earth: 0,
+            reinforcedMetal: 0,
+            monsterWaste: 0,
+            boneMeal: 0,
+            kills: 0,
+            bullets: 0,
+            food: 0,
+            inhabitants: 0,
+            maxInhabitants: 0,
+            troops: 0
+        };
         
         // --- Placement Mode State ---
         let placementMode = false;
@@ -1027,13 +1057,16 @@
             constructor(x, y, type = 'NORMAL') {
                 this.x = x; this.y = y; this.type = type;
                 const stats = MONSTER_STATS[type];
-                this.size = 20; this.speed = stats.speed; this.color = stats.color;
+                this.size = (type === 'BOSS') ? 50 : 20; 
+                this.speed = stats.speed; this.color = stats.color;
                 this.maxHp = stats.hp; this.hp = this.maxHp; this.damage = stats.damage;
-                this.attackRange = 40; this.attackCooldown = 1000; this.attackTimer = 0;
+                this.attackRange = (type === 'BOSS') ? 60 : 40; 
+                this.attackCooldown = 1000; this.attackTimer = 0;
+                this.legOffset = Math.random() * 100;
             }
             
             update(deltaTime) {
-                // Ljudtrigger (låg chans varje frame)
+                // Sound trigger (low chance)
                 if (Math.random() < 0.001) SoundSystem.playSound('MONSTER_GROAN');
 
                 const target = this.findTarget();
@@ -1042,7 +1075,7 @@
                 const targetPos = target.getPixelPos();
                 const distanceToTarget = getDistance(this, targetPos);
                 
-                // Måste vara närmare byggnader för att slå (radien av byggnaden spelar roll)
+                // Must be close to buildings to strike
                 const attackDist = (target instanceof Building) ? (target.size * TILE_SIZE / 2) + 20 : this.attackRange;
 
                 if (distanceToTarget <= attackDist) {
@@ -1062,7 +1095,6 @@
             findTarget() {
                 let closest = null;
                 let minDist = Infinity;
-                // Attackera ALLA byggnader oavsett typ
                 const allBuildings = getAllBuildings();
                 
                 for(const b of allBuildings) {
@@ -1077,35 +1109,73 @@
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 
-                // Kropp med taggar (slumpmässigt utseende men sparas inte per frame i denna enkla kod)
-                ctx.fillStyle = this.color;
+                const time = performance.now() * 0.005;
+
+                // Procedural Legs
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                const legCount = this.type === 'BOSS' ? 12 : 6;
+                const legLen = this.size * 0.8;
+                for(let i=0; i<legCount; i++) {
+                    const angle = (i / legCount) * Math.PI * 2 + Math.sin(time + this.legOffset + i) * 0.2;
+                    ctx.beginPath();
+                    ctx.moveTo(0,0);
+                    ctx.lineTo(Math.cos(angle) * legLen, Math.sin(angle) * legLen);
+                    ctx.stroke();
+                }
+
+                // Core Body
+                ctx.fillStyle = '#0a0a0a'; 
+                if (this.type === 'BOSS') {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = this.color;
+                }
+                
                 ctx.beginPath();
-                const spikes = 8;
-                for(let i=0; i<spikes * 2; i++){
-                    const r = (i % 2 === 0) ? this.size/2 : this.size;
-                    const a = (Math.PI * i) / spikes;
+                const points = this.type === 'BOSS' ? 12 : 8;
+                for(let i=0; i<points * 2; i++){
+                    const r = (i % 2 === 0) ? this.size/2 : (this.size/2 + Math.sin(time + i) * 2);
+                    const a = (Math.PI * i) / points;
                     ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
                 }
                 ctx.closePath();
                 ctx.fill();
 
-                // Ögon
-                ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(-5, -5, 3, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(5, -5, 3, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#000'; // Pupill
-                ctx.beginPath(); ctx.arc(-5, -5, 1, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(5, -5, 1, 0, Math.PI*2); ctx.fill();
+                // Eyes/Core
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = this.color;
+                if (this.type === 'BOSS') {
+                    // Pulsating core
+                    const coreSize = 5 + Math.sin(time * 2) * 2;
+                    ctx.beginPath(); ctx.arc(0, 0, coreSize, 0, Math.PI*2); ctx.fill();
+                } else {
+                    ctx.beginPath(); ctx.arc(-5, -2, 2, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(5, -2, 2, 0, Math.PI*2); ctx.fill();
+                }
 
                 ctx.restore();
 
                 // HP Bar
-                const barWidth = 24;
+                const barWidth = this.size * 1.5;
                 ctx.fillStyle = '#1f2937'; ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 8, barWidth, 4);
                 ctx.fillStyle = '#ef4444'; ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 8, barWidth * (this.hp / this.maxHp), 4);
             }
-            takeDamage(amount) { this.hp -= amount; if (this.hp <= 0) this.die(); }
-            die() { resources.kills++; resources.monsterWaste++; }
+            takeDamage(amount) { 
+                this.hp -= amount; 
+                if (this.hp <= 0) this.die(); 
+                // Particle feedback
+                for(let i=0; i<3; i++) {
+                    particles.push(new Particle(this.x, this.y, this.color));
+                }
+            }
+            die() { 
+                resources.kills++; resources.monsterWaste++; 
+                if (this.type === 'BOSS') screenShake(10);
+                // Death explosion
+                for(let i=0; i<15; i++) {
+                    particles.push(new Particle(this.x, this.y, this.color, true));
+                }
+            }
         }
         
         class Troop {
@@ -1436,14 +1506,15 @@
             
             // Uppdatera enheter
             const allUpdateables = getAllBuildings();
-            [...allUpdateables, ...troops, ...projectiles, ...monsters].forEach(obj => {
+            [...allUpdateables, ...troops, ...projectiles, ...monsters, ...particles].forEach(obj => {
                 if(obj && obj.update) obj.update(deltaTime);
             });
 
-            // Städning
+            // Cleaning
             monsters = monsters.filter(m => m.hp > 0);
             projectiles = projectiles.filter(p => p.hp > 0);
             troops = troops.filter(t => t.hp > 0); 
+            particles = particles.filter(p => p.hp > 0);
             abandonedHouses = abandonedHouses.filter(ah => world[ah.key]);
             walls = walls.filter(w => w.hp > 0); 
             towers = towers.filter(t => t.hp > 0);
@@ -1454,11 +1525,19 @@
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save();
+            
+            // Screen Shake
+            if (camera.shake > 0) {
+                ctx.translate(Math.random() * camera.shake * 2 - camera.shake, Math.random() * camera.shake * 2 - camera.shake);
+                camera.shake *= 0.9;
+                if (camera.shake < 0.1) camera.shake = 0;
+            }
+
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.scale(camera.zoom, camera.zoom);
             ctx.translate(-camera.x, -camera.y);
 
-            // Rita rutnät
+            // Draw grid
             ctx.strokeStyle = 'rgba(71, 85, 105, 0.3)';
             ctx.lineWidth = 1 / camera.zoom;
             ctx.beginPath();
@@ -1472,11 +1551,11 @@
             for (let y = startY; y <= endY; y += TILE_SIZE) { ctx.moveTo(startX, y); ctx.lineTo(endX, y); }
             ctx.stroke();
 
-            // Rita allt
+            // Draw all
             const allObjects = [
                 ...getAllBuildings(),
                 ...abandonedHouses,
-                ...monsters, ...projectiles, ...troops
+                ...monsters, ...projectiles, ...troops, ...particles
             ];
             
             allObjects.forEach(obj => { if(obj) obj.draw(ctx); });
@@ -1492,9 +1571,22 @@
                 ctx.strokeStyle = isOccupied ? '#ef4444' : '#22c55e';
                 ctx.lineWidth = 3;
                 
+                // Glow effect for hologram
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = isOccupied ? '#ef4444' : '#22c55e';
+
                 ctx.fillRect(gx * TILE_SIZE, gy * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 ctx.strokeRect(gx * TILE_SIZE, gy * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 
+                // Scanner effect
+                const scanY = (performance.now() % 1000) / 1000;
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(gx * TILE_SIZE, gy * TILE_SIZE + scanY * TILE_SIZE);
+                ctx.lineTo((gx + 1) * TILE_SIZE, gy * TILE_SIZE + scanY * TILE_SIZE);
+                ctx.stroke();
+
                 // Draw a small preview of the building type
                 ctx.fillStyle = isOccupied ? '#991b1b' : '#166534';
                 ctx.font = 'bold 12px Arial';
@@ -1560,9 +1652,97 @@
             requestAnimationFrame(gameLoop);
         }
         
+        function checkSave() {
+            if (localStorage.getItem('last_defence_save')) {
+                continueSavedBtn.classList.remove('hidden');
+            }
+        }
+
+        function saveGame() {
+            if (gameState === 'GAMEOVER' || gameState === 'MENU') return;
+            const saveData = {
+                resources,
+                buildings: getAllBuildings().map(b => ({
+                    x: b.x, y: b.y, type: b.type, level: b.level, hp: b.hp
+                })),
+                gameStats: {
+                    monsterSpawnTimer,
+                    abandonedHouseSpawnTimer
+                }
+            };
+            localStorage.setItem('last_defence_save', JSON.stringify(saveData));
+        }
+
+        function loadGame() {
+            const dataStr = localStorage.getItem('last_defence_save');
+            if (!dataStr) return;
+            const data = JSON.parse(dataStr);
+            
+            initGame('NORMAL'); // Start fresh to clear everything
+            
+            // Override with saved data
+            resources = data.resources;
+            
+            // Reconstruct world
+            world = {};
+            towers = []; walls = []; houses = []; greenhouses = []; barracks = []; farms = []; mines = [];
+            
+            data.buildings.forEach(bData => {
+                let b;
+                if (bData.type === 'BASE') {
+                    b = new Base(bData.x, bData.y);
+                    base = b;
+                } else if (bData.type === 'TOWER') { b = new Tower(bData.x, bData.y); towers.push(b); }
+                else if (bData.type === 'WALL') { b = new Wall(bData.x, bData.y); walls.push(b); }
+                else if (bData.type === 'HOUSE') { b = new House(bData.x, bData.y); houses.push(b); }
+                else if (bData.type === 'GREENHOUSE') { b = new Greenhouse(bData.x, bData.y); greenhouses.push(b); }
+                else if (bData.type === 'BARRACKS') { b = new Barracks(bData.x, bData.y); barracks.push(b); }
+                else if (bData.type === 'FARM') { b = new Farm(bData.x, bData.y); farms.push(b); }
+                else if (bData.type === 'MINE') { b = new Mine(bData.x, bData.y); mines.push(b); }
+                
+                if (b) {
+                    b.level = bData.level;
+                    b.hp = bData.hp;
+                    occupyTile(b.x, b.y, b.size || 1, b);
+                }
+            });
+
+            monsterSpawnTimer = data.gameStats.monsterSpawnTimer;
+            abandonedHouseSpawnTimer = data.gameStats.abandonedHouseSpawnTimer;
+            
+            // Adjust camera to base
+            camera.x = (base.x + 1) * TILE_SIZE;
+            camera.y = (base.y + 1) * TILE_SIZE;
+        }
+
         // --- Input & Events ---
 
-        const camera = { x: 0, y: 0, zoom: 1, isDragging: false, lastMouse: { x: 0, y: 0 } };
+        const camera = { x: 0, y: 0, zoom: 1, isDragging: false, lastMouse: { x: 0, y: 0 }, shake: 0 };
+        function screenShake(amt) { camera.shake = Math.max(camera.shake, amt); }
+
+        let particles = [];
+        class Particle {
+            constructor(x, y, color, explode = false) {
+                this.x = x; this.y = y; this.color = color;
+                this.vx = (Math.random() - 0.5) * (explode ? 10 : 2);
+                this.vy = (Math.random() - 0.5) * (explode ? 10 : 2);
+                this.life = explode ? 1000 : 500;
+                this.maxLife = this.life;
+                this.hp = 1;
+                this.size = Math.random() * 3 + 1;
+            }
+            update(deltaTime) {
+                this.x += this.vx; this.y += this.vy;
+                this.life -= deltaTime;
+                if (this.life <= 0) this.hp = 0;
+            }
+            draw(ctx) {
+                ctx.globalAlpha = this.life / this.maxLife;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+                ctx.globalAlpha = 1;
+            }
+        }
         const keysPressed = {};
 
         function tryBuild(type) {
@@ -1793,6 +1973,41 @@
         buildBarracksBtn.addEventListener('click', () => enterPlacementMode('BARRACKS'));
         buildFarmBtn.addEventListener('click', () => enterPlacementMode('FARM'));
         buildMineBtn.addEventListener('click', () => enterPlacementMode('MINE'));
+
+        function addTooltip(btn, type) {
+            const cost = COSTS[type];
+            if (!cost) return;
+            const costStr = Object.entries(cost).map(([res, amt]) => `${amt} ${res.toUpperCase().substring(0, 2)}`).join(', ');
+            
+            btn.addEventListener('mouseenter', (e) => {
+                uiTooltip.textContent = `Cost: ${costStr}`;
+                uiTooltip.style.display = 'block';
+            });
+            btn.addEventListener('mousemove', (e) => {
+                uiTooltip.style.left = e.clientX + 15 + 'px';
+                uiTooltip.style.top = e.clientY + 15 + 'px';
+            });
+            btn.addEventListener('mouseleave', () => {
+                uiTooltip.style.display = 'none';
+            });
+        }
+
+        // Initialize tooltips for construction buttons
+        [
+            { btn: buildTowerBtn, type: 'TOWER' },
+            { btn: buildWallBtn, type: 'WALL' },
+            { btn: buildHouseBtn, type: 'HOUSE' },
+            { btn: buildGreenhouseBtn, type: 'GREENHOUSE' },
+            { btn: buildBarracksBtn, type: 'BARRACKS' },
+            { btn: buildFarmBtn, type: 'FARM' },
+            { btn: buildMineBtn, type: 'MINE' }
+        ].forEach(item => addTooltip(item.btn, item.type));
+
+        // Start button handlers
+        continueSavedBtn.addEventListener('click', loadGame);
+        checkSave();
+        
+        setInterval(saveGame, 5000); 
 
         // Sidebar buttons
         document.getElementById('open-build-btn').addEventListener('click', () => {
