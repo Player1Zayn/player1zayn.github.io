@@ -1830,6 +1830,16 @@
         { id: 'c18', name: 'Silver Banana', rarity: 'Common', color: '#22c55e' },
         { id: 'c19', name: 'Bronze Banana', rarity: 'Common', color: '#22c55e' },
         { id: 'c20', name: 'Classic Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c21', name: 'Sky Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c22', name: 'Grass Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c23', name: 'Wood Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c24', name: 'Sand Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c25', name: 'Rock Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c26', name: 'Leaf Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c27', name: 'Mist Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c28', name: 'Coral Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c29', name: 'Autumn Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c30', name: 'Spring Banana', rarity: 'Common', color: '#22c55e' },
         // Rare (18)
         { id: 'r1', name: 'Spotted Banana', rarity: 'Rare', color: '#3b82f6' },
         { id: 'r2', name: 'Striped Banana', rarity: 'Rare', color: '#3b82f6' },
@@ -1849,6 +1859,16 @@
         { id: 'r16', name: 'Panda Banana', rarity: 'Rare', color: '#3b82f6' },
         { id: 'r17', name: 'Koala Banana', rarity: 'Rare', color: '#3b82f6' },
         { id: 'r18', name: 'Sloth Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r19', name: 'Marble Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r20', name: 'Splattered Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r21', name: 'Tartan Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r22', name: 'Hexagon Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r23', name: 'Circuit Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r24', name: 'Pixel Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r25', name: 'Glitch Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r26', name: 'Neon Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r27', name: 'Pastel Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r28', name: 'Metallic Banana', rarity: 'Rare', color: '#3b82f6' },
         // Epic (10)
         { id: 'e1', name: 'Fire Banana', rarity: 'Epic', color: '#a855f7' },
         { id: 'e2', name: 'Ice Banana', rarity: 'Epic', color: '#a855f7' },
@@ -1860,6 +1880,16 @@
         { id: 'e8', name: 'Dark Banana', rarity: 'Epic', color: '#a855f7' },
         { id: 'e9', name: 'Spirit Banana', rarity: 'Epic', color: '#a855f7' },
         { id: 'e10', name: 'Ghost Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e11', name: 'Solar Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e12', name: 'Lunar Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e13', name: 'Plasma Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e14', name: 'Radioactive Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e15', name: 'Cyber Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e16', name: 'Steampunk Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e17', name: 'Holographic Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e18', name: 'Ethereal Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e19', name: 'Void Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e20', name: 'Pulsing Banana', rarity: 'Epic', color: '#a855f7' },
         // Mythic (5)
         { id: 'm1', name: 'Galaxy Banana', rarity: 'Mythic', color: '#ef4444' },
         { id: 'm2', name: 'Nebula Banana', rarity: 'Mythic', color: '#ef4444' },
@@ -2268,6 +2298,8 @@
             try { serverTrees = typeof data.trees === 'string' ? JSON.parse(data.trees) : (data.trees || []); } catch(e){}
             let serverGadgets = [];
             try { serverGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : (data.gadgets || []); } catch(e){}
+            let serverActiveGadgets = [];
+            try { serverActiveGadgets = typeof data.active_gadgets === 'string' ? JSON.parse(data.active_gadgets) : (data.active_gadgets || []); } catch(e){}
             let serverTitles = [];
             try { serverTitles = typeof data.unlocked_titles === 'string' ? JSON.parse(data.unlocked_titles) : (data.unlocked_titles || []); } catch(e){}
 
@@ -2332,6 +2364,10 @@
             if (Array.isArray(serverGadgets) && serverGadgets.length > 0) {
                 unlockedGadgets = serverGadgets;
                 while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+            }
+            if (Array.isArray(serverActiveGadgets) && serverActiveGadgets.length > 0) {
+                activeGadgets = serverActiveGadgets;
+                while(activeGadgets.length < 10) activeGadgets.push(false);
             }
             
             localStorage.setItem('bananaCasinoSave', JSON.stringify({ 
@@ -2443,6 +2479,7 @@
                   unlocked_titles: unlockedTitles,
                   equipped_title: equippedTitle,
                   inventory: inventory,
+                  active_gadgets: activeGadgets,
                   expectedScore: String(expectedDbBananas),
                   expectedCoins: String(expectedDbCoins)
               })
@@ -3083,22 +3120,32 @@
                 unlockedTitles = [];
             }
             equippedTitle = data.equipped_title || null;
-            if (data.inventory) {
-                inventory = typeof data.inventory === 'string' ? JSON.parse(data.inventory) : data.inventory;
-            }
             royalXP = Number(data.royal_xp || 0);
             royalClaimed = data.royal_claimed || [];
-            isInternalUpdate = false;
             
-            await syncData(bananas, trees);
+            // AUTHORITATIVE LOADING OF COMPLEX FIELDS
+            if (data.inventory) {
+                inventory = typeof data.inventory === 'string' ? JSON.parse(data.inventory) : data.inventory;
+                if (typeof inventory !== 'object' || inventory === null) inventory = {};
+            }
             if (data.trees) {
                 trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
+                if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
                 while(trees.length < 20) trees.push(0);
+                if (trees.every(t => t === 0)) trees[0] = 1;
             }
             if (data.gadgets) {
                 unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
+                if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
                 while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
             }
+            if (data.active_gadgets) {
+                activeGadgets = typeof data.active_gadgets === 'string' ? JSON.parse(data.active_gadgets) : data.active_gadgets;
+                if (!Array.isArray(activeGadgets)) activeGadgets = Array(10).fill(false);
+                while(activeGadgets.length < 10) activeGadgets.push(false);
+            }
+            
+            isInternalUpdate = false;
             
             finalizeEntry();
         } catch (err) {
