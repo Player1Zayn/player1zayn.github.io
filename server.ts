@@ -457,7 +457,21 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         const { data: user, error: fetchError } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
         
         if (fetchError || !user) return res.status(404).json({ error: "User not found" });
-        if (user.banned) return res.status(403).json({ error: "Banned" });
+        if (user.banned) {
+            // AUTO-UNBAN for false positives from the old system (balance mismatch bans)
+            if (user.ban_reason && user.ban_reason.includes('Attempted to bet more than balance')) {
+                console.log(`[AUTO-UNBAN] Unbanning user ${userId} who was previously banned for balance mismatch false positive.`);
+                await supabase.from('database').update({ banned: false, ban_reason: null }).eq('id', userId);
+                // After unbanning, we should reload the user status or just proceed
+                user.banned = false;
+                user.ban_reason = null;
+            } else {
+                return res.status(403).json({ 
+                    error: "Banned", 
+                    reason: user.ban_reason || "No reason specified. Contact support." 
+                });
+            }
+        }
 
         let currentBananas = BigInt(user.score);
         let winStreak = Number(user.win_streak || 0);
@@ -469,9 +483,15 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         const totalBet = bet + (isBonusBet ? bonusBet : 0n);
 
         if (gameMode !== 'cases' && currentBananas < totalBet) {
-            // CHEAT DETECTION: If they try to bet more than they have, it's likely a manipulated request
-            await supabase.from('database').update({ banned: true, ban_reason: 'Attempted to bet more than balance (Cheat Detection)' }).eq('id', userId);
-            return res.status(400).json({ error: "Cheat detected. You have been banned." });
+            // RELAXED DETECTION: Instead of banning, we return a 400 error. 
+            // This prevents false bans due to client-side tree harvesting not being synced yet.
+            // Only ban if the discrepancy is absurdly high (e.g. betting 1M+ over balance) 
+            // but for now let's just return a helpful error.
+            return res.status(400).json({ 
+                error: "Balance mismatch. Your server balance is lower than your bet. Please wait for a sync or refresh.",
+                serverBalance: String(currentBananas),
+                attemptedBet: String(totalBet)
+            });
         }
 
         const unlockedGadgets = typeof user.gadgets === 'string' ? JSON.parse(user.gadgets) : (user.gadgets || []);
@@ -481,6 +501,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
 
         let winAmount = 0n;
         let resultData: any = {};
+        let megaBetOutcome: 'win' | 'taxes' | 'none' = 'none';
         
         let newInventory = user.inventory;
         if (typeof newInventory === 'string') {
@@ -501,29 +522,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             resultData.winningColor = winningColor;
 
             if (betColor === winningColor) {
-                // Multipliers are TOTAL PAYOUT (Bet + Profit)
                 const mult = winningColor === 'green' ? 14n : 2n;
-                let baseWin = bet * mult;
-                
-                // Mega Bet logic
-                const isMegaBet = activeGadgets[5];
-                const megaBetEligible = isMegaBet && (bet >= currentBananas) && winningColor === 'green';
-                
-                if (megaBetEligible) {
-                    const r = Math.random();
-                    if (r < 0.25) {
-                        winAmount = baseWin * 100n;
-                        resultData.megaBet = 'win';
-                    } else if (r < 0.50) {
-                        winAmount = 0n; // Taxes
-                        resultData.megaBet = 'taxes';
-                    } else {
-                        winAmount = baseWin;
-                        resultData.megaBet = 'none';
-                    }
-                } else {
-                    winAmount = baseWin;
-                }
+                winAmount = bet * mult;
             } else {
                 winAmount = 0n;
             }
@@ -534,17 +534,10 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             
             for (let i = 0; i < slotCount; i++) {
                 let r = Math.random() * 100;
-                // Buffed Jackpot chance from 2% to 5%
-                if (r < 5) {
-                    resultSlots.push(JACKPOT_ICON);
-                } else {
-                    // Pity/Luck factor: if it's the 2nd or 3rd slot in a line, 
-                    // give a 15% chance to force it to match the previous slot for more wins
-                    if (i % 3 > 0 && Math.random() < 0.15) {
-                        resultSlots.push(resultSlots[i - 1]);
-                    } else {
-                        resultSlots.push(SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)]);
-                    }
+                if (r < 5) resultSlots.push(JACKPOT_ICON);
+                else {
+                    if (i % 3 > 0 && Math.random() < 0.15) resultSlots.push(resultSlots[i - 1]);
+                    else resultSlots.push(SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)]);
                 }
             }
             resultData.slots = resultSlots;
@@ -556,122 +549,74 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 const icons = indices.map(idx => resultSlots[idx]);
                 if (icons.every(icon => icon === icons[0])) {
                     if (icons[0] === JACKPOT_ICON) {
-                        winType = 'jackpot';
-                        return 10; // 10x Total Payout for Jackpot
+                        if (winType === 'none' || winType === 'triple' || winType === 'double') winType = 'jackpot';
+                        return 10;
                     }
-                    winType = 'triple';
-                    return 3; // 3x Total Payout for 3 of the same
+                    if (winType === 'none' || winType === 'double') winType = 'triple';
+                    return 3;
                 }
                 const counts: any = {};
                 icons.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
                 if (Object.values(counts).some((c: any) => c >= 2)) {
                     if (winType === 'none') winType = 'double';
-                    return 1; // 1x Total Payout (Push) for 2 of the same
+                    return 1;
                 }
                 return 0;
             };
 
             if (isMoreSlots) {
-                totalWinMultiplier += checkLine([0, 1, 2]);
-                totalWinMultiplier += checkLine([3, 4, 5]);
-                totalWinMultiplier += checkLine([6, 7, 8]);
-                totalWinMultiplier += checkLine([0, 3, 6]);
-                totalWinMultiplier += checkLine([1, 4, 7]);
-                totalWinMultiplier += checkLine([2, 5, 8]);
-                totalWinMultiplier += checkLine([0, 4, 8]);
-                totalWinMultiplier += checkLine([2, 4, 6]);
+                [ [0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6] ].forEach(line => {
+                    totalWinMultiplier += checkLine(line);
+                });
             } else {
                 totalWinMultiplier += checkLine([0, 1, 2]);
             }
             
             resultData.winType = winType;
-
-            let baseWin = BigInt(Math.round(Number(bet) * totalWinMultiplier));
+            winAmount = BigInt(Math.round(Number(bet) * totalWinMultiplier));
             
             // Bonus Bet
-            let bonusWin = false;
             if (isBonusBet && bonusBetAmount > 0 && bonusBetSelection) {
-                const checkBonus = (indices: number[]) => {
-                    return indices.every((idx, i) => resultSlots[idx] === bonusBetSelection[i]);
-                };
+                const checkBonus = (indices: number[]) => indices.every((idx, i) => resultSlots[idx] === bonusBetSelection[i]);
+                let bonusWin = false;
                 if (isMoreSlots) {
                     if (checkBonus([0, 1, 2]) || checkBonus([3, 4, 5]) || checkBonus([6, 7, 8])) bonusWin = true;
                 } else {
                     if (checkBonus([0, 1, 2])) bonusWin = true;
                 }
-            }
-
-            if (bonusWin) {
-                baseWin += BigInt(bonusBetAmount) * 50n;
-                resultData.bonusWin = true;
-            }
-
-            // Mega Bet logic for slots
-            const isMegaBet = activeGadgets[5];
-            const megaBetEligible = isMegaBet && (bet >= currentBananas) && totalWinMultiplier >= 3;
-            
-            if (megaBetEligible) {
-                const r = Math.random();
-                if (r < 0.25) {
-                    winAmount = baseWin * 100n;
-                    resultData.megaBet = 'win';
-                } else if (r < 0.50) {
-                    winAmount = 0n;
-                    resultData.megaBet = 'taxes';
-                } else {
-                    winAmount = baseWin;
-                    resultData.megaBet = 'none';
+                if (bonusWin) {
+                    winAmount += BigInt(bonusBetAmount) * 50n;
+                    resultData.bonusWin = true;
                 }
-            } else {
-                winAmount = baseWin;
             }
         } else if (gameMode === 'blackjack') {
-            const bjResult = req.body.bjResult; // 'win', 'blackjack', 'dealerBust', 'lose', 'bust', 'push'
-            if (bjResult === 'win' || bjResult === 'dealerBust') {
-                winAmount = totalBet * 2n;
-            } else if (bjResult === 'blackjack') {
-                winAmount = totalBet * 5n / 2n; // 2.5x
-            } else if (bjResult === 'push') {
-                winAmount = totalBet;
-            } else {
-                winAmount = 0n;
-            }
+            const bjResult = req.body.bjResult; 
+            if (bjResult === 'win' || bjResult === 'dealerBust') winAmount = totalBet * 2n;
+            else if (bjResult === 'blackjack') winAmount = totalBet * 5n / 2n;
+            else if (bjResult === 'push') winAmount = totalBet;
+            else winAmount = 0n;
             resultData.reason = bjResult;
         } else if (gameMode === 'plinko') {
-            // Plinko probabilities (matching client V5.11 multipliers)
-            // Multipliers: [10, 1.5, 1.1, 1.0, 0.5, 0.3, 0.2, 0.3, 0.5, 1.0, 1.1, 1.5, 10]
             const plinkoMults = [10, 1.5, 1.1, 1.0, 0.5, 0.3, 0.2, 0.3, 0.5, 1.0, 1.1, 1.5, 10];
-            
-            // Use a binomial distribution logic or weighted random
-            // For now, weighted random favoring middle but still purely luck based
-            const weights = [1, 2, 4, 8, 12, 16, 20, 16, 12, 8, 4, 2, 1]; // Binomial-like
+            const weights = [1, 2, 4, 8, 12, 16, 20, 16, 12, 8, 4, 2, 1]; 
             const totalWeight = weights.reduce((a, b) => a + b, 0);
             let rand = Math.random() * totalWeight;
-            
             let bucketIndex = 0;
             for (let i = 0; i < weights.length; i++) {
-                if (rand < weights[i]) {
-                    bucketIndex = i;
-                    break;
-                }
+                if (rand < weights[i]) { bucketIndex = i; break; }
                 rand -= weights[i];
             }
-            
             const multiplier = plinkoMults[bucketIndex];
             winAmount = BigInt(Math.round(Number(bet) * multiplier));
             resultData.bucketIndex = bucketIndex;
             resultData.multiplier = multiplier;
         } else if (gameMode === 'cases') {
-            const caseType = req.body.caseType; // 'normal', 'booster', 'toverland'
+            const caseType = req.body.caseType; 
             const costs: any = { 'normal': 10000n, 'booster': 100000n, 'toverland': 2000000n };
             const cost = costs[caseType] || 0n;
-            
             if (currentBananas < cost) return res.status(400).json({ error: "Not enough bananas" });
-            
-            // Generate result based on probabilities
             const r = Math.random() * 100;
             let rarity = 'Common';
-            
             if (caseType === 'toverland') {
                 if (r < 20) rarity = 'Legendary';
                 else if (r < 50) rarity = 'Mythic';
@@ -685,29 +630,38 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 else if (r < 70) rarity = 'Rare';
                 else rarity = 'Common';
             } else {
-                // Normal Case
                 if (r < 0.5) rarity = 'Legendary';
                 else if (r < 2) rarity = 'Mythic';
                 else if (r < 10) rarity = 'Epic';
                 else if (r < 30) rarity = 'Rare';
                 else rarity = 'Common';
             }
-
-            // Select a random skin from that rarity
             const skinPool = SKINS.filter(s => s.rarity === rarity);
             const selectedSkin = skinPool[Math.floor(Math.random() * skinPool.length)];
-            
-            winAmount = 0n; // Cases cost money, they don't give bananas back directly
-            // We need to subtract the cost
+            winAmount = 0n; 
             currentBananas -= cost;
-            
-            // Update inventory on server
             newInventory[selectedSkin.id] = (newInventory[selectedSkin.id] || 0) + 1;
-            
             resultData.skin = selectedSkin;
             resultData.rarity = rarity;
             resultData.cost = String(cost);
         }
+
+        // --- MEGA BET GADGET (GLOBAL) ---
+        // User: "All-in risk: 25% chance for 100x win, 25% chance to lose all (Taxes)."
+        // Triggers on any traditional game win > 0 if gadget index 5 is active.
+        if (gameMode !== 'cases' && winAmount > 0n && activeGadgets[5]) {
+            const r = Math.random();
+            if (r < 0.25) {
+                winAmount = winAmount * 100n;
+                megaBetOutcome = 'win';
+            } else if (r < 0.50) {
+                winAmount = 0n;
+                megaBetOutcome = 'taxes';
+            } else {
+                megaBetOutcome = 'none';
+            }
+        }
+        resultData.megaBet = megaBetOutcome;
 
         // Update balance
         let isWin = false;
