@@ -3120,6 +3120,7 @@
                 unlockedTitles = [];
             }
             equippedTitle = data.equipped_title || null;
+            winStreak = Number(data.win_streak || 0);
             royalXP = Number(data.royal_xp || 0);
             royalClaimed = data.royal_claimed || [];
             
@@ -4251,6 +4252,8 @@
               updateBananas(Number(data.newBalance));
               expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
               isInternalUpdate = false;
+              
+              if (data.winStreak !== undefined) winStreak = data.winStreak;
 
               if (data.earnedRoyalXP) {
                   royalXP = Number(data.royalXP);
@@ -4396,11 +4399,13 @@
           elWheel.style.transition = "transform 3s cubic-bezier(0.2, 0, 0.2, 1)";
           elWheel.style.transform = `rotate(${wheelRotation}deg)`;
 
-          setTimeout(() => {
+            setTimeout(() => {
             isInternalUpdate = true;
             updateBananas(Number(data.newBalance));
             expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
             isInternalUpdate = false;
+            
+            if (data.winStreak !== undefined) winStreak = data.winStreak;
 
             if (data.earnedRoyalXP) {
                 royalXP = Number(data.royalXP);
@@ -4602,14 +4607,16 @@
           } else {
               checkLine([0, 1, 2]);
           }
-          winningIndices.forEach(idx => slots[idx].classList.add('slot-win'));
+           winningIndices.forEach(idx => slots[idx].classList.add('slot-win'));
 
-          isInternalUpdate = true;
-          updateBananas(Number(data.newBalance));
-          expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
-          isInternalUpdate = false;
+           isInternalUpdate = true;
+           updateBananas(Number(data.newBalance));
+           expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
+           isInternalUpdate = false;
+           
+           if (data.winStreak !== undefined) winStreak = data.winStreak;
 
-          if (data.earnedRoyalXP) {
+           if (data.earnedRoyalXP) {
               royalXP = Number(data.royalXP);
               document.getElementById('rp-current-xp').innerText = formatNumber(royalXP);
               showNotification("+1 Royal XP! Check the pass in Ludvig's shop.", "success");
@@ -5184,6 +5191,8 @@
           updateBananas(Number(data.newBalance));
           expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
           isInternalUpdate = false;
+          
+          if (data.winStreak !== undefined) winStreak = data.winStreak;
 
           if (data.earnedRoyalXP) {
               royalXP = Number(data.royalXP);
