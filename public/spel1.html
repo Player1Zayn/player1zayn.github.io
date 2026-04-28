@@ -401,6 +401,7 @@
                 <span class="label">Food:</span><span id="food-value" class="value">0</span>
                 <span class="label">Inhabitants:</span><span id="inhabitants-value" class="value">0/0</span>
                 <span class="label">Troops:</span><span id="troops-value" class="value">0</span>
+                <span class="label text-blue-400">Energy:</span><span id="energy-value" class="value text-blue-400">0/100</span>
             </div>
 
             <div class="sidebar-actions ui-element">
@@ -453,11 +454,13 @@
 
                     <div id="protection-list" class="grid grid-cols-1 gap-2 hidden">
                         <button id="build-tower-btn" class="menu-button text-sm"></button>
+                        <button id="build-tesla-tower-btn" class="menu-button text-sm bg-blue-900 border-blue-700"></button>
                         <button id="build-wall-btn" class="menu-button text-sm"></button>
                         <button id="build-landmine-btn" class="menu-button text-sm bg-orange-900 border-orange-700"></button>
                     </div>
                     <div id="productive-list" class="grid grid-cols-1 gap-2 hidden">
                         <button id="build-greenhouse-btn" class="menu-button text-sm"></button>
+                        <button id="build-solar-panel-btn" class="menu-button text-sm bg-yellow-900 border-yellow-700"></button>
                         <button id="build-farm-btn" class="menu-button text-sm text-yellow-200"></button>
                         <button id="build-mine-btn" class="menu-button text-sm text-gray-300"></button>
                     </div>
@@ -558,6 +561,8 @@
         const buildLandmineBtn = document.getElementById('build-landmine-btn');
         const buildHouseBtn = document.getElementById('build-house-btn');
         const buildGreenhouseBtn = document.getElementById('build-greenhouse-btn');
+        const buildSolarPanelBtn = document.getElementById('build-solar-panel-btn');
+        const buildTeslaTowerBtn = document.getElementById('build-tesla-tower-btn');
         const buildBarracksBtn = document.getElementById('build-barracks-btn');
         const buildFarmBtn = document.getElementById('build-farm-btn');
         const buildMineBtn = document.getElementById('build-mine-btn');
@@ -573,6 +578,7 @@
         const killsValue = document.getElementById('kills-value');
         const baseHpValue = document.getElementById('base-hp-value');
         const troopsValue = document.getElementById('troops-value');
+        const energyValue = document.getElementById('energy-value');
         const metalValue = document.getElementById('metal-value');
         const bulletsValue = document.getElementById('bullets-value');
         const woodValue = document.getElementById('wood-value');
@@ -709,6 +715,9 @@
         let barracks = [];
         let farms = []; 
         let mines = []; 
+        let landmines = [];
+        let solarPanels = [];
+        let teslaTowers = [];
         let abandonedHouses = [];
         let monsters = [];
         let projectiles = [];
@@ -724,7 +733,11 @@
         const ABANDONED_HOUSE_SPAWN_RATE = 20000;
         const INHABITANT_GROW_RATE = 5000; 
 
-        let resources = {};
+        let resources = {
+            kills: 0, troops: 10, metal: 100, wood: 100, earth: 100, bullets: 500, food: 50,
+            reinforcedMetal: 0, monsterWaste: 0, boneMeal: 0, inhabitants: 5, maxInhabitants: 5,
+            energy: 0, maxEnergy: 100
+        };
         
         // --- Placement Mode State ---
         let placementMode = false;
@@ -741,7 +754,9 @@
             BARRACKS: { wood: 50, metal: 20 },
             FARM: { earth: 20, boneMeal: 10 }, 
             MINE: { wood: 40 },
-            LANDMINE: { metal: 5, bullets: 10 }
+            LANDMINE: { metal: 20, bullets: 15, monsterWaste: 50 },
+            SOLAR_PANEL: { metal: 40, wood: 20 },
+            TESLA_TOWER: { metal: 120, reinforcedMetal: 15 }
         };
 
         const UPGRADE_COSTS = {
@@ -768,12 +783,14 @@
         function updateBuildButtonLabels() {
             buildTowerBtn.textContent = `Tower (${COSTS.TOWER.metal} Me, ${COSTS.TOWER.wood} Wo)`;
             buildWallBtn.textContent = `Wall (${COSTS.WALL.wood} Wo, ${COSTS.WALL.reinforcedMetal} Re.Me)`;
-            buildLandmineBtn.textContent = `Landmine (${COSTS.LANDMINE.metal} Me, ${COSTS.LANDMINE.bullets} Bu)`;
+            buildLandmineBtn.textContent = `Landmine (${COSTS.LANDMINE.metal} Me, ${COSTS.LANDMINE.bullets} Bu, ${COSTS.LANDMINE.monsterWaste} Wa)`;
             buildHouseBtn.textContent = `House (${COSTS.HOUSE.wood} Wo, ${COSTS.HOUSE.earth} Ea)`;
             buildGreenhouseBtn.textContent = `Greenhouse (${COSTS.GREENHOUSE.earth} Ea, ${COSTS.GREENHOUSE.wood} Wo)`;
             buildBarracksBtn.textContent = `Barracks (${COSTS.BARRACKS.wood} Wo, ${COSTS.BARRACKS.metal} Me)`;
             buildFarmBtn.textContent = `Farm (${COSTS.FARM.earth} Ea, ${COSTS.FARM.boneMeal} Bone)`;
             buildMineBtn.textContent = `Mine (${COSTS.MINE.wood} Wo)`;
+            buildSolarPanelBtn.textContent = `Solar Panel (${COSTS.SOLAR_PANEL.metal} Me, ${COSTS.SOLAR_PANEL.wood} Wo)`;
+            buildTeslaTowerBtn.textContent = `Tesla Tower (${COSTS.TESLA_TOWER.metal} Me, ${COSTS.TESLA_TOWER.reinforcedMetal} Re)`;
 
             // Grey out unaffordable buttons
             [
@@ -784,7 +801,9 @@
                 { btn: buildGreenhouseBtn, cost: COSTS.GREENHOUSE },
                 { btn: buildBarracksBtn, cost: COSTS.BARRACKS },
                 { btn: buildFarmBtn, cost: COSTS.FARM },
-                { btn: buildMineBtn, cost: COSTS.MINE }
+                { btn: buildMineBtn, cost: COSTS.MINE },
+                { btn: buildSolarPanelBtn, cost: COSTS.SOLAR_PANEL },
+                { btn: buildTeslaTowerBtn, cost: COSTS.TESLA_TOWER }
             ].forEach(item => {
                 const canAfford = checkCost(item.cost);
                 item.btn.disabled = !canAfford;
@@ -840,7 +859,7 @@
                 if (this instanceof Base && this.faction === FACTION.PLAYER) { gameOver(); return; }
 
                 delete world[this.key];
-                const lists = [towers, walls, houses, greenhouses, barracks, farms, mines];
+                const lists = [towers, walls, houses, greenhouses, barracks, farms, mines, landmines, solarPanels, teslaTowers];
                 lists.forEach(list => {
                     const idx = list.indexOf(this);
                     if(idx > -1) list.splice(idx, 1);
@@ -1332,7 +1351,7 @@
         class Landmine extends Building {
             constructor(x, y, faction = FACTION.PLAYER) {
                 super(x, y, 'LANDMINE', COSTS.LANDMINE, 50, faction);
-                this.triggerRange = 40;
+                this.triggerRange = 80;
                 this.exploded = false;
             }
             update(deltaTime) {
@@ -1346,25 +1365,27 @@
                 }
             }
             explode() {
+                if (this.exploded) return;
                 this.exploded = true;
-                this.hp = 0;
                 const myPos = this.getPixelPos();
                 screenShake(15);
                 SoundSystem.playSound('EXPLOSION');
                 
                 // Damage monsters in radius
-                const blastRadius = 100;
+                const blastRadius = 120;
                 monsters.forEach(m => {
                     if (getDistance(myPos, m) < blastRadius) {
-                        m.takeDamage(150);
+                        m.takeDamage(200);
                     }
                 });
 
                 // Particles
-                for(let i=0; i<20; i++) {
-                    particles.push(new Particle(myPos.x, myPos.y, '#f59e0b', true));
-                    particles.push(new Particle(myPos.x, myPos.y, '#ef4444', true));
+                for(let i=0; i<30; i++) {
+                    particles.push(new Particle(myPos.x, myPos.y, i % 2 === 0 ? '#f59e0b' : '#ef4444', true));
                 }
+                
+                // Remove from game
+                this.takeDamage(1000); 
             }
             draw(ctx) {
                 const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
@@ -1398,6 +1419,134 @@
                 ctx.shadowBlur = 5 * pulse;
                 ctx.shadowColor = '#ef4444';
                 ctx.stroke();
+            }
+        }
+
+        class SolarPanel extends Building {
+            constructor(x, y, faction = FACTION.PLAYER) {
+                super(x, y, 'SOLAR_PANEL', COSTS.SOLAR_PANEL, 60, faction);
+                this.produceRate = 2000;
+                this.produceTimer = 0;
+            }
+            update(deltaTime) {
+                this.produceTimer += deltaTime;
+                if (this.produceTimer >= this.produceRate) {
+                    this.produceTimer = 0;
+                    if (resources.energy < resources.maxEnergy) {
+                        resources.energy = Math.min(resources.maxEnergy, resources.energy + 2);
+                    }
+                }
+            }
+            draw(ctx) {
+                super.draw(ctx);
+                const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
+                // Panel base
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(x + 4, y + 10, ts - 8, ts - 14);
+                // Grid
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1;
+                for(let i=1; i<4; i++) {
+                    const lineX = x + 4 + i*(ts-8)/4;
+                    ctx.beginPath(); ctx.moveTo(lineX, y + 10); ctx.lineTo(lineX, y + ts - 4); ctx.stroke();
+                }
+                for(let i=1; i<3; i++) {
+                    const lineY = y + 10 + i*(ts-14)/3;
+                    ctx.beginPath(); ctx.moveTo(x + 4, lineY); ctx.lineTo(x + ts - 4, lineY); ctx.stroke();
+                }
+                // Glow if charging
+                if (resources.energy < resources.maxEnergy) {
+                    ctx.shadowBlur = 5; ctx.shadowColor = '#0ea5e9';
+                    ctx.strokeRect(x+4, y+10, ts-8, ts-14);
+                    ctx.shadowBlur = 0;
+                }
+
+                // Progress Bar
+                const progWidth = ts - 10;
+                const progHeight = 6;
+                const px = x + 5;
+                const py = y + 2;
+                
+                // Background/Border
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(px - 1, py - 1, progWidth + 2, progHeight + 2);
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(px, py, progWidth, progHeight);
+                
+                // Progress
+                if (this.produceRate > 0) {
+                    ctx.fillStyle = '#0ea5e9';
+                    ctx.fillRect(px, py, progWidth * Math.min(1, this.produceTimer / this.produceRate), progHeight);
+                }
+            }
+        }
+
+        class TeslaTower extends Building {
+            constructor(x, y, faction = FACTION.PLAYER) {
+                super(x, y, 'TESLA_TOWER', COSTS.TESLA_TOWER, 250, faction);
+                this.range = 350;
+                this.cooldown = 0;
+                this.fireRate = 400; 
+                this.target = null;
+            }
+            update(deltaTime) {
+                if (this.cooldown > 0) this.cooldown -= deltaTime;
+                if (!this.target || this.target.hp <= 0 || getDistance(this.getPixelPos(), this.target) > this.range) {
+                    this.target = this.findTarget();
+                }
+                if (this.target && this.cooldown <= 0) {
+                    if (resources.energy >= 5 || gameMode === 'SANDBOX') {
+                        this.shoot();
+                    }
+                }
+            }
+            findTarget() {
+                const pos = this.getPixelPos();
+                let closest = null; let minDistance = this.range; 
+                for (const m of monsters) {
+                    const d = getDistance(pos, m);
+                    if (d < minDistance) { minDistance = d; closest = m; }
+                }
+                return closest;
+            }
+            shoot() {
+                if (gameMode !== 'SANDBOX') resources.energy -= 5;
+                this.cooldown = this.fireRate;
+                this.target.takeDamage(25);
+                
+                const pos = this.getPixelPos();
+                // Simple lightning particle effect
+                for(let i=0; i<5; i++) {
+                    particles.push(new Particle(pos.x, pos.y, '#0ea5e9', true));
+                }
+                SoundSystem.playSound('SHOOT'); 
+            }
+            draw(ctx) {
+                super.draw(ctx);
+                const ts = TILE_SIZE; const x = this.x * ts; const y = this.y * ts;
+                const midX = x + ts/2; const midY = y + ts/2;
+                
+                // Base
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(x + 8, y + ts - 12, ts - 16, 8);
+                
+                // Pole
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(midX - 3, midY - 10, 6, ts/2 + 10);
+                
+                // Tesla Sphere
+                ctx.fillStyle = (resources.energy >= 5 || gameMode === 'SANDBOX') ? '#0ea5e9' : '#334155';
+                ctx.beginPath(); ctx.arc(midX, midY - 10, 14, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.stroke();
+                
+                if (resources.energy >= 5 || gameMode === 'SANDBOX') {
+                    const time = performance.now() * 0.02;
+                    ctx.strokeStyle = '#bae6fd';
+                    ctx.beginPath();
+                    ctx.moveTo(midX + Math.cos(time)*16, midY - 10 + Math.sin(time)*16);
+                    ctx.lineTo(midX + Math.cos(time + Math.PI)*18, midY - 10 + Math.sin(time + Math.PI)*18);
+                    ctx.stroke();
+                }
             }
         }
 
@@ -1671,9 +1820,55 @@
         // --- Hjälpfunktioner ---
         
         function getAllBuildings() {
-            return [base, ...towers, ...walls, ...houses, ...greenhouses, ...barracks, ...farms, ...mines];
+            return [base, ...towers, ...walls, ...houses, ...greenhouses, ...barracks, ...farms, ...mines, ...landmines, ...solarPanels, ...teslaTowers];
         }
 
+        function isTileInProtectedZone(tx, ty) {
+            // Check Base zone (5x5 around its center)
+            const baseCenter = { tx: base.x + 1, ty: base.y + 1 };
+            if (Math.abs(tx - baseCenter.tx) <= 4 && Math.abs(ty - baseCenter.ty) <= 4) return true;
+
+            // Check Towers and Walls (3x3 around them)
+            const protectors = [...towers, ...walls];
+            for (const p of protectors) {
+                if (Math.abs(tx - p.x) <= 1 && Math.abs(ty - p.y) <= 1) return true;
+            }
+            return false;
+        }
+
+        function spawnMonster() {
+            const targets = [base].filter(b => b.hp > 0);
+            if (targets.length === 0) return;
+            const targetBase = targets[Math.floor(Math.random() * targets.length)];
+
+            const pos = targetBase.getPixelPos();
+            let x, y, tileX, tileY;
+            let attempts = 0;
+            let valid = false;
+
+            while (!valid && attempts < 20) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.max(canvas.width, canvas.height) / camera.zoom + 100 + (Math.random() * 500);
+                x = pos.x + Math.cos(angle) * distance;
+                y = pos.y + Math.sin(angle) * distance;
+                const grid = worldToGrid(x, y);
+                tileX = grid.tileX; tileY = grid.tileY;
+
+                const inZone = isTileInProtectedZone(tileX, tileY);
+                // 90% chance to reject spawning in zone
+                if (!inZone || Math.random() < 0.1) {
+                    valid = true;
+                }
+                attempts++;
+            }
+
+            let type = 'NORMAL';
+            const r = Math.random();
+            if (r > 0.7) type = 'MUTANT';
+            if (r > 0.9) type = 'JUMPER';
+            
+            monsters.push(new Monster(x, y, type));
+        }
         function getDistance(obj1, obj2) {
             const dx = obj1.x - obj2.x;
             const dy = obj1.y - obj2.y;
@@ -1750,6 +1945,7 @@
             foodValue.textContent = isSandbox ? inf : resources.food;
             inhabitantsValue.textContent = `${resources.inhabitants} / ${resources.maxInhabitants}`;
             troopsValue.textContent = isSandbox ? inf : resources.troops;
+            energyValue.textContent = isSandbox ? inf : `${Math.floor(resources.energy)} / ${resources.maxEnergy}`;
         }
 
         function hideAllScreens() {
@@ -1899,6 +2095,14 @@
             abandonedHouses = abandonedHouses.filter(ah => world[ah.key]);
             walls = walls.filter(w => w.hp > 0); 
             towers = towers.filter(t => t.hp > 0);
+            houses = houses.filter(h => h.hp > 0);
+            greenhouses = greenhouses.filter(g => g.hp > 0);
+            barracks = barracks.filter(b => b.hp > 0);
+            farms = farms.filter(f => f.hp > 0);
+            mines = mines.filter(m => m.hp > 0);
+            landmines = landmines.filter(l => l.hp > 0);
+            solarPanels = solarPanels.filter(s => s.hp > 0);
+            teslaTowers = teslaTowers.filter(tt => tt.hp > 0);
 
             updateUI();
         }
@@ -1917,6 +2121,9 @@
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.scale(camera.zoom, camera.zoom);
             ctx.translate(-camera.x, -camera.y);
+
+            // Draw spawn zones
+            drawSpawnZones();
 
             // Draw grid
             ctx.strokeStyle = 'rgba(71, 85, 105, 0.3)';
@@ -2018,6 +2225,7 @@
 
             world = {};
             towers = []; walls = []; houses = []; greenhouses = []; barracks = []; farms = []; mines = []; abandonedHouses = [];
+            landmines = []; solarPanels = []; teslaTowers = [];
             monsters = []; projectiles = []; troops = []; 
             
             base = new Base(-1, -1, FACTION.PLAYER);
@@ -2025,7 +2233,8 @@
             
             resources = {
                 kills: 0, troops: 10, metal: 100, wood: 100, earth: 100, bullets: 500, food: 50,
-                reinforcedMetal: 0, monsterWaste: 0, boneMeal: 0, inhabitants: 5, maxInhabitants: 5
+                reinforcedMetal: 0, monsterWaste: 0, boneMeal: 0, inhabitants: 5, maxInhabitants: 5,
+                energy: 0, maxEnergy: 100
             };
             
             camera.x = 25; camera.y = 25; camera.zoom = 1;
@@ -2063,10 +2272,12 @@
             
             // Override with saved data
             resources = data.resources;
+            if (resources.energy === undefined) resources.energy = 0;
+            if (resources.maxEnergy === undefined) resources.maxEnergy = 100;
             
             // Reconstruct world
             world = {};
-            towers = []; walls = []; houses = []; greenhouses = []; barracks = []; farms = []; mines = [];
+            towers = []; walls = []; houses = []; greenhouses = []; barracks = []; farms = []; mines = []; landmines = []; solarPanels = []; teslaTowers = [];
             
             data.buildings.forEach(bData => {
                 let b;
@@ -2080,7 +2291,9 @@
                 else if (bData.type === 'BARRACKS') { b = new Barracks(bData.x, bData.y); barracks.push(b); }
                 else if (bData.type === 'FARM') { b = new Farm(bData.x, bData.y); farms.push(b); }
                 else if (bData.type === 'MINE') { b = new Mine(bData.x, bData.y); mines.push(b); }
-                else if (bData.type === 'LANDMINE') { b = new Landmine(bData.x, bData.y); }
+                else if (bData.type === 'LANDMINE') { b = new Landmine(bData.x, bData.y); landmines.push(b); }
+                else if (bData.type === 'SOLAR_PANEL') { b = new SolarPanel(bData.x, bData.y); solarPanels.push(b); }
+                else if (bData.type === 'TESLA_TOWER') { b = new TeslaTower(bData.x, bData.y); teslaTowers.push(b); }
                 
                 if (b) {
                     b.level = bData.level;
@@ -2185,7 +2398,9 @@
             else if (ghostType === 'BARRACKS') { newBuilding = new Barracks(gx, gy); barracks.push(newBuilding); } 
             else if (ghostType === 'FARM') { newBuilding = new Farm(gx, gy); farms.push(newBuilding); } 
             else if (ghostType === 'MINE') { newBuilding = new Mine(gx, gy); mines.push(newBuilding); } 
-            else if (ghostType === 'LANDMINE') { newBuilding = new Landmine(gx, gy); }
+            else if (ghostType === 'LANDMINE') { newBuilding = new Landmine(gx, gy); landmines.push(newBuilding); }
+            else if (ghostType === 'SOLAR_PANEL') { newBuilding = new SolarPanel(gx, gy); solarPanels.push(newBuilding); }
+            else if (ghostType === 'TESLA_TOWER') { newBuilding = new TeslaTower(gx, gy); teslaTowers.push(newBuilding); }
             
             if (newBuilding) {
                 payCost(cost);
@@ -2352,6 +2567,8 @@
 
         // Building logic
         buildTowerBtn.addEventListener('click', () => enterPlacementMode('TOWER'));
+        buildSolarPanelBtn.addEventListener('click', () => enterPlacementMode('SOLAR_PANEL'));
+        buildTeslaTowerBtn.addEventListener('click', () => enterPlacementMode('TESLA_TOWER'));
         buildWallBtn.addEventListener('click', () => enterPlacementMode('WALL'));
         buildLandmineBtn.addEventListener('click', () => enterPlacementMode('LANDMINE'));
         buildHouseBtn.addEventListener('click', () => enterPlacementMode('HOUSE'));
@@ -2448,6 +2665,32 @@
 
         document.getElementById('confirm-placement-btn').addEventListener('click', confirmPlacement);
         document.getElementById('cancel-placement-btn').addEventListener('click', cancelPlacement);
+
+        function drawSpawnZones() {
+            const viewport = {
+                x1: camera.x - (canvas.width / 2) / camera.zoom,
+                y1: camera.y - (canvas.height / 2) / camera.zoom,
+                x2: camera.x + (canvas.width / 2) / camera.zoom,
+                y2: camera.y + (canvas.height / 2) / camera.zoom
+            };
+
+            const g1 = worldToGrid(viewport.x1, viewport.y1);
+            const g2 = worldToGrid(viewport.x2, viewport.y2);
+
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.25)'; // More visible
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+            ctx.lineWidth = 2;
+            const ts = TILE_SIZE;
+
+            for (let tx = g1.tileX - 1; tx <= g2.tileX + 1; tx++) {
+                for (let ty = g1.tileY - 1; ty <= g2.tileY + 1; ty++) {
+                    if (isTileInProtectedZone(tx, ty)) {
+                        ctx.fillRect(tx * ts, ty * ts, ts, ts);
+                        ctx.strokeRect(tx * ts, ty * ts, ts, ts);
+                    }
+                }
+            }
+        }
 
         // Tangenter
         window.addEventListener('keydown', (e) => {
