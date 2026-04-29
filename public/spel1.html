@@ -405,6 +405,7 @@
             </div>
 
             <div class="sidebar-actions ui-element">
+                <button id="open-base-hub-btn" class="sidebar-btn" title="Base Operations">🏛️</button>
                 <button id="open-build-btn" class="sidebar-btn" title="Building Menu">🔨</button>
                 <button id="open-craft-btn" class="sidebar-btn" title="Crafting Menu">📜</button>
             </div>
@@ -489,6 +490,7 @@
 
             <div id="building-menu" class="ui-element hidden">
                 <h4 id="building-menu-title" class="text-lg font-bold text-center text-blue-300">Building</h4>
+                <div id="building-stats" class="text-[10px] text-gray-400 text-center mb-2"></div>
                 <button id="repair-btn" class="menu-button text-sm bg-success hidden">
                     <span>Repair</span> <span class="text-xs opacity-75">(1 Re.Me)</span>
                 </button>
@@ -501,6 +503,27 @@
                 <button id="building-menu-cancel-btn" class="menu-button text-sm bg-gray-600 justify-center hover:bg-gray-500">
                     Close Menu
                 </button>
+            </div>
+
+            <!-- Base Hub Menu -->
+            <div id="base-hub-menu" class="ui-element hidden p-6 w-72 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900 border-2 border-blue-500 rounded-xl shadow-2xl z-50">
+                <h3 class="text-xl font-bold mb-4 text-center text-blue-400">Base Hub</h3>
+                <div class="space-y-4">
+                    <div class="bg-slate-800 p-3 rounded border border-slate-700">
+                        <div class="flex justify-between text-sm"><span class="text-slate-400">Status:</span> <span class="text-green-400 font-bold">Operational</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-slate-400">Security:</span> <span id="hub-zone-display" class="text-white">Level 1</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-slate-400">Threat:</span> <span id="hub-threat-display" class="text-red-400">Low</span></div>
+                    </div>
+                    
+                    <button id="hub-repair-btn" class="action-button w-full bg-green-900 hover:bg-green-800 border-green-700 disabled:opacity-50">
+                        Repair (1 Re.Me)
+                    </button>
+                    
+                    <button id="hub-upgrade-btn" class="action-button w-full bg-blue-900 hover:bg-blue-800 border-blue-700 disabled:opacity-50">
+                        <span>Upgrade</span>
+                    </button>
+                </div>
+                <button id="close-base-hub-btn" class="menu-button w-full text-sm bg-gray-600 mt-6">Close Hub</button>
             </div>
             <div id="ui-tooltip" class="tooltip"></div>
         </div>
@@ -767,6 +790,9 @@
             BARRACKS: { level2: { wood: 75, metal: 50 }, level3: { wood: 150, metal: 100 } },
             FARM: { level2: { earth: 50, boneMeal: 40 }, level3: { earth: 100, boneMeal: 80 } }, 
             MINE: { level2: { wood: 100, reinforcedMetal: 5 }, level3: { wood: 200, reinforcedMetal: 10 } },
+            SOLAR_PANEL: { level2: { metal: 100, earth: 50 }, level3: { metal: 200, reinforcedMetal: 5 } },
+            TESLA_TOWER: { level2: { metal: 200, reinforcedMetal: 10 }, level3: { metal: 400, reinforcedMetal: 25 } },
+            LANDMINE: { level2: { metal: 20, wood: 20 }, level3: { metal: 40, reinforcedMetal: 2 } },
             BASE: { } // Dynamic handling for the base
         };
         
@@ -1824,14 +1850,16 @@
         }
 
         function isTileInProtectedZone(tx, ty) {
-            // Check Base zone (5x5 around its center)
+            // Check Base zone (Level based expansion)
             const baseCenter = { tx: base.x + 1, ty: base.y + 1 };
-            if (Math.abs(tx - baseCenter.tx) <= 4 && Math.abs(ty - baseCenter.ty) <= 4) return true;
+            const baseRange = 4 + (base.level - 1) * 2; 
+            if (Math.abs(tx - baseCenter.tx) <= baseRange && Math.abs(ty - baseCenter.ty) <= baseRange) return true;
 
-            // Check Towers and Walls (3x3 around them)
+            // Check Towers and Walls (Level based expansion)
             const protectors = [...towers, ...walls];
             for (const p of protectors) {
-                if (Math.abs(tx - p.x) <= 1 && Math.abs(ty - p.y) <= 1) return true;
+                const pRange = p.level; 
+                if (Math.abs(tx - p.x) <= pRange && Math.abs(ty - p.y) <= pRange) return true;
             }
             return false;
         }
@@ -2017,12 +2045,70 @@
             menuElement.style.top = `${Math.max(10, y)}px`;
         }
 
+        const openBaseHubBtn = document.getElementById('open-base-hub-btn');
+        const baseHubMenu = document.getElementById('base-hub-menu');
+        const closeBaseHubBtn = document.getElementById('close-base-hub-btn');
+        const hubRepairBtn = document.getElementById('hub-repair-btn');
+        const hubUpgradeBtn = document.getElementById('hub-upgrade-btn');
+        const hubZoneDisplay = document.getElementById('hub-zone-display');
+        const hubThreatDisplay = document.getElementById('hub-threat-display');
+
+        function updateHubUI() {
+            if (!base) return;
+            const cost = getUpgradeCost(base);
+            const canUpgrade = checkCost(cost);
+            const canRepair = base.hp < base.maxHp && checkCost({reinforcedMetal: 1});
+            
+            hubRepairBtn.disabled = !canRepair;
+            hubUpgradeBtn.disabled = !canUpgrade;
+            
+            const costStr = cost ? `(${Object.entries(cost).map(([r, a]) => `${a}${r[0].toUpperCase()}`).join(', ')})` : '(Max)';
+            hubUpgradeBtn.innerHTML = `<span>Upgrade Level ${base.level+1}</span> <br> <span class="text-[10px] opacity-70">${costStr}</span>`;
+            
+            hubZoneDisplay.textContent = `Range ${4 + (base.level - 1) * 2} Tiles`;
+            
+            const threatLevel = base.level < 3 ? 'Low' : base.level < 6 ? 'Medium' : 'High';
+            hubThreatDisplay.textContent = threatLevel;
+            hubThreatDisplay.className = `font-bold ${threatLevel === 'Low' ? 'text-green-400' : threatLevel === 'Medium' ? 'text-yellow-400' : 'text-red-500'}`;
+        }
+
+        openBaseHubBtn.addEventListener('click', () => {
+            closeContextMenus();
+            baseHubMenu.classList.remove('hidden');
+            updateHubUI();
+        });
+        closeBaseHubBtn.addEventListener('click', () => baseHubMenu.classList.add('hidden'));
+        
+        hubRepairBtn.addEventListener('click', () => {
+            if (base.hp < base.maxHp && checkCost({reinforcedMetal: 1})) {
+                payCost({reinforcedMetal: 1});
+                base.hp = base.maxHp;
+                updateHubUI();
+                SoundSystem.playSound('PRODUCTION_DONE');
+            }
+        });
+        
+        hubUpgradeBtn.addEventListener('click', () => {
+            const cost = getUpgradeCost(base);
+            if (checkCost(cost)) {
+                payCost(cost);
+                base.level++;
+                base.maxHp += 100;
+                base.hp = base.maxHp;
+                base.turret.damage += 5;
+                for(let i=0; i<3; i++) spawnMonster();
+                updateHubUI();
+                SoundSystem.playSound('EXPLOSION');
+                screenShake(10);
+            }
+        });
+
         function closeContextMenus() {
             buildMenu.classList.add('hidden');
             troopSelectMenu.classList.add('hidden');
             buildingMenu.classList.add('hidden');
-            // Vi nollställer inte selectedTile etc här alltid för att vissa menyer behöver datan,
-            // men vi gömmer de visuella elementen.
+            actionsBoard.classList.add('hidden');
+            baseHubMenu.classList.add('hidden');
         }
 
         function checkCost(cost) {
@@ -2072,7 +2158,8 @@
 
             if (gameMode === 'NORMAL' || gameMode === 'SANDBOX') {
                 monsterSpawnTimer += deltaTime;
-                if (monsterSpawnTimer >= MONSTER_SPAWN_RATE) { spawnMonster(); monsterSpawnTimer = 0; }
+                const effectiveSpawnRate = MONSTER_SPAWN_RATE / (1 + (base.level - 1) * 0.4);
+                if (monsterSpawnTimer >= effectiveSpawnRate) { spawnMonster(); monsterSpawnTimer = 0; }
             }
             
             abandonedHouseSpawnTimer += deltaTime;
@@ -2439,6 +2526,9 @@
             else if (targetObject instanceof Building && targetObject.faction === FACTION.PLAYER) {
                 // Handle player buildings (including Base)
                 focusedBuilding = targetObject;
+                document.getElementById('building-menu-title').textContent = focusedBuilding.type;
+                document.getElementById('building-stats').textContent = `Level: ${focusedBuilding.level} | HP: ${Math.floor(focusedBuilding.hp)}/${focusedBuilding.maxHp}`;
+
                 if (focusedBuilding.hp < focusedBuilding.maxHp) {
                     repairBtn.classList.remove('hidden');
                     repairBtn.disabled = !checkCost({reinforcedMetal: 1});
@@ -2453,7 +2543,6 @@
                     upgradeBtn.classList.remove('hidden');
                     upgradeBtn.disabled = !checkCost(cost);
                 } else {
-                    // Max level reached or no upgrades available
                     upgradeBtn.classList.add('hidden');
                 }
                 
