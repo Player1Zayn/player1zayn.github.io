@@ -392,14 +392,17 @@
                 <span class="label">Reinf. Metal:</span><span id="reinforced-metal-value" class="value">0</span>
                 <span class="label text-purple-400">Waste:</span><span id="monster-waste-value" class="value text-purple-400">0</span>
                 <span class="label text-yellow-200">Bonemeal:</span><span id="bonemeal-value" class="value text-yellow-200">0</span>
+                <span class="label text-cyan-400 font-bold">Research:</span><span id="research-value" class="value text-cyan-400">0</span>
             </div>
 
             <div id="stats-board" class="resource-board ui-element">
+                <span class="label text-orange-400">Threat:</span><span id="threat-value" class="value text-orange-400 font-bold">Low</span>
                 <span class="label">Kills:</span><span id="kills-value" class="value">0</span>
                 <span class="label">Base HP:</span><span id="base-hp-value" class="value">100</span>
                 <span class="label">Bullets:</span><span id="bullets-value" class="value">0</span>
                 <span class="label">Food:</span><span id="food-value" class="value">0</span>
                 <span class="label">Inhabitants:</span><span id="inhabitants-value" class="value">0/0</span>
+                <span class="label text-green-400 font-bold">Build Cap:</span><span id="build-cap-value" class="value text-green-400 font-bold">0/0</span>
                 <span class="label">Troops:</span><span id="troops-value" class="value">0</span>
                 <span class="label text-blue-400">Energy:</span><span id="energy-value" class="value text-blue-400">0/100</span>
             </div>
@@ -611,6 +614,9 @@
         const inhabitantsValue = document.getElementById('inhabitants-value');
         const monsterWasteValue = document.getElementById('monster-waste-value');
         const bonemealValue = document.getElementById('bonemeal-value');
+        const researchValue = document.getElementById('research-value');
+        const buildCapValue = document.getElementById('build-cap-value');
+        const threatValue = document.getElementById('threat-value');
         const uiTooltip = document.getElementById('ui-tooltip');
 
 
@@ -759,7 +765,7 @@
         let resources = {
             kills: 0, troops: 10, metal: 100, wood: 100, earth: 100, bullets: 500, food: 50,
             reinforcedMetal: 0, monsterWaste: 0, boneMeal: 0, inhabitants: 5, maxInhabitants: 5,
-            energy: 0, maxEnergy: 100
+            energy: 0, maxEnergy: 100, research: 0, usedBuildPower: 0, gameTime: 0
         };
         
         // --- Placement Mode State ---
@@ -770,29 +776,29 @@
         
         // Kostnader
         const COSTS = {
-            TOWER: { metal: 50, wood: 20 },
-            WALL: { wood: 10, reinforcedMetal: 1 },
-            HOUSE: { wood: 30, earth: 10 },
-            GREENHOUSE: { wood: 20, earth: 30 },
-            BARRACKS: { wood: 50, metal: 20 },
-            FARM: { earth: 20, boneMeal: 10 }, 
-            MINE: { wood: 40 },
-            LANDMINE: { metal: 20, bullets: 15, monsterWaste: 50 },
-            SOLAR_PANEL: { metal: 40, wood: 20 },
-            TESLA_TOWER: { metal: 120, reinforcedMetal: 15 }
+            TOWER: { metal: 50, wood: 20, buildPower: 1 },
+            WALL: { wood: 10, reinforcedMetal: 1, buildPower: 0.5 },
+            HOUSE: { wood: 30, earth: 10, buildPower: 0 }, // Houses provide capacity
+            GREENHOUSE: { wood: 20, earth: 30, buildPower: 2 },
+            BARRACKS: { wood: 50, metal: 20, buildPower: 3 },
+            FARM: { earth: 20, boneMeal: 10, buildPower: 1.5 }, 
+            MINE: { wood: 40, buildPower: 2.5 },
+            LANDMINE: { metal: 20, bullets: 15, monsterWaste: 50, buildPower: 0.1 },
+            SOLAR_PANEL: { metal: 40, wood: 20, buildPower: 1 },
+            TESLA_TOWER: { metal: 120, reinforcedMetal: 15, buildPower: 4 }
         };
 
         const UPGRADE_COSTS = {
-            TOWER: { level2: { metal: 75, reinforcedMetal: 5 }, level3: { metal: 150, reinforcedMetal: 15 } },
-            WALL: { level2: { reinforcedMetal: 3 }, level3: { reinforcedMetal: 5 } },
-            HOUSE: { level2: { wood: 50, earth: 20 }, level3: { wood: 100, earth: 40 } },
-            GREENHOUSE: { level2: { earth: 50, reinforcedMetal: 3 }, level3: { earth: 100, reinforcedMetal: 6 } },
-            BARRACKS: { level2: { wood: 75, metal: 50 }, level3: { wood: 150, metal: 100 } },
-            FARM: { level2: { earth: 50, boneMeal: 40 }, level3: { earth: 100, boneMeal: 80 } }, 
-            MINE: { level2: { wood: 100, reinforcedMetal: 5 }, level3: { wood: 200, reinforcedMetal: 10 } },
-            SOLAR_PANEL: { level2: { metal: 100, earth: 50 }, level3: { metal: 200, reinforcedMetal: 5 } },
-            TESLA_TOWER: { level2: { metal: 200, reinforcedMetal: 10 }, level3: { metal: 400, reinforcedMetal: 25 } },
-            LANDMINE: { level2: { metal: 20, wood: 20 }, level3: { metal: 40, reinforcedMetal: 2 } },
+            TOWER: { level2: { metal: 75, reinforcedMetal: 5 }, level3: { metal: 150, reinforcedMetal: 15, research: 5 } },
+            WALL: { level2: { reinforcedMetal: 3 }, level3: { reinforcedMetal: 5, research: 2 } },
+            HOUSE: { level2: { wood: 50, earth: 20 }, level3: { wood: 100, earth: 40, research: 5 } },
+            GREENHOUSE: { level2: { earth: 50, reinforcedMetal: 3 }, level3: { earth: 100, reinforcedMetal: 6, research: 5 } },
+            BARRACKS: { level2: { wood: 75, metal: 50 }, level3: { wood: 150, metal: 100, research: 10 } },
+            FARM: { level2: { earth: 50, boneMeal: 40 }, level3: { earth: 100, boneMeal: 80, research: 5 } }, 
+            MINE: { level2: { wood: 100, reinforcedMetal: 5 }, level3: { wood: 200, reinforcedMetal: 10, research: 8 } },
+            SOLAR_PANEL: { level2: { metal: 100, earth: 50 }, level3: { metal: 200, reinforcedMetal: 5, research: 10 } },
+            TESLA_TOWER: { level2: { metal: 200, reinforcedMetal: 10, research: 15 }, level3: { metal: 400, reinforcedMetal: 25, research: 30 } },
+            LANDMINE: { level2: { metal: 20, wood: 20 }, level3: { metal: 40, reinforcedMetal: 2, research: 2 } },
             BASE: { } // Dynamic handling for the base
         };
         
@@ -807,32 +813,39 @@
         };
 
         function updateBuildButtonLabels() {
-            buildTowerBtn.textContent = `Tower (${COSTS.TOWER.metal} Me, ${COSTS.TOWER.wood} Wo)`;
-            buildWallBtn.textContent = `Wall (${COSTS.WALL.wood} Wo, ${COSTS.WALL.reinforcedMetal} Re.Me)`;
-            buildLandmineBtn.textContent = `Landmine (${COSTS.LANDMINE.metal} Me, ${COSTS.LANDMINE.bullets} Bu, ${COSTS.LANDMINE.monsterWaste} Wa)`;
-            buildHouseBtn.textContent = `House (${COSTS.HOUSE.wood} Wo, ${COSTS.HOUSE.earth} Ea)`;
-            buildGreenhouseBtn.textContent = `Greenhouse (${COSTS.GREENHOUSE.earth} Ea, ${COSTS.GREENHOUSE.wood} Wo)`;
-            buildBarracksBtn.textContent = `Barracks (${COSTS.BARRACKS.wood} Wo, ${COSTS.BARRACKS.metal} Me)`;
-            buildFarmBtn.textContent = `Farm (${COSTS.FARM.earth} Ea, ${COSTS.FARM.boneMeal} Bone)`;
-            buildMineBtn.textContent = `Mine (${COSTS.MINE.wood} Wo)`;
-            buildSolarPanelBtn.textContent = `Solar Panel (${COSTS.SOLAR_PANEL.metal} Me, ${COSTS.SOLAR_PANEL.wood} Wo)`;
-            buildTeslaTowerBtn.textContent = `Tesla Tower (${COSTS.TESLA_TOWER.metal} Me, ${COSTS.TESLA_TOWER.reinforcedMetal} Re)`;
+            // Helper to check tech requirement
+            const canBuildTech = (reqLevel) => base.level >= reqLevel || gameMode === 'SANDBOX';
+
+            buildTowerBtn.innerHTML = `Tower <span class="text-[10px] opacity-70">(${COSTS.TOWER.metal}Me, 1BP)</span>`;
+            buildWallBtn.innerHTML = `Wall <span class="text-[10px] opacity-70">(${COSTS.WALL.wood}Wo, 0.5BP)</span>`;
+            buildLandmineBtn.innerHTML = `Landmine <span class="text-[10px] opacity-70">(${COSTS.LANDMINE.metal}Me, 0.1BP)</span>`;
+            
+            buildHouseBtn.innerHTML = `House <span class="text-[10px] opacity-70">(${COSTS.HOUSE.wood}Wo, 0BP)</span>`;
+            buildGreenhouseBtn.innerHTML = `Greenhouse <span class="text-[10px] opacity-70">(${COSTS.GREENHOUSE.earth}Ea, 2BP)</span>`;
+            
+            buildBarracksBtn.innerHTML = `Barracks ${base.level < 2 ? '<span class="text-[10px] text-red-400">(Base Lvl 2)</span>' : ''} <span class="text-[10px] opacity-70">(${COSTS.BARRACKS.wood}Wo, 3BP)</span>`;
+            buildFarmBtn.innerHTML = `Farm <span class="text-[10px] opacity-70">(${COSTS.FARM.earth}Ea, 1.5BP)</span>`;
+            buildMineBtn.innerHTML = `Mine <span class="text-[10px] opacity-70">(${COSTS.MINE.wood}Wo, 2.5BP)</span>`;
+            
+            buildSolarPanelBtn.innerHTML = `Solar ${base.level < 2 ? '<span class="text-[10px] text-red-400">(Base Lvl 2)</span>' : ''} <span class="text-[10px] opacity-70">(${COSTS.SOLAR_PANEL.metal}Me, 1BP)</span>`;
+            buildTeslaTowerBtn.innerHTML = `Tesla ${base.level < 3 ? '<span class="text-[10px] text-red-400">(Base Lvl 3)</span>' : ''} <span class="text-[10px] opacity-70">(${COSTS.TESLA_TOWER.metal}Me, 4BP)</span>`;
 
             // Grey out unaffordable buttons
             [
-                { btn: buildTowerBtn, cost: COSTS.TOWER },
-                { btn: buildWallBtn, cost: COSTS.WALL },
-                { btn: buildLandmineBtn, cost: COSTS.LANDMINE },
-                { btn: buildHouseBtn, cost: COSTS.HOUSE },
-                { btn: buildGreenhouseBtn, cost: COSTS.GREENHOUSE },
-                { btn: buildBarracksBtn, cost: COSTS.BARRACKS },
-                { btn: buildFarmBtn, cost: COSTS.FARM },
-                { btn: buildMineBtn, cost: COSTS.MINE },
-                { btn: buildSolarPanelBtn, cost: COSTS.SOLAR_PANEL },
-                { btn: buildTeslaTowerBtn, cost: COSTS.TESLA_TOWER }
+                { btn: buildTowerBtn, cost: COSTS.TOWER, tech: 1 },
+                { btn: buildWallBtn, cost: COSTS.WALL, tech: 1 },
+                { btn: buildLandmineBtn, cost: COSTS.LANDMINE, tech: 1 },
+                { btn: buildHouseBtn, cost: COSTS.HOUSE, tech: 1 },
+                { btn: buildGreenhouseBtn, cost: COSTS.GREENHOUSE, tech: 1 },
+                { btn: buildBarracksBtn, cost: COSTS.BARRACKS, tech: 2 },
+                { btn: buildFarmBtn, cost: COSTS.FARM, tech: 1 },
+                { btn: buildMineBtn, cost: COSTS.MINE, tech: 1 },
+                { btn: buildSolarPanelBtn, cost: COSTS.SOLAR_PANEL, tech: 2 },
+                { btn: buildTeslaTowerBtn, cost: COSTS.TESLA_TOWER, tech: 3 }
             ].forEach(item => {
                 const canAfford = checkCost(item.cost);
-                item.btn.disabled = !canAfford;
+                const hasTech = canBuildTech(item.tech);
+                item.btn.disabled = !canAfford || !hasTech;
             });
         }
 
@@ -883,6 +896,11 @@
 
             destroy() {
                 if (this instanceof Base && this.faction === FACTION.PLAYER) { gameOver(); return; }
+
+                // Refund build power
+                if (this.faction === FACTION.PLAYER && this.type && COSTS[this.type]) {
+                    resources.usedBuildPower = Math.max(0, resources.usedBuildPower - (COSTS[this.type].buildPower || 0));
+                }
 
                 delete world[this.key];
                 const lists = [towers, walls, houses, greenhouses, barracks, farms, mines, landmines, solarPanels, teslaTowers];
@@ -1615,7 +1633,13 @@
                 const stats = MONSTER_STATS[type];
                 this.size = (type === 'BOSS') ? 50 : 20; 
                 this.speed = stats.speed; this.color = stats.color;
-                this.maxHp = stats.hp; this.hp = this.maxHp; this.damage = stats.damage;
+                
+                // Difficulty Scaling based on base level
+                const scale = 1 + (base.level - 1) * 0.25;
+                this.maxHp = stats.hp * scale; 
+                this.hp = this.maxHp; 
+                this.damage = stats.damage * scale;
+                
                 this.attackRange = (type === 'BOSS') ? 60 : 40; 
                 this.attackCooldown = 1000; this.attackTimer = 0;
                 this.legOffset = Math.random() * 100;
@@ -1726,7 +1750,13 @@
             }
             die() { 
                 resources.kills++; resources.monsterWaste++; 
-                if (this.type === 'BOSS') screenShake(10);
+                if (this.type === 'MUTANT') resources.research += 1;
+                if (this.type === 'BOSS') { 
+                    resources.research += 25; 
+                    screenShake(10);
+                }
+                if (this.type === 'JUMPER' && Math.random() < 0.2) resources.research += 1;
+
                 // Death explosion
                 for(let i=0; i<15; i++) {
                     particles.push(new Particle(this.x, this.y, this.color, true));
@@ -1965,6 +1995,7 @@
             reinforcedMetalValue.textContent = isSandbox ? inf : resources.reinforcedMetal;
             monsterWasteValue.textContent = isSandbox ? inf : resources.monsterWaste;
             bonemealValue.textContent = isSandbox ? inf : resources.boneMeal;
+            researchValue.textContent = isSandbox ? inf : resources.research;
 
             killsValue.textContent = resources.kills;
             baseHpValue.textContent = `${Math.ceil(base.hp)} / ${Math.ceil(base.maxHp)}`;
@@ -1974,6 +2005,14 @@
             inhabitantsValue.textContent = `${resources.inhabitants} / ${resources.maxInhabitants}`;
             troopsValue.textContent = isSandbox ? inf : resources.troops;
             energyValue.textContent = isSandbox ? inf : `${Math.floor(resources.energy)} / ${resources.maxEnergy}`;
+
+            const maxBP = resources.inhabitants; 
+            buildCapValue.textContent = isSandbox ? inf : `${resources.usedBuildPower.toFixed(1)} / ${maxBP}`;
+            buildCapValue.style.color = (resources.usedBuildPower >= maxBP * 0.9) ? '#fb923c' : '#4ade80';
+
+            const threatLevel = base.level < 3 ? 'Low' : base.level < 6 ? 'Significant' : base.level < 10 ? 'High' : 'Extreme';
+            threatValue.textContent = threatLevel;
+            threatValue.className = `value font-bold ${threatLevel === 'Low' ? 'text-green-400' : threatLevel === 'Significant' ? 'text-yellow-400' : 'text-red-500'}`;
         }
 
         function hideAllScreens() {
@@ -2062,7 +2101,7 @@
             hubRepairBtn.disabled = !canRepair;
             hubUpgradeBtn.disabled = !canUpgrade;
             
-            const costStr = cost ? `(${Object.entries(cost).map(([r, a]) => `${a}${r[0].toUpperCase()}`).join(', ')})` : '(Max)';
+            const costStr = cost ? `(${Object.entries(cost).map(([r, a]) => `${a}${r === 'research' ? 'Res' : r[0].toUpperCase()}`).join(', ')})` : '(Max)';
             hubUpgradeBtn.innerHTML = `<span>Upgrade Level ${base.level+1}</span> <br> <span class="text-[10px] opacity-70">${costStr}</span>`;
             
             hubZoneDisplay.textContent = `Range ${4 + (base.level - 1) * 2} Tiles`;
@@ -2114,22 +2153,33 @@
         function checkCost(cost) {
             if (gameMode === 'SANDBOX' || !cost) return true;
             for (const [resource, amount] of Object.entries(cost)) {
+                if (resource === 'buildPower') {
+                    if (resources.usedBuildPower + amount > resources.inhabitants) return false;
+                    continue;
+                }
                 if ((resources[resource] || 0) < amount) return false;
             }
             return true;
         }
         function payCost(cost) {
             if (gameMode === 'SANDBOX' || !cost) return;
-            for (const [resource, amount] of Object.entries(cost)) resources[resource] -= amount;
+            for (const [resource, amount] of Object.entries(cost)) {
+                if (resource === 'buildPower') {
+                    resources.usedBuildPower += amount;
+                    continue;
+                }
+                resources[resource] -= amount;
+            }
         }
         function getUpgradeCost(building) {
+            const level = building.level;
             if (building.type === 'BASE') {
-                 // Dynamisk kostnad för bas
-                 const level = building.level;
+                 // Progressive costs for the Base Hub
                  return {
-                     metal: 100 * level,
-                     wood: 100 * level,
-                     reinforcedMetal: 5 * level
+                     metal: 100 * level * level,
+                     wood: 100 * level * level,
+                     reinforcedMetal: 5 * level,
+                     research: level > 1 ? 5 * (level - 1) : 0
                  };
             }
             if (building.level >= building.maxLevel) return null;
@@ -2142,6 +2192,12 @@
         function update(deltaTime) {
             const cameraSpeed = 500 / camera.zoom;
             
+            // Day/Night Cycle (120 seconds per full cycle)
+            resources.gameTime += deltaTime;
+            const cycleDuration = 120000; 
+            const timeInCycle = resources.gameTime % cycleDuration;
+            const isNight = timeInCycle > cycleDuration / 2;
+
             if (placementMode) {
                 // In placement mode, WASD moves the ghost
                 const ghostSpeed = 15; // tiles per second
@@ -2158,8 +2214,16 @@
 
             if (gameMode === 'NORMAL' || gameMode === 'SANDBOX') {
                 monsterSpawnTimer += deltaTime;
-                const effectiveSpawnRate = MONSTER_SPAWN_RATE / (1 + (base.level - 1) * 0.4);
-                if (monsterSpawnTimer >= effectiveSpawnRate) { spawnMonster(); monsterSpawnTimer = 0; }
+                let effectiveSpawnRate = MONSTER_SPAWN_RATE / (1 + (base.level - 1) * 0.4);
+                
+                // Night difficulty spike
+                if (isNight) effectiveSpawnRate *= 0.5;
+
+                if (monsterSpawnTimer >= effectiveSpawnRate) { 
+                    const count = isNight ? 2 : 1;
+                    for(let i=0; i<count; i++) spawnMonster(); 
+                    monsterSpawnTimer = 0; 
+                }
             }
             
             abandonedHouseSpawnTimer += deltaTime;
@@ -2198,6 +2262,11 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             
+            // Cycle info
+            const cycleDuration = 120000;
+            const timeInCycle = resources.gameTime % cycleDuration;
+            const isNight = timeInCycle > cycleDuration / 2;
+
             // Screen Shake
             if (camera.shake > 0) {
                 ctx.translate(Math.random() * camera.shake * 2 - camera.shake, Math.random() * camera.shake * 2 - camera.shake);
@@ -2280,6 +2349,22 @@
             }
 
             ctx.restore();
+
+            // Lighting Overlay
+            if (isNight) {
+                const nightAlpha = Math.sin((timeInCycle - cycleDuration/2) / (cycleDuration/2) * Math.PI) * 0.4;
+                ctx.fillStyle = `rgba(0, 0, 30, ${nightAlpha})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Optional: Draw text "NIGHT"
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 16px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('NIGHTFALL', canvas.width/2, 40);
+            } else {
+                ctx.fillStyle = 'rgba(255, 255, 200, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
         }
 
         function gameLoop(timestamp) {
@@ -2321,7 +2406,7 @@
             resources = {
                 kills: 0, troops: 10, metal: 100, wood: 100, earth: 100, bullets: 500, food: 50,
                 reinforcedMetal: 0, monsterWaste: 0, boneMeal: 0, inhabitants: 5, maxInhabitants: 5,
-                energy: 0, maxEnergy: 100
+                energy: 0, maxEnergy: 100, research: 0, usedBuildPower: 0, gameTime: 0
             };
             
             camera.x = 25; camera.y = 25; camera.zoom = 1;
@@ -2361,6 +2446,9 @@
             resources = data.resources;
             if (resources.energy === undefined) resources.energy = 0;
             if (resources.maxEnergy === undefined) resources.maxEnergy = 100;
+            if (resources.research === undefined) resources.research = 0;
+            if (resources.usedBuildPower === undefined) resources.usedBuildPower = 0;
+            if (resources.gameTime === undefined) resources.gameTime = 0;
             
             // Reconstruct world
             world = {};
