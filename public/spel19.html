@@ -1691,13 +1691,15 @@
             banUser();
             return;
         }
+        if (!isInternalUpdate && newVal !== bananas) balanceDirty = true;
         bananas = newVal;
         if (bananas >= 1000000) unlockTitle('banana_millionaire');
         if (typeof updateGameUI === 'function') updateGameUI();
         
         // Auto-sync after 2 seconds of inactivity
         clearTimeout(syncTimeout);
-        syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
+        const delay = isAutoBetting ? 0 : 2000;
+        syncTimeout = setTimeout(() => syncData(bananas, trees), delay);
     }
 
     function updateCoins(newVal) {
@@ -1706,12 +1708,14 @@
             banUser();
             return;
         }
+        if (!isInternalUpdate && newVal !== coins) balanceDirty = true;
         coins = newVal;
         if (typeof updateGameUI === 'function') updateGameUI();
         
         // Auto-sync after 2 seconds of inactivity
         clearTimeout(syncTimeout);
-        syncTimeout = setTimeout(() => syncData(bananas, trees), 2000);
+        const delay = isAutoBetting ? 0 : 2000;
+        syncTimeout = setTimeout(() => syncData(bananas, trees), delay);
     }
     
     // DB Sync State Protection
@@ -2450,6 +2454,7 @@
 
     let isSyncing = false;
     let pendingSync = false;
+    let balanceDirty = false;
     let lastSyncTime = null;
 
     async function syncData(currentBananas, currentTreesArray, nameToSave = playerName) {
@@ -2460,7 +2465,10 @@
       // where the server result is fetched before the animation finishes.
       if (isPlaying || (typeof bjState !== 'undefined' && (bjState === 'playing' || bjState === 'dealerTurn'))) {
           // If we are playing, just queue a sync for after the game is over
-          pendingSync = true;
+          if (!pendingSync) {
+              pendingSync = true;
+              setTimeout(() => syncData(bananas, trees), 2000); // Try again in 2s
+          }
           return;
       }
 
@@ -2541,6 +2549,7 @@
           
           if (result && result.success) {
               console.log(`[SYNC SUCCESS] Score: ${currentBananas}`);
+              balanceDirty = false;
               expectedDbBananas = currentBananas; 
               expectedDbCoins = coins;
               lastSyncTime = new Date();
@@ -2578,6 +2587,7 @@
               }
               
               setStatus('Synced');
+              balanceDirty = false;
               updateGameUI();
           } else {
               throw new Error(result?.error || 'Unknown server error');
@@ -4109,7 +4119,7 @@
     function startAutoBetLoop() {
         if (!isAutoBetting) return;
         
-        if (!isPlaying && (gameMode === 'roulette' || gameMode === 'slots' || gameMode === 'plinko')) {
+        if (!isPlaying && !isSyncing && !balanceDirty && (gameMode === 'roulette' || gameMode === 'slots' || gameMode === 'plinko')) {
             const actualBet = gameMode === 'slots' && isBonusBet ? betAmount * 2 : betAmount;
             let canBet = bananas >= actualBet && betAmount > 0;
             if (gameMode === 'roulette' && !betColor) canBet = false;
@@ -4123,7 +4133,7 @@
     }
 
     function handleMainAction() {
-      if (isPlaying || bananas <= 0 || betAmount <= 0 || betAmount > bananas) return;
+      if (isPlaying || isSyncing || balanceDirty || bananas <= 0 || betAmount <= 0 || betAmount > bananas) return;
       
       unlockTitle('newbie_monkey');
       if (betAmount >= 500000) unlockTitle('high_roller');
@@ -4197,6 +4207,7 @@
       } catch (err) {
           console.error("Plinko error:", err);
           isPlaying = false;
+          if (pendingSync) syncData(bananas, trees);
           // Restore balance on error
           isInternalUpdate = true;
           updateBananas(bananas + betAmount);
@@ -4209,6 +4220,7 @@
     function animatePlinko() {
       if (plinkoBalls.length === 0) {
         isPlaying = false;
+        if (pendingSync) syncData(bananas, trees);
         updateGameUI();
         return;
       }
@@ -4515,6 +4527,7 @@
       } catch (err) {
           console.error("Roulette error:", err);
           isPlaying = false;
+          if (pendingSync) syncData(bananas, trees);
           // Restore balance on error
           isInternalUpdate = true;
           updateBananas(bananas + betAmount);
@@ -4725,6 +4738,7 @@
           clearInterval(slotAnimInterval);
           slots.forEach(s => s.classList.remove('slot-spinning'));
           isPlaying = false;
+          if (pendingSync) syncData(bananas, trees);
           // Restore balance on error
           isInternalUpdate = true;
           updateBananas(bananas + actualBet);
@@ -4763,7 +4777,7 @@
     }
 
     async function openCase(caseType) {
-        if (isPlaying) return;
+        if (isPlaying || isSyncing || balanceDirty) return;
         
         const costs = { 'normal': 10000, 'booster': 100000, 'toverland': 2000000 };
         const cost = costs[caseType];
@@ -4820,10 +4834,12 @@
             
             document.getElementById('case-result-view').classList.remove('hidden');
             isPlaying = false;
+            if (pendingSync) syncData(bananas, trees);
 
         } catch (err) {
             console.error("Case error:", err);
             isPlaying = false;
+            if (pendingSync) syncData(bananas, trees);
             // Restore balance on single opening failure
             isInternalUpdate = true;
             updateBananas(bananas + cost);
@@ -4836,7 +4852,7 @@
     }
 
     async function massOpenCase(caseType, count) {
-        if (isPlaying) return;
+        if (isPlaying || isSyncing || balanceDirty) return;
         const costs = { 'normal': 10000, 'booster': 100000, 'toverland': 2000000 };
         const totalCost = costs[caseType] * count;
         
@@ -4912,6 +4928,7 @@
         }
 
         isPlaying = false;
+        if (pendingSync) syncData(bananas, trees);
         // Keep the last result visible, show button to go back
     }
 
@@ -5333,8 +5350,8 @@
           updateBananas(0);
           isInternalUpdate = false;
       }
-      syncData(bananas, trees);
       isPlaying = false;
+      syncData(bananas, trees);
       if (betAmount > bananas) betAmount = bananas; 
       updateGameUI();
     }
@@ -5522,7 +5539,7 @@
           megaBetIndicator.classList.toggle('hidden', !activeGadgets[5]);
       }
 
-      let canAction = !isPlaying && bananas > 0 && betAmount > 0;
+      let canAction = !isPlaying && !isSyncing && !balanceDirty && bananas > 0 && betAmount > 0;
       if (gameMode === 'roulette' && !betColor) canAction = false;
       if (gameMode === 'blackjack' && bjState === 'playing') canAction = false; 
       if (gameMode === 'slots' && isBonusBet && (betAmount + currentBonusBet) > bananas) canAction = false;
@@ -5531,6 +5548,7 @@
       elMainActionBtn.className = canAction ? "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl transition-all active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-b-4 border-yellow-600" : "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl bg-emerald-800 text-emerald-900 cursor-not-allowed opacity-80 border-b-4 border-emerald-900";
       
       if (isPlaying) { elMainActionBtn.innerText = "PLAYING..."; }
+      else if (isSyncing || balanceDirty) { elMainActionBtn.innerText = "SYNCING..."; }
       else if (gameMode === 'blackjack') { elMainActionBtn.innerText = (bjState === 'gameOver') ? "DEAL AGAIN" : "DEAL"; }
       else { elMainActionBtn.innerText = "SPIN"; }
 
