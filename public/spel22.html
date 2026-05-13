@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flappy Bird </title>
+    <title>Flappy Bird Clone</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -168,6 +168,90 @@
         const ctx = canvas.getContext('2d');
         const container = document.getElementById('game-container');
 
+        // Audio System
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let bgmSource = null;
+        let isMuted = false;
+
+        let isMelodyPlaying = false;
+
+        const sounds = {
+            playFlap() {
+                if (isMuted) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            },
+            playScore() {
+                if (isMuted) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            },
+            playHit() {
+                if (isMuted) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            },
+            startBGM() {
+                if (isMelodyPlaying) return;
+                isMelodyPlaying = true;
+                
+                const melody = [
+                    261.63, 293.66, 329.63, 349.23, 392.00, 329.63, 261.63, 293.66,
+                    329.63, 261.63, 196.00, 220.00, 246.94, 261.63, 261.63, 261.63
+                ];
+                let noteIndex = 0;
+                
+                const playNextNote = () => {
+                    if (gameState !== 'playing') {
+                        isMelodyPlaying = false;
+                        return;
+                    }
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(melody[noteIndex], audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.15);
+                    
+                    noteIndex = (noteIndex + 1) % melody.length;
+                    setTimeout(playNextNote, 200);
+                };
+                
+                playNextNote();
+            }
+        };
+
         // UI Elements
         const scoreDisplay = document.getElementById('score-display');
         const startScreen = document.getElementById('start-screen');
@@ -219,8 +303,8 @@
             logicalY: 150,
             logicalRadius: 12,
             logicalVelocity: 0,
-            logicalGravity: 0.25,
-            logicalJump: -4.6,
+            logicalGravity: 0.35, // Faster gravity
+            logicalJump: -5.5,   // Snappier jump to compensate for gravity
             rotation: 0,
 
             draw() {
@@ -280,12 +364,21 @@
                 this.logicalVelocity += this.logicalGravity;
                 this.logicalY += this.logicalVelocity;
 
-                // Calculate rotation based on velocity
-                if (this.logicalVelocity >= this.logicalJump) {
-                    this.rotation = Math.min(Math.PI / 4, this.rotation + 0.1);
+                // Smooth rotation based on velocity
+                // points up when rising, dives down when falling
+                let targetRotation = 0;
+                if (this.logicalVelocity <= 0) {
+                    // Ascending: tilt up slightly
+                    targetRotation = -Math.PI / 6;
                 } else {
-                    this.rotation = -Math.PI / 6;
+                    // Descending: dive down, steeper as velocity increases
+                    targetRotation = Math.min(Math.PI / 2, this.logicalVelocity * 0.15);
                 }
+
+                // Interpolate rotation for smooth transition
+                // Faster interpolation when jumping, slower when falling for that flappy feel
+                const interpolationSpeed = this.logicalVelocity <= 0 ? 0.3 : 0.1;
+                this.rotation += (targetRotation - this.rotation) * interpolationSpeed;
 
                 // Ground Collision
                 const groundLogicalY = (canvas.height / scaleRatio) - 40; // 40 is logical ground height
@@ -303,6 +396,7 @@
 
             flap() {
                 this.logicalVelocity = this.logicalJump;
+                sounds.playFlap();
             },
             
             reset() {
@@ -316,7 +410,7 @@
             items: [],
             logicalWidth: 52,
             logicalGap: 120, // Vertical gap between top and bottom pipe
-            logicalDx: 2,    // Horizontal speed
+            logicalDx: 3,    // Faster horizontal speed (was 2)
 
             draw() {
                 const w = this.logicalWidth * scaleRatio;
@@ -353,8 +447,8 @@
             },
 
             update() {
-                // Add new pipe every 100 frames
-                if (frames % 100 === 0) {
+                // Add new pipe every 70 frames (more frequent for faster speed)
+                if (frames % 70 === 0) {
                     const minPipeHeight = 50;
                     const logicalArea = (canvas.height / scaleRatio) - 40; // Total height minus ground
                     const maxPipeHeight = logicalArea - this.logicalGap - minPipeHeight;
@@ -399,6 +493,7 @@
                         score++;
                         scoreDisplay.innerText = score;
                         p.passed = true;
+                        sounds.playScore();
                     }
 
                     // Remove pipes that go off-screen
@@ -555,14 +650,20 @@
         container.addEventListener('touchstart', handleInput, {passive: false});
 
         function startGame() {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
             gameState = 'playing';
             startScreen.classList.add('hidden');
             scoreDisplay.style.display = 'block';
+            sounds.startBGM();
             bird.flap(); // Initial jump
         }
 
         function gameOver() {
+            if (gameState === 'gameover') return;
             gameState = 'gameover';
+            sounds.playHit();
             
             // Check and save high score
             if (score > bestScore) {
