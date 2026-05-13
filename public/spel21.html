@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Imposter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .text-glow {
+            text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+            transition: all 0.2s;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+        }
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Toast notification */
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+        }
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div id="toast" class="bg-slate-800 border border-slate-600 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3">
+        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span id="toast-msg" class="font-medium">Notification</span>
+    </div>
+
+    <div id="screen-start" class="screen active flex-col items-center w-full max-w-md">
+        <div class="mb-10 text-center">
+            <h1 class="text-6xl font-black italic tracking-tighter text-red-500 text-glow mb-2">IMPOSTER</h1>
+            <p class="text-slate-400 font-medium">Find the liar among you.</p>
+        </div>
+
+        <div class="glass-panel p-6 rounded-2xl w-full flex flex-col gap-4 shadow-xl">
+            <div>
+                <label class="block text-sm font-semibold text-slate-300 mb-1">Your Name</label>
+                <input type="text" id="player-name" placeholder="Enter nickname..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors" maxlength="15">
+            </div>
+
+            <div class="h-px bg-slate-700 my-2"></div>
+
+            <button onclick="createLobby()" class="btn-primary w-full py-3 rounded-xl font-bold text-lg shadow-lg">Create New Game</button>
+            
+            <div class="flex gap-2">
+                <input type="text" id="lobby-code-input" placeholder="Lobby Code" class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono uppercase text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" maxlength="4">
+                <button onclick="joinLobby()" class="btn-secondary w-1/2 py-3 rounded-xl font-bold text-lg shadow-lg">Join Game</button>
+            </div>
+        </div>
+
+        <button onclick="showScreen('screen-credits')" class="mt-8 text-slate-500 hover:text-white transition-colors font-medium">Credits</button>
+    </div>
+
+    <div id="screen-credits" class="screen flex-col items-center w-full max-w-md">
+        <div class="glass-panel p-8 rounded-2xl w-full text-center shadow-xl">
+            <h2 class="text-3xl font-bold mb-6 text-white">Credits</h2>
+            <div class="w-24 h-24 bg-gradient-to-br from-red-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+            </div>
+            <p class="text-xl font-medium text-slate-300 mb-8">Made by <span class="text-red-400 font-bold">Player1Zayn</span></p>
+            <button onclick="showScreen('screen-start')" class="bg-slate-700 hover:bg-slate-600 w-full py-3 rounded-xl font-bold transition-colors">Back to Menu</button>
+        </div>
+    </div>
+
+    <div id="screen-lobby" class="screen flex-col items-center w-full max-w-md">
+        <div class="glass-panel p-6 rounded-2xl w-full shadow-xl">
+            <div class="text-center mb-6">
+                <p class="text-slate-400 text-sm font-semibold uppercase tracking-widest mb-1">Room Code</p>
+                <h2 id="lobby-code-display" class="text-5xl font-mono font-black text-white tracking-widest bg-slate-900 py-3 rounded-xl border border-slate-700 cursor-pointer hover:border-slate-500 transition-colors" onclick="copyCode()" title="Click to copy">----</h2>
+            </div>
+
+            <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50 mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-slate-300">Players</h3>
+                    <span id="player-count" class="text-xs bg-slate-700 px-2 py-1 rounded-full">0/10</span>
+                </div>
+                <ul id="player-list" class="space-y-2 max-h-48 overflow-y-auto">
+                    <!-- Players injected here -->
+                </ul>
+            </div>
+
+            <button id="start-game-btn" onclick="startGame()" class="btn-primary w-full py-3 rounded-xl font-bold text-lg shadow-lg hidden">Start Game</button>
+            <p id="waiting-host-msg" class="text-center text-slate-400 font-medium italic hidden">Waiting for host to start...</p>
+        </div>
+    </div>
+
+    <div id="screen-game" class="screen flex-col items-center w-full max-w-md">
+        <!-- Role Banner -->
+        <div id="role-banner" class="w-full text-center p-6 rounded-2xl mb-6 shadow-2xl transition-all duration-500 transform scale-95">
+            <p class="text-sm font-bold uppercase tracking-widest opacity-80 mb-1" id="role-subtitle">Your role</p>
+            <h2 class="text-3xl font-black" id="role-title">Loading...</h2>
+        </div>
+
+        <div class="glass-panel p-6 rounded-2xl w-full shadow-xl">
+            <!-- Phase: Word Submission -->
+            <div id="phase-playing" class="hidden flex-col gap-4">
+                <p class="text-center text-slate-300 font-medium">Type one word that describes the secret word to prove you know it.</p>
+                <div class="flex gap-2">
+                    <input type="text" id="word-input" placeholder="Your descriptive word..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" maxlength="20">
+                    <button onclick="submitWord()" id="submit-word-btn" class="bg-slate-700 hover:bg-slate-600 px-6 rounded-xl font-bold transition-colors">Submit</button>
+                </div>
+                <div class="mt-4">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Status</h3>
+                    <ul id="submission-list" class="space-y-2">
+                        <!-- Submission status injected here -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Phase: Voting -->
+            <div id="phase-voting" class="hidden flex-col gap-4">
+                <div class="text-center mb-2">
+                    <h3 class="text-xl font-bold text-red-400 mb-1">Time to Vote!</h3>
+                    <p class="text-sm text-slate-400">Review the words and vote for the Imposter.</p>
+                </div>
+                <ul id="voting-list" class="space-y-3">
+                    <!-- Voting buttons injected here -->
+                </ul>
+            </div>
+
+            <!-- Phase: Results -->
+            <div id="phase-results" class="hidden flex-col gap-4">
+                <div id="result-announcement" class="text-center p-6 rounded-xl border-2 border-red-500/30 bg-red-500/10 mb-2">
+                    <h3 class="text-2xl font-black text-white mb-1" id="result-title">Imposter Won!</h3>
+                    <p class="text-slate-300" id="result-subtitle">The imposter was Zayn</p>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Votes Cast</h3>
+                    <ul id="results-list" class="space-y-2 bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                        <!-- Vote results injected here -->
+                    </ul>
+                </div>
+                <button id="next-round-btn" onclick="nextRound()" class="btn-primary w-full py-3 rounded-xl font-bold text-lg shadow-lg mt-4 hidden">Next Round</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Environment Variables Handling
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'imposter-game-local';
+        let firebaseConfig;
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        } catch (e) {
+            console.error("Config parsing error", e);
+        }
+
+        // Dummy config for fallback if completely isolated
+        if (!firebaseConfig) {
+            firebaseConfig = { projectId: "dummy" }; 
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Game State Variables
+        let currentUser = null;
+        let myLobbyId = null;
+        let unsubscribeLobby = null;
+        let localPlayerState = {
+            name: '',
+            isHost: false,
+            wordSubmitted: '',
+            vote: ''
+        };
+        let currentLobbyData = null;
+
+        // Word Bank
+        const wordBank = [
+            { word: 'Apple', hint: 'Fruit' },
+            { word: 'Eiffel Tower', hint: 'Landmark' },
+            { word: 'Guitar', hint: 'Musical Instrument' },
+            { word: 'Pizza', hint: 'Food' },
+            { word: 'Lion', hint: 'Animal' },
+            { word: 'Soccer', hint: 'Sport' },
+            { word: 'Laptop', hint: 'Electronics' },
+            { word: 'Superman', hint: 'Fictional Character' },
+            { word: 'Coffee', hint: 'Drink' },
+            { word: 'New York', hint: 'City' },
+            { word: 'Titanic', hint: 'Movie' },
+            { word: 'Einstein', hint: 'Historical Figure' },
+            { word: 'Diamond', hint: 'Material' },
+            { word: 'Helicopter', hint: 'Vehicle' }
+        ];
+
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
+                    currentUser = userCredential.user;
+                } else {
+                    const userCredential = await signInAnonymously(auth);
+                    currentUser = userCredential.user;
+                }
+            } catch (e) {
+                showToast("Authentication failed. Cannot play online.");
+                console.error("Auth error", e);
+            }
+        }
+
+        // Global functions mapped to window for HTML onclick attributes
+        window.showScreen = (id) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        };
+
+        window.showToast = (msg) => {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        };
+
+        window.copyCode = () => {
+            const code = document.getElementById('lobby-code-display').innerText;
+            if(code !== '----') {
+                const textArea = document.createElement("textarea");
+                textArea.value = code;
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    window.showToast("Copied to clipboard!");
+                } catch (err) {
+                    console.error("Fallback copy failed", err);
+                    window.showToast("Failed to copy.");
+                } finally {
+                    document.body.removeChild(textArea);
+                }
+            }
+        };
+
+        window.createLobby = async () => {
+            const name = document.getElementById('player-name').value.trim();
+            if(!name) return window.showToast("Please enter your name!");
+            if(!currentUser) return window.showToast("Still connecting to server...");
+
+            localPlayerState.name = name;
+            localPlayerState.isHost = true;
+            myLobbyId = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
+            
+            const initialPlayers = {};
+            initialPlayers[currentUser.uid] = {
+                name: name,
+                isHost: true,
+                wordSubmitted: '',
+                vote: ''
+            };
+
+            try {
+                await setDoc(lobbyRef, {
+                    status: 'waiting',
+                    currentWord: '',
+                    currentHint: '',
+                    imposterId: '',
+                    players: initialPlayers,
+                    createdAt: Date.now()
+                });
+                
+                setupLobbyListener(myLobbyId);
+                window.showScreen('screen-lobby');
+                document.getElementById('start-game-btn').classList.remove('hidden');
+                document.getElementById('waiting-host-msg').classList.add('hidden');
+            } catch (e) {
+                console.error(e);
+                window.showToast("Failed to create lobby.");
+            }
+        };
+
+        window.joinLobby = async () => {
+            const name = document.getElementById('player-name').value.trim();
+            let code = document.getElementById('lobby-code-input').value.trim().toUpperCase();
+            
+            if(!name) return window.showToast("Please enter your name!");
+            if(code.length !== 4) return window.showToast("Invalid code format!");
+            if(!currentUser) return window.showToast("Still connecting...");
+
+            localPlayerState.name = name;
+            localPlayerState.isHost = false;
+            
+            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', code);
+            
+            try {
+                const docSnap = await getDoc(lobbyRef);
+                if (!docSnap.exists()) {
+                    return window.showToast("Lobby not found!");
+                }
+
+                if (docSnap.data().status !== 'waiting') {
+                    return window.showToast("Game already in progress!");
+                }
+
+                myLobbyId = code;
+                
+                // Add player to the map
+                const updateData = {};
+                updateData[`players.${currentUser.uid}`] = {
+                    name: name,
+                    isHost: false,
+                    wordSubmitted: '',
+                    vote: ''
+                };
+                
+                await updateDoc(lobbyRef, updateData);
+                
+                setupLobbyListener(myLobbyId);
+                window.showScreen('screen-lobby');
+                document.getElementById('start-game-btn').classList.add('hidden');
+                document.getElementById('waiting-host-msg').classList.remove('hidden');
+
+            } catch (e) {
+                console.error(e);
+                window.showToast("Error joining lobby.");
+            }
+        };
+
+        function setupLobbyListener(lobbyId) {
+            if(unsubscribeLobby) unsubscribeLobby();
+            
+            document.getElementById('lobby-code-display').innerText = lobbyId;
+            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', lobbyId);
+            
+            unsubscribeLobby = onSnapshot(lobbyRef, (docSnap) => {
+                if (!docSnap.exists()) {
+                    window.showToast("Lobby closed.");
+                    window.showScreen('screen-start');
+                    if(unsubscribeLobby) unsubscribeLobby();
+                    return;
+                }
+
+                const data = docSnap.data();
+                currentLobbyData = data;
+                updateUIBasedOnState(data);
+                
+                // Host handles phase transitions to prevent race conditions
+                if(localPlayerState.isHost) {
+                    checkPhaseTransitions(data);
+                }
+            }, (error) => {
+                console.error("Listener error:", error);
+                window.showToast("Connection lost.");
+            });
+        }
+
+        function updateUIBasedOnState(data) {
+            const players = data.players || {};
+            const playerIds = Object.keys(players);
+            
+            // Update Lobby Screen Player List
+            const listEl = document.getElementById('player-list');
+            listEl.innerHTML = '';
+            document.getElementById('player-count').innerText = `${playerIds.length}/10`;
+            
+            playerIds.forEach(uid => {
+                const p = players[uid];
+                const isMe = uid === currentUser.uid;
+                listEl.innerHTML += `
+                    <li class="flex items-center gap-3 bg-slate-800 p-2 rounded-lg">
+                        <div class="w-8 h-8 rounded-full ${p.isHost ? 'bg-amber-500' : 'bg-slate-600'} flex items-center justify-center text-xs font-bold text-white shadow-inner">
+                            ${p.name.substring(0,2).toUpperCase()}
+                        </div>
+                        <span class="font-medium text-slate-200 ${isMe ? 'text-blue-400' : ''}">${p.name} ${isMe ? '(You)' : ''}</span>
+                        ${p.isHost ? '<span class="ml-auto text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30">HOST</span>' : ''}
+                    </li>
+                `;
+            });
+
+            // Handle Screen Transitions based on Status
+            if (data.status === 'playing' || data.status === 'voting' || data.status === 'finished') {
+                if(document.getElementById('screen-game').classList.contains('active') === false) {
+                    window.showScreen('screen-game');
+                }
+                updateGameScreen(data, players, playerIds);
+            } else if (data.status === 'waiting') {
+                window.showScreen('screen-lobby');
+            }
+        }
+
+        function updateGameScreen(data, players, playerIds) {
+            const roleBanner = document.getElementById('role-banner');
+            const roleTitle = document.getElementById('role-title');
+            const roleSubtitle = document.getElementById('role-subtitle');
+            
+            // Role assignment UI
+            const amIImposter = data.imposterId === currentUser.uid;
+            
+            if (data.status !== 'waiting') {
+                roleBanner.classList.remove('scale-95');
+                roleBanner.classList.add('scale-100');
+                if (amIImposter) {
+                    roleBanner.className = "w-full text-center p-6 rounded-2xl mb-6 shadow-2xl transition-all duration-500 bg-gradient-to-r from-red-900 to-rose-900 border border-red-500/50";
+                    roleSubtitle.innerText = "You are the";
+                    roleTitle.innerText = "IMPOSTER";
+                    roleTitle.classList.add('text-glow', 'text-red-400');
+                    if (data.status === 'playing') {
+                        roleSubtitle.innerText = `Hint: The category is ${data.currentHint}`;
+                    }
+                } else {
+                    roleBanner.className = "w-full text-center p-6 rounded-2xl mb-6 shadow-2xl transition-all duration-500 bg-gradient-to-r from-blue-900 to-indigo-900 border border-blue-500/50";
+                    roleSubtitle.innerText = "The Secret Word is";
+                    roleTitle.innerText = data.currentWord;
+                    roleTitle.classList.remove('text-glow', 'text-red-400');
+                    roleTitle.classList.add('text-blue-300');
+                }
+            }
+
+            // Phase Visibilities
+            document.getElementById('phase-playing').classList.add('hidden');
+            document.getElementById('phase-voting').classList.add('hidden');
+            document.getElementById('phase-results').classList.add('hidden');
+
+            if (data.status === 'playing') {
+                document.getElementById('phase-playing').classList.remove('hidden');
+                document.getElementById('phase-playing').classList.add('flex');
+                
+                const subList = document.getElementById('submission-list');
+                subList.innerHTML = '';
+                
+                let mySubmission = players[currentUser.uid].wordSubmitted;
+                const inputBtn = document.getElementById('submit-word-btn');
+                const inputField = document.getElementById('word-input');
+                
+                if (mySubmission) {
+                    inputField.value = mySubmission;
+                    inputField.disabled = true;
+                    inputBtn.disabled = true;
+                    inputBtn.innerText = "Submitted";
+                    inputBtn.classList.replace('hover:bg-slate-600', 'opacity-50');
+                } else {
+                    inputField.disabled = false;
+                    inputBtn.disabled = false;
+                    inputBtn.innerText = "Submit";
+                    inputBtn.classList.replace('opacity-50', 'hover:bg-slate-600');
+                }
+
+                playerIds.forEach(uid => {
+                    const p = players[uid];
+                    const hasSubmitted = p.wordSubmitted.length > 0;
+                    subList.innerHTML += `
+                        <li class="flex justify-between items-center bg-slate-800 p-3 rounded-lg">
+                            <span class="font-medium text-slate-300">${p.name}</span>
+                            ${hasSubmitted 
+                                ? '<span class="text-green-400 text-sm font-bold flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Ready</span>' 
+                                : '<span class="text-slate-500 text-sm italic">Thinking...</span>'}
+                        </li>
+                    `;
+                });
+            }
+
+            if (data.status === 'voting') {
+                document.getElementById('phase-voting').classList.remove('hidden');
+                document.getElementById('phase-voting').classList.add('flex');
+                
+                const voteList = document.getElementById('voting-list');
+                voteList.innerHTML = '';
+                
+                let myVote = players[currentUser.uid].vote;
+
+                playerIds.forEach(uid => {
+                    const p = players[uid];
+                    const isMe = uid === currentUser.uid;
+                    const isSelected = myVote === uid;
+                    
+                    if(!isMe) {
+                        voteList.innerHTML += `
+                            <button onclick="submitVote('${uid}')" disabled="${myVote !== '' ? 'true' : 'false'}" class="w-full text-left bg-slate-800 hover:bg-slate-700 p-4 rounded-xl transition-all border-2 ${isSelected ? 'border-red-500 bg-slate-700' : 'border-transparent'} relative overflow-hidden group">
+                                <div class="flex justify-between items-center relative z-10">
+                                    <span class="font-bold text-lg text-white">${p.name}</span>
+                                    <span class="text-slate-400 bg-slate-900 px-3 py-1 rounded-md text-sm font-mono border border-slate-700">Said: "${p.wordSubmitted}"</span>
+                                </div>
+                                ${isSelected ? '<div class="absolute inset-0 bg-red-500/10 z-0"></div>' : ''}
+                            </button>
+                        `;
+                    } else {
+                        // Show my own word without voting button
+                         voteList.innerHTML += `
+                            <div class="w-full text-left bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex justify-between items-center opacity-70">
+                                <span class="font-medium text-slate-400">${p.name} (You)</span>
+                                <span class="text-slate-500 bg-slate-800 px-3 py-1 rounded-md text-sm font-mono border border-slate-700">Said: "${p.wordSubmitted}"</span>
+                            </div>
+                        `;
+                    }
+                });
+            }
+
+            if (data.status === 'finished') {
+                document.getElementById('phase-results').classList.remove('hidden');
+                document.getElementById('phase-results').classList.add('flex');
+                
+                if(localPlayerState.isHost) {
+                    document.getElementById('next-round-btn').classList.remove('hidden');
+                }
+
+                // Tally votes
+                const votes = {};
+                playerIds.forEach(uid => votes[uid] = 0);
+                playerIds.forEach(uid => {
+                    const votedFor = players[uid].vote;
+                    if(votedFor && votes[votedFor] !== undefined) {
+                        votes[votedFor]++;
+                    }
+                });
+
+                let maxVotes = 0;
+                let suspectId = null;
+                Object.keys(votes).forEach(uid => {
+                    if(votes[uid] > maxVotes) {
+                        maxVotes = votes[uid];
+                        suspectId = uid;
+                    }
+                });
+
+                const imposterName = players[data.imposterId].name;
+                const imposterCaught = suspectId === data.imposterId;
+                
+                const titleEl = document.getElementById('result-title');
+                const subEl = document.getElementById('result-subtitle');
+                const boxEl = document.getElementById('result-announcement');
+
+                if (imposterCaught) {
+                    titleEl.innerText = "Imposter Caught!";
+                    titleEl.className = "text-2xl font-black text-blue-400 mb-1";
+                    subEl.innerText = `${imposterName} was the imposter!`;
+                    boxEl.className = "text-center p-6 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 mb-2";
+                } else {
+                    titleEl.innerText = "Imposter Escaped!";
+                    titleEl.className = "text-2xl font-black text-red-500 mb-1";
+                    subEl.innerText = `${imposterName} fooled everyone.`;
+                    boxEl.className = "text-center p-6 rounded-xl border-2 border-red-500/30 bg-red-500/10 mb-2";
+                }
+
+                const resList = document.getElementById('results-list');
+                resList.innerHTML = '';
+                
+                playerIds.forEach(uid => {
+                    const p = players[uid];
+                    const isImposter = uid === data.imposterId;
+                    resList.innerHTML += `
+                        <li class="flex justify-between items-center p-2 border-b border-slate-700/50 last:border-0">
+                            <div>
+                                <span class="font-bold ${isImposter ? 'text-red-400' : 'text-slate-300'}">${p.name} ${isImposter ? '(Imposter)' : ''}</span>
+                                <div class="text-xs text-slate-500">Voted for: ${p.vote ? players[p.vote].name : 'Nobody'}</div>
+                            </div>
+                            <div class="bg-slate-800 px-3 py-1 rounded-full text-sm font-bold text-slate-300">
+                                ${votes[uid]} votes
+                            </div>
+                        </li>
+                    `;
+                });
+            }
+        }
+
+        function checkPhaseTransitions(data) {
+            const players = data.players || {};
+            const playerIds = Object.keys(players);
+            
+            if (data.status === 'playing') {
+                const allSubmitted = playerIds.every(uid => players[uid].wordSubmitted !== '');
+                if (allSubmitted && playerIds.length > 1) { // Need at least 2 people to play properly
+                    const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
+                    updateDoc(lobbyRef, { status: 'voting' });
+                }
+            }
+            
+            if (data.status === 'voting') {
+                const allVoted = playerIds.every(uid => players[uid].vote !== '');
+                if (allVoted && playerIds.length > 1) {
+                    const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
+                    updateDoc(lobbyRef, { status: 'finished' });
+                }
+            }
+        }
+
+        window.startGame = async () => {
+            if(!myLobbyId || !currentLobbyData || !localPlayerState.isHost) return;
+            
+            const playerIds = Object.keys(currentLobbyData.players);
+            if(playerIds.length < 2) {
+                return window.showToast("Need at least 2 players to start!");
+            }
+
+            const targetWordObj = wordBank[Math.floor(Math.random() * wordBank.length)];
+            const imposterIndex = Math.floor(Math.random() * playerIds.length);
+            const imposterId = playerIds[imposterIndex];
+
+            // Reset player states for the new round
+            const updateData = {
+                status: 'playing',
+                currentWord: targetWordObj.word,
+                currentHint: targetWordObj.hint,
+                imposterId: imposterId
+            };
+
+            playerIds.forEach(uid => {
+                updateData[`players.${uid}.wordSubmitted`] = '';
+                updateData[`players.${uid}.vote`] = '';
+            });
+
+            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
+            try {
+                await updateDoc(lobbyRef, updateData);
+            } catch (e) {
+                console.error(e);
+                window.showToast("Failed to start game.");
+            }
+        };
+
+        window.submitWord = async () => {
+            const word = document.getElementById('word-input').value.trim();
+            if(!word) return window.showToast("Enter a word first!");
+            
+            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
+            const updateData = {};
+            updateData[`players.${currentUser.uid}.wordSubmitted`] = word;
+            
+            try {
+                await updateDoc(lobbyRef, updateData);
+            } catch (e) {
+                console.error(e);
+                window.showToast("Failed to submit word.");
+            }
+        };
+
+        window.submitVote = async (suspectId) => {
+            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
+            const updateData = {};
+            updateData[`players.${currentUser.uid}.vote`] = suspectId;
+            
+            try {
+                await updateDoc(lobbyRef, updateData);
+            } catch (e) {
+                console.error(e);
+                window.showToast("Failed to cast vote.");
+            }
+        };
+
+        window.nextRound = async () => {
+            if(!localPlayerState.isHost) return;
+            
+            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
+            const playerIds = Object.keys(currentLobbyData.players);
+            
+            const updateData = {
+                status: 'waiting',
+                currentWord: '',
+                currentHint: '',
+                imposterId: ''
+            };
+
+            playerIds.forEach(uid => {
+                updateData[`players.${uid}.wordSubmitted`] = '';
+                updateData[`players.${uid}.vote`] = '';
+            });
+
+            try {
+                await updateDoc(lobbyRef, updateData);
+            } catch (e) {
+                console.error(e);
+                window.showToast("Failed to reset lobby.");
+            }
+        };
+
+        // Bootstrap
+        initAuth();
+    </script>
+</body>
+</html>
