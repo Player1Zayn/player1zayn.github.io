@@ -109,7 +109,8 @@
 
             <button onclick="createLobby()" class="btn-primary w-full py-3 rounded-xl font-bold text-lg shadow-lg">Create New Game</button>
             
-            <button onclick="showJoinMenu()" class="btn-secondary w-full py-3 rounded-xl font-bold text-lg shadow-lg mt-2">Join Game</button>
+            <button onclick="showJoinMenu()" class="btn-secondary w-full py-3 rounded-xl font-bold text-lg shadow-lg mt-2 font-black uppercase tracking-widest italic">Join Game</button>
+            <button onclick="leaveGame()" id="leave-game-btn" class="hidden w-full py-3 rounded-xl font-bold text-slate-400 hover:text-white transition-colors mt-2 text-sm uppercase tracking-widest font-black italic">Leave Current Game</button>
         </div>
 
         <button onclick="showScreen('screen-credits')" class="mt-8 text-slate-500 hover:text-white transition-colors font-medium">Credits</button>
@@ -248,7 +249,7 @@
         // Game State Variables
         let myPlayerId = localStorage.getItem('imp_player_id');
         let myLobbyId = null;
-        let mySubscription = null;
+        let myChannel = null;
         let players = [];
         let currentLobby = null;
         let isHost = false;
@@ -277,6 +278,16 @@
             document.getElementById(id).classList.add('active');
         };
 
+        window.leaveGame = async () => {
+            if (myLobbyId && myPlayerId) {
+                await sb.from('players').delete().eq('id', myPlayerId);
+            }
+            if (myChannel) sb.removeChannel(myChannel);
+            myLobbyId = null;
+            document.getElementById('leave-game-btn').classList.add('hidden');
+            window.showScreen('screen-start');
+        };
+
         window.showToast = (msg) => {
             const toast = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
@@ -301,7 +312,6 @@
             try {
                 const lobbyCode = Math.random().toString(36).substring(2, 8).toUpperCase();
                 myLobbyId = lobbyCode;
-                isHost = true;
 
                 // Create Lobby
                 const { error: lobbyErr } = await sb.from('lobbies').insert([{
@@ -320,7 +330,10 @@
                 if (playerErr) throw playerErr;
 
                 myPlayerId = playerData.id;
+                isHost = true;
                 localStorage.setItem('imp_player_id', myPlayerId);
+                localStorage.setItem('imp_last_lobby', lobbyCode);
+                document.getElementById('leave-game-btn').classList.remove('hidden');
 
                 setupGameListener(lobbyCode);
                 window.showScreen('screen-lobby');
@@ -337,7 +350,7 @@
 
         window.refreshPublicLobbies = async () => {
             const listEl = document.getElementById('public-lobby-list');
-            listEl.innerHTML = '<div class="text-center py-8 text-slate-600 animate-pulse text-sm">Searching for games...</div>';
+            listEl.innerHTML = '<div class="text-center py-8 text-slate-600 animate-pulse text-sm font-black italic uppercase">Searching for games...</div>';
             
             try {
                 // Fetch public waiting lobbies
@@ -351,28 +364,28 @@
 
                 listEl.innerHTML = '';
                 if (!lobbies || lobbies.length === 0) {
-                    listEl.innerHTML = '<div class="text-center py-8 text-slate-600 italic text-sm">No public games found.</div>';
+                    listEl.innerHTML = '<div class="text-center py-8 text-slate-600 italic text-sm font-black uppercase">No public games found.</div>';
                     return;
                 }
 
                 lobbies.forEach(l => {
                     const playerCount = l.players?.[0]?.count || 0;
                     listEl.innerHTML += `
-                        <button onclick="joinSpecificLobby('${l.id}')" class="w-full bg-slate-800 hover:bg-slate-700 p-4 rounded-xl flex items-center justify-between border border-slate-700 transition-all group">
+                        <button onclick="joinSpecificLobby('${l.id}')" class="w-full bg-slate-800 hover:bg-slate-700 p-4 rounded-xl flex items-center justify-between border border-slate-700 transition-all group shadow-lg active:scale-95">
                             <div class="flex flex-col items-start">
-                                <span class="text-white font-bold uppercase tracking-widest text-sm">${l.id}</span>
+                                <span class="text-white font-black uppercase tracking-widest text-sm italic">${l.id}</span>
                                 <span class="text-slate-500 text-[10px] font-black uppercase tracking-tighter">Click to Join</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-slate-400">${playerCount}/10</span>
-                                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                <span class="text-xs font-black text-slate-400 italic">${playerCount}/10</span>
+                                <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
                             </div>
                         </button>
                     `;
                 });
             } catch (e) {
                 console.error(e);
-                listEl.innerHTML = '<div class="text-center py-8 text-red-500 italic text-sm">Failed to load games.</div>';
+                listEl.innerHTML = '<div class="text-center py-8 text-red-500 italic text-sm font-black uppercase">Failed to load games.</div>';
             }
         };
 
@@ -413,6 +426,8 @@
 
                 myPlayerId = playerData.id;
                 localStorage.setItem('imp_player_id', myPlayerId);
+                localStorage.setItem('imp_last_lobby', code);
+                document.getElementById('leave-game-btn').classList.remove('hidden');
 
                 setupGameListener(code);
                 window.showScreen('screen-lobby');
@@ -423,35 +438,75 @@
         };
 
         async function setupGameListener(lobbyCode) {
-            if (mySubscription) sb.removeChannel(mySubscription);
+            if (myChannel) sb.removeChannel(myChannel);
 
             document.getElementById('lobby-code-display').innerText = lobbyCode;
 
-            // Initial fetch
-            await syncGameState(lobbyCode);
+            // Presence tracking
+            myChannel = sb.channel(`lobby-${lobbyCode}`, {
+                config: { presence: { key: myPlayerId } }
+            });
 
-            // Real-time subscription
-            mySubscription = sb.channel(`lobby-${lobbyCode}`)
+            myChannel
+                .on('presence', { event: 'sync' }, () => {
+                    const state = myChannel.presenceState();
+                    handlePresenceChange(state);
+                })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'lobbies', filter: `id=eq.${lobbyCode}` }, payload => {
                     syncGameState(lobbyCode);
                 })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `lobby_id=eq.${lobbyCode}` }, payload => {
                     syncGameState(lobbyCode);
                 })
-                .subscribe();
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await myChannel.track({ online_at: new Date().toISOString() });
+                    }
+                });
+
+            await syncGameState(lobbyCode);
+        }
+
+        async function handlePresenceChange(presenceState) {
+            if (!currentLobby) return;
+            const onlineIds = Object.keys(presenceState);
+            
+            // If we're the host, check for disconnected players to cleanup
+            if (isHost) {
+                const playersToCleanup = players.filter(p => !onlineIds.includes(p.id));
+                for (const p of playersToCleanup) {
+                    await sb.from('players').delete().eq('id', p.id);
+                }
+            }
+
+            // Game Logic: If imposter leaves
+            if (currentLobby.status !== 'waiting') {
+                if (!onlineIds.includes(currentLobby.imposter_id)) {
+                    window.showToast("Imposter disconnected! Citizens win.");
+                    await sb.from('lobbies').update({ status: 'finished' }).eq('id', myLobbyId);
+                }
+            }
         }
 
         async function syncGameState(lobbyCode) {
             const { data: lobbyData } = await sb.from('lobbies').select('*').eq('id', lobbyCode).single();
             const { data: playerData } = await sb.from('players').select('*').eq('lobby_id', lobbyCode).order('joined_at', { ascending: true });
 
-            if (!lobbyData) return;
+            if (!lobbyData) {
+                window.showToast("Lobby no longer exists.");
+                return window.leaveGame();
+            }
 
             currentLobby = lobbyData;
             players = playerData || [];
             
             const me = players.find(p => p.id === myPlayerId);
-            if (me) isHost = me.is_host;
+            if (me) {
+                isHost = me.is_host;
+            } else {
+                // We were removed or didn't exist
+                return window.leaveGame();
+            }
 
             updateUI(lobbyData, players);
 
@@ -540,25 +595,32 @@
                 const subList = document.getElementById('submission-list');
                 subList.innerHTML = '';
                 const me = players.find(p => p.id === myPlayerId);
+                const isMyTurn = lobby.current_turn_player_id === myPlayerId;
+
                 const inputField = document.getElementById('word-input');
                 const submitBtn = document.getElementById('submit-word-btn');
 
-                if (me.word_submitted) {
-                    inputField.value = me.word_submitted;
-                    inputField.disabled = true;
-                    submitBtn.disabled = true;
-                    submitBtn.innerText = "Sent";
-                } else {
+                if (isMyTurn) {
                     inputField.disabled = false;
                     submitBtn.disabled = false;
                     submitBtn.innerText = "Submit";
+                    document.getElementById('phase-playing').querySelector('p').innerText = "It's YOUR turn! Describe the word.";
+                } else {
+                    const currentTurner = players.find(p => p.id === lobby.current_turn_player_id);
+                    inputField.disabled = true;
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = "Wait...";
+                    document.getElementById('phase-playing').querySelector('p').innerText = `Waiting for ${currentTurner?.name || 'others'}...`;
                 }
 
                 players.forEach(p => {
                     subList.innerHTML += `
-                        <li class="flex justify-between items-center bg-slate-800 p-3 rounded-lg">
+                        <li class="flex justify-between items-center bg-slate-800 p-3 rounded-lg border ${p.id === lobby.current_turn_player_id ? 'border-amber-500' : 'border-transparent'}">
                             <span class="font-medium text-slate-300">${p.name}</span>
-                            ${p.word_submitted ? '<span class="text-green-400 text-sm font-bold">Ready</span>' : '<span class="text-slate-500 text-sm italic">Thinking...</span>'}
+                            <div class="flex items-center gap-2">
+                                ${p.word_submitted ? `<span class="text-slate-400 bg-slate-900 px-3 py-1 rounded text-xs">"${p.word_submitted}"</span>` : ''}
+                                ${p.id === lobby.current_turn_player_id ? '<span class="animate-pulse text-amber-500 text-[10px] font-bold">WRITING...</span>' : ''}
+                            </div>
                         </li>
                     `;
                 });
@@ -594,7 +656,7 @@
                 const imposter = players.find(p => p.id === lobby.imposter_id);
 
                 document.getElementById('result-title').innerText = caught ? "Imposter Caught!" : "Imposter Escaped!";
-                document.getElementById('result-subtitle').innerText = `${imposter.name} was the imposter. Word: ${lobby.current_word}`;
+                document.getElementById('result-subtitle').innerText = `${imposter?.name || 'Imposter'} was the imposter. Word: ${lobby.current_word}`;
                 document.getElementById('result-announcement').className = caught ? "text-center p-6 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 mb-2" : "text-center p-6 rounded-xl border-2 border-red-500/30 bg-red-500/10 mb-2";
 
                 const resultsList = document.getElementById('results-list');
@@ -614,6 +676,7 @@
 
         async function checkAutoTransitions(lobby, players) {
             if (lobby.status === 'playing') {
+                // If everyone has submitted, move to voting
                 if (players.every(p => p.word_submitted)) {
                     await sb.from('lobbies').update({ status: 'voting' }).eq('id', lobby.id);
                 }
@@ -634,7 +697,8 @@
                 status: 'playing',
                 current_word: wordObj.word,
                 current_hint: wordObj.hint,
-                imposter_id: imposter.id
+                imposter_id: imposter.id,
+                current_turn_player_id: players[0].id
             }).eq('id', myLobbyId);
 
             await sb.from('players').update({ word_submitted: '', vote_id: null }).eq('lobby_id', myLobbyId);
@@ -643,7 +707,20 @@
         window.submitWord = async () => {
             const word = document.getElementById('word-input').value.trim();
             if (!word) return;
+            
+            // Advance turn
+            const currentIndex = players.findIndex(p => p.id === myPlayerId);
+            const nextPlayer = players[currentIndex + 1];
+
             await sb.from('players').update({ word_submitted: word }).eq('id', myPlayerId);
+            
+            if (nextPlayer) {
+                await sb.from('lobbies').update({ current_turn_player_id: nextPlayer.id }).eq('id', myLobbyId);
+            } else {
+                // Round finished, auto transition handled by host monitor but let's set current_turn to null
+                await sb.from('lobbies').update({ current_turn_player_id: null }).eq('id', myLobbyId);
+            }
+            document.getElementById('word-input').value = '';
         };
 
         window.submitVote = async (id) => {
@@ -651,9 +728,30 @@
         };
 
         window.nextRound = async () => {
-            await sb.from('lobbies').update({ status: 'waiting', current_word: null, current_hint: null, imposter_id: null }).eq('id', myLobbyId);
-            await sb.from('players').update({ word_submitted: '', vote_id: null }).eq('lobby_id', myLobbyId);
+            if(!isHost) return;
+            await sb.from('players').update({ word_submitted: '', vote_id: null }).eq('lobby_id', myLobbyId).neq('id', '00000000-0000-0000-0000-000000000000'); // Dummy filter to satisfy update
+            await sb.from('lobbies').update({ status: 'playing', current_turn_player_id: players[0].id }).eq('id', myLobbyId);
         };
+
+        // Initialize
+        window.addEventListener('load', async () => {
+            const lastLobbyId = localStorage.getItem('imp_last_lobby');
+            if (lastLobbyId && myPlayerId) {
+                // Check if still in game
+                const { data: p } = await sb.from('players').select('*').eq('id', myPlayerId).eq('lobby_id', lastLobbyId).single();
+                if (p) {
+                    myLobbyId = lastLobbyId;
+                    isHost = p.is_host;
+                    document.getElementById('leave-game-btn').classList.remove('hidden');
+                    setupGameListener(lastLobbyId);
+                } else {
+                    localStorage.removeItem('imp_last_lobby');
+                    window.showScreen('screen-start');
+                }
+            } else {
+                window.showScreen('screen-start');
+            }
+        });
     </script>
 </body>
 </html>
