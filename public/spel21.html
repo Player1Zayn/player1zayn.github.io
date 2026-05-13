@@ -99,18 +99,58 @@
 
             <div class="h-px bg-slate-700 my-2"></div>
 
+            <div class="flex items-center justify-between px-2 mb-2">
+                <span class="text-sm font-bold text-slate-400 uppercase tracking-tighter">Lobby Privacy</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="is-private-toggle" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                </label>
+            </div>
+
             <button onclick="createLobby()" class="btn-primary w-full py-3 rounded-xl font-bold text-lg shadow-lg">Create New Game</button>
             
-            <div class="flex gap-2">
-                <input type="text" id="lobby-code-input" placeholder="Lobby Code" class="w-1/2 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono uppercase text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" maxlength="4">
-                <button onclick="joinLobby()" class="btn-secondary w-1/2 py-3 rounded-xl font-bold text-lg shadow-lg">Join Game</button>
-            </div>
+            <button onclick="showJoinMenu()" class="btn-secondary w-full py-3 rounded-xl font-bold text-lg shadow-lg mt-2">Join Game</button>
         </div>
 
         <button onclick="showScreen('screen-credits')" class="mt-8 text-slate-500 hover:text-white transition-colors font-medium">Credits</button>
     </div>
 
-    <div id="screen-credits" class="screen flex-col items-center w-full max-w-md">
+    <div id="screen-join" class="screen flex-col items-center w-full max-w-md">
+        <div class="glass-panel p-6 rounded-2xl w-full shadow-xl">
+            <div class="flex items-center gap-3 mb-6">
+                <button onclick="showScreen('screen-start')" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                </button>
+                <h2 class="text-2xl font-black italic uppercase text-white">Join Game</h2>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Private Room</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="lobby-code-input" placeholder="6-DIGIT CODE" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono uppercase text-center focus:outline-none focus:border-red-500 transition-colors" maxlength="6">
+                        <button onclick="joinByCode()" class="bg-red-600 hover:bg-red-500 px-6 rounded-xl font-bold transition-all shadow-lg active:scale-95">Go</button>
+                    </div>
+                </div>
+
+                <div class="h-px bg-slate-800 my-4"></div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Public Games</label>
+                        <button onclick="refreshPublicLobbies()" class="text-blue-400 hover:text-blue-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <ul id="public-lobby-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        <!-- Public lobbies injected here -->
+                        <div class="text-center py-8 text-slate-600 italic text-sm">Searching for games...</div>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
         <div class="glass-panel p-8 rounded-2xl w-full text-center shadow-xl">
             <h2 class="text-3xl font-bold mb-6 text-white">Credits</h2>
             <div class="w-24 h-24 bg-gradient-to-br from-red-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
@@ -254,6 +294,7 @@
 
         window.createLobby = async () => {
             const name = document.getElementById('player-name').value.trim();
+            const isPrivate = document.getElementById('is-private-toggle').checked;
             if(!name) return window.showToast("Please enter your name!");
 
             try {
@@ -264,7 +305,8 @@
                 // Create Lobby
                 const { error: lobbyErr } = await sb.from('lobbies').insert([{
                     id: lobbyCode,
-                    status: 'waiting'
+                    status: 'waiting',
+                    is_private: isPrivate
                 }]);
                 if (lobbyErr) throw lobbyErr;
 
@@ -287,18 +329,75 @@
             }
         };
 
-        window.joinLobby = async () => {
-            const name = document.getElementById('player-name').value.trim();
-            let code = document.getElementById('lobby-code-input').value.trim().toUpperCase();
+        window.showJoinMenu = () => {
+            window.showScreen('screen-join');
+            refreshPublicLobbies();
+        };
+
+        window.refreshPublicLobbies = async () => {
+            const listEl = document.getElementById('public-lobby-list');
+            listEl.innerHTML = '<div class="text-center py-8 text-slate-600 animate-pulse text-sm">Searching for games...</div>';
             
-            if(!name) return window.showToast("Please enter your name!");
-            if(code.length < 4) return window.showToast("Invalid code!");
+            try {
+                // Fetch public waiting lobbies
+                const { data: lobbies, error } = await sb.from('lobbies')
+                    .select('*, players(count)')
+                    .eq('status', 'waiting')
+                    .eq('is_private', false)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                listEl.innerHTML = '';
+                if (!lobbies || lobbies.length === 0) {
+                    listEl.innerHTML = '<div class="text-center py-8 text-slate-600 italic text-sm">No public games found.</div>';
+                    return;
+                }
+
+                lobbies.forEach(l => {
+                    const playerCount = l.players?.[0]?.count || 0;
+                    listEl.innerHTML += `
+                        <button onclick="joinSpecificLobby('${l.id}')" class="w-full bg-slate-800 hover:bg-slate-700 p-4 rounded-xl flex items-center justify-between border border-slate-700 transition-all group">
+                            <div class="flex flex-col items-start">
+                                <span class="text-white font-bold uppercase tracking-widest text-sm">${l.id}</span>
+                                <span class="text-slate-500 text-[10px] font-black uppercase tracking-tighter">Click to Join</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-400">${playerCount}/10</span>
+                                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            </div>
+                        </button>
+                    `;
+                });
+            } catch (e) {
+                console.error(e);
+                listEl.innerHTML = '<div class="text-center py-8 text-red-500 italic text-sm">Failed to load games.</div>';
+            }
+        };
+
+        window.joinByCode = () => {
+            const code = document.getElementById('lobby-code-input').value.trim().toUpperCase();
+            if (code.length < 4) return window.showToast("Enter a valid code!");
+            joinSpecificLobby(code);
+        };
+
+        window.joinSpecificLobby = async (code) => {
+            const name = document.getElementById('player-name').value.trim();
+            if(!name) {
+                window.showScreen('screen-start');
+                return window.showToast("Enter your name first!");
+            }
 
             try {
-                // Check if lobby exists
+                // Check if lobby exists and is joinable
                 const { data: lobbyData, error: lobbyErr } = await sb.from('lobbies').select('*').eq('id', code).single();
                 if (lobbyErr || !lobbyData) return window.showToast("Lobby not found!");
                 if (lobbyData.status !== 'waiting') return window.showToast("Game already started!");
+
+                // Check player count
+                const { count, error: countErr } = await sb.from('players').select('*', { count: 'exact', head: true }).eq('lobby_id', code);
+                if (countErr) throw countErr;
+                if (count >= 10) return window.showToast("Lobby is full!");
 
                 myLobbyId = code;
                 isHost = false;
