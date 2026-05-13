@@ -194,40 +194,23 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const { createClient } = supabase;
 
-        // Environment Variables Handling
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'imposter-game-local';
-        let firebaseConfig;
-        try {
-            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        } catch (e) {
-            console.error("Config parsing error", e);
-        }
+        // Credentials you provided
+        const SUPABASE_URL = "https://bqdbgsvcrpjqxflhupsn.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZGJnc3ZjcnBqcXhmbGh1cHNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MjE3MjYsImV4cCI6MjA4NzA5NzcyNn0.p1RyZr72CV8m0k6TkXgm29uyYlsJF90tTS0T3ZETX1o";
 
-        // Dummy config for fallback if completely isolated
-        if (!firebaseConfig) {
-            firebaseConfig = { projectId: "dummy" }; 
-        }
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Game State Variables
-        let currentUser = null;
+        let myPlayerId = localStorage.getItem('imp_player_id');
         let myLobbyId = null;
-        let unsubscribeLobby = null;
-        let localPlayerState = {
-            name: '',
-            isHost: false,
-            wordSubmitted: '',
-            vote: ''
-        };
-        let currentLobbyData = null;
+        let mySubscription = null;
+        let players = [];
+        let currentLobby = null;
+        let isHost = false;
 
         // Word Bank
         const wordBank = [
@@ -247,22 +230,7 @@
             { word: 'Helicopter', hint: 'Vehicle' }
         ];
 
-        async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
-                    currentUser = userCredential.user;
-                } else {
-                    const userCredential = await signInAnonymously(auth);
-                    currentUser = userCredential.user;
-                }
-            } catch (e) {
-                showToast("Authentication failed. Cannot play online.");
-                console.error("Auth error", e);
-            }
-        }
-
-        // Global functions mapped to window for HTML onclick attributes
+        // Global functions
         window.showScreen = (id) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -278,62 +246,44 @@
         window.copyCode = () => {
             const code = document.getElementById('lobby-code-display').innerText;
             if(code !== '----') {
-                const textArea = document.createElement("textarea");
-                textArea.value = code;
-                textArea.style.position = "fixed";
-                textArea.style.opacity = "0";
-                textArea.style.left = "-9999px";
-                document.body.appendChild(textArea);
-                textArea.select();
-                
-                try {
-                    document.execCommand('copy');
+                navigator.clipboard.writeText(code).then(() => {
                     window.showToast("Copied to clipboard!");
-                } catch (err) {
-                    console.error("Fallback copy failed", err);
-                    window.showToast("Failed to copy.");
-                } finally {
-                    document.body.removeChild(textArea);
-                }
+                });
             }
         };
 
         window.createLobby = async () => {
             const name = document.getElementById('player-name').value.trim();
             if(!name) return window.showToast("Please enter your name!");
-            if(!currentUser) return window.showToast("Still connecting to server...");
-
-            localPlayerState.name = name;
-            localPlayerState.isHost = true;
-            myLobbyId = Math.random().toString(36).substring(2, 6).toUpperCase();
-
-            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
-            
-            const initialPlayers = {};
-            initialPlayers[currentUser.uid] = {
-                name: name,
-                isHost: true,
-                wordSubmitted: '',
-                vote: ''
-            };
 
             try {
-                await setDoc(lobbyRef, {
-                    status: 'waiting',
-                    currentWord: '',
-                    currentHint: '',
-                    imposterId: '',
-                    players: initialPlayers,
-                    createdAt: Date.now()
-                });
-                
-                setupLobbyListener(myLobbyId);
+                const lobbyCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                myLobbyId = lobbyCode;
+                isHost = true;
+
+                // Create Lobby
+                const { error: lobbyErr } = await sb.from('lobbies').insert([{
+                    id: lobbyCode,
+                    status: 'waiting'
+                }]);
+                if (lobbyErr) throw lobbyErr;
+
+                // Create Player
+                const { data: playerData, error: playerErr } = await sb.from('players').insert([{
+                    lobby_id: lobbyCode,
+                    name: name,
+                    is_host: true
+                }]).select().single();
+                if (playerErr) throw playerErr;
+
+                myPlayerId = playerData.id;
+                localStorage.setItem('imp_player_id', myPlayerId);
+
+                setupGameListener(lobbyCode);
                 window.showScreen('screen-lobby');
-                document.getElementById('start-game-btn').classList.remove('hidden');
-                document.getElementById('waiting-host-msg').classList.add('hidden');
             } catch (e) {
                 console.error(e);
-                window.showToast("Failed to create lobby.");
+                window.showToast("Error creating game.");
             }
         };
 
@@ -342,396 +292,268 @@
             let code = document.getElementById('lobby-code-input').value.trim().toUpperCase();
             
             if(!name) return window.showToast("Please enter your name!");
-            if(code.length !== 4) return window.showToast("Invalid code format!");
-            if(!currentUser) return window.showToast("Still connecting...");
+            if(code.length < 4) return window.showToast("Invalid code!");
 
-            localPlayerState.name = name;
-            localPlayerState.isHost = false;
-            
-            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', code);
-            
             try {
-                const docSnap = await getDoc(lobbyRef);
-                if (!docSnap.exists()) {
-                    return window.showToast("Lobby not found!");
-                }
-
-                if (docSnap.data().status !== 'waiting') {
-                    return window.showToast("Game already in progress!");
-                }
+                // Check if lobby exists
+                const { data: lobbyData, error: lobbyErr } = await sb.from('lobbies').select('*').eq('id', code).single();
+                if (lobbyErr || !lobbyData) return window.showToast("Lobby not found!");
+                if (lobbyData.status !== 'waiting') return window.showToast("Game already started!");
 
                 myLobbyId = code;
-                
-                // Add player to the map
-                const updateData = {};
-                updateData[`players.${currentUser.uid}`] = {
-                    name: name,
-                    isHost: false,
-                    wordSubmitted: '',
-                    vote: ''
-                };
-                
-                await updateDoc(lobbyRef, updateData);
-                
-                setupLobbyListener(myLobbyId);
-                window.showScreen('screen-lobby');
-                document.getElementById('start-game-btn').classList.add('hidden');
-                document.getElementById('waiting-host-msg').classList.remove('hidden');
+                isHost = false;
 
+                // Create Player
+                const { data: playerData, error: playerErr } = await sb.from('players').insert([{
+                    lobby_id: code,
+                    name: name,
+                    is_host: false
+                }]).select().single();
+                if (playerErr) throw playerErr;
+
+                myPlayerId = playerData.id;
+                localStorage.setItem('imp_player_id', myPlayerId);
+
+                setupGameListener(code);
+                window.showScreen('screen-lobby');
             } catch (e) {
                 console.error(e);
-                window.showToast("Error joining lobby.");
+                window.showToast("Error joining game.");
             }
         };
 
-        function setupLobbyListener(lobbyId) {
-            if(unsubscribeLobby) unsubscribeLobby();
-            
-            document.getElementById('lobby-code-display').innerText = lobbyId;
-            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', lobbyId);
-            
-            unsubscribeLobby = onSnapshot(lobbyRef, (docSnap) => {
-                if (!docSnap.exists()) {
-                    window.showToast("Lobby closed.");
-                    window.showScreen('screen-start');
-                    if(unsubscribeLobby) unsubscribeLobby();
-                    return;
-                }
+        async function setupGameListener(lobbyCode) {
+            if (mySubscription) sb.removeChannel(mySubscription);
 
-                const data = docSnap.data();
-                currentLobbyData = data;
-                updateUIBasedOnState(data);
-                
-                // Host handles phase transitions to prevent race conditions
-                if(localPlayerState.isHost) {
-                    checkPhaseTransitions(data);
-                }
-            }, (error) => {
-                console.error("Listener error:", error);
-                window.showToast("Connection lost.");
-            });
+            document.getElementById('lobby-code-display').innerText = lobbyCode;
+
+            // Initial fetch
+            await syncGameState(lobbyCode);
+
+            // Real-time subscription
+            mySubscription = sb.channel(`lobby-${lobbyCode}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'lobbies', filter: `id=eq.${lobbyCode}` }, payload => {
+                    syncGameState(lobbyCode);
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `lobby_id=eq.${lobbyCode}` }, payload => {
+                    syncGameState(lobbyCode);
+                })
+                .subscribe();
         }
 
-        function updateUIBasedOnState(data) {
-            const players = data.players || {};
-            const playerIds = Object.keys(players);
+        async function syncGameState(lobbyCode) {
+            const { data: lobbyData } = await sb.from('lobbies').select('*').eq('id', lobbyCode).single();
+            const { data: playerData } = await sb.from('players').select('*').eq('lobby_id', lobbyCode).order('joined_at', { ascending: true });
+
+            if (!lobbyData) return;
+
+            currentLobby = lobbyData;
+            players = playerData || [];
             
-            // Update Lobby Screen Player List
+            const me = players.find(p => p.id === myPlayerId);
+            if (me) isHost = me.is_host;
+
+            updateUI(lobbyData, players);
+
+            if (isHost) {
+                checkAutoTransitions(lobbyData, players);
+            }
+        }
+
+        function updateUI(lobby, players) {
+            // Update Lobby Player List
             const listEl = document.getElementById('player-list');
             listEl.innerHTML = '';
-            document.getElementById('player-count').innerText = `${playerIds.length}/10`;
-            
-            playerIds.forEach(uid => {
-                const p = players[uid];
-                const isMe = uid === currentUser.uid;
+            document.getElementById('player-count').innerText = `${players.length}/10`;
+            players.forEach(p => {
+                const isMe = p.id === myPlayerId;
                 listEl.innerHTML += `
                     <li class="flex items-center gap-3 bg-slate-800 p-2 rounded-lg">
-                        <div class="w-8 h-8 rounded-full ${p.isHost ? 'bg-amber-500' : 'bg-slate-600'} flex items-center justify-center text-xs font-bold text-white shadow-inner">
+                        <div class="w-8 h-8 rounded-full ${p.is_host ? 'bg-amber-500' : 'bg-slate-600'} flex items-center justify-center text-xs font-bold text-white">
                             ${p.name.substring(0,2).toUpperCase()}
                         </div>
-                        <span class="font-medium text-slate-200 ${isMe ? 'text-blue-400' : ''}">${p.name} ${isMe ? '(You)' : ''}</span>
-                        ${p.isHost ? '<span class="ml-auto text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30">HOST</span>' : ''}
+                        <span class="font-medium ${isMe ? 'text-blue-400' : 'text-slate-200'}">${p.name} ${isMe ? '(You)' : ''}</span>
+                        ${p.is_host ? '<span class="ml-auto text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded">HOST</span>' : ''}
                     </li>
                 `;
             });
 
-            // Handle Screen Transitions based on Status
-            if (data.status === 'playing' || data.status === 'voting' || data.status === 'finished') {
-                if(document.getElementById('screen-game').classList.contains('active') === false) {
-                    window.showScreen('screen-game');
+            // Button visibility
+            const startBtn = document.getElementById('start-game-btn');
+            const waitMsg = document.getElementById('waiting-host-msg');
+            if (lobby.status === 'waiting') {
+                if (isHost) {
+                    startBtn.classList.remove('hidden');
+                    waitMsg.classList.add('hidden');
+                } else {
+                    startBtn.classList.add('hidden');
+                    waitMsg.classList.remove('hidden');
                 }
-                updateGameScreen(data, players, playerIds);
-            } else if (data.status === 'waiting') {
+            }
+
+            // Screen Transitions
+            if (lobby.status !== 'waiting' && !document.getElementById('screen-game').classList.contains('active')) {
+                window.showScreen('screen-game');
+            } else if (lobby.status === 'waiting' && document.getElementById('screen-game').classList.contains('active')) {
                 window.showScreen('screen-lobby');
+            }
+
+            if (lobby.status !== 'waiting') {
+                updateGameUI(lobby, players);
             }
         }
 
-        function updateGameScreen(data, players, playerIds) {
+        function updateGameUI(lobby, players) {
             const roleBanner = document.getElementById('role-banner');
             const roleTitle = document.getElementById('role-title');
             const roleSubtitle = document.getElementById('role-subtitle');
             
-            // Role assignment UI
-            const amIImposter = data.imposterId === currentUser.uid;
+            const isImposter = lobby.imposter_id === myPlayerId;
             
-            if (data.status !== 'waiting') {
-                roleBanner.classList.remove('scale-95');
-                roleBanner.classList.add('scale-100');
-                if (amIImposter) {
-                    roleBanner.className = "w-full text-center p-6 rounded-2xl mb-6 shadow-2xl transition-all duration-500 bg-gradient-to-r from-red-900 to-rose-900 border border-red-500/50";
-                    roleSubtitle.innerText = "You are the";
-                    roleTitle.innerText = "IMPOSTER";
-                    roleTitle.classList.add('text-glow', 'text-red-400');
-                    if (data.status === 'playing') {
-                        roleSubtitle.innerText = `Hint: The category is ${data.currentHint}`;
-                    }
-                } else {
-                    roleBanner.className = "w-full text-center p-6 rounded-2xl mb-6 shadow-2xl transition-all duration-500 bg-gradient-to-r from-blue-900 to-indigo-900 border border-blue-500/50";
-                    roleSubtitle.innerText = "The Secret Word is";
-                    roleTitle.innerText = data.currentWord;
-                    roleTitle.classList.remove('text-glow', 'text-red-400');
-                    roleTitle.classList.add('text-blue-300');
+            roleBanner.classList.remove('scale-95');
+            roleBanner.classList.add('scale-100');
+
+            if (isImposter) {
+                roleBanner.className = "w-full text-center p-6 rounded-2xl mb-6 shadow-2xl bg-gradient-to-r from-red-900 to-rose-900 border border-red-500/50";
+                roleSubtitle.innerText = "You are the";
+                roleTitle.innerText = "IMPOSTER";
+                roleTitle.className = "text-3xl font-black text-glow text-red-400";
+                if (lobby.status === 'playing') {
+                    roleSubtitle.innerText = `Hint: The theme is ${lobby.current_hint}`;
                 }
+            } else {
+                roleBanner.className = "w-full text-center p-6 rounded-2xl mb-6 shadow-2xl bg-gradient-to-r from-blue-900 to-indigo-900 border border-blue-500/50";
+                roleSubtitle.innerText = "The Secret Word is";
+                roleTitle.innerText = lobby.current_word;
+                roleTitle.className = "text-3xl font-black text-blue-300";
             }
 
             // Phase Visibilities
-            document.getElementById('phase-playing').classList.add('hidden');
-            document.getElementById('phase-voting').classList.add('hidden');
-            document.getElementById('phase-results').classList.add('hidden');
+            document.querySelectorAll('#screen-game [id^="phase-"]').forEach(p => p.classList.add('hidden'));
+            const currentPhase = document.getElementById(`phase-${lobby.status}`);
+            if (currentPhase) {
+                currentPhase.classList.remove('hidden');
+                currentPhase.classList.add('flex');
+            }
 
-            if (data.status === 'playing') {
-                document.getElementById('phase-playing').classList.remove('hidden');
-                document.getElementById('phase-playing').classList.add('flex');
-                
+            if (lobby.status === 'playing') {
                 const subList = document.getElementById('submission-list');
                 subList.innerHTML = '';
-                
-                let mySubmission = players[currentUser.uid].wordSubmitted;
-                const inputBtn = document.getElementById('submit-word-btn');
+                const me = players.find(p => p.id === myPlayerId);
                 const inputField = document.getElementById('word-input');
-                
-                if (mySubmission) {
-                    inputField.value = mySubmission;
+                const submitBtn = document.getElementById('submit-word-btn');
+
+                if (me.word_submitted) {
+                    inputField.value = me.word_submitted;
                     inputField.disabled = true;
-                    inputBtn.disabled = true;
-                    inputBtn.innerText = "Submitted";
-                    inputBtn.classList.replace('hover:bg-slate-600', 'opacity-50');
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = "Sent";
                 } else {
                     inputField.disabled = false;
-                    inputBtn.disabled = false;
-                    inputBtn.innerText = "Submit";
-                    inputBtn.classList.replace('opacity-50', 'hover:bg-slate-600');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "Submit";
                 }
 
-                playerIds.forEach(uid => {
-                    const p = players[uid];
-                    const hasSubmitted = p.wordSubmitted.length > 0;
+                players.forEach(p => {
                     subList.innerHTML += `
                         <li class="flex justify-between items-center bg-slate-800 p-3 rounded-lg">
                             <span class="font-medium text-slate-300">${p.name}</span>
-                            ${hasSubmitted 
-                                ? '<span class="text-green-400 text-sm font-bold flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Ready</span>' 
-                                : '<span class="text-slate-500 text-sm italic">Thinking...</span>'}
+                            ${p.word_submitted ? '<span class="text-green-400 text-sm font-bold">Ready</span>' : '<span class="text-slate-500 text-sm italic">Thinking...</span>'}
                         </li>
                     `;
                 });
             }
 
-            if (data.status === 'voting') {
-                document.getElementById('phase-voting').classList.remove('hidden');
-                document.getElementById('phase-voting').classList.add('flex');
-                
+            if (lobby.status === 'voting') {
                 const voteList = document.getElementById('voting-list');
                 voteList.innerHTML = '';
-                
-                let myVote = players[currentUser.uid].vote;
+                const me = players.find(p => p.id === myPlayerId);
 
-                playerIds.forEach(uid => {
-                    const p = players[uid];
-                    const isMe = uid === currentUser.uid;
-                    const isSelected = myVote === uid;
-                    
-                    if(!isMe) {
-                        voteList.innerHTML += `
-                            <button onclick="submitVote('${uid}')" disabled="${myVote !== '' ? 'true' : 'false'}" class="w-full text-left bg-slate-800 hover:bg-slate-700 p-4 rounded-xl transition-all border-2 ${isSelected ? 'border-red-500 bg-slate-700' : 'border-transparent'} relative overflow-hidden group">
-                                <div class="flex justify-between items-center relative z-10">
-                                    <span class="font-bold text-lg text-white">${p.name}</span>
-                                    <span class="text-slate-400 bg-slate-900 px-3 py-1 rounded-md text-sm font-mono border border-slate-700">Said: "${p.wordSubmitted}"</span>
-                                </div>
-                                ${isSelected ? '<div class="absolute inset-0 bg-red-500/10 z-0"></div>' : ''}
-                            </button>
-                        `;
+                players.forEach(p => {
+                    if (p.id === myPlayerId) {
+                        voteList.innerHTML += `<div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex justify-between items-center opacity-60"><span class="text-slate-400">${p.name} (You)</span><span class="text-slate-500 text-sm">"${p.word_submitted}"</span></div>`;
                     } else {
-                        // Show my own word without voting button
-                         voteList.innerHTML += `
-                            <div class="w-full text-left bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex justify-between items-center opacity-70">
-                                <span class="font-medium text-slate-400">${p.name} (You)</span>
-                                <span class="text-slate-500 bg-slate-800 px-3 py-1 rounded-md text-sm font-mono border border-slate-700">Said: "${p.wordSubmitted}"</span>
-                            </div>
+                        voteList.innerHTML += `
+                            <button onclick="submitVote('${p.id}')" ${me.vote_id ? 'disabled' : ''} class="w-full text-left bg-slate-800 hover:bg-slate-700 p-4 rounded-xl transition-all border-2 ${me.vote_id === p.id ? 'border-red-500' : 'border-transparent'}">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-white">${p.name}</span>
+                                    <span class="text-slate-400 bg-slate-900 px-3 py-1 rounded-md text-sm">"${p.word_submitted}"</span>
+                                </div>
+                            </button>
                         `;
                     }
                 });
             }
 
-            if (data.status === 'finished') {
-                document.getElementById('phase-results').classList.remove('hidden');
-                document.getElementById('phase-results').classList.add('flex');
+            if (lobby.status === 'finished') {
+                const voteCounts = {};
+                players.forEach(p => { if(p.vote_id) voteCounts[p.vote_id] = (voteCounts[p.vote_id] || 0) + 1; });
                 
-                if(localPlayerState.isHost) {
-                    document.getElementById('next-round-btn').classList.remove('hidden');
-                }
+                let suspectId = Object.keys(voteCounts).reduce((a, b) => voteCounts[a] > voteCounts[b] ? a : b, null);
+                const caught = suspectId === lobby.imposter_id;
+                const imposter = players.find(p => p.id === lobby.imposter_id);
 
-                // Tally votes
-                const votes = {};
-                playerIds.forEach(uid => votes[uid] = 0);
-                playerIds.forEach(uid => {
-                    const votedFor = players[uid].vote;
-                    if(votedFor && votes[votedFor] !== undefined) {
-                        votes[votedFor]++;
-                    }
-                });
+                document.getElementById('result-title').innerText = caught ? "Imposter Caught!" : "Imposter Escaped!";
+                document.getElementById('result-subtitle').innerText = `${imposter.name} was the imposter. Word: ${lobby.current_word}`;
+                document.getElementById('result-announcement').className = caught ? "text-center p-6 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 mb-2" : "text-center p-6 rounded-xl border-2 border-red-500/30 bg-red-500/10 mb-2";
 
-                let maxVotes = 0;
-                let suspectId = null;
-                Object.keys(votes).forEach(uid => {
-                    if(votes[uid] > maxVotes) {
-                        maxVotes = votes[uid];
-                        suspectId = uid;
-                    }
-                });
-
-                const imposterName = players[data.imposterId].name;
-                const imposterCaught = suspectId === data.imposterId;
-                
-                const titleEl = document.getElementById('result-title');
-                const subEl = document.getElementById('result-subtitle');
-                const boxEl = document.getElementById('result-announcement');
-
-                if (imposterCaught) {
-                    titleEl.innerText = "Imposter Caught!";
-                    titleEl.className = "text-2xl font-black text-blue-400 mb-1";
-                    subEl.innerText = `${imposterName} was the imposter!`;
-                    boxEl.className = "text-center p-6 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 mb-2";
-                } else {
-                    titleEl.innerText = "Imposter Escaped!";
-                    titleEl.className = "text-2xl font-black text-red-500 mb-1";
-                    subEl.innerText = `${imposterName} fooled everyone.`;
-                    boxEl.className = "text-center p-6 rounded-xl border-2 border-red-500/30 bg-red-500/10 mb-2";
-                }
-
-                const resList = document.getElementById('results-list');
-                resList.innerHTML = '';
-                
-                playerIds.forEach(uid => {
-                    const p = players[uid];
-                    const isImposter = uid === data.imposterId;
-                    resList.innerHTML += `
+                const resultsList = document.getElementById('results-list');
+                resultsList.innerHTML = '';
+                players.forEach(p => {
+                    resultsList.innerHTML += `
                         <li class="flex justify-between items-center p-2 border-b border-slate-700/50 last:border-0">
-                            <div>
-                                <span class="font-bold ${isImposter ? 'text-red-400' : 'text-slate-300'}">${p.name} ${isImposter ? '(Imposter)' : ''}</span>
-                                <div class="text-xs text-slate-500">Voted for: ${p.vote ? players[p.vote].name : 'Nobody'}</div>
-                            </div>
-                            <div class="bg-slate-800 px-3 py-1 rounded-full text-sm font-bold text-slate-300">
-                                ${votes[uid]} votes
-                            </div>
+                            <span class="${p.id === lobby.imposter_id ? 'text-red-400 font-bold' : 'text-slate-300'}">${p.name}</span>
+                            <span class="text-sm font-bold text-slate-500">${voteCounts[p.id] || 0} votes</span>
                         </li>
                     `;
                 });
+
+                document.getElementById('next-round-btn').classList.toggle('hidden', !isHost);
             }
         }
 
-        function checkPhaseTransitions(data) {
-            const players = data.players || {};
-            const playerIds = Object.keys(players);
-            
-            if (data.status === 'playing') {
-                const allSubmitted = playerIds.every(uid => players[uid].wordSubmitted !== '');
-                if (allSubmitted && playerIds.length > 1) { // Need at least 2 people to play properly
-                    const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
-                    updateDoc(lobbyRef, { status: 'voting' });
+        async function checkAutoTransitions(lobby, players) {
+            if (lobby.status === 'playing') {
+                if (players.every(p => p.word_submitted)) {
+                    await sb.from('lobbies').update({ status: 'voting' }).eq('id', lobby.id);
                 }
             }
-            
-            if (data.status === 'voting') {
-                const allVoted = playerIds.every(uid => players[uid].vote !== '');
-                if (allVoted && playerIds.length > 1) {
-                    const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
-                    updateDoc(lobbyRef, { status: 'finished' });
+            if (lobby.status === 'voting') {
+                if (players.every(p => p.vote_id)) {
+                    await sb.from('lobbies').update({ status: 'finished' }).eq('id', lobby.id);
                 }
             }
         }
 
         window.startGame = async () => {
-            if(!myLobbyId || !currentLobbyData || !localPlayerState.isHost) return;
-            
-            const playerIds = Object.keys(currentLobbyData.players);
-            if(playerIds.length < 2) {
-                return window.showToast("Need at least 2 players to start!");
-            }
+            if (players.length < 2) return window.showToast("Need at least 2 players!");
+            const wordObj = wordBank[Math.floor(Math.random() * wordBank.length)];
+            const imposter = players[Math.floor(Math.random() * players.length)];
 
-            const targetWordObj = wordBank[Math.floor(Math.random() * wordBank.length)];
-            const imposterIndex = Math.floor(Math.random() * playerIds.length);
-            const imposterId = playerIds[imposterIndex];
-
-            // Reset player states for the new round
-            const updateData = {
+            await sb.from('lobbies').update({
                 status: 'playing',
-                currentWord: targetWordObj.word,
-                currentHint: targetWordObj.hint,
-                imposterId: imposterId
-            };
+                current_word: wordObj.word,
+                current_hint: wordObj.hint,
+                imposter_id: imposter.id
+            }).eq('id', myLobbyId);
 
-            playerIds.forEach(uid => {
-                updateData[`players.${uid}.wordSubmitted`] = '';
-                updateData[`players.${uid}.vote`] = '';
-            });
-
-            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
-            try {
-                await updateDoc(lobbyRef, updateData);
-            } catch (e) {
-                console.error(e);
-                window.showToast("Failed to start game.");
-            }
+            await sb.from('players').update({ word_submitted: '', vote_id: null }).eq('lobby_id', myLobbyId);
         };
 
         window.submitWord = async () => {
             const word = document.getElementById('word-input').value.trim();
-            if(!word) return window.showToast("Enter a word first!");
-            
-            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
-            const updateData = {};
-            updateData[`players.${currentUser.uid}.wordSubmitted`] = word;
-            
-            try {
-                await updateDoc(lobbyRef, updateData);
-            } catch (e) {
-                console.error(e);
-                window.showToast("Failed to submit word.");
-            }
+            if (!word) return;
+            await sb.from('players').update({ word_submitted: word }).eq('id', myPlayerId);
         };
 
-        window.submitVote = async (suspectId) => {
-            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
-            const updateData = {};
-            updateData[`players.${currentUser.uid}.vote`] = suspectId;
-            
-            try {
-                await updateDoc(lobbyRef, updateData);
-            } catch (e) {
-                console.error(e);
-                window.showToast("Failed to cast vote.");
-            }
+        window.submitVote = async (id) => {
+            await sb.from('players').update({ vote_id: id }).eq('id', myPlayerId);
         };
 
         window.nextRound = async () => {
-            if(!localPlayerState.isHost) return;
-            
-            const lobbyRef = doc(db, 'artifacts', appId, 'public', 'data', 'lobbies', myLobbyId);
-            const playerIds = Object.keys(currentLobbyData.players);
-            
-            const updateData = {
-                status: 'waiting',
-                currentWord: '',
-                currentHint: '',
-                imposterId: ''
-            };
-
-            playerIds.forEach(uid => {
-                updateData[`players.${uid}.wordSubmitted`] = '';
-                updateData[`players.${uid}.vote`] = '';
-            });
-
-            try {
-                await updateDoc(lobbyRef, updateData);
-            } catch (e) {
-                console.error(e);
-                window.showToast("Failed to reset lobby.");
-            }
+            await sb.from('lobbies').update({ status: 'waiting', current_word: null, current_hint: null, imposter_id: null }).eq('id', myLobbyId);
+            await sb.from('players').update({ word_submitted: '', vote_id: null }).eq('lobby_id', myLobbyId);
         };
-
-        // Bootstrap
-        initAuth();
     </script>
 </body>
 </html>
