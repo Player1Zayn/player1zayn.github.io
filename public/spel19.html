@@ -33,7 +33,6 @@
       #game-viewing-area { padding-top: 2rem !important; }
       .slot-machine-body { scale: 0.85; margin-bottom: 0 !important; }
       #area-roulette > div { scale: 0.85; }
-      #area-plinko { scale: 0.85; }
       #area-blackjack { scale: 0.85; }
       #betting-controls-container { padding-bottom: calc(env(safe-area-inset-bottom) + 1rem) !important; }
     }
@@ -42,7 +41,6 @@
       .slot-machine-body { transform: scale(0.7); transform-origin: center; margin-bottom: -2rem !important; }
       #area-roulette > div { transform: scale(0.75); transform-origin: center; }
       #area-blackjack { transform: scale(0.75); transform-origin: center; }
-      #area-plinko canvas { height: 200px !important; width: auto !important; }
       #spin-result-msg { font-size: 0.875rem !important; height: 1.5rem !important; margin-top: -1rem !important; }
       #bet-amount-container { height: 2.5rem !important; }
       #main-action-btn { py: 0.75rem !important; font-size: 1.25rem !important; }
@@ -394,8 +392,9 @@
               <button onclick="setGameMode('roulette'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">ROULETTE</button>
               <button onclick="setGameMode('slots'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">SLOTS</button>
               <button onclick="setGameMode('blackjack'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">BLACKJACK</button>
-              <button onclick="setGameMode('plinko'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">PLINKO</button>
-              <button onclick="setGameMode('cases'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all col-span-2">CASES</button>
+              <button onclick="setGameMode('crash'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">CRASH</button>
+              <button onclick="setGameMode('hilo'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">HI-LO</button>
+              <button onclick="setGameMode('cases'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">CASES</button>
             </div>
           </div>
 
@@ -937,7 +936,8 @@
               <button onclick="setGameMode('roulette')" id="tab-roulette" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-800 text-white font-black text-[10px] md:text-sm border-2 border-transparent transition-all">ROULETTE</button>
               <button onclick="setGameMode('slots')" id="tab-slots" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">SLOTS</button>
               <button onclick="setGameMode('blackjack')" id="tab-blackjack" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">BLACKJACK</button>
-              <button onclick="setGameMode('plinko')" id="tab-plinko" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">PLINKO</button>
+              <button onclick="setGameMode('crash')" id="tab-crash" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">CRASH</button>
+              <button onclick="setGameMode('hilo')" id="tab-hilo" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">HI-LO</button>
               <button onclick="setGameMode('cases')" id="tab-cases" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">CASES</button>
             </div>
         </div>
@@ -1052,25 +1052,50 @@
             </div>
           </div>
 
-          <!-- Game: PLINKO -->
-          <div id="area-plinko" class="w-full h-full flex flex-col items-center justify-center hidden">
-            <div class="relative bg-emerald-900/30 p-2 rounded-2xl border-2 border-emerald-800 shadow-inner flex flex-col items-center">
-              <canvas id="plinko-canvas" width="300" height="350" class="max-w-full h-auto"></canvas>
-              <div id="plinko-buckets" class="flex w-[220px] mt-1 px-0.5 gap-0.5">
-                <div class="flex-[0.5] bg-red-600 text-[8px] font-bold text-center rounded py-1">10x</div>
-                <div class="flex-1 bg-orange-600 text-[8px] font-bold text-center rounded py-1">1.5x</div>
-                <div class="flex-1 bg-yellow-600 text-[8px] font-bold text-center rounded py-1">1.1x</div>
-                <div class="flex-1 bg-emerald-500 text-[8px] font-bold text-center rounded py-1">1x</div>
-                <div class="flex-1 bg-emerald-600 text-[8px] font-bold text-center rounded py-1">0.5x</div>
-                <div class="flex-1 bg-emerald-800 text-[8px] font-bold text-center rounded py-1">0.3x</div>
-                <div class="flex-1 bg-emerald-950 text-[8px] font-bold text-center rounded py-1">0.2x</div>
-                <div class="flex-1 bg-emerald-800 text-[8px] font-bold text-center rounded py-1">0.3x</div>
-                <div class="flex-1 bg-emerald-600 text-[8px] font-bold text-center rounded py-1">0.5x</div>
-                <div class="flex-1 bg-emerald-500 text-[8px] font-bold text-center rounded py-1">1x</div>
-                <div class="flex-1 bg-yellow-600 text-[8px] font-bold text-center rounded py-1">1.1x</div>
-                <div class="flex-1 bg-orange-600 text-[8px] font-bold text-center rounded py-1">1.5x</div>
-                <div class="flex-[0.5] bg-red-600 text-[8px] font-bold text-center rounded py-1">10x</div>
+          <!-- Game: CRASH -->
+          <div id="area-crash" class="w-full h-full flex flex-col items-center justify-center hidden">
+            <div class="relative w-full max-w-2xl bg-emerald-900/30 p-6 rounded-3xl border border-emerald-800 shadow-inner flex flex-col items-center min-h-[300px] overflow-hidden">
+                <!-- Crash Background Grid (Optional, simple style) -->
+                <div class="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                
+                <div id="crash-multiplier-display" class="relative z-10 text-6xl md:text-8xl font-black text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.5)] transition-colors duration-200 mt-10">
+                    1.00x
+                </div>
+                <div id="crash-status-msg" class="relative z-10 text-emerald-500 font-bold mt-2 h-6 text-sm tracking-widest uppercase">
+                    Ready
+                </div>
+
+                <!-- The Plane / Rocket -->
+                <div id="crash-rocket" class="absolute left-[10%] bottom-[20%] text-5xl transition-transform duration-75" style="transform: translate(0px, 0px) rotate(0deg);">
+                    🚀
+                </div>
+                
+                <!-- Cash Out Button overlay inside the game area for quick access -->
+                <div class="absolute bottom-6 w-full flex justify-center z-20">
+                    <button id="crash-cashout-btn" onclick="cashOutCrash()" class="hidden px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-yellow-900 font-black rounded-xl border-b-4 border-yellow-700 shadow-xl text-xl active:scale-95 transition-transform">
+                        CASH OUT
+                    </button>
+                </div>
+            </div>
+          </div>
+
+          <!-- Game: HI-LO -->
+          <div id="area-hilo" class="w-full h-full flex flex-col items-center justify-center hidden">
+            <div class="relative w-full max-w-2xl bg-emerald-900/30 p-6 rounded-3xl border border-emerald-800 shadow-inner flex flex-col items-center justify-center min-h-[300px]">
+              
+              <div id="hilo-cards" class="flex gap-4 justify-center items-center h-32 md:h-40 my-4 min-h-[128px]">
+                <!-- Cards will be rendered here -->
               </div>
+              
+              <div id="hilo-actions" class="flex gap-4 mt-6 hidden">
+                <button onclick="hiloGuess('higher')" class="px-6 py-3 bg-blue-500 hover:bg-blue-400 text-white font-black rounded-xl border-b-4 border-blue-700 shadow-xl text-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
+                  HIGHER <span class="text-2xl">📈</span>
+                </button>
+                <button onclick="hiloGuess('lower')" class="px-6 py-3 bg-red-500 hover:bg-red-400 text-white font-black rounded-xl border-b-4 border-red-700 shadow-xl text-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
+                  LOWER <span class="text-2xl">📉</span>
+                </button>
+              </div>
+
             </div>
           </div>
 
@@ -1929,15 +1954,16 @@
     let bjPlayer = [];
     let bjDealer = [];
 
-    // Plinko State
-    let plinkoBalls = [];
-    const PLINKO_MULTIPLIERS = [10, 1.5, 1.1, 1.0, 0.5, 0.3, 0.2, 0.3, 0.5, 1.0, 1.1, 1.5, 10];
-    const PLINKO_BUCKET_WEIGHTS = [0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5];
-    const PLINKO_ROWS = 12;
-    const PLINKO_PIN_RADIUS = 3;
-    const PLINKO_BALL_RADIUS = 5;
-    const PLINKO_ROW_SPACING = 26;
-    const PLINKO_PIN_X_SPACING = 24;
+    // Crash State
+    let crashState = 'ready'; // ready, flying, crashed, cashed_out
+    let crashMultiplier = 1.0;
+    let crashStartTime = 0;
+    let crashAnimationFrame = null;
+
+    // Hi-Lo State
+    let hiloState = 'betting'; // betting, guessing, gameOver
+    let hiloCards = [];
+
 
     let syncTimeout = null;
     let gameLoopInterval = null;
@@ -1961,7 +1987,6 @@
         win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
         spin: new Audio('https://assets.mixkit.co/active_storage/sfx/1470/1470-preview.mp3'),
         card: new Audio('https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3'),
-        plinko: new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3'),
         purchase: new Audio('https://assets.mixkit.co/active_storage/sfx/2015/2015-preview.mp3'),
         click: new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'),
         loss: new Audio('https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3')
@@ -2025,21 +2050,21 @@
     const elMaxBetBtn = document.getElementById('max-bet-btn');
     const elMainActionBtn = document.getElementById('main-action-btn');
     const elLeaderboardContainer = document.getElementById('leaderboard-container');
-    const elPlinkoCanvas = document.getElementById('plinko-canvas');
     const elActiveBoostsContainer = document.getElementById('active-boosts-container');
     const elActiveBoostsList = document.getElementById('active-boosts-list');
-    const plinkoCtx = elPlinkoCanvas ? elPlinkoCanvas.getContext('2d') : null;
     
     // Gamemode areas
     const areaRoulette = document.getElementById('area-roulette');
     const areaSlots = document.getElementById('area-slots');
     const areaBlackjack = document.getElementById('area-blackjack');
-    const areaPlinko = document.getElementById('area-plinko');
+    const areaCrash = document.getElementById('area-crash');
+    const areaHilo = document.getElementById('area-hilo');
     const areaCases = document.getElementById('area-cases');
     const tabRoulette = document.getElementById('tab-roulette');
     const tabSlots = document.getElementById('tab-slots');
     const tabBlackjack = document.getElementById('tab-blackjack');
-    const tabPlinko = document.getElementById('tab-plinko');
+    const tabCrash = document.getElementById('tab-crash');
+    const tabHilo = document.getElementById('tab-hilo');
     const tabCases = document.getElementById('tab-cases');
 
     // Controls areas
@@ -4119,7 +4144,7 @@
     function startAutoBetLoop() {
         if (!isAutoBetting) return;
         
-        if (!isPlaying && !isSyncing && !balanceDirty && (gameMode === 'roulette' || gameMode === 'slots' || gameMode === 'plinko')) {
+        if (!isPlaying && !isSyncing && !balanceDirty && (gameMode === 'roulette' || gameMode === 'slots')) {
             const actualBet = gameMode === 'slots' && isBonusBet ? betAmount * 2 : betAmount;
             let canBet = bananas >= actualBet && betAmount > 0;
             if (gameMode === 'roulette' && !betColor) canBet = false;
@@ -4154,261 +4179,325 @@
             playBlackjack();
             playSound('card');
         }
-      } else if (gameMode === 'plinko') {
-        playPlinko();
-        playSound('click');
+      } else if (gameMode === 'crash') {
+        if (crashState === 'ready' || crashState === 'crashed' || crashState === 'cashed_out') {
+            playCrash();
+            playSound('click');
+        }
+      } else if (gameMode === 'hilo') {
+        if (hiloState === 'betting' || hiloState === 'gameOver') {
+            playHilo();
+            playSound('card');
+        }
       }
     }
 
-    // --- PLINKO LOGIC ---
-    async function playPlinko() {
-      if (isPlaying) return;
-      
-      // Subtract bet visually IMMEDIATELY
-      isInternalUpdate = true;
-      updateBananas(bananas - betAmount);
-      isInternalUpdate = false;
-      
-      isPlaying = true;
-      spinResultMsg = "Dropping ball...";
-      updateGameUI();
-
-      try {
-          const response = await fetch(API_BASE + '/api/play', {
-              method: 'POST',
-              headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${authToken}`
-              },
-              body: JSON.stringify({
-                  gameMode: 'plinko',
-                  betAmount,
-                  activeGadgets
-              })
-          });
-
-          const data = await response.json();
-          if (!data.success) throw new Error(data.error || "Server error");
-
-          const ball = {
-            x: 150 + (Math.random() - 0.5) * 5,
-            y: 20,
-            vx: (Math.random() - 0.5) * 1.5,
-            vy: 2,
-            row: 0,
-            targetBucket: data.result.bucketIndex,
-            serverData: data,
-            trail: []
-          };
-
-          plinkoBalls.push(ball);
-          requestAnimationFrame(animatePlinko);
-
-      } catch (err) {
-          console.error("Plinko error:", err);
-          isPlaying = false;
-          if (pendingSync) syncData(bananas, trees);
-          // Restore balance on error
-          isInternalUpdate = true;
-          updateBananas(bananas + betAmount);
-          isInternalUpdate = false;
-          spinResultMsg = "Error: " + parseError(err);
-          updateGameUI();
-      }
+    // --- HI-LO LOGIC ---
+    async function playHilo() {
+        if (isPlaying) return;
+        
+        isInternalUpdate = true;
+        updateBananas(bananas - betAmount);
+        isInternalUpdate = false;
+        
+        isPlaying = true;
+        hiloState = 'guessing';
+        hiloCards = [];
+        spinResultMsg = "Dealing first card...";
+        updateGameUI();
+        
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ gameMode: 'hilo_start', betAmount, activeGadgets })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Server error");
+            
+            hiloCards = [data.result.firstCard];
+            spinResultMsg = "Higher or Lower?";
+            isPlaying = false; // Allow user interaction
+            updateGameUI();
+        } catch (err) {
+            console.error("Hi-Lo error:", err);
+            isPlaying = false;
+            hiloState = 'gameOver';
+            if (pendingSync) syncData(bananas, trees);
+            isInternalUpdate = true;
+            updateBananas(bananas + betAmount);
+            isInternalUpdate = false;
+            spinResultMsg = "Error: " + parseError(err);
+            updateGameUI();
+        }
     }
 
-    function animatePlinko() {
-      if (plinkoBalls.length === 0) {
+    async function hiloGuess(guess) {
+        if (hiloState !== 'guessing') return;
+        
+        isPlaying = true;
+        hiloState = 'resolving'; // prevent multiple clicks
+        spinResultMsg = "Revealing next card...";
+        updateGameUI();
+        
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ gameMode: 'hilo_guess', betAmount: 0, guess: guess })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Server error");
+            
+            hiloCards.push(data.result.secondCard);
+            
+            const won = data.result.status === 'win';
+            const winVal = Number(data.winAmount);
+            
+            isInternalUpdate = true;
+            updateBananas(Number(data.newBalance));
+            expectedDbBananas = Number(data.newBalance);
+            isInternalUpdate = false;
+            
+            if (data.winStreak !== undefined) winStreak = data.winStreak;
+            handleMegaBetEffect(data);
+            
+            if (data.result.megaBet === 'taxes') {
+                spinResultMsg = "TAXES! The jungle government took your entire win!";
+                addLog('loss', betAmount, bananas, "Hi-Lo: Mega Bet Taxes");
+                playSound('loss');
+            } else if (won) {
+                spinResultMsg = `Correct! Won ${formatNumber(winVal)} 🍌!`;
+                addLog('win', winVal, bananas, `Hi-Lo: 2x`);
+                
+                isInternalUpdate = true;
+                const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+                updateXp(xp + xpGain);
+                while (xp >= getXpForLevel(level)) {
+                    updateXp(xp - getXpForLevel(level));
+                    level++;
+                }
+                isInternalUpdate = false;
+                
+                playSound('win');
+            } else {
+                spinResultMsg = `Wrong! Lost ${formatNumber(betAmount)} 🍌.`;
+                addLog('loss', betAmount, bananas, `Hi-Lo: Loss`);
+                if (activeGadgets[2]) showInsuranceButton(betAmount);
+                playSound('loss');
+            }
+            
+            hiloState = 'gameOver';
+            isPlaying = false;
+            if (pendingSync) syncData(bananas, trees);
+            updateGameUI();
+            
+        } catch (err) {
+            console.error("Hi-Lo guess error:", err);
+            isPlaying = false;
+            spinResultMsg = "Error: " + parseError(err);
+            updateGameUI();
+        }
+    }
+
+    // --- CRASH LOGIC ---
+    async function playCrash() {
+        if (isPlaying) return;
+        
+        isInternalUpdate = true;
+        updateBananas(bananas - betAmount);
+        isInternalUpdate = false;
+        
+        isPlaying = true;
+        crashState = 'starting';
+        crashMultiplier = 1.0;
+        updateGameUI();
+        
+        const elRocket = document.getElementById('crash-rocket');
+        const elMultiplier = document.getElementById('crash-multiplier-display');
+        const elStatus = document.getElementById('crash-status-msg');
+        
+        elRocket.style.transform = `translate(0px, 0px) rotate(0deg)`;
+        elMultiplier.innerText = "1.00x";
+        elMultiplier.className = "relative z-10 text-6xl md:text-8xl font-black text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.5)] transition-colors duration-200 mt-10";
+        elStatus.innerText = "Starting engine...";
+        elStatus.className = "relative z-10 text-emerald-500 font-bold mt-2 h-6 text-sm tracking-widest uppercase";
+
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ gameMode: 'crash_start', betAmount, activeGadgets })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Server error");
+
+            crashState = 'flying';
+            crashStartTime = performance.now();
+            elStatus.innerText = "Flying...";
+            document.getElementById('crash-cashout-btn').classList.remove('hidden');
+            
+            // Start local animation loop
+            function updateCrash() {
+                if (crashState !== 'flying') return;
+                
+                const now = performance.now();
+                const elapsedSeconds = (now - crashStartTime) / 1000;
+                
+                // Exponential curve: 1.00x at 0s, 2.00x at ~5s, 10.00x at ~16s
+                crashMultiplier = Math.pow(Math.E, 0.14 * elapsedSeconds);
+                
+                // If the visual multiplier reaches or exceeds the actual crash point, we crash it
+                if (crashMultiplier >= data.result.crashPoint) {
+                    crashMultiplier = data.result.crashPoint;
+                    handleCrash(data.result.crashPoint);
+                    return;
+                }
+                
+                elMultiplier.innerText = crashMultiplier.toFixed(2) + "x";
+                
+                // Animate rocket
+                const maxTranslateY = -120;
+                const maxTranslateX = 120;
+                const progress = Math.min(1, elapsedSeconds / 10); // reaches max animation height at 10s
+                
+                const translateY = progress * maxTranslateY;
+                const translateX = progress * maxTranslateX;
+                const rotate = Math.sin(elapsedSeconds * 4) * 5; // slight wiggle
+                
+                elRocket.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${rotate}deg)`;
+                
+                crashAnimationFrame = requestAnimationFrame(updateCrash);
+            }
+            
+            crashAnimationFrame = requestAnimationFrame(updateCrash);
+
+        } catch (err) {
+            console.error("Crash error:", err);
+            isPlaying = false;
+            crashState = 'ready';
+            if (pendingSync) syncData(bananas, trees);
+            isInternalUpdate = true;
+            updateBananas(bananas + betAmount);
+            isInternalUpdate = false;
+            spinResultMsg = "Error: " + parseError(err);
+            updateGameUI();
+        }
+    }
+    
+    function handleCrash(crashPoint) {
+        crashState = 'crashed';
         isPlaying = false;
+        if (crashAnimationFrame) cancelAnimationFrame(crashAnimationFrame);
+        
+        document.getElementById('crash-cashout-btn').classList.add('hidden');
+        
+        const elMultiplier = document.getElementById('crash-multiplier-display');
+        const elStatus = document.getElementById('crash-status-msg');
+        const elRocket = document.getElementById('crash-rocket');
+        
+        elMultiplier.innerText = crashPoint.toFixed(2) + "x";
+        elMultiplier.className = "relative z-10 text-6xl md:text-8xl font-black text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-colors duration-200 mt-10";
+        elStatus.innerText = "CRASHED!";
+        elStatus.className = "relative z-10 text-red-500 font-bold mt-2 h-6 text-sm tracking-widest uppercase";
+        
+        // Extract just the translation part if possible, or fallback
+        const currentTransform = elRocket.style.transform || "";
+        const translateMatch = currentTransform.match(/translate\([^)]+\)/);
+        const translateStr = translateMatch ? translateMatch[0] : "translate(0px, 0px)";
+        elRocket.style.transform = `${translateStr} rotate(180deg) scale(1.5)`;
+        
+        playSound('loss');
+        spinResultMsg = `Crashed at ${crashPoint.toFixed(2)}x! Lost ${formatNumber(betAmount)} 🍌`;
+        addLog('loss', betAmount, bananas, `Crash: ${crashPoint.toFixed(2)}x`);
+        if (activeGadgets[2]) showInsuranceButton(betAmount);
+        
         if (pendingSync) syncData(bananas, trees);
         updateGameUI();
-        return;
-      }
-
-      if (!plinkoCtx) return;
-
-      plinkoCtx.clearRect(0, 0, 300, 350);
-      drawPlinkoBoard();
-
-      const bucketAreaWidth = 220;
-      const startX_Buckets = 150 - bucketAreaWidth / 2;
-
-      for (let i = plinkoBalls.length - 1; i >= 0; i--) {
-        const ball = plinkoBalls[i];
-        
-        // Physics update
-        ball.vy += 0.25; // Slightly stronger gravity for realism
-        ball.vx *= 0.992; // Air resistance
-        
-        // Target pulling logic (magnet) - ONLY at the very bottom
-        if (ball.y > 270 && ball.targetBucket !== undefined) {
-             const targetX = startX_Buckets + (ball.targetBucket + 0.5) * (bucketAreaWidth / 13);
-             const distToTarget = targetX - ball.x;
-             // Gradually increase pull as we get lower
-             const strength = Math.min(0.08, (ball.y - 270) * 0.002);
-             ball.vx += distToTarget * strength;
-        }
-
-        ball.y += ball.vy;
-        ball.x += ball.vx;
-
-        // Wall collisions
-        if (ball.x < 15) { ball.x = 15; ball.vx *= -0.3; }
-        if (ball.x > 285) { ball.x = 285; ball.vx *= -0.3; }
-
-        // Pin collisions (Pyramid Logic)
-        const rowHeight = PLINKO_ROW_SPACING;
-        const startY = 60;
-        
-        for (let r = 0; r < PLINKO_ROWS; r++) {
-            const py = startY + r * rowHeight;
-            const pinsInRow = r + 3;
-            const rowWidth = (pinsInRow - 1) * PLINKO_PIN_X_SPACING;
-            const rowStartX = 150 - rowWidth / 2;
-
-            for (let p = 0; p < pinsInRow; p++) {
-                const px = rowStartX + p * PLINKO_PIN_X_SPACING;
-                const dx = ball.x - px;
-                const dy = ball.y - py;
-                const distSq = dx * dx + dy * dy;
-                const minDist = PLINKO_PIN_RADIUS + PLINKO_BALL_RADIUS;
-
-                if (distSq < minDist * minDist) {
-                    const dist = Math.sqrt(distSq);
-                    // Normal vector
-                    const nx = dx / dist;
-                    const ny = dy / dist;
-
-                    // Resolve overlap
-                    ball.x = px + nx * minDist;
-                    ball.y = py + ny * minDist;
-
-                    // Bounce velocity
-                    const dot = ball.vx * nx + ball.vy * ny;
-                    const bounce = 0.4; // Restitution
-                    ball.vx -= (1 + bounce) * dot * nx;
-                    ball.vy -= (1 + bounce) * dot * ny;
-
-                    // Add slight random jitter to prevent perfect stacking/flinging
-                    ball.vx += (Math.random() - 0.5) * 0.1;
-                    
-                    if (Math.abs(dot) > 1) playSound('plinko');
-                }
-            }
-        }
-
-        // Draw ball (moved back into loop)
-        plinkoCtx.beginPath();
-        plinkoCtx.arc(ball.x, ball.y, PLINKO_BALL_RADIUS, 0, Math.PI * 2);
-        plinkoCtx.fillStyle = '#facc15';
-        plinkoCtx.shadowBlur = 8;
-        plinkoCtx.shadowColor = 'rgba(250, 204, 21, 0.4)';
-        plinkoCtx.fill();
-        plinkoCtx.closePath();
-        plinkoCtx.shadowBlur = 0;
-
-        // Check if reached bottom
-        if (ball.y > 330) {
-          const data = ball.serverData;
-          if (data) {
-              const mult = data.result.multiplier;
-              const winVal = Number(data.winAmount);
-
-              isInternalUpdate = true;
-              updateBananas(Number(data.newBalance));
-              expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
-              isInternalUpdate = false;
-              
-              if (data.winStreak !== undefined) winStreak = data.winStreak;
-              
-              handleMegaBetEffect(data);
-
-              if (data.earnedRoyalXP) {
-                  royalXP = Number(data.royalXP);
-                  document.getElementById('rp-current-xp').innerText = formatNumber(royalXP);
-                  showNotification("+1 Royal XP! Check the pass in Ludvig's shop.", "success");
-              }
-              
-              if (data.result.megaBet === 'taxes') {
-                  spinResultMsg = "TAXES! The jungle government took your entire win!";
-                  addLog('loss', betAmount, bananas, "Plinko: Mega Bet Taxes");
-                  playSound('loss');
-              } else if (mult > 1) {
-                  spinResultMsg = `Landed on ${mult}x! Won ${formatNumber(winVal)} 🍌!`;
-                  addLog('win', winVal, bananas, `Plinko: ${mult}x`);
-                  
-                  // XP Gain
-                  const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
-                  updateXp(xp + xpGain);
-                  while (xp >= getXpForLevel(level)) {
-                      updateXp(xp - getXpForLevel(level));
-                      level++;
-                  }
-                  playSound('win');
-              } else if (mult < 1) {
-                const loss = (BigInt(betAmount) - BigInt(winVal)).toString();
-                if (betAmount > 100000) unlockTitle('unlucky');
-                spinResultMsg = `Landed on ${mult}x. Lost ${formatNumber(loss)} 🍌.`;
-                addLog('loss', Number(loss), bananas, `Plinko: ${mult}x`);
-                if (activeGadgets[2]) showInsuranceButton(Number(loss));
-                playSound('loss');
-              } else {
-                spinResultMsg = `Landed on 1x. Push!`;
-                addLog('push', 0, bananas, 'Plinko: 1x');
-              }
-          }
-          
-          plinkoBalls.splice(i, 1);
-          endGameTurn();
-        }
-      }
-
-      if (plinkoBalls.length > 0) {
-        requestAnimationFrame(animatePlinko);
-      }
     }
-
-    function drawPlinkoBoard() {
-      // Draw side walls
-      plinkoCtx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
-      plinkoCtx.lineWidth = 2;
-      plinkoCtx.beginPath();
-      plinkoCtx.moveTo(15, 0);
-      plinkoCtx.lineTo(15, 330);
-      plinkoCtx.moveTo(285, 0);
-      plinkoCtx.lineTo(285, 330);
-      plinkoCtx.stroke();
-
-      plinkoCtx.fillStyle = '#10b981';
-      const startY = 60;
-      for (let r = 0; r < PLINKO_ROWS; r++) {
-        const rowY = startY + r * PLINKO_ROW_SPACING;
-        const pinsInRow = r + 3;
-        const rowWidth = (pinsInRow - 1) * PLINKO_PIN_X_SPACING;
-        const rowStartX = 150 - rowWidth / 2;
+    
+    async function cashOutCrash() {
+        if (crashState !== 'flying') return;
         
-        for (let p = 0; p < pinsInRow; p++) {
-          const pinX = rowStartX + p * PLINKO_PIN_X_SPACING;
-          plinkoCtx.beginPath();
-          plinkoCtx.arc(pinX, rowY, PLINKO_PIN_RADIUS, 0, Math.PI * 2);
-          plinkoCtx.fill();
-          plinkoCtx.closePath();
+        crashState = 'cashed_out';
+        isPlaying = false; // block further interaction while processing
+        if (crashAnimationFrame) cancelAnimationFrame(crashAnimationFrame);
+        
+        document.getElementById('crash-cashout-btn').classList.add('hidden');
+        
+        const savedMultiplier = crashMultiplier;
+        const elMultiplier = document.getElementById('crash-multiplier-display');
+        const elStatus = document.getElementById('crash-status-msg');
+        
+        elMultiplier.className = "relative z-10 text-6xl md:text-8xl font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)] transition-colors duration-200 mt-10";
+        elStatus.innerText = "Cashing out...";
+        elStatus.className = "relative z-10 text-yellow-400 font-bold mt-2 h-6 text-sm tracking-widest uppercase";
+        
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ gameMode: 'crash_cashout', multiplier: savedMultiplier.toFixed(2), betAmount: 0 })
+            });
+            const data = await response.json();
+            
+            if (data.success && data.result.status === 'win') {
+                const winAmountStr = data.winAmount;
+                const winAmount = Number(winAmountStr);
+                
+                isInternalUpdate = true;
+                updateBananas(Number(data.newBalance));
+                expectedDbBananas = Number(data.newBalance);
+                isInternalUpdate = false;
+                
+                if (data.winStreak !== undefined) winStreak = data.winStreak;
+                handleMegaBetEffect(data);
+                
+                if (data.result.megaBet === 'taxes') {
+                    spinResultMsg = "TAXES! The jungle government took your entire win!";
+                    addLog('loss', betAmount, bananas, `Crash: Mega Bet Taxes`);
+                    playSound('loss');
+                    elStatus.innerText = "TAXES!";
+                    elStatus.className = "relative z-10 text-red-500 font-bold mt-2 h-6 text-sm tracking-widest uppercase";
+                } else {
+                    playSound('win');
+                    spinResultMsg = `Cashed out at ${savedMultiplier.toFixed(2)}x! Won ${formatNumber(winAmount)} 🍌`;
+                    addLog('win', winAmount, bananas, `Crash Cashout: ${savedMultiplier.toFixed(2)}x`);
+                    elStatus.innerText = "SUCCESS!";
+                }
+                
+                // XP Gain
+                isInternalUpdate = true;
+                const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+                updateXp(xp + xpGain);
+                while (xp >= getXpForLevel(level)) {
+                    updateXp(xp - getXpForLevel(level));
+                    level++;
+                }
+                isInternalUpdate = false;
+            } else {
+                // Client thought it was a win but server said it crashed already (latency or cheating)
+                handleCrash(savedMultiplier); // visually just crash it there
+            }
+        } catch (err) {
+            console.error("Cashout error:", err);
+            spinResultMsg = "Cashout failed: " + parseError(err);
         }
-      }
-
-      // Draw multipliers at bottom
-      plinkoCtx.font = 'bold 8px Inter';
-      plinkoCtx.textAlign = 'center';
-      const bucketAreaWidth = 220;
-      const startX_Buckets = 150 - bucketAreaWidth / 2;
-      const bucketWidth = bucketAreaWidth / 13;
-      
-      PLINKO_MULTIPLIERS.forEach((m, idx) => {
-          const bx = startX_Buckets + (idx + 0.5) * bucketWidth;
-          const by = 345;
-          plinkoCtx.fillStyle = m >= 1 ? '#fbbf24' : '#10b981';
-          plinkoCtx.fillText(m + 'x', bx, by);
-      });
+        
+        if (pendingSync) syncData(bananas, trees);
+        updateGameUI();
     }
 
     // --- ROULETTE LOGIC ---
@@ -5453,7 +5542,7 @@
       renderGadgets();
       
       // Update Tab Styling
-      [tabRoulette, tabSlots, tabBlackjack, tabPlinko, tabCases].forEach(t => { 
+      [tabRoulette, tabSlots, tabBlackjack, tabCrash, tabHilo, tabCases].forEach(t => { 
         if (!t) return;
         t.classList.remove('bg-emerald-800', 'text-white', 'border-transparent'); 
         t.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); 
@@ -5461,14 +5550,16 @@
       if (gameMode === 'roulette') { tabRoulette.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabRoulette.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'slots') { tabSlots.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabSlots.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'blackjack') { tabBlackjack.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabBlackjack.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
-      if (gameMode === 'plinko') { tabPlinko.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabPlinko.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
+      if (gameMode === 'crash') { tabCrash?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabCrash?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
+      if (gameMode === 'hilo') { tabHilo?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabHilo?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'cases') { tabCases.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabCases.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       
       // Toggle Areas
       areaRoulette.classList.toggle('hidden', gameMode !== 'roulette');
       areaSlots.classList.toggle('hidden', gameMode !== 'slots');
       areaBlackjack.classList.toggle('hidden', gameMode !== 'blackjack');
-      areaPlinko.classList.toggle('hidden', gameMode !== 'plinko');
+      areaCrash?.classList.toggle('hidden', gameMode !== 'crash');
+      areaHilo?.classList.toggle('hidden', gameMode !== 'hilo');
       areaCases.classList.toggle('hidden', gameMode !== 'cases');
 
       const elBettingControls = document.getElementById('betting-controls-container');
@@ -5542,6 +5633,8 @@
       let canAction = !isPlaying && !isSyncing && !balanceDirty && bananas > 0 && betAmount > 0;
       if (gameMode === 'roulette' && !betColor) canAction = false;
       if (gameMode === 'blackjack' && bjState === 'playing') canAction = false; 
+      if (gameMode === 'hilo' && (hiloState === 'guessing' || hiloState === 'resolving')) canAction = false;
+      if (gameMode === 'crash' && crashState === 'flying') canAction = false;
       if (gameMode === 'slots' && isBonusBet && (betAmount + currentBonusBet) > bananas) canAction = false;
 
       elMainActionBtn.disabled = !canAction;
@@ -5550,6 +5643,8 @@
       if (isPlaying) { elMainActionBtn.innerText = "PLAYING..."; }
       else if (isSyncing || balanceDirty) { elMainActionBtn.innerText = "SYNCING..."; }
       else if (gameMode === 'blackjack') { elMainActionBtn.innerText = (bjState === 'gameOver') ? "DEAL AGAIN" : "DEAL"; }
+      else if (gameMode === 'hilo') { elMainActionBtn.innerText = (hiloState === 'gameOver') ? "PLAY AGAIN" : "PLAY HI-LO"; }
+      else if (gameMode === 'crash') { elMainActionBtn.innerText = "START FLIGHT"; }
       else { elMainActionBtn.innerText = "SPIN"; }
 
       // Blackjack specifics logic
@@ -5564,8 +5659,16 @@
         
         document.getElementById('player-score').innerText = bjPlayer.length ? calcScore(bjPlayer) : '0';
         document.getElementById('dealer-score').innerText = bjDealer.length ? (bjState === 'playing' ? calcScore([bjDealer[0]]) : calcScore(bjDealer)) : '?';
+      } else if (gameMode === 'hilo') {
+        const showHiloActions = hiloState === 'guessing' || hiloState === 'resolving';
+        document.getElementById('hilo-actions').classList.toggle('hidden', !showHiloActions);
+        elMainActionBtn.classList.toggle('hidden', showHiloActions);
+        controlAmount.classList.toggle('hidden', showHiloActions);
+        
+        document.getElementById('hilo-cards').innerHTML = hiloCards.map(c => renderCard(c)).join('');
       } else {
         controlBjActions.classList.add('hidden');
+        document.getElementById('hilo-actions')?.classList.add('hidden');
         elMainActionBtn.classList.remove('hidden');
         controlAmount.classList.remove('hidden');
       }
@@ -6117,7 +6220,7 @@
         toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
         handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle, forceSync, openCase, massOpenCase, showCasesInventory, closeCaseResult, sellSkin,
         openSkinValuesModal, closeSkinValuesModal, updateSkinValuesTable,
-        openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, sellSkinToMerchant
+        openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, sellSkinToMerchant, cashOutCrash, hiloGuess
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
