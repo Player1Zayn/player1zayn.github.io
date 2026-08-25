@@ -41,6 +41,8 @@ function getSupabase() {
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || "banana_secret_monkey_business";
+const activeCrashGames = new Map<string, { betAmount: bigint, crashPoint: number }>();
+const activeHiloGames = new Map<string, { betAmount: bigint, firstCard: { rank: string, suit: string, value: number } }>();
 
 // Middleware to verify JWT
 const authenticateToken = (req: any, res: any, next: any) => {
@@ -480,9 +482,9 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         // In 'cases' mode, betAmount might be undefined, so we default to 0
         const bet = BigInt(betAmount || 0);
         const bonusBet = BigInt(bonusBetAmount || 0);
-        const totalBet = bet + (isBonusBet ? bonusBet : 0n);
+        let totalBet = bet + (isBonusBet ? bonusBet : 0n);
 
-        if (gameMode !== 'cases' && currentBananas < totalBet) {
+        if (gameMode !== 'cases' && gameMode !== 'crash_cashout' && gameMode !== 'hilo_guess' && currentBananas < totalBet) {
             // RELAXED DETECTION: Instead of banning, we return a 400 error. 
             // This prevents false bans due to client-side tree harvesting not being synced yet.
             // Only ban if the discrepancy is absurdly high (e.g. betting 1M+ over balance) 
@@ -596,20 +598,80 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             else if (bjResult === 'push') winAmount = totalBet;
             else winAmount = 0n;
             resultData.reason = bjResult;
-        } else if (gameMode === 'plinko') {
-            const plinkoMults = [10, 1.5, 1.1, 1.0, 0.5, 0.3, 0.2, 0.3, 0.5, 1.0, 1.1, 1.5, 10];
-            const weights = [1, 2, 4, 8, 12, 16, 20, 16, 12, 8, 4, 2, 1]; 
-            const totalWeight = weights.reduce((a, b) => a + b, 0);
-            let rand = Math.random() * totalWeight;
-            let bucketIndex = 0;
-            for (let i = 0; i < weights.length; i++) {
-                if (rand < weights[i]) { bucketIndex = i; break; }
-                rand -= weights[i];
+        } else if (gameMode === 'crash_start') {
+            // Generate a random crash point with a slight house edge
+            // e.g., Crash Point = 1.0 / Random(0..1) with a 5% instant crash chance
+            let crashPoint = 1.0;
+            if (Math.random() >= 0.05) {
+                crashPoint = parseFloat((1.00 / Math.random()).toFixed(2));
             }
-            const multiplier = plinkoMults[bucketIndex];
-            winAmount = BigInt(Math.round(Number(bet) * multiplier));
-            resultData.bucketIndex = bucketIndex;
-            resultData.multiplier = multiplier;
+            if (crashPoint > 1000) crashPoint = 1000;
+            activeCrashGames.set(user.id, { betAmount: totalBet, crashPoint });
+            winAmount = 0n;
+            resultData.crashPoint = crashPoint;
+        } else if (gameMode === 'crash_cashout') {
+            const activeGame = activeCrashGames.get(user.id);
+            if (!activeGame) return res.status(400).json({ error: "No active crash game" });
+            activeCrashGames.delete(user.id);
+            
+            const requestedMultiplier = Number(req.body.multiplier);
+            if (requestedMultiplier <= activeGame.crashPoint) {
+                winAmount = BigInt(Math.round(Number(activeGame.betAmount) * requestedMultiplier));
+                resultData.winAmount = winAmount.toString();
+                resultData.status = 'win';
+            } else {
+                winAmount = 0n;
+                resultData.status = 'crash';
+            }
+            totalBet = 0n; // Bet was already deducted in crash_start
+        } else if (gameMode === 'hilo_start') {
+            const ranks = [
+                { r: '2', v: 2 }, { r: '3', v: 3 }, { r: '4', v: 4 }, { r: '5', v: 5 },
+                { r: '6', v: 6 }, { r: '7', v: 7 }, { r: '8', v: 8 }, { r: '9', v: 9 },
+                { r: '10', v: 10 }, { r: 'J', v: 11 }, { r: 'Q', v: 12 }, { r: 'K', v: 13 }, { r: 'A', v: 14 }
+            ];
+            const suits = ['S', 'H', 'D', 'C'];
+            const firstCard = { 
+                rank: ranks[Math.floor(Math.random() * ranks.length)],
+                suit: suits[Math.floor(Math.random() * suits.length)]
+            };
+            const cardObj = { rank: firstCard.rank.r, suit: firstCard.suit, value: firstCard.rank.v };
+            
+            activeHiloGames.set(user.id, { betAmount: totalBet, firstCard: cardObj });
+            winAmount = 0n;
+            resultData.firstCard = cardObj;
+        } else if (gameMode === 'hilo_guess') {
+            const activeGame = activeHiloGames.get(user.id);
+            if (!activeGame) return res.status(400).json({ error: "No active hilo game" });
+            activeHiloGames.delete(user.id);
+            
+            const guess = req.body.guess; // 'higher' or 'lower'
+            const ranks = [
+                { r: '2', v: 2 }, { r: '3', v: 3 }, { r: '4', v: 4 }, { r: '5', v: 5 },
+                { r: '6', v: 6 }, { r: '7', v: 7 }, { r: '8', v: 8 }, { r: '9', v: 9 },
+                { r: '10', v: 10 }, { r: 'J', v: 11 }, { r: 'Q', v: 12 }, { r: 'K', v: 13 }, { r: 'A', v: 14 }
+            ];
+            const suits = ['S', 'H', 'D', 'C'];
+            const secondCard = { 
+                rank: ranks[Math.floor(Math.random() * ranks.length)],
+                suit: suits[Math.floor(Math.random() * suits.length)]
+            };
+            const cardObj = { rank: secondCard.rank.r, suit: secondCard.suit, value: secondCard.rank.v };
+            
+            let won = false;
+            if (guess === 'higher' && cardObj.value > activeGame.firstCard.value) won = true;
+            if (guess === 'lower' && cardObj.value < activeGame.firstCard.value) won = true;
+
+            if (won) {
+                winAmount = activeGame.betAmount * 2n;
+                resultData.status = 'win';
+            } else {
+                winAmount = 0n;
+                resultData.status = 'loss';
+            }
+            resultData.winAmount = winAmount.toString();
+            resultData.secondCard = cardObj;
+            totalBet = 0n; // Bet was already deducted
         } else if (gameMode === 'cases') {
             const caseType = req.body.caseType; 
             const costs: any = { 'normal': 10000n, 'booster': 100000n, 'toverland': 2000000n };
