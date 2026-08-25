@@ -1,510 +1,1003 @@
 <!DOCTYPE html>
-<html lang="sv">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snakey</title>
-
-<style>
-    body {
-        margin: 0;
-        background: black;
-        overflow: hidden;
-    }
-
-    #game-container {
-        width: 100vw;
-        height: 100vh;
-        background: black;
-    }
-
-    /* Flyttad till höger nedre hörn */
-    .back {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(0,0,0,0.5);
-        padding: 10px 16px;
-        border-radius: 8px;
-        color: white;
-        text-decoration: none;
-        border: 2px solid #666;
-        z-index: 9999;
-        font-size: 18px;
-        cursor: pointer;
-    }
-
-    .back:hover {
-        background: rgba(40,40,40,0.6);
-    }
-</style>
-</head>
-<body>
-
-<!-- Stäng-knapp som stänger fliken -->
-<button class="back" onclick="window.close()">✖ Stäng</button>
-
-<div id="game-container">
-    <!DOCTYPE html>
-<html lang="sv">
+<html lang="en" class="h-full bg-slate-950 text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Klassiska Ormspelet</title>
-    <style>
-        /* Global stil */
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #1a1a2e; /* Mörk bakgrund */
-            color: #e94560; /* Röd accentfärg */
-            font-family: 'Inter', sans-serif;
-            padding: 10px;
-        }
-
-        /* Container för spelet - Nu mer flexibel och skärmtäckande */
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            background-color: #0f3460; /* Mörkblå container */
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            width: 95%; /* Nästan full bredd */
-            max-width: 800px; /* Maxbredd på desktop */
-            min-height: 90vh; /* Täcker mer av höjden */
-            justify-content: space-around; /* För att sprida ut elementen */
-        }
-
-        /* Poängtavla */
-        .scoreboard {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #bae8e8; /* Ljusblå text */
-            padding: 10px 20px;
-            background-color: #2c394b;
-            border-radius: 8px;
-            width: 100%;
-            max-width: 400px; /* Begränsa maxbredd för bättre layout */
-            text-align: center;
-        }
-
-        /* Spelplanen */
-        #gameCanvas {
-            border: 5px solid #e94560; /* Röd ram */
-            background-color: #16213e; /* Mörkblå canvasbakgrund */
-            border-radius: 8px;
-            touch-action: none; /* Viktigt för mobilhantering */
-            /* Canvasstorlek sätts nu dynamiskt i JavaScript */
-        }
-
-        /* Knappstil */
-        .control-button {
-            background-color: #e94560;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: bold;
-            transition: background-color 0.2s, transform 0.1s;
-            box-shadow: 0 4px 0 #903749;
-            margin-top: 10px;
-        }
-
-        .control-button:hover {
-            background-color: #c93b51;
-        }
-
-        .control-button:active {
-            box-shadow: none;
-            transform: translateY(4px);
-        }
-
-        /* Spelmeddelande overlay */
-        .message-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            color: white;
-            font-size: 2.5rem;
-            font-weight: 900;
-            z-index: 10;
-            border-radius: 8px;
-        }
-        
-        /* Instruktioner för mobil */
-        .mobile-controls {
-            display: none;
-            grid-template-areas: ". up ." "left . right" ". down .";
-            gap: 10px;
-            width: 200px;
-            margin-top: 20px;
-        }
-
-        .mobile-controls button {
-            grid-area: var(--area);
-            font-size: 1.5rem;
-            padding: 15px;
-            background-color: #e94560;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 3px 0 #903749;
-        }
-
-        @media (max-width: 600px) {
-            .mobile-controls {
-                display: grid;
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snakey Arcade</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Press Start 2P -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        arcade: ['"Press Start 2P"', 'monospace'],
+                    },
+                    colors: {
+                        neon: {
+                            cyan: '#00f3ff',
+                            pink: '#ff007f',
+                            lime: '#39ff14',
+                            yellow: '#ffe600',
+                            purple: '#9d00ff'
+                        }
+                    },
+                    boxShadow: {
+                        'neon-cyan': '0 0 20px rgba(0, 243, 255, 0.5), 0 0 40px rgba(0, 243, 255, 0.2)',
+                        'neon-pink': '0 0 20px rgba(255, 0, 127, 0.5), 0 0 40px rgba(255, 0, 127, 0.2)',
+                        'neon-lime': '0 0 20px rgba(57, 255, 20, 0.5), 0 0 40px rgba(57, 255, 20, 0.2)',
+                    }
+                }
             }
+        }
+    </script>
+    <style>
+        /* Custom scrollbars and glowing effects */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+        
+        .scanline {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.3) 50%,
+                rgba(0, 0, 0, 0.3)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        .glow-text-cyan { text-shadow: 0 0 10px rgba(0, 243, 255, 0.7), 0 0 20px rgba(0, 243, 255, 0.4); }
+        .glow-text-pink { text-shadow: 0 0 10px rgba(255, 0, 127, 0.7), 0 0 20px rgba(255, 0, 127, 0.4); }
+        .glow-text-yellow { text-shadow: 0 0 10px rgba(255, 230, 0, 0.7), 0 0 20px rgba(255, 230, 0, 0.4); }
+
+        /* Canvas container responsiveness */
+        #game-canvas {
+            image-rendering: pixelated;
+            touch-action: none;
         }
     </style>
 </head>
-<body>
-    <div class="game-container">
-        <h1 style="margin-top: 0; color: #bae8e8;">Klassiska Ormspelet</h1>
-        <div class="scoreboard">Poäng: <span id="score">0</span></div>
+<body class="h-full flex flex-col items-center justify-center p-2 sm:p-4 overflow-hidden select-none font-sans bg-slate-950 text-slate-100">
 
-        <div style="position: relative;">
-            <canvas id="gameCanvas"></canvas>
-            <div id="messageOverlay" class="message-overlay">
-                <!-- Uppdaterad text för tydlighet -->
-                <p id="messageText" style="font-size: 1.5rem; font-weight: normal; margin-bottom: 20px;">
-                    Tryck 'Starta Spelet' för att visa ormen och börja spela!
-                </p>
-                <button class="control-button" onclick="startGame()">Starta Spelet</button>
+    <!-- Main Game Wrapper Container -->
+    <div class="relative w-full max-w-2xl flex flex-col items-center">
+        
+        <!-- Top Scoreboard Bar -->
+        <div class="w-full bg-slate-900/90 border border-slate-800 backdrop-blur-md rounded-2xl p-3 sm:p-4 mb-3 flex items-center justify-between shadow-2xl relative z-10">
+            <!-- Score & Combo -->
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col">
+                    <span class="text-xs uppercase tracking-widest text-slate-400 font-bold">Score</span>
+                    <span id="current-score" class="font-arcade text-xl sm:text-2xl text-cyan-400 glow-text-cyan">0</span>
+                </div>
+                <div id="combo-container" class="opacity-0 transition-opacity duration-300 flex flex-col">
+                    <span class="text-[10px] uppercase tracking-widest text-pink-400 font-bold">Multiplier</span>
+                    <span id="combo-text" class="font-arcade text-sm text-pink-500 glow-text-pink">x2</span>
+                </div>
+            </div>
+
+            <!-- Title in center for desktop -->
+            <div class="hidden md:flex items-center gap-2">
+                <i class="fa-solid fa-staff-snake text-cyan-400 text-xl animate-pulse"></i>
+                <span class="font-arcade text-sm tracking-wider text-slate-200">SNAKE<span class="text-cyan-400">Y</span></span>
+            </div>
+
+            <!-- Audio Toggle & High Score -->
+            <div class="flex items-center gap-4">
+                <button id="sound-btn" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition-all border border-slate-700/50 active:scale-95" title="Toggle Audio">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-lg"></i>
+                </button>
+                <div class="flex flex-col items-end">
+                    <span class="text-xs uppercase tracking-widest text-slate-400 font-bold"><span id="diff-label">NORMAL</span> BEST</span>
+                    <span id="high-score" class="font-arcade text-xl sm:text-2xl text-amber-400 glow-text-yellow">0</span>
+                </div>
             </div>
         </div>
-        
-        <button id="restartButton" class="control-button" onclick="startGame()" style="display: none;">Starta Om</button>
 
-        <!-- Mobilkontroller (syns bara på små skärmar) -->
-        <div class="mobile-controls">
-            <button style="--area: up;" onclick="setDirection(0, -1)">▲</button>
-            <button style="--area: left;" onclick="setDirection(-1, 0)">◀</button>
-            <button style="--area: right;" onclick="setDirection(1, 0)">▶</button>
-            <button style="--area: down;" onclick="setDirection(0, 1)">▼</button>
+        <!-- Canvas Game Screen Container -->
+        <div class="relative w-full aspect-square max-h-[70vh] bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-800 shadow-[0_0_50px_rgba(0,243,255,0.15)] flex items-center justify-center">
+            
+            <!-- Scanline CRT Effect Overlay -->
+            <div class="absolute inset-0 scanline z-20 pointer-events-none opacity-40"></div>
+
+            <!-- Actual Game Canvas -->
+            <canvas id="game-canvas" class="w-full h-full block relative z-0"></canvas>
+
+            <!-- START MENU OVERLAY -->
+            <div id="start-menu" class="absolute inset-0 z-30 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center transition-all duration-300">
+                <div class="relative mb-6">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-pink-500 rounded-2xl blur opacity-70 animate-pulse"></div>
+                    <div class="relative bg-slate-900 px-6 py-4 rounded-xl border border-slate-700 flex items-center gap-3">
+                        <i class="fa-solid fa-gamepad text-3xl text-cyan-400"></i>
+                        <h1 class="font-arcade text-2xl sm:text-3xl tracking-wider text-slate-100">SNAKE<span class="text-cyan-400">Y</span></h1>
+                    </div>
+                </div>
+
+                <p class="text-slate-400 text-sm max-w-xs mb-6 leading-relaxed">
+                    Fast-paced classic arcade action. Responsive zero-latency input engine. Eat energy glowing cells to grow!
+                </p>
+
+                <!-- Difficulty Selector -->
+                <div class="w-full max-w-xs mb-6">
+                    <label class="block text-xs uppercase tracking-widest text-slate-400 font-bold mb-2">Select Speed / Difficulty</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button data-speed="110" data-diff="casual" class="diff-btn py-2 px-3 rounded-lg bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 hover:border-cyan-400 transition-all">Casual</button>
+                        <button data-speed="80" data-diff="normal" class="diff-btn py-2 px-3 rounded-lg bg-cyan-500/20 border-2 border-cyan-400 text-xs font-bold text-cyan-300 transition-all shadow-neon-cyan">Normal</button>
+                        <button data-speed="50" data-diff="insane" class="diff-btn py-2 px-3 rounded-lg bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 hover:border-pink-500 transition-all">Insane</button>
+                    </div>
+                </div>
+
+                <!-- Start Button -->
+                <button id="start-btn" class="w-full max-w-xs py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-arcade text-sm font-black tracking-wider shadow-neon-cyan hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> START GAME
+                </button>
+
+                <!-- Controls Info -->
+                <div class="mt-8 flex items-center gap-4 text-xs text-slate-400">
+                    <span class="flex items-center gap-1.5"><kbd class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-cyan-400 font-mono">WASD</kbd> or <kbd class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-cyan-400 font-mono">ARROWS</kbd></span>
+                    <span>•</span>
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-hand-pointer text-cyan-400"></i> Touch Swipe</span>
+                </div>
+            </div>
+
+            <!-- PAUSE MENU OVERLAY -->
+            <div id="pause-menu" class="hidden absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+                <h2 class="font-arcade text-3xl text-cyan-400 glow-text-cyan mb-6">GAME PAUSED</h2>
+                <div class="flex flex-col gap-3 w-full max-w-xs">
+                    <button id="resume-btn" class="w-full py-3 px-6 rounded-xl bg-cyan-500 text-slate-950 font-arcade text-xs font-bold shadow-neon-cyan hover:bg-cyan-400 transition-all">RESUME</button>
+                    <button id="restart-paused-btn" class="w-full py-3 px-6 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 font-arcade text-xs font-bold transition-all">RESTART</button>
+                </div>
+            </div>
+
+            <!-- GAME OVER OVERLAY -->
+            <div id="game-over-menu" class="hidden absolute inset-0 z-30 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+                <div class="text-pink-500 text-4xl mb-2"><i class="fa-solid fa-skull-crossbones animate-bounce"></i></div>
+                <h2 class="font-arcade text-2xl sm:text-3xl text-pink-500 glow-text-pink mb-2">SYSTEM FAILURE</h2>
+                <p class="text-xs uppercase tracking-widest text-slate-400 font-bold mb-6">Game Over</p>
+
+                <!-- Final Stats Card -->
+                <div class="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6 flex flex-col gap-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-xs text-slate-400 uppercase font-semibold">Final Score</span>
+                        <span id="final-score" class="font-arcade text-cyan-400 text-lg">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-slate-400 uppercase font-semibold">Personal Best</span>
+                        <span id="final-high-score" class="font-arcade text-amber-400 text-lg">0</span>
+                    </div>
+                    <div id="new-record-badge" class="hidden mt-1 py-1 bg-amber-400/20 border border-amber-400/50 rounded-lg text-amber-300 font-arcade text-[10px] uppercase tracking-wider animate-pulse">
+                        🏆 NEW RECORD!
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3 w-full max-w-xs">
+                    <button id="retry-btn" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-arcade text-xs font-black shadow-neon-cyan hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> PLAY AGAIN
+                    </button>
+                    <button id="menu-btn" class="w-full py-3 px-6 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 font-arcade text-xs font-bold transition-all">
+                        MAIN MENU
+                    </button>
+                </div>
+            </div>
         </div>
+
+        <!-- Touch Mobile On-Screen D-Pad Controls -->
+        <div class="w-full mt-4 grid grid-cols-3 gap-2 max-w-[240px] md:hidden">
+            <div></div>
+            <button id="btn-up" class="h-12 rounded-xl bg-slate-800/90 border border-slate-700 text-cyan-400 active:bg-cyan-500 active:text-slate-950 flex items-center justify-center text-xl shadow-lg transition-colors"><i class="fa-solid fa-chevron-up"></i></button>
+            <div></div>
+            <button id="btn-left" class="h-12 rounded-xl bg-slate-800/90 border border-slate-700 text-cyan-400 active:bg-cyan-500 active:text-slate-950 flex items-center justify-center text-xl shadow-lg transition-colors"><i class="fa-solid fa-chevron-left"></i></button>
+            <button id="btn-down" class="h-12 rounded-xl bg-slate-800/90 border border-slate-700 text-cyan-400 active:bg-cyan-500 active:text-slate-950 flex items-center justify-center text-xl shadow-lg transition-colors"><i class="fa-solid fa-chevron-down"></i></button>
+            <button id="btn-right" class="h-12 rounded-xl bg-slate-800/90 border border-slate-700 text-cyan-400 active:bg-cyan-500 active:text-slate-950 flex items-center justify-center text-xl shadow-lg transition-colors"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+
     </div>
 
+    <!-- JavaScript Game Logic Engine -->
     <script>
-        // Globala variabler och konstanter
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreDisplay = document.getElementById('score');
-        const overlay = document.getElementById('messageOverlay');
-        const messageText = document.getElementById('messageText');
-        const restartButton = document.getElementById('restartButton');
-        const gameContainer = document.querySelector('.game-container');
-        
-        // Spelkonstanter
-        const GRID_SIZE = 20; // 20x20 rutor
-        const TOTAL_CELLS = GRID_SIZE * GRID_SIZE;
-        const GROWTH_CAP_EMPTY_CELLS = 5; // Begränsning: 5 tomma rutor kvar
-        const MAX_SNAKE_LENGTH = TOTAL_CELLS - GROWTH_CAP_EMPTY_CELLS;
-        
-        // Dynamisk variabel för cellstorlek
-        let CELL_SIZE; 
+        // Web Audio Synthesizer (Zero External Audio File Dependency)
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
 
-        // Speltillstånd
-        let snake = [];
-        let apple = {};
-        let score = 0;
-        let dx = 1; // Riktning x: 1=höger, -1=vänster
-        let dy = 0; // Riktning y: 1=ner, -1=upp
-        let gameLoopInterval;
-        let isGameOver = true;
-        let lastDirection = { x: 1, y: 0 };
-        let inputQueue = []; // För att hantera snabba knapptryck
-
-        /**
-         * Genererar ett slumpmässigt heltal inom intervallet [min, max).
-         * @param {number} min - Minimumvärde.
-         * @param {number} max - Maximumvärde (exklusivt).
-         * @returns {number} Slumpmässigt heltal.
-         */
-        function randomInt(min, max) {
-            return Math.floor(Math.random() * (max - min)) + min;
-        }
-
-        /**
-         * Beräknar optimal CELL_SIZE och uppdaterar canvasens dimensioner 
-         * baserat på den tillgängliga skärmstorleken, maximerad till 500px 
-         * eller 80% av tillgänglig yta.
-         */
-        function resizeGame() {
-            // Hämta tillgänglig bredd/höjd i huvudcontainern
-            const containerRect = gameContainer.getBoundingClientRect();
-            
-            // Marginal för poängtavla/knappar. Vi antar att canvas ska ta max 80% av containerns yta.
-            // Använd 90% av bredden och 60% av containerns höjd (för att lämna plats åt övrigt UI)
-            const availableWidth = containerRect.width * 0.9; 
-            const availableHeight = containerRect.height * 0.6;
-            
-            // Hitta den minsta dimensionen för att säkerställa en perfekt kvadrat
-            // Max storlek är 500px, annars minsta tillgängliga dimensionen.
-            let availableSize = Math.min(availableWidth, availableHeight, 500); 
-
-            // Se till att den totala storleken är ett jämnt multiplum av GRID_SIZE
-            let newCanvasSize = Math.floor(availableSize / GRID_SIZE) * GRID_SIZE;
-            
-            // Begränsa minsta storlek
-            if (newCanvasSize < 200) newCanvasSize = Math.floor(200 / GRID_SIZE) * GRID_SIZE; 
-            
-            // Uppdatera CELL_SIZE och canvas-attribut
-            CELL_SIZE = newCanvasSize / GRID_SIZE;
-            canvas.width = newCanvasSize;
-            canvas.height = newCanvasSize;
-            
-            // Rita om spelet efter storleksändring
-            drawGame();
-        }
-
-        /**
-         * Placerar ut äpplet på en slumpmässig, ledig position.
-         */
-        function placeApple() {
-            const occupied = new Set();
-            snake.forEach(segment => {
-                occupied.add(`${segment.x},${segment.y}`);
-            });
-
-            let newAppleX, newAppleY;
-            let placed = false;
-            
-            // Försök att placera äpplet tills en ledig ruta hittas
-            while (!placed) {
-                newAppleX = randomInt(0, GRID_SIZE);
-                newAppleY = randomInt(0, GRID_SIZE);
-
-                if (!occupied.has(`${newAppleX},${newAppleY}`)) {
-                    apple = { x: newAppleX, y: newAppleY };
-                    placed = true;
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
                 }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playEatSound(isGolden = false) {
+                if (this.muted || !this.ctx) return;
+                this.init();
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = isGolden ? 'triangle' : 'sine';
+                
+                if (isGolden) {
+                    // Golden food arpeggio chime
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.08); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.16); // G5
+                    osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.24); // C6
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else {
+                    // Standard eat ping sound
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.09);
+                }
+            }
+
+            playTurnSound() {
+                if (this.muted || !this.ctx) return;
+                this.init();
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.03);
+
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.03);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.03);
+            }
+
+            playGameOverSound() {
+                if (this.muted || !this.ctx) return;
+                this.init();
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.5);
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            }
+
+            playHighScoreSound() {
+                if (this.muted || !this.ctx) return;
+                this.init();
+
+                const now = this.ctx.currentTime;
+                [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.2);
+                });
             }
         }
 
-        /**
-         * Nollställer speltillståndet och startar spelet.
-         */
-        function startGame() {
-            // Rensa eventuella gamla intervaller
-            clearInterval(gameLoopInterval); 
+        const audio = new AudioEngine();
 
-            // Återställ speltillstånd
-            score = 0;
-            scoreDisplay.textContent = score;
-            dx = 1;
-            dy = 0;
-            lastDirection = { x: 1, y: 0 };
-            inputQueue = [];
-            isGameOver = false;
+        // Canvas & Context Setup
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
 
-            // Initialisera ormen i mitten av planen
-            const startX = randomInt(5, GRID_SIZE - 5);
-            const startY = randomInt(5, GRID_SIZE - 5);
-            snake = [
-                { x: startX, y: startY }, // Huvud
-                { x: startX - 1, y: startY },
-                { x: startX - 2, y: startY }
-            ];
+        // Grid Configuration
+        const GRID_SIZE = 20; // 20x20 grid
+        let tileSize = 0;
 
-            // Placera äpplet
-            placeApple();
+        // Game Speed & Difficulty
+        let gameSpeed = 80; // Default normal speed in ms
+        let currentDifficulty = 'normal';
+        let lastStepTime = 0;
+        let accumulator = 0;
 
-            // Dölj meddelande-overlay
-            overlay.style.display = 'none';
-            restartButton.style.display = 'none';
+        // State variables
+        let isRunning = false;
+        let isPaused = false;
+        let isGameOver = false;
 
-            // Starta spel-loopen
-            gameLoopInterval = setInterval(gameLoop, 100); // 100ms uppdateringsfrekvens
+        let score = 0;
+        let comboMultiplier = 1;
+        let comboTimer = null;
+
+        // Snake Representation
+        let snake = [];
+        let previousSnake = []; // For rendering interpolation
+        let direction = { x: 1, y: 0 };
+        let nextDirection = { x: 1, y: 0 };
+
+        // Zero-Delay Responsive Input Queue
+        const inputQueue = [];
+        const MAX_QUEUE_SIZE = 3;
+
+        // Food Objects
+        let food = { x: 5, y: 5, type: 'normal' };
+        let goldenFood = null;
+        let goldenFoodTimer = 0;
+
+        // Visual Effects: Particles & Floating Score Popups
+        let particles = [];
+        let scorePopups = [];
+
+        // DOM Element Cache
+        const currentScoreEl = document.getElementById('current-score');
+        const highScoreEl = document.getElementById('high-score');
+        const diffLabelEl = document.getElementById('diff-label');
+        const finalScoreEl = document.getElementById('final-score');
+        const finalHighScoreEl = document.getElementById('final-high-score');
+        const newRecordBadge = document.getElementById('new-record-badge');
+        const comboContainer = document.getElementById('combo-container');
+        const comboText = document.getElementById('combo-text');
+
+        const startMenu = document.getElementById('start-menu');
+        const pauseMenu = document.getElementById('pause-menu');
+        const gameOverMenu = document.getElementById('game-over-menu');
+        const soundBtn = document.getElementById('sound-btn');
+        const soundIcon = document.getElementById('sound-icon');
+
+        // Per-Difficulty High Score Management
+        function getHighScore(diff) {
+            return parseInt(localStorage.getItem(`snakey_highscore_${diff}`)) || 0;
         }
 
-        /**
-         * Ändrar ormens riktning baserat på tangenttryck eller mobilkontroll.
-         * En kö används för att undvika att vända 180 grader.
-         * @param {number} newDx - Ny riktning X.
-         * @param {number} newDy - Ny riktning Y.
-         */
-        function setDirection(newDx, newDy) {
-            // Kontrollera att det inte är en direkt 180-graders vändning
-            if (newDx === -lastDirection.x && newDy === -lastDirection.y) {
+        function setHighScore(diff, val) {
+            localStorage.setItem(`snakey_highscore_${diff}`, val);
+        }
+
+        function updateHighScoreDisplay() {
+            if (diffLabelEl) diffLabelEl.textContent = currentDifficulty.toUpperCase();
+            highScoreEl.textContent = getHighScore(currentDifficulty);
+        }
+
+        // Responsive Keypress Queueing System
+        function queueDirection(newDir) {
+            // Compare against last queued direction or current active direction
+            const lastDir = inputQueue.length > 0 ? inputQueue[inputQueue.length - 1] : direction;
+            
+            // Prevent 180 degree immediate reverse suicide
+            if (newDir.x === -lastDir.x && newDir.y === -lastDir.y) return;
+            if (newDir.x === lastDir.x && newDir.y === lastDir.y) return;
+
+            if (inputQueue.length < MAX_QUEUE_SIZE) {
+                inputQueue.push(newDir);
+                audio.playTurnSound();
+            }
+        }
+
+        // Global Keyboard Event Handling
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault(); // Prevent page scroll
+            }
+
+            if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+                if (isRunning && !isGameOver) togglePause();
                 return;
             }
-            
-            // Lägg till i kön. Endast den första inmatningen behandlas i nästa loop.
-            inputQueue.push({ x: newDx, y: newDy });
-        }
-        
-        /**
-         * Behandlar inmatningskön och uppdaterar riktningen.
-         */
-        function processInput() {
-            if (inputQueue.length > 0) {
-                const nextInput = inputQueue.shift();
-                dx = nextInput.x;
-                dy = nextInput.y;
-                lastDirection = { x: dx, y: dy };
-            }
-        }
 
-
-        /**
-         * Huvudspel-loopen: uppdaterar spelets tillstånd.
-         */
-        function gameLoop() {
-            if (isGameOver) return;
-
-            processInput();
-            
-            // 1. Beräkna nytt huvud
-            const head = snake[0];
-            const newHead = { x: head.x + dx, y: head.y + dy };
-
-            // 2. Kontrollera kollision med väggar
-            if (newHead.x < 0 || newHead.x >= GRID_SIZE || 
-                newHead.y < 0 || newHead.y >= GRID_SIZE) {
-                return gameOver();
-            }
-
-            // 3. Kontrollera kollision med sig själv
-            for (let i = 1; i < snake.length; i++) {
-                if (newHead.x === snake[i].x && newHead.y === snake[i].y) {
-                    return gameOver();
-                }
-            }
-
-            // Lägg till nytt huvud
-            snake.unshift(newHead);
-
-            // 4. Kontrollera om äpplet äts
-            let didEat = newHead.x === apple.x && newHead.y === apple.y;
-
-            if (didEat) {
-                score++;
-                scoreDisplay.textContent = score;
-                placeApple();
-
-                // TILLVÄXTBEGRÄNSNING: 
-                // Om snake.length (efter att det nya huvudet lagts till) är så långt att
-                // antal tomma rutor (TOTAL_CELLS - snake.length) är < 5, 
-                // MÅSTE vi ta bort svansen (dvs. ormen växer inte).
-                if (TOTAL_CELLS - snake.length < GROWTH_CAP_EMPTY_CELLS) {
-                    snake.pop(); // Ta bort svansen = Längden förblir densamma
-                }
-                // Annars: svansen tas INTE bort, ormen växer.
-            } else {
-                // Standardrörelse: ta bort svansen
-                snake.pop();
-            }
-
-            // Rita om spelet
-            drawGame();
-        }
-
-        /**
-         * Ritar ut alla spelelement på canvasen.
-         */
-        function drawGame() {
-            // Rensa canvas
-            ctx.fillStyle = '#16213e'; // Canvasbakgrund
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Rita ormen
-            snake.forEach((segment, index) => {
-                // Huvudet har en annan färg för tydlighet
-                ctx.fillStyle = index === 0 ? '#bae8e8' : '#e94560'; // Huvud: Ljusblå, Kropp: Röd
-                ctx.strokeStyle = '#16213e'; // Mellanrum mellan rutor
-                
-                ctx.fillRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                ctx.strokeRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-            });
-
-            // Rita äpplet
-            ctx.fillStyle = '#ff7b7b'; // Äpplets färg (Ljusare röd)
-            ctx.beginPath();
-            // Rita en cirkel för att se mer ut som ett äpple
-            ctx.arc(
-                apple.x * CELL_SIZE + CELL_SIZE / 2, 
-                apple.y * CELL_SIZE + CELL_SIZE / 2, 
-                CELL_SIZE / 2 * 0.8, // Lite mindre än rutan
-                0, 2 * Math.PI
-            );
-            ctx.fill();
-        }
-
-        /**
-         * Hanterar spelets slut.
-         */
-        function gameOver() {
-            isGameOver = true;
-            clearInterval(gameLoopInterval);
-
-            // Visa meddelande-overlay
-            overlay.style.display = 'flex';
-            messageText.textContent = `SPELET ÄR SLUT! Din poäng: ${score}`;
-            restartButton.style.display = 'block';
-            restartButton.textContent = 'Starta Om';
-        }
-
-        // --- Händelselyssnare ---
-
-        // Kör storleksändring vid laddning och vid fönsterändring
-        window.addEventListener('load', resizeGame);
-        window.addEventListener('resize', resizeGame);
-
-
-        // Tangentbordsinmatning
-        document.addEventListener('keydown', (e) => {
-            if (isGameOver) return; // Ignorera input om spelet är slut
+            if (!isRunning || isPaused || isGameOver) return;
 
             switch (e.key) {
                 case 'ArrowUp':
                 case 'w':
-                    setDirection(0, -1);
+                case 'W':
+                    queueDirection({ x: 0, y: -1 });
                     break;
                 case 'ArrowDown':
                 case 's':
-                    setDirection(0, 1);
+                case 'S':
+                    queueDirection({ x: 0, y: 1 });
                     break;
                 case 'ArrowLeft':
                 case 'a':
-                    setDirection(-1, 0);
+                case 'A':
+                    queueDirection({ x: -1, y: 0 });
                     break;
                 case 'ArrowRight':
                 case 'd':
-                    setDirection(1, 0);
+                case 'D':
+                    queueDirection({ x: 1, y: 0 });
                     break;
             }
         });
-        
-        // Se till att overlayen visas vid start (eftersom resizeGame nu ritas ut på load)
-        overlay.style.display = 'flex';
 
+        // Touch Swipe Gestures
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (!isRunning || isPaused || isGameOver) return;
+            const diffX = e.changedTouches[0].clientX - touchStartX;
+            const diffY = e.changedTouches[0].clientY - touchStartY;
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (Math.abs(diffX) > 20) {
+                    queueDirection(diffX > 0 ? { x: 1, y: 0 } : { x: -1, y: 0 });
+                }
+            } else {
+                if (Math.abs(diffY) > 20) {
+                    queueDirection(diffY > 0 ? { x: 0, y: 1 } : { x: 0, y: -1 });
+                }
+            }
+        }, { passive: true });
+
+        // Mobile On-Screen D-Pad Click Binding
+        document.getElementById('btn-up').addEventListener('click', () => queueDirection({ x: 0, y: -1 }));
+        document.getElementById('btn-down').addEventListener('click', () => queueDirection({ x: 0, y: 1 }));
+        document.getElementById('btn-left').addEventListener('click', () => queueDirection({ x: -1, y: 0 }));
+        document.getElementById('btn-right').addEventListener('click', () => queueDirection({ x: 1, y: 0 }));
+
+        function initGame() {
+            // Canvas sizing logic
+            const containerWidth = canvas.parentElement.clientWidth;
+            canvas.width = containerWidth;
+            canvas.height = containerWidth;
+            tileSize = canvas.width / GRID_SIZE;
+
+            // Snake initial center position
+            const startX = Math.floor(GRID_SIZE / 2);
+            const startY = Math.floor(GRID_SIZE / 2);
+
+            snake = [
+                { x: startX, y: startY },
+                { x: startX - 1, y: startY },
+                { x: startX - 2, y: startY }
+            ];
+            
+            // Deep copy previous state for interpolation
+            previousSnake = JSON.parse(JSON.stringify(snake));
+
+            direction = { x: 1, y: 0 };
+            inputQueue.length = 0;
+
+            score = 0;
+            comboMultiplier = 1;
+            updateScoreDisplay();
+
+            particles = [];
+            scorePopups = [];
+            goldenFood = null;
+
+            spawnFood();
+            isGameOver = false;
+            isPaused = false;
+            isRunning = true;
+
+            updateHighScoreDisplay();
+        }
+
+        function spawnFood() {
+            let validPosition = false;
+            while (!validPosition) {
+                food.x = Math.floor(Math.random() * GRID_SIZE);
+                food.y = Math.floor(Math.random() * GRID_SIZE);
+                
+                // Ensure food does not spawn inside the snake
+                validPosition = !snake.some(segment => segment.x === food.x && segment.y === food.y);
+            }
+
+            // Chance to spawn golden bonus food if not active
+            if (!goldenFood && Math.random() < 0.25) {
+                spawnGoldenFood();
+            }
+        }
+
+        function spawnGoldenFood() {
+            let validPosition = false;
+            let gx, gy;
+            while (!validPosition) {
+                gx = Math.floor(Math.random() * GRID_SIZE);
+                gy = Math.floor(Math.random() * GRID_SIZE);
+                validPosition = !snake.some(seg => seg.x === gx && seg.y === gy) && (gx !== food.x || gy !== food.y);
+            }
+            goldenFood = { x: gx, y: gy };
+            goldenFoodTimer = 100; // 100 ticks before decay
+        }
+
+        function updateGameStep() {
+            if (isPaused || isGameOver || !isRunning) return;
+
+            // Process next queued turn direction
+            if (inputQueue.length > 0) {
+                direction = inputQueue.shift();
+            }
+
+            // Save previous snake state for rendering interpolation
+            previousSnake = JSON.parse(JSON.stringify(snake));
+
+            // Calculate new head position
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+            // Wall Collision Check
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+                triggerGameOver();
+                return;
+            }
+
+            // Self Collision Check
+            if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                triggerGameOver();
+                return;
+            }
+
+            // Move Snake Forward
+            snake.unshift(head);
+
+            // Food Collisions
+            let ateFood = false;
+
+            // Regular Food Collision
+            if (head.x === food.x && head.y === food.y) {
+                ateFood = true;
+                const points = 10 * comboMultiplier;
+                score += points;
+                
+                audio.playEatSound(false);
+                createFoodParticles(food.x, food.y, '#00f3ff');
+                createScorePopup(`+${points}`, head.x, head.y, '#00f3ff');
+                
+                bumpCombo();
+                spawnFood();
+            }
+
+            // Golden Food Collision
+            if (goldenFood && head.x === goldenFood.x && head.y === goldenFood.y) {
+                ateFood = true;
+                const points = 35 * comboMultiplier;
+                score += points;
+
+                audio.playEatSound(true);
+                createFoodParticles(goldenFood.x, goldenFood.y, '#ffe600');
+                createScorePopup(`+${points}!`, head.x, head.y, '#ffe600');
+
+                goldenFood = null;
+            }
+
+            // Decrement golden food timer
+            if (goldenFood) {
+                goldenFoodTimer--;
+                if (goldenFoodTimer <= 0) goldenFood = null;
+            }
+
+            // Trim tail if no food eaten
+            if (!ateFood) {
+                snake.pop();
+            }
+
+            updateScoreDisplay();
+        }
+
+        function bumpCombo() {
+            comboMultiplier++;
+            comboContainer.classList.remove('opacity-0');
+            comboText.textContent = `x${comboMultiplier}`;
+
+            if (comboTimer) clearTimeout(comboTimer);
+            comboTimer = setTimeout(() => {
+                comboMultiplier = 1;
+                comboContainer.classList.add('opacity-0');
+            }, 3500);
+        }
+
+        function updateScoreDisplay() {
+            currentScoreEl.textContent = score;
+            const currentBest = getHighScore(currentDifficulty);
+            if (score > currentBest) {
+                setHighScore(currentDifficulty, score);
+                highScoreEl.textContent = score;
+            }
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            isRunning = false;
+            audio.playGameOverSound();
+
+            createDeathExplosion();
+
+            const currentBestBefore = getHighScore(currentDifficulty);
+            const isNewRecord = score > 0 && score >= currentBestBefore;
+            if (isNewRecord) {
+                setHighScore(currentDifficulty, score);
+                audio.playHighScoreSound();
+                newRecordBadge.classList.remove('hidden');
+            } else {
+                newRecordBadge.classList.add('hidden');
+            }
+
+            finalScoreEl.textContent = score;
+            finalHighScoreEl.textContent = getHighScore(currentDifficulty);
+
+            setTimeout(() => {
+                gameOverMenu.classList.remove('hidden');
+            }, 600);
+        }
+
+        function createFoodParticles(gridX, gridY, color) {
+            const centerX = (gridX + 0.5) * tileSize;
+            const centerY = (gridY + 0.5) * tileSize;
+            
+            for (let i = 0; i < 16; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 4 + 2;
+                particles.push({
+                    x: centerX,
+                    y: centerY,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: Math.random() * 3 + 1,
+                    alpha: 1,
+                    color: color,
+                    decay: Math.random() * 0.03 + 0.02
+                });
+            }
+        }
+
+        function createDeathExplosion() {
+            snake.forEach(seg => {
+                const centerX = (seg.x + 0.5) * tileSize;
+                const centerY = (seg.y + 0.5) * tileSize;
+                for (let i = 0; i < 4; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 3 + 1;
+                    particles.push({
+                        x: centerX,
+                        y: centerY,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        radius: Math.random() * 4 + 2,
+                        alpha: 1,
+                        color: '#ff007f',
+                        decay: Math.random() * 0.02 + 0.01
+                    });
+                }
+            });
+        }
+
+        function createScorePopup(text, gridX, gridY, color) {
+            scorePopups.push({
+                text: text,
+                x: (gridX + 0.5) * tileSize,
+                y: gridY * tileSize,
+                alpha: 1,
+                color: color
+            });
+        }
+
+        function updateAndRenderParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Render Floating Score Text
+            for (let i = scorePopups.length - 1; i >= 0; i--) {
+                const pop = scorePopups[i];
+                pop.y -= 0.8;
+                pop.alpha -= 0.02;
+
+                if (pop.alpha <= 0) {
+                    scorePopups.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = pop.alpha;
+                ctx.fillStyle = pop.color;
+                ctx.font = 'bold 12px "Press Start 2P", monospace';
+                ctx.shadowColor = pop.color;
+                ctx.shadowBlur = 6;
+                ctx.textAlign = 'center';
+                ctx.fillText(pop.text, pop.x, pop.y);
+                ctx.restore();
+            }
+        }
+
+        function render(progress) {
+            // Clear Background
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Subtle Grid Pattern
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= GRID_SIZE; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * tileSize, 0);
+                ctx.lineTo(i * tileSize, canvas.height);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(0, i * tileSize);
+                ctx.lineTo(canvas.width, i * tileSize);
+                ctx.stroke();
+            }
+
+            // Draw Regular Food (Pulsing Glow Orb)
+            const foodCenterX = (food.x + 0.5) * tileSize;
+            const foodCenterY = (food.y + 0.5) * tileSize;
+            const pulse = Math.sin(Date.now() * 0.008) * 0.15 + 0.85;
+
+            ctx.save();
+            ctx.fillStyle = '#00f3ff';
+            ctx.shadowColor = '#00f3ff';
+            ctx.shadowBlur = 15 * pulse;
+            ctx.beginPath();
+            ctx.arc(foodCenterX, foodCenterY, (tileSize / 2.6) * pulse, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Draw Golden Bonus Food if Active
+            if (goldenFood) {
+                const gX = (goldenFood.x + 0.5) * tileSize;
+                const gY = (goldenFood.y + 0.5) * tileSize;
+                const gPulse = Math.sin(Date.now() * 0.015) * 0.2 + 0.8;
+
+                ctx.save();
+                ctx.fillStyle = '#ffe600';
+                ctx.shadowColor = '#ffe600';
+                ctx.shadowBlur = 20 * gPulse;
+                ctx.beginPath();
+                ctx.arc(gX, gY, (tileSize / 2.3) * gPulse, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Inner Glow Star / Core
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(gX, gY, tileSize / 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Interpolated Smooth Snake Movement Render
+            if (snake.length > 0) {
+                // Interpolate each segment between previous tick and current tick
+                const interpSnake = snake.map((seg, idx) => {
+                    const prev = previousSnake[idx] || seg;
+                    return {
+                        x: prev.x + (seg.x - prev.x) * progress,
+                        y: prev.y + (seg.y - prev.y) * progress
+                    };
+                });
+
+                // Render Body Segments
+                for (let i = interpSnake.length - 1; i >= 0; i--) {
+                    const seg = interpSnake[i];
+                    const posX = seg.x * tileSize;
+                    const posY = seg.y * tileSize;
+                    const isHead = (i === 0);
+
+                    ctx.save();
+                    if (isHead) {
+                        ctx.fillStyle = '#00f3ff';
+                        ctx.shadowColor = '#00f3ff';
+                        ctx.shadowBlur = 15;
+                    } else {
+                        // Color gradient down snake length
+                        const hue = (180 + (i * 4)) % 360;
+                        ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                        ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                        ctx.shadowBlur = 6;
+                    }
+
+                    // Rounded Rect Segments
+                    const margin = 2;
+                    const radius = isHead ? 8 : 4;
+                    const width = tileSize - margin * 2;
+                    const height = tileSize - margin * 2;
+
+                    ctx.beginPath();
+                    ctx.roundRect(posX + margin, posY + margin, width, height, radius);
+                    ctx.fill();
+
+                    // Head Eyes
+                    if (isHead) {
+                        ctx.fillStyle = '#020617';
+                        const eyeOffset = tileSize * 0.25;
+                        const eyeSize = tileSize * 0.15;
+
+                        // Calculate eye position based on current direction
+                        let eye1X = posX + tileSize / 2;
+                        let eye1Y = posY + tileSize / 2;
+                        let eye2X = posX + tileSize / 2;
+                        let eye2Y = posY + tileSize / 2;
+
+                        if (direction.x === 1) { // Right
+                            eye1X = eye2X = posX + tileSize * 0.7;
+                            eye1Y = posY + eyeOffset;
+                            eye2Y = posY + tileSize - eyeOffset;
+                        } else if (direction.x === -1) { // Left
+                            eye1X = eye2X = posX + tileSize * 0.3;
+                            eye1Y = posY + eyeOffset;
+                            eye2Y = posY + tileSize - eyeOffset;
+                        } else if (direction.y === -1) { // Up
+                            eye1Y = eye2Y = posY + tileSize * 0.3;
+                            eye1X = posX + eyeOffset;
+                            eye2X = posX + tileSize - eyeOffset;
+                        } else if (direction.y === 1) { // Down
+                            eye1Y = eye2Y = posY + tileSize * 0.7;
+                            eye1X = posX + eyeOffset;
+                            eye2X = posX + tileSize - eyeOffset;
+                        }
+
+                        ctx.beginPath();
+                        ctx.arc(eye1X, eye1Y, eyeSize, 0, Math.PI * 2);
+                        ctx.arc(eye2X, eye2Y, eyeSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.restore();
+                }
+            }
+
+            // Draw Particles & Floating Scores
+            updateAndRenderParticles();
+        }
+
+        // Main Animation & Fixed Step Game Loop
+        function gameLoop(timestamp) {
+            if (!lastStepTime) lastStepTime = timestamp;
+            const deltaTime = timestamp - lastStepTime;
+            lastStepTime = timestamp;
+
+            if (isRunning && !isPaused) {
+                accumulator += deltaTime;
+                while (accumulator >= gameSpeed) {
+                    updateGameStep();
+                    accumulator -= gameSpeed;
+                }
+            }
+
+            // Calculate interpolation progress (0.0 to 1.0)
+            const progress = isRunning ? (accumulator / gameSpeed) : 1;
+            render(progress);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function togglePause() {
+            if (!isRunning || isGameOver) return;
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseMenu.classList.remove('hidden');
+            } else {
+                pauseMenu.classList.add('hidden');
+            }
+        }
+
+        // Button Event Listeners
+        document.getElementById('start-btn').addEventListener('click', () => {
+            audio.init();
+            startMenu.classList.add('hidden');
+            initGame();
+        });
+
+        document.getElementById('retry-btn').addEventListener('click', () => {
+            gameOverMenu.classList.add('hidden');
+            initGame();
+        });
+
+        document.getElementById('menu-btn').addEventListener('click', () => {
+            gameOverMenu.classList.add('hidden');
+            startMenu.classList.remove('hidden');
+            isRunning = false;
+        });
+
+        document.getElementById('resume-btn').addEventListener('click', () => {
+            togglePause();
+        });
+
+        document.getElementById('restart-paused-btn').addEventListener('click', () => {
+            pauseMenu.classList.add('hidden');
+            initGame();
+        });
+
+        // Difficulty Selection Buttons
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.diff-btn').forEach(b => {
+                    b.className = "diff-btn py-2 px-3 rounded-lg bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 hover:border-cyan-400 transition-all";
+                });
+                e.currentTarget.className = "diff-btn py-2 px-3 rounded-lg bg-cyan-500/20 border-2 border-cyan-400 text-xs font-bold text-cyan-300 transition-all shadow-neon-cyan";
+                gameSpeed = parseInt(e.currentTarget.dataset.speed);
+                currentDifficulty = e.currentTarget.dataset.diff;
+                updateHighScoreDisplay();
+            });
+        });
+
+        // Mute / Unmute Audio Button
+        soundBtn.addEventListener('click', () => {
+            audio.muted = !audio.muted;
+            if (audio.muted) {
+                soundIcon.className = 'fa-solid fa-volume-xmark text-lg text-slate-500';
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-high text-lg text-cyan-400';
+            }
+        });
+
+        // Responsive Canvas Resizing Handler
+        window.addEventListener('resize', () => {
+            if (canvas.parentElement) {
+                const containerWidth = canvas.parentElement.clientWidth;
+                canvas.width = containerWidth;
+                canvas.height = containerWidth;
+                tileSize = canvas.width / GRID_SIZE;
+            }
+        });
+
+        // Initialize High Score Display
+        updateHighScoreDisplay();
+
+        // Kick off loop on window load
+        window.onload = function() {
+            requestAnimationFrame(gameLoop);
+        };
     </script>
-</body>
-</html>
-</div>
-
 </body>
 </html>
