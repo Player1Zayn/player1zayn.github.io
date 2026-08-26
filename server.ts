@@ -490,7 +490,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             // Only ban if the discrepancy is absurdly high (e.g. betting 1M+ over balance) 
             // but for now let's just return a helpful error.
             return res.status(400).json({ 
-                error: "Balance mismatch. Your server balance is lower than your bet. Please wait for a sync or refresh.",
+                error: "Balance missmatch, Please Sync manually.",
                 serverBalance: String(currentBananas),
                 attemptedBet: String(totalBet)
             });
