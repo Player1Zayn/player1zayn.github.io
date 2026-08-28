@@ -227,23 +227,13 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
             finalUnlockedTitles = Array.from(new Set([...serverTitles, ...finalUnlockedTitles]));
         }
     }
-    
-    let finalScore = BigInt(score || 0);
-    let invObj = inventory || {};
-    const BANANA_CAP = 99999000000000000n;
-    if (finalScore > BANANA_CAP) {
-        let bank2 = BigInt(invObj.bank2_bananas || '0');
-        bank2 += (finalScore - BANANA_CAP);
-        finalScore = BANANA_CAP;
-        invObj.bank2_bananas = bank2.toString();
-    }
 
     // 4. Perform Upsert
     console.log(`[UPSERT START] User: ${userId}`);
     const { error: upsertError } = await supabase.from('database').upsert({
       id: userId,
       name,
-      score: String(finalScore), 
+      score: String(score), 
       coins: String(coins), 
       banana_box: String(bananaBox || 0),
       trees: JSON.stringify(trees),
@@ -252,7 +242,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
       xp: String(xp || 0),
       unlocked_titles: JSON.stringify(finalUnlockedTitles),
       equipped_title: equipped_title || null,
-      inventory: JSON.stringify(invObj),
+      inventory: inventory ? JSON.stringify(inventory) : JSON.stringify({}),
       active_gadgets: req.body.active_gadgets ? JSON.stringify(req.body.active_gadgets) : JSON.stringify(Array(10).fill(false)),
       updated_at: new Date().toISOString()
     });
@@ -758,17 +748,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             }
         }
 
-        let newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
-        
-        let inventoryObj = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : (user.inventory || {});
-        const BANANA_CAP = 99999000000000000n;
-        
-        if (newBananas > BANANA_CAP) {
-            let bank2 = BigInt(inventoryObj.bank2_bananas || '0');
-            bank2 += (newBananas - BANANA_CAP);
-            newBananas = BANANA_CAP;
-            inventoryObj.bank2_bananas = bank2.toString();
-        }
+        const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
         
         let updatePayload: any = {
             score: String(newBananas),
@@ -791,10 +771,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         }
 
         if (gameMode === 'cases') {
-            newInventory.bank2_bananas = inventoryObj.bank2_bananas;
             updatePayload.inventory = JSON.stringify(newInventory);
-        } else {
-            updatePayload.inventory = JSON.stringify(inventoryObj);
         }
 
         const { error: updateError } = await supabase.from('database').update(updatePayload).eq('id', userId);
@@ -918,7 +895,7 @@ app.get("/api/leaderboard", async (req, res) => {
     // We query the 'database' table directly to ensure 100% accuracy
     const { data: top50, error: top50Error } = await supabase
       .from('database')
-      .select('id, name, score, level, coins, equipped_title, inventory')
+      .select('id, name, score, level, coins, equipped_title')
       .or('banned.eq.false,banned.is.null')
       .order('score', { ascending: false })
       .limit(50);
@@ -929,27 +906,6 @@ app.get("/api/leaderboard", async (req, res) => {
     }
 
     let result = top50 || [];
-    
-    // Process Bank2 in result
-    result = result.map(u => {
-        let bank2 = 0n;
-        if (u.inventory) {
-            try {
-                const inv = typeof u.inventory === 'string' ? JSON.parse(u.inventory) : u.inventory;
-                if (inv.bank2_bananas) bank2 = BigInt(inv.bank2_bananas);
-            } catch(e) {}
-        }
-        let total = BigInt(u.score || '0') + bank2;
-        return { ...u, score: total.toString() };
-    });
-    
-    // Sort again manually since total might differ
-    result.sort((a, b) => {
-        const diff = BigInt(b.score) - BigInt(a.score);
-        if (diff > 0n) return 1;
-        if (diff < 0n) return -1;
-        return 0;
-    });
 
     // 2. If userId is provided, find their actual rank
     if (userId && typeof userId === 'string' && userId !== '') {
@@ -959,21 +915,11 @@ app.get("/api/leaderboard", async (req, res) => {
         // Fetch user entry
         const { data: userEntry, error: userError } = await supabase
           .from('database')
-          .select('id, name, score, level, coins, equipped_title, inventory')
+          .select('id, name, score, level, coins, equipped_title')
           .eq('id', userId)
           .maybeSingle();
           
         if (userEntry && !userError) {
-          let userBank2 = 0n;
-          if (userEntry.inventory) {
-              try {
-                  const inv = typeof userEntry.inventory === 'string' ? JSON.parse(userEntry.inventory) : userEntry.inventory;
-                  if (inv.bank2_bananas) userBank2 = BigInt(inv.bank2_bananas);
-              } catch(e) {}
-          }
-          let userTotal = BigInt(userEntry.score || '0') + userBank2;
-          userEntry.score = userTotal.toString();
-          
           // Calculate actual rank
           const { count, error: countError } = await supabase
             .from('database')
@@ -1488,4 +1434,3 @@ app.post("/api/royal-pass/claim", authenticateToken, async (req: any, res) => {
 }
 
 startServer();
-
