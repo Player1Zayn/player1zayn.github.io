@@ -813,15 +813,8 @@
         <div class="p-3 md:p-6 bg-emerald-900 flex flex-row md:flex-col items-center justify-between md:justify-center shrink-0">
           <div class="text-left md:text-center">
             <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-widest md:mb-1"><span id="display-player-name">Player</span>'s Balance</p>
-            <div class="flex flex-col items-end gap-1">
-              <div>
-                <div class="text-[9px] md:text-[10px] text-yellow-500/80 font-black uppercase text-right leading-none mb-1">Bank Account 1</div>
-                <div id="display-bananas" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-yellow-400 drop-shadow-lg leading-none">0 🍌</div>
-              </div>
-              <div id="bank2-container" class="hidden">
-                <div class="text-[9px] md:text-[10px] text-emerald-500/80 font-black uppercase text-right leading-none mb-1">Bank Account 2</div>
-                <div id="display-bank2" class="text-sm sm:text-base md:text-lg font-black text-emerald-400 drop-shadow-lg leading-none">0 🍌</div>
-              </div>
+            <div class="flex flex-col items-end">
+              <div id="display-bananas" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-yellow-400 drop-shadow-lg leading-none">0 🍌</div>
               <div id="display-coins" class="text-lg sm:text-xl md:text-2xl font-black text-yellow-200 drop-shadow-md leading-none mt-1">0 🪙</div>
               <div id="win-streak-badge" class="hidden mt-1 bg-yellow-500 text-yellow-950 px-2 py-0.5 rounded-full text-[10px] md:text-xs font-black animate-pulse shadow-lg border border-yellow-600">
                 STREAK: <span id="win-streak-count">0</span> 🔥
@@ -2085,38 +2078,11 @@
     }
 
     function formatNumber(num) {
-        let n;
-        try {
-            if (typeof num === 'bigint') {
-                n = num;
-            } else if (typeof num === 'string') {
-                // Ensure no scientific notation ruins it
-                const match = num.match(/^-?\d+/);
-                n = match ? BigInt(match[0]) : 0n;
-            } else {
-                n = BigInt(Math.floor(Number(num) || 0));
-            }
-        } catch(e) {
-            n = 0n;
-        }
-        if (n < 1000000n) return n.toLocaleString();
-        
-        const suffixes = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td"];
-        const s = n.toString();
-        const len = s.length;
-        const suffixIndex = Math.floor((len - 1) / 3);
-        
-        const idx = Math.min(suffixIndex, suffixes.length - 1);
-        const divisorLength = idx * 3;
-        
-        const integerPart = s.slice(0, len - divisorLength);
-        const decimalPart = s.slice(len - divisorLength, len - divisorLength + 1);
-        
-        if (decimalPart === '0') {
-            return integerPart + suffixes[idx];
-        } else {
-            return integerPart + '.' + decimalPart + suffixes[idx];
-        }
+        const n = typeof num === 'bigint' ? num : BigInt(Math.floor(num || 0));
+        if (n >= 1000000000000n) return (Number(n / 100000000000n) / 10).toFixed(1).replace(/\.0$/, '') + 'T';
+        if (n >= 1000000000n) return (Number(n / 100000000n) / 10).toFixed(1).replace(/\.0$/, '') + 'B';
+        if (n >= 1000000n) return (Number(n / 100000n) / 10).toFixed(1).replace(/\.0$/, '') + 'M';
+        return n.toLocaleString();
     }
 
     function handleMegaBetEffect(data) {
@@ -2837,8 +2803,8 @@
         document.getElementById('trade-opponent-name').innerText = otherName;
         const myVal = calculateTradeTotal(mySkins);
         const theirVal = calculateTradeTotal(theirSkins);
-        document.getElementById('trade-my-value').innerText = `Value: ${formatNumber(myVal)} 🍌`;
-        document.getElementById('trade-their-value').innerText = `Value: ${formatNumber(theirVal)} 🍌`;
+        document.getElementById('trade-my-value').innerText = `Value: ${myVal.toLocaleString()} 🍌`;
+        document.getElementById('trade-their-value').innerText = `Value: ${theirVal.toLocaleString()} 🍌`;
 
         // Update Slots
         renderTradeSlots('trade-my-slots', mySkins, true);
@@ -3401,8 +3367,8 @@
                         <div class="flex justify-between items-end">
                             <div class="text-[10px] text-emerald-600 italic max-w-[70%] truncate">${log.details || '-'}</div>
                             <div class="flex flex-col items-end">
-                                <span class="${colorClass} font-bold">${prefix}${formatNumber(log.amount)} 🍌</span>
-                                <span class="text-[9px] text-emerald-700">Bal: ${formatNumber(log.balance_after)}</span>
+                                <span class="${colorClass} font-bold">${prefix}${log.amount.toLocaleString()} 🍌</span>
+                                <span class="text-[9px] text-emerald-700">Bal: ${log.balance_after.toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
@@ -3637,7 +3603,7 @@
     function renderShop() {
         const grid = document.getElementById('shop-items-grid');
         const balanceEl = document.getElementById('shop-balance');
-        balanceEl.innerText = `${formatNumber(bananas)} 🍌 | ${formatNumber(coins)} 🪙`;
+        balanceEl.innerText = `${bananas.toLocaleString()} 🍌 | ${coins.toLocaleString()} 🪙`;
 
         let html = '';
         SHOP_ITEMS.forEach((item, i) => {
@@ -3656,7 +3622,7 @@
                 statusHtml = `<div class="bg-emerald-500/20 text-emerald-400 font-black uppercase text-xs px-4 py-2 rounded-xl border border-emerald-500/30">PURCHASED</div>`;
                 cardClass = 'bg-black/60 border-emerald-900/20';
             } else {
-                statusHtml = `<button onclick="buyShopItem(${i})" class="w-full py-4 rounded-2xl font-black text-lg transition-all active:translate-y-1 ${canAfford ? 'bg-amber-500 text-amber-950 shadow-[0_6px_0_rgb(180,83,9)] hover:bg-amber-400' : 'bg-stone-800 text-stone-500 cursor-not-allowed opacity-50 shadow-none'}" ${canAfford ? '' : 'disabled'}>BUY FOR ${formatNumber(item.cost)} 🪙</button>`;
+                statusHtml = `<button onclick="buyShopItem(${i})" class="w-full py-4 rounded-2xl font-black text-lg transition-all active:translate-y-1 ${canAfford ? 'bg-amber-500 text-amber-950 shadow-[0_6px_0_rgb(180,83,9)] hover:bg-amber-400' : 'bg-stone-800 text-stone-500 cursor-not-allowed opacity-50 shadow-none'}" ${canAfford ? '' : 'disabled'}>BUY FOR ${item.cost.toLocaleString()} 🪙</button>`;
                 cardClass = 'bg-black/40 border-amber-900/30 hover:border-amber-500/50 hover:bg-black/50';
             }
 
@@ -4039,7 +4005,7 @@
         const treesOwned = trees.filter(l => l > 0).length;
         
         document.getElementById('tree-modal-title').innerHTML = `🌴 Tree Level ${level}`;
-        document.getElementById('tree-modal-current').innerHTML = `${formatNumber(currentData.reward)} 🍌 <span class="text-sm text-emerald-300">/ ${currentData.ticks}s</span>`;
+        document.getElementById('tree-modal-current').innerHTML = `${currentData.reward.toLocaleString()} 🍌 <span class="text-sm text-emerald-300">/ ${currentData.ticks}s</span>`;
         
         const btn = document.getElementById('tree-modal-btn');
         const sellBtn = document.getElementById('tree-modal-sell-btn');
@@ -4051,7 +4017,7 @@
             sellBtn.classList.add('hidden');
         } else {
             const sellValue = Math.floor(currentData.cost * 0.25);
-            sellBtn.innerText = `SELL TREE (+${formatNumber(sellValue)} 🍌)`;
+            sellBtn.innerText = `SELL TREE (+${sellValue.toLocaleString()} 🍌)`;
             sellBtn.classList.remove('hidden');
         }
 
@@ -4061,8 +4027,8 @@
         } else {
             nextContainer.classList.remove('hidden');
             btn.classList.remove('hidden');
-            document.getElementById('tree-modal-next').innerHTML = `${formatNumber(nextData.reward)} 🍌 <span class="text-sm text-yellow-200/50">/ ${nextData.ticks}s</span>`;
-            document.getElementById('tree-modal-cost').innerText = `Cost: ${formatNumber(nextData.cost)} 🍌`;
+            document.getElementById('tree-modal-next').innerHTML = `${nextData.reward.toLocaleString()} 🍌 <span class="text-sm text-yellow-200/50">/ ${nextData.ticks}s</span>`;
+            document.getElementById('tree-modal-cost').innerText = `Cost: ${nextData.cost.toLocaleString()} 🍌`;
             
             const conditionMet = !nextData.reqAllTrees || treesOwned === 20;
             const canAfford = bananas >= nextData.cost;
@@ -5275,9 +5241,9 @@
                         </div>
                     </td>
                     <td class="px-4 py-3 text-xs font-black uppercase" style="color: ${skin.color}">${skin.rarity}</td>
-                    <td class="px-4 py-3 text-right font-mono text-yellow-400 font-bold">${formatNumber(value)} 🍌</td>
+                    <td class="px-4 py-3 text-right font-mono text-yellow-400 font-bold">${value.toLocaleString()} 🍌</td>
                     <td class="px-4 py-3 text-right rounded-r-xl">
-                        <span class="bg-emerald-950 px-2 py-1 rounded text-[10px] font-bold text-emerald-500 border border-emerald-800">x${formatNumber(count)}</span>
+                        <span class="bg-emerald-950 px-2 py-1 rounded text-[10px] font-bold text-emerald-500 border border-emerald-800">x${count.toLocaleString()}</span>
                     </td>
                 </tr>
             `;
@@ -5482,17 +5448,6 @@
     window.updateGameUI = function() {
       elDisplayPlayerName.innerText = playerName;
       elDisplayBananas.innerText = `${formatNumber(bananas)} 🍌`;
-      
-      const bank2Str = inventory?.bank2_bananas || '0';
-      const bank2Container = document.getElementById('bank2-container');
-      if (bank2Str !== '0') {
-          bank2Container?.classList.remove('hidden');
-          const displayBank2 = document.getElementById('display-bank2');
-          if (displayBank2) displayBank2.innerText = `${formatNumber(BigInt(bank2Str))} 🍌`;
-      } else {
-          bank2Container?.classList.add('hidden');
-      }
-      
       const elDisplayBananasMobileHeader = document.getElementById('display-bananas-mobile');
       if (elDisplayBananasMobileHeader) elDisplayBananasMobileHeader.innerText = `${formatNumber(bananas)} 🍌`;
 
