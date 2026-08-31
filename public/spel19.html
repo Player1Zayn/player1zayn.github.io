@@ -2077,6 +2077,15 @@
       return 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
     }
 
+    function getTotalServerScore(data) {
+        let total = 0n;
+        for (let i = 1; i <= 10; i++) {
+            const key = i === 1 ? 'score' : 'score' + i;
+            try { total += typeof data[key] === 'string' ? BigInt(data[key]) : BigInt(Math.floor(Number(data[key]) || 0)); } catch(e) {}
+        }
+        return total;
+    }
+
     function formatNumber(num) {
         let n;
         try {
@@ -2385,7 +2394,7 @@
           if (data.name) playerName = data.name;
           
           if (data.score !== undefined) {
-            const serverScore = Number(BigInt(data.score || 0) + BigInt(data.score2 || 0));
+            const serverScore = Number(getTotalServerScore(data));
             const serverCoins = Number(data.coins || 0);
             const serverLevel = Number(data.level || 1);
             const serverXp = Number(data.xp || 0);
@@ -2596,7 +2605,7 @@
               
               if (result.user) {
                   const serverData = result.user;
-                  expectedDbBananas = Number(BigInt(serverData.score || 0) + BigInt(serverData.score2 || 0));
+                  expectedDbBananas = Number(getTotalServerScore(serverData));
                   expectedDbCoins = Number(serverData.coins || 0);
               }
 
@@ -2606,7 +2615,7 @@
               console.warn("[SYNC CONFLICT] Updating local state from server.");
               const serverData = result.user;
               isInternalUpdate = true;
-              updateBananas(Number(BigInt(serverData.score || 0) + BigInt(serverData.score2 || 0)));
+              updateBananas(Number(getTotalServerScore(serverData)));
               updateCoins(Number(serverData.coins || 0));
               bananaBox = Number(serverData.banana_box || 0);
               level = Number(serverData.level || 1);
@@ -2618,7 +2627,7 @@
               equippedTitle = serverData.equipped_title || null;
               isInternalUpdate = false;
               
-              expectedDbBananas = Number(BigInt(serverData.score || 0) + BigInt(serverData.score2 || 0)); 
+              expectedDbBananas = Number(getTotalServerScore(serverData)); 
               expectedDbCoins = Number(serverData.coins || 0);
 
               if (serverData.trees) {
@@ -3208,13 +3217,13 @@
             playerName = data.name;
             bananaBox = Number(data.banana_box || 0);
             isInternalUpdate = true;
-            updateBananas(Number(BigInt(data.score || 0) + BigInt(data.score2 || 0)));
+            updateBananas(Number(getTotalServerScore(data)));
             updateCoins(Number(data.coins || 0));
             level = Number(data.level || 1);
             updateXp(Number(data.xp || 0));
             
             // Reset expected state to sync correctly next time
-            expectedDbBananas = Number(BigInt(data.score || 0) + BigInt(data.score2 || 0));
+            expectedDbBananas = Number(getTotalServerScore(data));
             expectedDbCoins = Number(data.coins || 0);
             if (data.unlocked_titles) {
                 unlockedTitles = typeof data.unlocked_titles === 'string' ? JSON.parse(data.unlocked_titles) : data.unlocked_titles;
@@ -5860,12 +5869,8 @@
         const userLevel = lbUser.level || 1;
         const userRank = lbUser.rank || (index + 1);
         
-        // Handle BIGINT strings from Supabase (combining score and score2 for Banana Cap)
-        let score1 = 0n;
-        let score2 = 0n;
-        try { score1 = typeof lbUser.score === 'string' ? BigInt(lbUser.score) : BigInt(lbUser.score || 0); } catch(e){}
-        try { score2 = typeof lbUser.score2 === 'string' ? BigInt(lbUser.score2) : BigInt(lbUser.score2 || 0); } catch(e){}
-        const score = score1 + score2;
+        // Handle BIGINT strings from Supabase (combining score1-10 for Banana Cap)
+        const score = getTotalServerScore(lbUser);
         
         const coinsVal = typeof lbUser.coins === 'string' ? BigInt(lbUser.coins) : BigInt(lbUser.coins || 0);
         
