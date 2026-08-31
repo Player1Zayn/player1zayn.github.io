@@ -45,6 +45,28 @@ const activeCrashGames = new Map<string, { betAmount: bigint, crashPoint: number
 const activeHiloGames = new Map<string, { betAmount: bigint, firstCard: { rank: string, suit: string, value: number } }>();
 const BANANA_CAP = 9221832110301902000n;
 
+function getTotalScore(userData: any): bigint {
+    let total = BigInt(userData.score || 0);
+    for (let i = 2; i <= 10; i++) {
+        total += BigInt(userData[`score${i}`] || 0);
+    }
+    return total;
+}
+
+function distributeScore(totalScore: bigint): any {
+    let remaining = totalScore;
+    let payload: any = {};
+    
+    payload.score = String(remaining > BANANA_CAP ? BANANA_CAP : remaining);
+    remaining = remaining > BANANA_CAP ? remaining - BANANA_CAP : 0n;
+    
+    for (let i = 2; i <= 10; i++) {
+        payload[`score${i}`] = String(remaining > BANANA_CAP ? BANANA_CAP : remaining);
+        remaining = remaining > BANANA_CAP ? remaining - BANANA_CAP : 0n;
+    }
+    return payload;
+}
+
 // Middleware to verify JWT
 const authenticateToken = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
@@ -97,6 +119,14 @@ app.post("/api/register", async (req, res) => {
       password: hashedPassword,
       score: 0,
       score2: 0,
+      score3: 0,
+      score4: 0,
+      score5: 0,
+      score6: 0,
+      score7: 0,
+      score8: 0,
+      score9: 0,
+      score10: 0,
       coins: 0,
       banana_box: 0,
       level: 1,
@@ -186,7 +216,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     // 1. Fetch current state to check for conflicts
     const { data: current, error: fetchError } = await supabase
       .from('database')
-      .select('score, score2, coins, unlocked_titles, updated_at')
+      .select('score, score2, score3, score4, score5, score6, score7, score8, score9, score10, coins, unlocked_titles, updated_at')
       .eq('id', userId)
       .maybeSingle();
 
@@ -199,7 +229,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     
     // 2. Conflict Detection (Optimistic Concurrency Control)
     if (current && !isForceSync && expectedScore !== undefined && expectedCoins !== undefined) {
-        const serverScore = String(BigInt(current.score || 0) + BigInt(current.score2 || 0));
+        const serverScore = String(getTotalScore(current));
         const serverCoins = String(current.coins);
         const clientExpectedScore = String(expectedScore);
         const clientExpectedCoins = String(expectedCoins);
@@ -214,6 +244,14 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
                 // Ensure BIGINTs are strings for JSON
                 userData.score = String(userData.score);
                 userData.score2 = String(userData.score2 || '0');
+                userData.score3 = String(userData.score3 || '0');
+                userData.score4 = String(userData.score4 || '0');
+                userData.score5 = String(userData.score5 || '0');
+                userData.score6 = String(userData.score6 || '0');
+                userData.score7 = String(userData.score7 || '0');
+                userData.score8 = String(userData.score8 || '0');
+                userData.score9 = String(userData.score9 || '0');
+                userData.score10 = String(userData.score10 || '0');
                 userData.coins = String(userData.coins);
                 userData.xp = String(userData.xp);
                 userData.banana_box = String(userData.banana_box);
@@ -235,18 +273,12 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     console.log(`[UPSERT START] User: ${userId}`);
     
     const totalScore = BigInt(score || 0);
-    let s1 = totalScore;
-    let s2 = 0n;
-    if (s1 > BANANA_CAP) {
-        s2 = s1 - BANANA_CAP;
-        s1 = BANANA_CAP;
-    }
+    const scorePayload = distributeScore(totalScore);
 
     const { error: upsertError } = await supabase.from('database').upsert({
       id: userId,
       name,
-      score: String(s1), 
-      score2: String(s2),
+      ...scorePayload,
       coins: String(coins), 
       banana_box: String(bananaBox || 0),
       trees: JSON.stringify(trees),
@@ -489,7 +521,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             }
         }
 
-        let currentBananas = BigInt(user.score || 0) + BigInt(user.score2 || 0);
+        let currentBananas = getTotalScore(user);
         let winStreak = Number(user.win_streak || 0);
         
         // Ensure betAmount is a valid number/string before converting to BigInt
@@ -764,16 +796,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
 
         const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
         
-        let s1 = newBananas;
-        let s2 = 0n;
-        if (s1 > BANANA_CAP) {
-            s2 = s1 - BANANA_CAP;
-            s1 = BANANA_CAP;
-        }
-
         let updatePayload: any = {
-            score: String(s1),
-            score2: String(s2),
+            ...distributeScore(newBananas),
             win_streak: winStreak,
             updated_at: new Date().toISOString()
         };
@@ -915,13 +939,17 @@ app.get("/api/leaderboard", async (req, res) => {
     
     // 1. Fetch Top 50
     // We query the 'database' table directly to ensure 100% accuracy
-    const { data: top50, error: top50Error } = await supabase
+    let query = supabase
       .from('database')
-      .select('id, name, score, score2, level, coins, equipped_title')
-      .or('banned.eq.false,banned.is.null')
-      .order('score2', { ascending: false, nullsFirst: false })
-      .order('score', { ascending: false })
-      .limit(50);
+      .select('id, name, score, score2, score3, score4, score5, score6, score7, score8, score9, score10, level, coins, equipped_title')
+      .or('banned.eq.false,banned.is.null');
+
+    for (let i = 10; i >= 2; i--) {
+        query = query.order(`score${i}`, { ascending: false, nullsFirst: false });
+    }
+    query = query.order('score', { ascending: false });
+
+    const { data: top50, error: top50Error } = await query.limit(50);
 
     if (top50Error) {
       console.error("Supabase top50 error:", top50Error);
@@ -938,21 +966,36 @@ app.get("/api/leaderboard", async (req, res) => {
         // Fetch user entry
         const { data: userEntry, error: userError } = await supabase
           .from('database')
-          .select('id, name, score, score2, level, coins, equipped_title')
+          .select('id, name, score, score2, score3, score4, score5, score6, score7, score8, score9, score10, level, coins, equipped_title')
           .eq('id', userId)
           .maybeSingle();
           
         if (userEntry && !userError) {
-          // Calculate actual rank
-          // We must count users where score2 > userEntry.score2 OR (score2 == userEntry.score2 AND score > userEntry.score)
-          const score2Val = userEntry.score2 || 0;
-          const scoreVal = userEntry.score || 0;
+          // Calculate actual rank dynamically for 10 score columns
+          let orQuery = [];
+          for (let i = 10; i >= 1; i--) {
+              let condition = [];
+              for (let j = 10; j > i; j--) {
+                  const colJ = j === 1 ? 'score' : `score${j}`;
+                  const valJ = userEntry[colJ] || 0;
+                  condition.push(`${colJ}.eq.${valJ}`);
+              }
+              const colI = i === 1 ? 'score' : `score${i}`;
+              const valI = userEntry[colI] || 0;
+              condition.push(`${colI}.gt.${valI}`);
+              if (condition.length === 1) {
+                  orQuery.push(condition[0]);
+              } else {
+                  orQuery.push(`and(${condition.join(',')})`);
+              }
+          }
+          const finalOrString = orQuery.join(',');
           
           const { count, error: countError } = await supabase
             .from('database')
             .select('*', { count: 'exact', head: true })
             .or('banned.eq.false,banned.is.null')
-            .or(`score2.gt.${score2Val},and(score2.eq.${score2Val},score.gt.${scoreVal})`);
+            .or(finalOrString);
             
           const rank = (count || 0) + 1;
           result.push({ ...userEntry, isTail: true, rank });
