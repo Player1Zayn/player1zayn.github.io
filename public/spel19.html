@@ -939,6 +939,7 @@
               <button onclick="setGameMode('crash')" id="tab-crash" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">CRASH</button>
               <button onclick="setGameMode('hilo')" id="tab-hilo" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">HI-LO</button>
               <button onclick="setGameMode('cases')" id="tab-cases" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">CASES</button>
+              <button onclick="setGameMode('tower')" id="tab-tower" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">TOWER</button>
             </div>
         </div>
         
@@ -1201,8 +1202,24 @@
                     <!-- Inventory items will be injected here -->
                 </div>
             </div>
-          </div>
+          </div>          <!-- Game: TOWER -->
+          <div id="area-tower" class="w-full h-full flex flex-col items-center justify-center hidden">
+              <div class="text-center mb-2">
+                  <h2 class="text-2xl font-black text-emerald-400">TOWER</h2>
+                  <p class="text-emerald-500 text-sm">Climb to multiply your bananas!</p>
+              </div>
+              <div class="flex-1 flex flex-col-reverse justify-start gap-1.5 w-full max-w-sm mb-4 relative overflow-y-auto custom-scroll px-2" id="tower-grid"></div>
+              
+              <div id="tower-actions" class="flex flex-col items-center gap-2 mb-2 w-full max-w-sm shrink-0 hidden">
+                  <div class="flex gap-2 w-full justify-center px-2">
+                    <div class="text-xs text-slate-400 uppercase tracking-widest font-bold">Multiplier: <span class="text-yellow-400 font-black" id="tower-current-mult">1.00x</span></div>
+                  </div>
+                  <div class="flex gap-2 w-full">
+                      <button id="tower-cashout-btn" onclick="handleTowerCashout()" class="flex-1 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-emerald-950 font-black text-lg transition-colors shadow-lg active:scale-95 border-b-4 border-yellow-700">CASHOUT</button>
+                  </div>
+              </div>
 
+          </div>
           <div id="spin-result-msg" class="mt-2 md:mt-4 min-h-[2rem] md:min-h-[2.5rem] text-base sm:text-xl md:text-2xl font-black text-center text-yellow-400 drop-shadow-md px-2 w-full break-words shrink-0">Welcome to Casino!</div>
         </div>
 
@@ -2060,12 +2077,14 @@
     const areaCrash = document.getElementById('area-crash');
     const areaHilo = document.getElementById('area-hilo');
     const areaCases = document.getElementById('area-cases');
+    const areaTower = document.getElementById('area-tower');
     const tabRoulette = document.getElementById('tab-roulette');
     const tabSlots = document.getElementById('tab-slots');
     const tabBlackjack = document.getElementById('tab-blackjack');
     const tabCrash = document.getElementById('tab-crash');
     const tabHilo = document.getElementById('tab-hilo');
     const tabCases = document.getElementById('tab-cases');
+    const tabTower = document.getElementById('tab-tower');
 
     // Controls areas
     const controlColors = document.getElementById('bet-color-picker');
@@ -4207,6 +4226,14 @@
             playCrash();
             playSound('click');
         }
+      
+        
+
+      } else if (gameMode === 'tower') {
+        if (towerState === 'idle') handleTowerStart();
+      
+        
+
       } else if (gameMode === 'hilo') {
         if (hiloState === 'betting' || hiloState === 'gameOver') {
             playHilo();
@@ -4326,6 +4353,200 @@
             isPlaying = false;
             spinResultMsg = "Error: " + parseError(err);
             updateGameUI();
+        }
+    }
+
+
+    // --- TOWER LOGIC ---
+    let towerState = "idle";
+    let towerFloor = 0;
+    let towerMult = 1.0;
+    let towerTraps = [];
+    let towerHistory = [];
+
+    async function handleTowerStart() {
+        if (towerState === "playing") return;
+        const betAmt = Math.floor(Number(betAmount));
+        if (isNaN(betAmt) || betAmt <= 0 || betAmt > bananas) {
+            spinResultMsg = "Invalid bet amount!";
+            updateGameUI();
+            return;
+        }
+
+        isPlaying = true;
+        towerState = "playing";
+        spinResultMsg = "Starting Tower...";
+        updateGameUI();
+        
+        try {
+            const response = await fetch(API_BASE + "/api/play", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
+                body: JSON.stringify({ gameMode: "tower_start", betAmount: betAmt })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Server error");
+            
+            isInternalUpdate = true;
+            updateBananas(Number(data.newBalance));
+            expectedDbBananas = Number(data.newBalance);
+            isInternalUpdate = false;
+            
+            towerFloor = 0;
+            towerMult = data.result.nextMultiplier;
+            towerTraps = [];
+            towerHistory = [];
+            
+            spinResultMsg = "Choose a safe tile!";
+            renderTowerGrid();
+            updateGameUI();
+        } catch (e) {
+            console.error(e);
+            spinResultMsg = "Error starting game: " + e.message;
+            towerState = "idle";
+        }
+        isPlaying = false;
+        updateGameUI();
+    }
+
+    async function handleTowerPick(floor, pickIndex) {
+        if (towerState !== "playing" || floor !== towerFloor || isPlaying) return;
+        isPlaying = true;
+        spinResultMsg = "Revealing...";
+        updateGameUI();
+        
+        try {
+            const response = await fetch(API_BASE + "/api/play", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
+                body: JSON.stringify({ gameMode: "tower_pick", betAmount: 0, pickIndex: pickIndex })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Server error");
+            
+            isInternalUpdate = true;
+            updateBananas(Number(data.newBalance));
+            expectedDbBananas = Number(data.newBalance);
+            isInternalUpdate = false;
+            
+            const res = data.result;
+            if (res.status === "safe") {
+                towerFloor = res.floor;
+                towerMult = res.nextMultiplier;
+                towerHistory.push(pickIndex);
+                spinResultMsg = "Safe! Cashout or continue?";
+                playSound("win");
+            } else if (res.status === "loss") {
+                towerState = "idle";
+                towerTraps = res.trapPositions;
+                spinResultMsg = "BOOM! You hit a trap!";
+                playSound("loss");
+            } else if (res.status === "win_all") {
+                towerState = "idle";
+                towerTraps = res.trapPositions;
+                towerHistory.push(pickIndex);
+                spinResultMsg = "Tower Cleared! Won " + formatNumber(res.winAmount) + " 🍌!";
+                playSound("win");
+            }
+            renderTowerGrid(res.floor, res.pick);
+        } catch (e) {
+            console.error(e);
+            spinResultMsg = "Error picking tile.";
+        }
+        isPlaying = false;
+        updateGameUI();
+    }
+
+    async function handleTowerCashout() {
+        if (towerState !== "playing" || towerFloor === 0 || isPlaying) return;
+        isPlaying = true;
+        spinResultMsg = "Cashing out...";
+        updateGameUI();
+        
+        try {
+            const response = await fetch(API_BASE + "/api/play", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
+                body: JSON.stringify({ gameMode: "tower_cashout", betAmount: 0 })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Server error");
+            
+            isInternalUpdate = true;
+            updateBananas(Number(data.newBalance));
+            expectedDbBananas = Number(data.newBalance);
+            isInternalUpdate = false;
+            
+            const res = data.result;
+            towerState = "idle";
+            towerTraps = res.trapPositions;
+            spinResultMsg = "Cashed out! Won " + formatNumber(res.winAmount) + " 🍌!";
+            playSound("win");
+            renderTowerGrid();
+        } catch (e) {
+            console.error(e);
+            spinResultMsg = "Error cashing out.";
+        }
+        isPlaying = false;
+        updateGameUI();
+    }
+
+    function renderTowerGrid(revealedFloor = -1, revealedPick = -1) {
+        const grid = document.getElementById("tower-grid");
+        if (!grid) return;
+        grid.innerHTML = "";
+        
+        for (let i = 0; i < 10; i++) {
+            const isCurrent = (towerState === "playing" && i === towerFloor);
+            const isPast = (i < towerFloor) || (towerState === "idle" && i <= revealedFloor);
+            const isFuture = (i > towerFloor) && towerState === "playing";
+            
+            const row = document.createElement("div");
+            row.className = "flex gap-2 w-full p-2 rounded-xl border-2 transition-all " + (isCurrent ? "bg-emerald-900 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse" : (isPast ? "bg-emerald-950/50 border-emerald-900" : "bg-slate-900 border-slate-800 opacity-50"));
+            
+            for (let j = 0; j < 3; j++) {
+                const btn = document.createElement("button");
+                btn.className = "flex-1 h-12 rounded-lg font-black text-2xl transition-all " + (isCurrent ? "bg-slate-800 hover:bg-slate-700 hover:scale-105 active:scale-95 border-b-4 border-slate-900" : "bg-slate-950 border-b-4 border-slate-900 cursor-not-allowed");
+                
+                if (isCurrent) {
+                    btn.onclick = () => handleTowerPick(i, j);
+                    btn.innerText = "❓";
+                } else if (isPast) {
+                    if (towerState === "idle" && towerTraps.length > 0) {
+                        if (towerTraps[i] === j) {
+                            btn.innerText = "💣";
+                            btn.classList.add("bg-red-900/50", "border-red-950");
+                        } else {
+                            btn.innerText = "🍌";
+                            btn.classList.add("bg-green-900/50", "border-green-950", "opacity-50");
+                            if (towerHistory[i] === j) {
+                                btn.classList.remove("opacity-50");
+                                btn.classList.add("bg-green-600", "border-green-800");
+                            }
+                        }
+                    } else if (towerState === "playing" && i < towerFloor) {
+                        if (towerHistory[i] === j) {
+                            btn.innerText = "🍌";
+                            btn.classList.add("bg-green-600", "border-green-800");
+                        } else {
+                            btn.innerText = "✅";
+                            btn.classList.add("bg-green-900/20", "border-green-950/20", "opacity-50");
+                        }
+                    }
+                } else {
+                    btn.innerText = "🔒";
+                }
+                row.appendChild(btn);
+            }
+            const multLabel = document.createElement("div");
+            const mults = [1.3, 1.8, 2.5, 3.5, 4.9, 7.0, 10.0, 14.5, 21.0, 31.0];
+            multLabel.className = "absolute -left-6 md:-left-8 font-black text-[10px] w-6 text-right " + (isCurrent ? "text-yellow-400" : "text-slate-600");
+            multLabel.innerText = mults[i] + "x";
+            multLabel.style.alignSelf = "center";
+            row.style.position = "relative";
+            row.appendChild(multLabel);
+            
+            grid.appendChild(row);
         }
     }
 
@@ -5565,7 +5786,7 @@
       renderGadgets();
       
       // Update Tab Styling
-      [tabRoulette, tabSlots, tabBlackjack, tabCrash, tabHilo, tabCases].forEach(t => { 
+      [tabRoulette, tabSlots, tabBlackjack, tabCrash, tabHilo, tabCases, tabTower].forEach(t => { 
         if (!t) return;
         t.classList.remove('bg-emerald-800', 'text-white', 'border-transparent'); 
         t.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); 
@@ -5576,6 +5797,7 @@
       if (gameMode === 'crash') { tabCrash?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabCrash?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'hilo') { tabHilo?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabHilo?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'cases') { tabCases.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabCases.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
+      if (gameMode === 'tower') { tabTower?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabTower?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); const tGrid = document.getElementById('tower-grid'); if (tGrid && tGrid.innerHTML === '') renderTowerGrid(); }
       
       // Toggle Areas
       areaRoulette.classList.toggle('hidden', gameMode !== 'roulette');
@@ -5584,6 +5806,7 @@
       areaCrash?.classList.toggle('hidden', gameMode !== 'crash');
       areaHilo?.classList.toggle('hidden', gameMode !== 'hilo');
       areaCases.classList.toggle('hidden', gameMode !== 'cases');
+      if (areaTower) areaTower.classList.toggle('hidden', gameMode !== 'tower');
 
       const elBettingControls = document.getElementById('betting-controls-container');
       if (elBettingControls) {
@@ -5658,6 +5881,7 @@
       if (gameMode === 'blackjack' && bjState === 'playing') canAction = false; 
       if (gameMode === 'hilo' && (hiloState === 'guessing' || hiloState === 'resolving')) canAction = false;
       if (gameMode === 'crash' && crashState === 'flying') canAction = false;
+      if (gameMode === 'tower' && towerState === 'playing') canAction = false;
       if (gameMode === 'slots' && isBonusBet && (betAmount + currentBonusBet) > bananas) canAction = false;
 
       elMainActionBtn.disabled = !canAction;
@@ -5668,6 +5892,7 @@
       else if (gameMode === 'blackjack') { elMainActionBtn.innerText = (bjState === 'gameOver') ? "DEAL AGAIN" : "DEAL"; }
       else if (gameMode === 'hilo') { elMainActionBtn.innerText = (hiloState === 'gameOver') ? "PLAY AGAIN" : "PLAY HI-LO"; }
       else if (gameMode === 'crash') { elMainActionBtn.innerText = "START FLIGHT"; }
+      else if (gameMode === 'tower') { elMainActionBtn.innerText = "PLAY TOWER"; }
       else { elMainActionBtn.innerText = "SPIN"; }
 
       // Blackjack specifics logic
@@ -5682,6 +5907,23 @@
         
         document.getElementById('player-score').innerText = bjPlayer.length ? calcScore(bjPlayer) : '0';
         document.getElementById('dealer-score').innerText = bjDealer.length ? (bjState === 'playing' ? calcScore([bjDealer[0]]) : calcScore(bjDealer)) : '?';
+      
+        
+
+            } else if (gameMode === 'tower') {
+        const showTowerActions = towerState === 'playing';
+        const tActions = document.getElementById('tower-actions');
+        if (tActions) tActions.classList.toggle('hidden', !showTowerActions);
+        elMainActionBtn.classList.toggle('hidden', showTowerActions);
+        controlAmount.classList.toggle('hidden', showTowerActions);
+        
+        const elTowerMult = document.getElementById("tower-current-mult");
+        if (elTowerMult) elTowerMult.innerText = (towerState === "playing" ? towerMult.toFixed(2) : "1.00") + "x";
+        
+        const elTowerCashout = document.getElementById("tower-cashout-btn");
+        if (elTowerCashout) {
+            elTowerCashout.disabled = isPlaying;
+        }
       } else if (gameMode === 'hilo') {
         const showHiloActions = hiloState === 'guessing' || hiloState === 'resolving';
         document.getElementById('hilo-actions').classList.toggle('hidden', !showHiloActions);
@@ -5692,6 +5934,7 @@
       } else {
         controlBjActions.classList.add('hidden');
         document.getElementById('hilo-actions')?.classList.add('hidden');
+        document.getElementById('tower-actions')?.classList.add('hidden');
         elMainActionBtn.classList.remove('hidden');
         controlAmount.classList.remove('hidden');
       }
@@ -6244,7 +6487,7 @@
         toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
         handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle, forceSync, openCase, massOpenCase, showCasesInventory, closeCaseResult, sellSkin,
         openSkinValuesModal, closeSkinValuesModal, updateSkinValuesTable,
-        openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, sellSkinToMerchant, cashOutCrash, hiloGuess
+        openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, sellSkinToMerchant, cashOutCrash, hiloGuess, handleTowerStart, handleTowerPick, handleTowerCashout
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
