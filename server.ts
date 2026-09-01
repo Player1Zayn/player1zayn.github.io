@@ -43,6 +43,8 @@ function getSupabase() {
 const JWT_SECRET = process.env.JWT_SECRET || "banana_secret_monkey_business";
 const activeCrashGames = new Map<string, { betAmount: bigint, crashPoint: number }>();
 const activeHiloGames = new Map<string, { betAmount: bigint, firstCard: { rank: string, suit: string, value: number } }>();
+const activeTowerGames = new Map<string, { betAmount: bigint, floor: number, trapPositions: number[] }>();
+const TOWER_MULTIPLIERS = [1.3, 1.8, 2.5, 3.5, 4.9, 7.0, 10.0, 14.5, 21.0, 31.0];
 const BANANA_CAP = 9221832110301902000n;
 
 function getTotalScore(userData: any): bigint {
@@ -717,6 +719,68 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             }
             resultData.winAmount = winAmount.toString();
             resultData.secondCard = cardObj;
+            totalBet = 0n; // Bet was already deducted
+        } else if (gameMode === 'tower_start') {
+            if (activeTowerGames.has(user.id)) return res.status(400).json({ error: "Tower game already active" });
+            const traps = [];
+            for (let i = 0; i < 10; i++) traps.push(Math.floor(Math.random() * 3));
+            activeTowerGames.set(user.id, { betAmount: totalBet, floor: 0, trapPositions: traps });
+            winAmount = 0n;
+            resultData.status = 'started';
+            resultData.floor = 0;
+            resultData.nextMultiplier = TOWER_MULTIPLIERS[0];
+        } else if (gameMode === 'tower_pick') {
+            const activeGame = activeTowerGames.get(user.id);
+            if (!activeGame) return res.status(400).json({ error: "No active tower game" });
+            const pickIndex = req.body.pickIndex;
+            if (pickIndex < 0 || pickIndex > 2) return res.status(400).json({ error: "Invalid pick" });
+            
+            const currentFloor = activeGame.floor;
+            if (currentFloor >= 10) return res.status(400).json({ error: "Tower completed" });
+            
+            const isTrap = activeGame.trapPositions[currentFloor] === pickIndex;
+            
+            if (isTrap) {
+                activeTowerGames.delete(user.id);
+                winAmount = 0n;
+                resultData.status = 'loss';
+                resultData.trapPositions = activeGame.trapPositions;
+                resultData.floor = currentFloor;
+                resultData.pick = pickIndex;
+            } else {
+                activeGame.floor++;
+                if (activeGame.floor >= 10) {
+                    const finalMult = TOWER_MULTIPLIERS[9];
+                    winAmount = BigInt(Math.floor(Number(activeGame.betAmount) * finalMult));
+                    activeTowerGames.delete(user.id);
+                    resultData.status = 'win_all';
+                    resultData.winAmount = winAmount.toString();
+                    resultData.trapPositions = activeGame.trapPositions;
+                    resultData.floor = 10;
+                    resultData.pick = pickIndex;
+                } else {
+                    winAmount = 0n;
+                    resultData.status = 'safe';
+                    resultData.floor = activeGame.floor;
+                    resultData.nextMultiplier = TOWER_MULTIPLIERS[activeGame.floor];
+                    resultData.pick = pickIndex;
+                }
+            }
+            totalBet = 0n; // Bet was already deducted
+        } else if (gameMode === 'tower_cashout') {
+            const activeGame = activeTowerGames.get(user.id);
+            if (!activeGame) return res.status(400).json({ error: "No active tower game" });
+            if (activeGame.floor === 0) return res.status(400).json({ error: "Cannot cashout on floor 0" });
+            
+            const currentMult = TOWER_MULTIPLIERS[activeGame.floor - 1];
+            winAmount = BigInt(Math.floor(Number(activeGame.betAmount) * currentMult));
+            
+            resultData.status = 'cashout';
+            resultData.winAmount = winAmount.toString();
+            resultData.trapPositions = activeGame.trapPositions;
+            resultData.floor = activeGame.floor;
+            
+            activeTowerGames.delete(user.id);
             totalBet = 0n; // Bet was already deducted
         } else if (gameMode === 'cases') {
             const caseType = req.body.caseType; 
