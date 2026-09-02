@@ -1756,6 +1756,19 @@
         const delay = isAutoBetting ? 0 : 2000;
         syncTimeout = setTimeout(() => syncData(bananas, trees), delay);
     }
+    function updateApples(newVal) {
+        if (!isInternalUpdate && newVal !== apples) {
+            banUser();
+            return;
+        }
+        if (!isInternalUpdate && newVal !== apples) balanceDirty = true;
+        apples = newVal;
+        if (typeof updateGameUI === 'function') updateGameUI();
+        
+        clearTimeout(syncTimeout);
+        const delay = isAutoBetting ? 0 : 2000;
+        syncTimeout = setTimeout(() => syncData(bananas, trees), delay);
+    }
 
     function updateCoins(newVal) {
         if (!isInternalUpdate && newVal !== coins) {
@@ -2588,7 +2601,7 @@
       
       // Update local storage first
       const saveData = { 
-          id: userId, userId, name: finalName, bananas: currentBananas, bananaBox, coins,
+          id: userId, userId, name: finalName, bananas: currentBananas, apples, bananaBox, coins,
           trees: currentTreesArray, gadgets: unlockedGadgets, activeGadgets, level, xp,
           unlockedTitles, equippedTitle, inventory, shopStock, shopPurchased, shopRefreshTime, activeBoosts,
           expectedDbBananas, expectedDbCoins,
@@ -2608,6 +2621,7 @@
                   userId,
                   name: finalName,
                   score: typeof currentBananas === 'number' ? BigInt(Math.floor(currentBananas || 0)).toString() : String(currentBananas),
+                  apples: String(apples),
                   coins: String(coins),
                   bananaBox: String(bananaBox),
                   trees: currentTreesArray,
@@ -2644,6 +2658,7 @@
               const serverData = result.user;
               isInternalUpdate = true;
               updateBananas(Number(getTotalServerScore(serverData)));
+              updateApples(Number(serverData.apples || 0));
               updateCoins(Number(serverData.coins || 0));
               bananaBox = Number(serverData.banana_box || 0);
               level = Number(serverData.level || 1);
@@ -5524,23 +5539,23 @@
 
     const BANANA_CAP = 999999000000000000n;
 
-    window.updateApples = function(newVal) {
-        apples = newVal;
-        if (typeof updateGameUI === 'function') updateGameUI();
-        balanceDirty = true;
-    }
+
     
     window.claimStarterApples = function() {
         if (apples === 0 && BigInt(Math.floor(Number(bananas))) >= BANANA_CAP) {
+            isInternalUpdate = true;
             updateApples(10);
+            isInternalUpdate = false;
             document.getElementById('btn-claim-starter-apples').style.display = 'none';
         }
     }
     
     window.convertBananasToApples = function() {
         if (bananas >= 1000000) {
+            isInternalUpdate = true;
             updateBananas(bananas - 1000000);
             updateApples(apples + 1);
+            isInternalUpdate = false;
         } else {
             showToast('Not enough Bananas!', 'error');
         }
@@ -6332,7 +6347,7 @@
     }
 
     // Expose necessary functions to window for HTML event handlers (Read-only to prevent console modification)
-    const exposedFunctions = {
+    const exposedFunctions = { setBetCurrency,
         closeHistoryModal, closeTreeModal, upgradeTree, handleSellTree, setView,
         enterCasino: () => {}, // Deprecated but kept for safety
         handleBuyTree, setSidebarView, toggleMute, openHistoryModal,
