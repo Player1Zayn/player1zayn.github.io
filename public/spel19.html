@@ -693,6 +693,29 @@
           <!-- Active Boosts Bar -->
           <div id="active-boosts-container" class="mb-12 flex flex-wrap gap-4 justify-center"></div>
 
+          <!-- Apple Trading Event -->
+          <div id="apple-trading-banner" class="hidden mb-12 bg-gradient-to-r from-red-600 via-red-500 to-red-600 p-1 rounded-[2.5rem] shadow-[0_15px_30px_rgba(239,68,6,0.3)] group transition-all">
+            <div class="bg-emerald-950/90 rounded-[2.3rem] p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10 relative overflow-hidden">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
+                <div class="relative w-32 h-32 md:w-40 md:h-40 bg-red-500 rounded-3xl rotate-12 flex items-center justify-center text-7xl md:text-8xl shadow-2xl group-hover:rotate-0 transition-transform duration-500 border-4 border-red-400/50">
+                    🍎
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <div class="inline-block bg-red-500 text-red-950 text-[10px] font-black px-3 py-1 rounded-full uppercase mb-3">MAX CAP REACHED</div>
+                    <h3 class="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter leading-tight mb-2">Apple Market</h3>
+                    <p class="text-emerald-400 font-bold mb-6 max-w-md">You've reached the absolute banana limit! Toverland offers you <span class="text-red-400">10 Starter Apples</span> or you can convert Bananas directly to Apples!</p>
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                        <button id="btn-claim-starter-apples" onclick="claimStarterApples()" class="bg-red-500 hover:bg-red-400 text-red-950 font-black py-4 px-6 rounded-2xl text-lg shadow-[0_6px_0_rgb(153,27,27)] transition-all active:translate-y-1 active:shadow-none">
+                            CLAIM 10 🍎
+                        </button>
+                        <button onclick="convertBananasToApples()" class="bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-black py-4 px-6 rounded-2xl text-lg shadow-[0_6px_0_rgb(161,98,7)] transition-all active:translate-y-1 active:shadow-none">
+                            1M 🍌 ➡️ 1 🍎
+                        </button>
+                    </div>
+                </div>
+            </div>
+          </div>
+          
           <!-- Royal Banana Pass Banner -->
           <div class="mb-12 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 p-1 rounded-[2.5rem] shadow-[0_15px_30px_rgba(245,158,11,0.3)] group hover:scale-[1.02] transition-all cursor-pointer" onclick="openRoyalPass()">
             <div class="bg-emerald-950/90 rounded-[2.3rem] p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10 relative overflow-hidden">
@@ -816,6 +839,7 @@
             <div class="flex flex-col items-end">
               <div id="display-bananas" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-yellow-400 drop-shadow-lg leading-none">0 🍌</div>
               <div id="display-coins" class="text-lg sm:text-xl md:text-2xl font-black text-yellow-200 drop-shadow-md leading-none mt-1">0 🪙</div>
+              <div id="display-apples" class="hidden text-lg sm:text-xl md:text-2xl font-black text-red-500 drop-shadow-md leading-none mt-1">0 🍎</div>
               <div id="win-streak-badge" class="hidden mt-1 bg-yellow-500 text-yellow-950 px-2 py-0.5 rounded-full text-[10px] md:text-xs font-black animate-pulse shadow-lg border border-yellow-600">
                 STREAK: <span id="win-streak-count">0</span> 🔥
               </div>
@@ -1259,6 +1283,10 @@
             
             <!-- Universal Bet Amount Input -->
             <div id="bet-amount-container" class="flex gap-1.5 md:gap-2 h-10 md:h-12">
+              <div id="currency-toggle" class="hidden flex gap-1">
+                <button onclick="setBetCurrency('bananas')" id="btn-currency-bananas" class="bg-yellow-500/20 border-2 border-yellow-400 px-2 rounded-lg text-lg opacity-100 hover:bg-yellow-500/40 transition-all">🍌</button>
+                <button onclick="setBetCurrency('apples')" id="btn-currency-apples" class="bg-red-500/10 border-2 border-transparent px-2 rounded-lg text-lg opacity-50 hover:bg-red-500/30 transition-all">🍎</button>
+              </div>
               <input 
                 type="number" 
                 id="bet-amount-input"
@@ -1693,6 +1721,8 @@
     let level = 1;
     let xp = 0;
     let bananas = 150;
+    let apples = 0;
+    let betCurrency = "bananas";
     let bananaBox = 0;
     let coins = 0;
     let isInternalUpdate = false;
@@ -2079,10 +2109,7 @@
 
     function getTotalServerScore(data) {
         let total = 0n;
-        for (let i = 1; i <= 10; i++) {
-            const key = i === 1 ? 'score' : 'score' + i;
-            try { total += typeof data[key] === 'string' ? BigInt(data[key]) : BigInt(Math.floor(Number(data[key]) || 0)); } catch(e) {}
-        }
+        try { total += typeof data.score === 'string' ? BigInt(data.score) : BigInt(Math.floor(Number(data.score) || 0)); } catch(e) {}
         return total;
     }
 
@@ -2237,6 +2264,7 @@
           playerName = data.name || '';
           isInternalUpdate = true;
           updateBananas(typeof data.bananas === 'number' ? data.bananas : 0);
+          updateApples(typeof data.apples === 'number' ? data.apples : 0);
           bananaBox = typeof data.bananaBox === 'number' ? data.bananaBox : 0;
           updateCoins(typeof data.coins === 'number' ? data.coins : 0);
           
@@ -2710,7 +2738,7 @@
             const data = await fetchWithRetry('/api/trade/request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                body: JSON.stringify({ receiverId: targetId })
+                body: JSON.stringify({ receiverId: targetId , betCurrency})
             });
             if (data.error) throw new Error(data.error);
             showNotification("🤝 Trade request sent!", "success");
@@ -2955,7 +2983,7 @@
             const data = await fetchWithRetry('/api/trade/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                body: JSON.stringify({ tradeId: currentActiveTrade.id, skins: selectedTradeSkins })
+                body: JSON.stringify({ tradeId: currentActiveTrade.id, skins: selectedTradeSkins , betCurrency})
             });
             if (data.error) throw new Error(data.error);
             currentActiveTrade = data;
@@ -2975,7 +3003,7 @@
             const data = await fetchWithRetry('/api/trade/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                body: JSON.stringify({ tradeId: currentActiveTrade.id, ready: isReady })
+                body: JSON.stringify({ tradeId: currentActiveTrade.id, ready: isReady , betCurrency})
             });
             if (data.error) throw new Error(data.error);
             currentActiveTrade = data;
@@ -3026,7 +3054,7 @@
             const data = await fetchWithRetry('/api/trade/execute', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                body: JSON.stringify({ tradeId: currentActiveTrade.id })
+                body: JSON.stringify({ tradeId: currentActiveTrade.id , betCurrency})
             });
             if (data.error) throw new Error(data.error);
             
@@ -3059,7 +3087,7 @@
             await fetchWithRetry('/api/trade/cancel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                body: JSON.stringify({ tradeId })
+                body: JSON.stringify({ tradeId , betCurrency})
             });
             pollTrades();
         } catch (e) {
@@ -3152,7 +3180,7 @@
             const response = await fetch(API_BASE + '/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, id: generateId(), password: pass })
+                body: JSON.stringify({ name, id: generateId(), password: pass , betCurrency})
             });
 
             if (!response.ok) {
@@ -3199,7 +3227,7 @@
             const response = await fetch(API_BASE + '/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, password: pass })
+                body: JSON.stringify({ name, password: pass , betCurrency})
             });
 
             if (!response.ok) {
@@ -3218,6 +3246,7 @@
             bananaBox = Number(data.banana_box || 0);
             isInternalUpdate = true;
             updateBananas(Number(getTotalServerScore(data)));
+            updateApples(Number(data.apples || 0));
             updateCoins(Number(data.coins || 0));
             level = Number(data.level || 1);
             updateXp(Number(data.xp || 0));
@@ -4147,6 +4176,31 @@
       playSound('click');
     }
 
+    function setBetCurrency(currency) {
+        betCurrency = currency;
+        if (currency === 'bananas') {
+            document.getElementById('btn-currency-bananas').classList.replace('border-transparent', 'border-yellow-400');
+            document.getElementById('btn-currency-bananas').classList.replace('bg-yellow-500/10', 'bg-yellow-500/20');
+            document.getElementById('btn-currency-bananas').classList.replace('opacity-50', 'opacity-100');
+            
+            document.getElementById('btn-currency-apples').classList.replace('border-red-400', 'border-transparent');
+            document.getElementById('btn-currency-apples').classList.replace('bg-red-500/20', 'bg-red-500/10');
+            document.getElementById('btn-currency-apples').classList.replace('opacity-100', 'opacity-50');
+            
+            document.getElementById('bet-amount-input').classList.replace('text-red-400', 'text-yellow-400');
+        } else {
+            document.getElementById('btn-currency-apples').classList.replace('border-transparent', 'border-red-400');
+            document.getElementById('btn-currency-apples').classList.replace('bg-red-500/10', 'bg-red-500/20');
+            document.getElementById('btn-currency-apples').classList.replace('opacity-50', 'opacity-100');
+            
+            document.getElementById('btn-currency-bananas').classList.replace('border-yellow-400', 'border-transparent');
+            document.getElementById('btn-currency-bananas').classList.replace('bg-yellow-500/20', 'bg-yellow-500/10');
+            document.getElementById('btn-currency-bananas').classList.replace('opacity-100', 'opacity-50');
+            
+            document.getElementById('bet-amount-input').classList.replace('text-yellow-400', 'text-red-400');
+        }
+    }
+    
     function setMaxBet() {
       if (isPlaying) return;
       betAmount = bananas;
@@ -4169,7 +4223,7 @@
         
         if (!isPlaying && !isSyncing && !balanceDirty && (gameMode === 'roulette' || gameMode === 'slots')) {
             const actualBet = gameMode === 'slots' && isBonusBet ? betAmount * 2 : betAmount;
-            let canBet = bananas >= actualBet && betAmount > 0;
+            let canBet = (betCurrency === 'apples' ? apples : bananas) >= actualBet && betAmount > 0;
             if (gameMode === 'roulette' && !betColor) canBet = false;
             
             if (canBet) {
@@ -4181,7 +4235,7 @@
     }
 
     function handleMainAction() {
-      if (isPlaying || isSyncing || balanceDirty || bananas <= 0 || betAmount <= 0 || betAmount > bananas) return;
+      if (isPlaying || isSyncing || balanceDirty || (betCurrency === 'apples' ? apples : bananas) <= 0 || betAmount <= 0 || betAmount > (betCurrency === 'apples' ? apples : bananas)) return;
       
       unlockTitle('newbie_monkey');
       if (betAmount >= 500000) unlockTitle('high_roller');
@@ -4220,7 +4274,7 @@
         if (isPlaying) return;
         
         isInternalUpdate = true;
-        updateBananas(bananas - betAmount);
+        if (betCurrency === 'apples') updateApples(apples - betAmount); else updateBananas(bananas - betAmount);
         isInternalUpdate = false;
         
         isPlaying = true;
@@ -4236,7 +4290,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ gameMode: 'hilo_start', betAmount, activeGadgets })
+                body: JSON.stringify({ gameMode: 'hilo_start', betAmount, activeGadgets , betCurrency})
             });
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
@@ -4251,7 +4305,7 @@
             hiloState = 'gameOver';
             if (pendingSync) syncData(bananas, trees);
             isInternalUpdate = true;
-            updateBananas(bananas + betAmount);
+            if (betCurrency === 'apples') updateApples(apples + betAmount); else updateBananas(bananas + betAmount);
             isInternalUpdate = false;
             spinResultMsg = "Error: " + parseError(err);
             updateGameUI();
@@ -4273,7 +4327,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ gameMode: 'hilo_guess', betAmount: 0, guess: guess })
+                body: JSON.stringify({ gameMode: 'hilo_guess', betAmount: 0, guess: guess , betCurrency})
             });
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
@@ -4284,8 +4338,8 @@
             const winVal = Number(data.winAmount);
             
             isInternalUpdate = true;
-            updateBananas(Number(data.newBalance));
-            expectedDbBananas = Number(data.newBalance);
+            if (betCurrency === 'apples') updateApples(Number(data.newBalance)); else updateBananas(Number(data.newBalance));
+            if (betCurrency !== 'apples') expectedDbBananas = Number(data.newBalance);
             isInternalUpdate = false;
             
             if (data.winStreak !== undefined) winStreak = data.winStreak;
@@ -4334,7 +4388,7 @@
         if (isPlaying) return;
         
         isInternalUpdate = true;
-        updateBananas(bananas - betAmount);
+        if (betCurrency === 'apples') updateApples(apples - betAmount); else updateBananas(bananas - betAmount);
         isInternalUpdate = false;
         
         isPlaying = true;
@@ -4359,7 +4413,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ gameMode: 'crash_start', betAmount, activeGadgets })
+                body: JSON.stringify({ gameMode: 'crash_start', betAmount, activeGadgets , betCurrency})
             });
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
@@ -4410,7 +4464,7 @@
             crashState = 'ready';
             if (pendingSync) syncData(bananas, trees);
             isInternalUpdate = true;
-            updateBananas(bananas + betAmount);
+            if (betCurrency === 'apples') updateApples(apples + betAmount); else updateBananas(bananas + betAmount);
             isInternalUpdate = false;
             spinResultMsg = "Error: " + parseError(err);
             updateGameUI();
@@ -4472,7 +4526,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ gameMode: 'crash_cashout', multiplier: savedMultiplier.toFixed(2), betAmount: 0 })
+                body: JSON.stringify({ gameMode: 'crash_cashout', multiplier: savedMultiplier.toFixed(2), betAmount: 0 , betCurrency})
             });
             const data = await response.json();
             
@@ -4481,8 +4535,8 @@
                 const winAmount = Number(winAmountStr);
                 
                 isInternalUpdate = true;
-                updateBananas(Number(data.newBalance));
-                expectedDbBananas = Number(data.newBalance);
+                if (betCurrency === 'apples') updateApples(Number(data.newBalance)); else updateBananas(Number(data.newBalance));
+                if (betCurrency !== 'apples') expectedDbBananas = Number(data.newBalance);
                 isInternalUpdate = false;
                 
                 if (data.winStreak !== undefined) winStreak = data.winStreak;
@@ -4531,7 +4585,7 @@
       
       // Subtract bet visually IMMEDIATELY
       isInternalUpdate = true;
-      updateBananas(bananas - betAmount);
+      if (betCurrency === 'apples') updateApples(apples - betAmount); else updateBananas(bananas - betAmount);
       isInternalUpdate = false;
       
       isPlaying = true;
@@ -4585,8 +4639,8 @@
 
             setTimeout(() => {
             isInternalUpdate = true;
-            updateBananas(Number(data.newBalance));
-            expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
+            if (betCurrency === 'apples') updateApples(Number(data.newBalance)); else updateBananas(Number(data.newBalance));
+            if (betCurrency !== 'apples') expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
             isInternalUpdate = false;
             
             if (data.winStreak !== undefined) winStreak = data.winStreak;
@@ -4642,7 +4696,7 @@
           if (pendingSync) syncData(bananas, trees);
           // Restore balance on error
           isInternalUpdate = true;
-          updateBananas(bananas + betAmount);
+          if (betCurrency === 'apples') updateApples(apples + betAmount); else updateBananas(bananas + betAmount);
           isInternalUpdate = false;
           spinResultMsg = "Error: " + parseError(err);
           updateGameUI();
@@ -4797,8 +4851,8 @@
            winningIndices.forEach(idx => slots[idx].classList.add('slot-win'));
 
            isInternalUpdate = true;
-           updateBananas(Number(data.newBalance));
-           expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
+           if (betCurrency === 'apples') updateApples(Number(data.newBalance)); else updateBananas(Number(data.newBalance));
+           if (betCurrency !== 'apples') expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
            isInternalUpdate = false;
            
            if (data.winStreak !== undefined) winStreak = data.winStreak;
@@ -4933,7 +4987,7 @@
             }
 
             const winningSkin = data.result.skin;
-            await runCaseOpeningAnimation(winningSkin, data.newBalance);
+            await runCaseOpeningAnimation(winningSkin, data.newBalance); // Cases only use bananas
 
             // Show result
             document.getElementById('result-skin-name').innerText = winningSkin.name;
@@ -4992,14 +5046,14 @@
                 const data = await fetchWithRetry('/api/play', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ gameMode: 'cases', caseType: caseType })
+                    body: JSON.stringify({ gameMode: 'cases', caseType: caseType , betCurrency})
                 });
 
                 if (!data.success) throw new Error(data.error || "Server error");
 
                 const winningSkin = data.result.skin;
                 // Skip internal balance update during mass opening to prevent visual jumping
-                await runCaseOpeningAnimation(winningSkin, data.newBalance, true);
+                await runCaseOpeningAnimation(winningSkin, data.newBalance, true); // Cases only use bananas
                 
                 lastKnownGoodBalance = Number(data.newBalance);
 
@@ -5018,8 +5072,8 @@
                 // FINAL update on last item or exit loop
                 if (i === count - 1) {
                     isInternalUpdate = true;
-                    updateBananas(Number(data.newBalance));
-                    expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
+                    if (betCurrency === 'apples') updateApples(Number(data.newBalance)); else updateBananas(Number(data.newBalance));
+                    if (betCurrency !== 'apples') expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
                     isInternalUpdate = false;
                 }
 
@@ -5302,14 +5356,14 @@
       </div>`;
     }
     function playBlackjack() {
-      if (bananas < betAmount) {
+      if ((betCurrency === 'apples' ? apples : bananas) < betAmount) {
          showNotification("Not enough bananas!", "error");
          return;
       }
 
       // Visual deduction at start
       isInternalUpdate = true;
-      updateBananas(bananas - betAmount);
+      if (betCurrency === 'apples') updateApples(apples - betAmount); else updateBananas(bananas - betAmount);
       isInternalUpdate = false;
 
       isPlaying = true;
@@ -5381,8 +5435,8 @@
           if (!data.success) throw new Error(data.error || "Server error");
 
           isInternalUpdate = true;
-          updateBananas(Number(data.newBalance));
-          expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
+          if (betCurrency === 'apples') updateApples(Number(data.newBalance)); else updateBananas(Number(data.newBalance));
+          if (betCurrency !== 'apples') expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
           isInternalUpdate = false;
           
           if (data.winStreak !== undefined) winStreak = data.winStreak;
@@ -5464,11 +5518,42 @@
       }
       isPlaying = false;
       syncData(bananas, trees);
-      if (betAmount > bananas) betAmount = bananas; 
+      if (betCurrency === 'apples') { if (betAmount > apples) betAmount = apples; } else { if (betAmount > bananas) betAmount = bananas; } 
       updateGameUI();
     }
 
+    const BANANA_CAP = 999999000000000000n;
+
+    window.updateApples = function(newVal) {
+        apples = newVal;
+        if (typeof updateGameUI === 'function') updateGameUI();
+        balanceDirty = true;
+    }
+    
+    window.claimStarterApples = function() {
+        if (apples === 0 && BigInt(Math.floor(Number(bananas))) >= BANANA_CAP) {
+            updateApples(10);
+            document.getElementById('btn-claim-starter-apples').style.display = 'none';
+        }
+    }
+    
+    window.convertBananasToApples = function() {
+        if (bananas >= 1000000) {
+            updateBananas(bananas - 1000000);
+            updateApples(apples + 1);
+        } else {
+            showToast('Not enough Bananas!', 'error');
+        }
+    }
+
     window.updateGameUI = function() {
+        const appleBanner = document.getElementById('apple-trading-banner');
+        try {
+            if (appleBanner && BigInt(Math.floor(Number(bananas))) >= BANANA_CAP) {
+                appleBanner.classList.remove('hidden');
+            }
+        } catch(e) {}
+
       elDisplayPlayerName.innerText = playerName;
       elDisplayBananas.innerText = `${formatNumber(bananas)} 🍌`;
       const elDisplayBananasMobileHeader = document.getElementById('display-bananas-mobile');
@@ -5480,6 +5565,21 @@
       const elDisplayCoins = document.getElementById('display-coins');
       const elDisplayCoinsMobileHeader = document.getElementById('display-coins-mobile');
       if (elDisplayCoins) elDisplayCoins.innerText = `${formatNumber(coins)} 🪙`;
+      const elDisplayApples = document.getElementById('display-apples');
+      const elDisplayApplesMobileHeader = document.getElementById('display-apples-mobile-header');
+      if (elDisplayApples && apples > 0) {
+          elDisplayApples.innerText = `${formatNumber(apples)} 🍎`;
+          elDisplayApples.classList.remove('hidden');
+      }
+      if (elDisplayApplesMobileHeader && apples > 0) {
+          elDisplayApplesMobileHeader.innerText = `${formatNumber(apples)} 🍎`;
+          elDisplayApplesMobileHeader.classList.remove('hidden');
+      }
+      
+      const currencyToggle = document.getElementById('currency-toggle');
+      if (currencyToggle && apples > 0) {
+          currencyToggle.classList.remove('hidden');
+      }
       if (elDisplayCoinsMobileHeader) elDisplayCoinsMobileHeader.innerText = `${formatNumber(coins)} 🪙`;
       
       // Update Level UI
@@ -5653,7 +5753,7 @@
           megaBetIndicator.classList.toggle('hidden', !activeGadgets[5]);
       }
 
-      let canAction = !isPlaying && !isSyncing && !balanceDirty && bananas > 0 && betAmount > 0;
+      let canAction = !isPlaying && !isSyncing && !balanceDirty && (betCurrency === 'apples' ? apples : bananas) > 0 && betAmount > 0;
       if (gameMode === 'roulette' && !betColor) canAction = false;
       if (gameMode === 'blackjack' && bjState === 'playing') canAction = false; 
       if (gameMode === 'hilo' && (hiloState === 'guessing' || hiloState === 'resolving')) canAction = false;
@@ -6048,7 +6148,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ level })
+                body: JSON.stringify({ level , betCurrency})
             });
             const data = await response.json();
             
