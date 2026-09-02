@@ -43,23 +43,7 @@ function getSupabase() {
 const JWT_SECRET = process.env.JWT_SECRET || "banana_secret_monkey_business";
 const activeCrashGames = new Map<string, { betAmount: bigint, crashPoint: number }>();
 const activeHiloGames = new Map<string, { betAmount: bigint, firstCard: { rank: string, suit: string, value: number } }>();
-const BANANA_CAP = 999999000000000000n;
 
-
-
-function getTotalScore(userData: any): bigint {
-
-    return BigInt(userData.score || 0);
-
-}
-
-
-
-function distributeScore(totalScore: bigint): any {
-
-    return { score: String(totalScore > BANANA_CAP ? BANANA_CAP : totalScore) };
-
-}
 // Middleware to verify JWT
 const authenticateToken = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
@@ -110,7 +94,7 @@ app.post("/api/register", async (req, res) => {
       id,
       name,
       password: hashedPassword,
-      score: 0, apples: 0,
+      score: 0,
       coins: 0,
       banana_box: 0,
       level: 1,
@@ -187,7 +171,7 @@ app.post("/api/login", async (req, res) => {
 
 // Save Data
 app.post("/api/save", authenticateToken, async (req: any, res) => {
-  const { userId, name, score, apples, coins, bananaBox, trees, gadgets, level, xp, unlocked_titles, equipped_title, inventory } = req.body;
+  const { userId, name, score, coins, bananaBox, trees, gadgets, level, xp, unlocked_titles, equipped_title, inventory } = req.body;
 
   if (req.user.userId !== userId) {
     return res.status(403).json({ error: "Cannot save data for another user" });
@@ -200,7 +184,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     // 1. Fetch current state to check for conflicts
     const { data: current, error: fetchError } = await supabase
       .from('database')
-      .select('score, apples, coins, unlocked_titles, updated_at')
+      .select('score, coins, unlocked_titles, updated_at')
       .eq('id', userId)
       .maybeSingle();
 
@@ -213,7 +197,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     
     // 2. Conflict Detection (Optimistic Concurrency Control)
     if (current && !isForceSync && expectedScore !== undefined && expectedCoins !== undefined) {
-        const serverScore = String(getTotalScore(current));
+        const serverScore = String(current.score);
         const serverCoins = String(current.coins);
         const clientExpectedScore = String(expectedScore);
         const clientExpectedCoins = String(expectedCoins);
@@ -227,7 +211,6 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
                 const { password: _, ...userData } = fullUser;
                 // Ensure BIGINTs are strings for JSON
                 userData.score = String(userData.score);
-                userData.apples = String(userData.apples || 0);
                 userData.coins = String(userData.coins);
                 userData.xp = String(userData.xp);
                 userData.banana_box = String(userData.banana_box);
@@ -247,15 +230,10 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
 
     // 4. Perform Upsert
     console.log(`[UPSERT START] User: ${userId}`);
-    
-    const totalScore = BigInt(score || 0);
-    const scorePayload = distributeScore(totalScore);
-
     const { error: upsertError } = await supabase.from('database').upsert({
       id: userId,
       name,
-      ...scorePayload,
-      apples: String(apples || 0),
+      score: String(score), 
       coins: String(coins), 
       banana_box: String(bananaBox || 0),
       trees: JSON.stringify(trees),
@@ -281,8 +259,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     if (updatedUser) {
         const { password: _, ...userData } = updatedUser;
         userData.score = String(userData.score);
-        userData.apples = String(userData.apples || 0);
-                userData.coins = String(userData.coins);
+        userData.coins = String(userData.coins);
         userData.xp = String(userData.xp);
         userData.banana_box = String(userData.banana_box);
         return res.json({ success: true, user: userData });
@@ -467,7 +444,7 @@ app.get("/api/server-status", async (req, res) => {
 
 // Play Game (Server-side result generation)
 app.post("/api/play", authenticateToken, async (req: any, res) => {
-    const { gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets, betCurrency } = req.body;
+    const { gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets } = req.body;
     const userId = req.user.userId;
 
     try {
@@ -498,7 +475,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             }
         }
 
-        let currentBananas = betCurrency === 'apples' ? BigInt(user.apples || 0) : getTotalScore(user);
+        let currentBananas = BigInt(user.score);
         let winStreak = Number(user.win_streak || 0);
         
         // Ensure betAmount is a valid number/string before converting to BigInt
@@ -774,14 +751,10 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
         
         let updatePayload: any = {
+            score: String(newBananas),
             win_streak: winStreak,
             updated_at: new Date().toISOString()
         };
-        if (betCurrency === 'apples') {
-            updatePayload.apples = String(newBananas);
-        } else {
-            Object.assign(updatePayload, distributeScore(newBananas));
-        }
         
         // Royal Banana Pass Progress
         let earnedRoyalXP = 0;
@@ -920,17 +893,12 @@ app.get("/api/leaderboard", async (req, res) => {
     
     // 1. Fetch Top 50
     // We query the 'database' table directly to ensure 100% accuracy
-    let query = supabase
+    const { data: top50, error: top50Error } = await supabase
       .from('database')
-      .select('id, name, score, level, apples, coins, equipped_title')
-      .or('banned.eq.false,banned.is.null');
-
-    for (let i = 10; i >= 2; i--) {
-        query = query.order(`score${i}`, { ascending: false, nullsFirst: false });
-    }
-    query = query.order('score', { ascending: false });
-
-    const { data: top50, error: top50Error } = await query.limit(50);
+      .select('id, name, score, level, coins, equipped_title')
+      .or('banned.eq.false,banned.is.null')
+      .order('score', { ascending: false })
+      .limit(50);
 
     if (top50Error) {
       console.error("Supabase top50 error:", top50Error);
@@ -947,36 +915,17 @@ app.get("/api/leaderboard", async (req, res) => {
         // Fetch user entry
         const { data: userEntry, error: userError } = await supabase
           .from('database')
-          .select('id, name, score, level, apples, coins, equipped_title')
+          .select('id, name, score, level, coins, equipped_title')
           .eq('id', userId)
           .maybeSingle();
           
         if (userEntry && !userError) {
-          // Calculate actual rank dynamically for 10 score columns
-          let orQuery = [];
-          for (let i = 10; i >= 1; i--) {
-              let condition = [];
-              for (let j = 10; j > i; j--) {
-                  const colJ = j === 1 ? 'score' : `score${j}`;
-                  const valJ = userEntry[colJ] || 0;
-                  condition.push(`${colJ}.eq.${valJ}`);
-              }
-              const colI = i === 1 ? 'score' : `score${i}`;
-              const valI = userEntry[colI] || 0;
-              condition.push(`${colI}.gt.${valI}`);
-              if (condition.length === 1) {
-                  orQuery.push(condition[0]);
-              } else {
-                  orQuery.push(`and(${condition.join(',')})`);
-              }
-          }
-          const finalOrString = orQuery.join(',');
-          
+          // Calculate actual rank
           const { count, error: countError } = await supabase
             .from('database')
             .select('*', { count: 'exact', head: true })
             .or('banned.eq.false,banned.is.null')
-            .or(finalOrString);
+            .gt('score', userEntry.score);
             
           const rank = (count || 0) + 1;
           result.push({ ...userEntry, isTail: true, rank });
