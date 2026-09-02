@@ -43,30 +43,23 @@ function getSupabase() {
 const JWT_SECRET = process.env.JWT_SECRET || "banana_secret_monkey_business";
 const activeCrashGames = new Map<string, { betAmount: bigint, crashPoint: number }>();
 const activeHiloGames = new Map<string, { betAmount: bigint, firstCard: { rank: string, suit: string, value: number } }>();
-const BANANA_CAP = 9221832110301902000n;
+const BANANA_CAP = 999999000000000000n;
+
+
 
 function getTotalScore(userData: any): bigint {
-    let total = BigInt(userData.score || 0);
-    for (let i = 2; i <= 10; i++) {
-        total += BigInt(userData[`score${i}`] || 0);
-    }
-    return total;
+
+    return BigInt(userData.score || 0);
+
 }
+
+
 
 function distributeScore(totalScore: bigint): any {
-    let remaining = totalScore;
-    let payload: any = {};
-    
-    payload.score = String(remaining > BANANA_CAP ? BANANA_CAP : remaining);
-    remaining = remaining > BANANA_CAP ? remaining - BANANA_CAP : 0n;
-    
-    for (let i = 2; i <= 10; i++) {
-        payload[`score${i}`] = String(remaining > BANANA_CAP ? BANANA_CAP : remaining);
-        remaining = remaining > BANANA_CAP ? remaining - BANANA_CAP : 0n;
-    }
-    return payload;
-}
 
+    return { score: String(totalScore > BANANA_CAP ? BANANA_CAP : totalScore) };
+
+}
 // Middleware to verify JWT
 const authenticateToken = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
@@ -117,16 +110,7 @@ app.post("/api/register", async (req, res) => {
       id,
       name,
       password: hashedPassword,
-      score: 0,
-      score2: 0,
-      score3: 0,
-      score4: 0,
-      score5: 0,
-      score6: 0,
-      score7: 0,
-      score8: 0,
-      score9: 0,
-      score10: 0,
+      score: 0, apples: 0,
       coins: 0,
       banana_box: 0,
       level: 1,
@@ -203,7 +187,7 @@ app.post("/api/login", async (req, res) => {
 
 // Save Data
 app.post("/api/save", authenticateToken, async (req: any, res) => {
-  const { userId, name, score, coins, bananaBox, trees, gadgets, level, xp, unlocked_titles, equipped_title, inventory } = req.body;
+  const { userId, name, score, apples, coins, bananaBox, trees, gadgets, level, xp, unlocked_titles, equipped_title, inventory } = req.body;
 
   if (req.user.userId !== userId) {
     return res.status(403).json({ error: "Cannot save data for another user" });
@@ -216,7 +200,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     // 1. Fetch current state to check for conflicts
     const { data: current, error: fetchError } = await supabase
       .from('database')
-      .select('score, score2, score3, score4, score5, score6, score7, score8, score9, score10, coins, unlocked_titles, updated_at')
+      .select('score, apples, coins, unlocked_titles, updated_at')
       .eq('id', userId)
       .maybeSingle();
 
@@ -243,15 +227,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
                 const { password: _, ...userData } = fullUser;
                 // Ensure BIGINTs are strings for JSON
                 userData.score = String(userData.score);
-                userData.score2 = String(userData.score2 || '0');
-                userData.score3 = String(userData.score3 || '0');
-                userData.score4 = String(userData.score4 || '0');
-                userData.score5 = String(userData.score5 || '0');
-                userData.score6 = String(userData.score6 || '0');
-                userData.score7 = String(userData.score7 || '0');
-                userData.score8 = String(userData.score8 || '0');
-                userData.score9 = String(userData.score9 || '0');
-                userData.score10 = String(userData.score10 || '0');
+                userData.apples = String(userData.apples || 0);
                 userData.coins = String(userData.coins);
                 userData.xp = String(userData.xp);
                 userData.banana_box = String(userData.banana_box);
@@ -279,6 +255,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
       id: userId,
       name,
       ...scorePayload,
+      apples: String(apples || 0),
       coins: String(coins), 
       banana_box: String(bananaBox || 0),
       trees: JSON.stringify(trees),
@@ -304,8 +281,8 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     if (updatedUser) {
         const { password: _, ...userData } = updatedUser;
         userData.score = String(userData.score);
-        userData.score2 = String(userData.score2 || '0');
-        userData.coins = String(userData.coins);
+        userData.apples = String(userData.apples || 0);
+                userData.coins = String(userData.coins);
         userData.xp = String(userData.xp);
         userData.banana_box = String(userData.banana_box);
         return res.json({ success: true, user: userData });
@@ -490,7 +467,7 @@ app.get("/api/server-status", async (req, res) => {
 
 // Play Game (Server-side result generation)
 app.post("/api/play", authenticateToken, async (req: any, res) => {
-    const { gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets } = req.body;
+    const { gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets, betCurrency } = req.body;
     const userId = req.user.userId;
 
     try {
@@ -521,7 +498,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             }
         }
 
-        let currentBananas = getTotalScore(user);
+        let currentBananas = betCurrency === 'apples' ? BigInt(user.apples || 0) : getTotalScore(user);
         let winStreak = Number(user.win_streak || 0);
         
         // Ensure betAmount is a valid number/string before converting to BigInt
@@ -797,10 +774,14 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
         
         let updatePayload: any = {
-            ...distributeScore(newBananas),
             win_streak: winStreak,
             updated_at: new Date().toISOString()
         };
+        if (betCurrency === 'apples') {
+            updatePayload.apples = String(newBananas);
+        } else {
+            Object.assign(updatePayload, distributeScore(newBananas));
+        }
         
         // Royal Banana Pass Progress
         let earnedRoyalXP = 0;
@@ -941,7 +922,7 @@ app.get("/api/leaderboard", async (req, res) => {
     // We query the 'database' table directly to ensure 100% accuracy
     let query = supabase
       .from('database')
-      .select('id, name, score, score2, score3, score4, score5, score6, score7, score8, score9, score10, level, coins, equipped_title')
+      .select('id, name, score, level, apples, coins, equipped_title')
       .or('banned.eq.false,banned.is.null');
 
     for (let i = 10; i >= 2; i--) {
@@ -966,7 +947,7 @@ app.get("/api/leaderboard", async (req, res) => {
         // Fetch user entry
         const { data: userEntry, error: userError } = await supabase
           .from('database')
-          .select('id, name, score, score2, score3, score4, score5, score6, score7, score8, score9, score10, level, coins, equipped_title')
+          .select('id, name, score, level, apples, coins, equipped_title')
           .eq('id', userId)
           .maybeSingle();
           
