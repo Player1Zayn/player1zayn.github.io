@@ -982,6 +982,95 @@ async function refreshSkinValues() {
   }
 }
 
+let PREVIOUS_SKIN_SUPPLY: Record<string, number> = {};
+
+async function updateDynamicSkinValues() {
+  try {
+    const supabase = getSupabase();
+    // 1. Fetch all user inventories
+    const { data: users, error } = await supabase.from('database').select('inventory');
+    if (error) {
+      console.error("[SKIN UPDATE] Failed to fetch inventories:", error);
+      return;
+    }
+    
+    // 2. Tally current supply
+    const currentSupply: Record<string, number> = {};
+    if (users) {
+      for (const user of users) {
+        if (user.inventory) {
+          try {
+            const inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : user.inventory;
+            for (const [skinId, count] of Object.entries(inv)) {
+              currentSupply[skinId] = (currentSupply[skinId] || 0) + Number(count);
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    // 3. If it's the first run, just set previous supply and return
+    if (Object.keys(PREVIOUS_SKIN_SUPPLY).length === 0) {
+      PREVIOUS_SKIN_SUPPLY = currentSupply;
+      return;
+    }
+
+    // 4. Calculate changes
+    const updates: any[] = [];
+    const processedSkins = new Set<string>();
+
+    const processSkinChange = (skinId: string, currentCount: number, prevCount: number) => {
+      processedSkins.add(skinId);
+      const delta = currentCount - prevCount;
+      if (delta === 0) return;
+
+      const rarity = SKINS_METADATA[skinId] || 'Common';
+      let change = 0;
+      
+      if (rarity === 'Legendary') change = delta * -15000000;
+      else if (rarity === 'Mythic') change = delta * -5000000;
+      else if (rarity === 'Epic') change = delta * -150000;
+      else if (rarity === 'Rare') change = delta * -15000;
+      else if (rarity === 'Common') change = delta * -1500;
+      
+      const currentValue = DYNAMIC_SKIN_VALUES[skinId] || DEFAULT_RARITY_VALUES[rarity] || 1000;
+      let newValue = currentValue + change;
+      
+      // Security: Prevent value from dropping below 10% of its base value
+      const minCap = Math.floor((DEFAULT_RARITY_VALUES[rarity] || 1000) * 0.1);
+      newValue = Math.max(minCap, newValue);
+      
+      updates.push({ id: skinId, value: newValue });
+    };
+
+    for (const [skinId, currentCount] of Object.entries(currentSupply)) {
+      const prevCount = PREVIOUS_SKIN_SUPPLY[skinId] || 0;
+      processSkinChange(skinId, currentCount, prevCount);
+    }
+    
+    // Handle skins that were completely removed (delta negative)
+    for (const [skinId, prevCount] of Object.entries(PREVIOUS_SKIN_SUPPLY)) {
+      if (!processedSkins.has(skinId) && prevCount > 0) {
+        processSkinChange(skinId, 0, prevCount);
+      }
+    }
+
+    // 5. Update DB and Memory
+    if (updates.length > 0) {
+       for (const update of updates) {
+           await supabase.from('skin_values').update({ value: update.value }).eq('id', update.id);
+       }
+       await refreshSkinValues();
+       console.log(`[SKIN UPDATE] Applied supply changes to ${updates.length} skins.`);
+    }
+    
+    PREVIOUS_SKIN_SUPPLY = currentSupply;
+    
+  } catch (error) {
+    console.error("[SKIN UPDATE] Error:", error);
+  }
+}
+
 // Initial fallback values (matching SKINS rarity logic)
 const DEFAULT_RARITY_VALUES: Record<string, number> = {
   'Common': 1000,
@@ -1018,8 +1107,8 @@ function calculateTradeValue(skins: string[]) {
   }, 0);
 }
 
-// Global loop to refresh values every 5 minutes
-setInterval(refreshSkinValues, 5 * 60 * 1000);
+// Global loop to update values based on supply changes every 1 minute
+setInterval(updateDynamicSkinValues, 60 * 1000);
 
 // Endpoint to get all skin values
 app.get("/api/skin-values", async (req, res) => {
@@ -1438,6 +1527,8 @@ app.post("/api/royal-pass/claim", authenticateToken, async (req: any, res) => {
     console.log(`Server running on http://localhost:${PORT}`);
     // Refresh skin values on startup
     await refreshSkinValues();
+    // Initialize supply tracking
+    await updateDynamicSkinValues();
   });
 }
 
