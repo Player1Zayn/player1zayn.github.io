@@ -536,9 +536,11 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             
             for (let i = 0; i < slotCount; i++) {
                 let r = Math.random() * 100;
-                if (r < 5) resultSlots.push(JACKPOT_ICON);
+                const jackpotChance = isMoreSlots ? 0.5 : 2;
+                if (r < jackpotChance) resultSlots.push(JACKPOT_ICON);
                 else {
-                    if (i % 3 > 0 && Math.random() < 0.15) resultSlots.push(resultSlots[i - 1]);
+                    const duplicateChance = isMoreSlots ? 0.03 : 0.08;
+                    if (i % 3 > 0 && Math.random() < duplicateChance) resultSlots.push(resultSlots[i - 1]);
                     else resultSlots.push(SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)]);
                 }
             }
@@ -659,10 +661,15 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             const cardObj = { rank: secondCard.rank.r, suit: secondCard.suit, value: secondCard.rank.v };
             
             let won = false;
-            if (guess === 'higher' && cardObj.value > activeGame.firstCard.value) won = true;
-            if (guess === 'lower' && cardObj.value < activeGame.firstCard.value) won = true;
+            let push = false;
+            if (cardObj.value === activeGame.firstCard.value) push = true;
+            else if (guess === 'higher' && cardObj.value > activeGame.firstCard.value) won = true;
+            else if (guess === 'lower' && cardObj.value < activeGame.firstCard.value) won = true;
 
-            if (won) {
+            if (push) {
+                winAmount = activeGame.betAmount; // Refund
+                resultData.status = 'push';
+            } else if (won) {
                 winAmount = activeGame.betAmount * 2n;
                 resultData.status = 'win';
             } else {
@@ -711,12 +718,13 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         // --- MEGA BET GADGET (GLOBAL) ---
         // User: "All-in risk: 25% chance for 100x win, 25% chance to lose all (Taxes)."
         // Triggers on any traditional game win > 0 if gadget index 5 is active.
-        if (gameMode !== 'cases' && winAmount > 0n && activeGadgets[5]) {
+        const isPushOutcome = resultData.status === 'push' || resultData.reason === 'push';
+        if (gameMode !== 'cases' && winAmount > 0n && !isPushOutcome && activeGadgets[5]) {
             const r = Math.random();
-            if (r < 0.25) {
+            if (r < 0.05) {
                 winAmount = winAmount * 100n;
                 megaBetOutcome = 'win';
-            } else if (r < 0.50) {
+            } else if (r < 0.30) {
                 winAmount = 0n;
                 megaBetOutcome = 'taxes';
             } else {
