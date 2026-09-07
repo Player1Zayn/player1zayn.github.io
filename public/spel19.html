@@ -1716,9 +1716,15 @@
             banUser();
             return;
         }
+        
+        const delta = newVal - bananas;
+        if (delta >= 1000000) unlockTitle('big_winner');
+        if (delta === -777) unlockTitle('lucky_seven');
+
         if (!isInternalUpdate && newVal !== bananas) balanceDirty = true;
         bananas = newVal;
         if (bananas >= 1000000) unlockTitle('banana_millionaire');
+        if (bananas >= 1000000000) unlockTitle('banana_billionaire');
         if (typeof updateGameUI === 'function') updateGameUI();
         
         // Auto-sync after 2 seconds of inactivity
@@ -1783,11 +1789,21 @@
         'newbie_monkey': { id: 'newbie_monkey', name: 'Newbie Monkey', color: 'text-emerald-400', group: 'Common' },
         'investor': { id: 'investor', name: 'Investor', color: 'text-emerald-400', group: 'Common' },
         'grove': { id: 'grove', name: 'Grove', color: 'text-emerald-400', group: 'Common' },
+        'lucky_seven': { id: 'lucky_seven', name: 'Lucky Seven', color: 'text-emerald-400', group: 'Common' },
+        'tree_planter': { id: 'tree_planter', name: 'Tree Planter', color: 'text-emerald-400', group: 'Common' },
+        'apprentice_monkey': { id: 'apprentice_monkey', name: 'Apprentice Monkey', color: 'text-emerald-400', group: 'Common' },
         'lucky_one': { id: 'lucky_one', name: 'The Lucky One', color: 'text-blue-400', group: 'Rare' },
         'unlucky': { id: 'unlucky', name: 'The Unlucky', color: 'text-blue-400', group: 'Rare' },
         'extra_hand': { id: 'extra_hand', name: 'Extra Hand', color: 'text-blue-400', group: 'Rare' },
+        'the_dedicated': { id: 'the_dedicated', name: 'The Dedicated', color: 'text-blue-400', group: 'Rare' },
+        'big_winner': { id: 'big_winner', name: 'Big Winner', color: 'text-blue-400', group: 'Rare' },
         'banana_millionaire': { id: 'banana_millionaire', name: 'Banana Millionaire', color: 'text-purple-500', group: 'Epic' },
         'high_roller': { id: 'high_roller', name: 'High Roller', color: 'text-purple-500', group: 'Epic' },
+        'tree_lord': { id: 'tree_lord', name: 'Tree Lord', color: 'text-purple-500', group: 'Epic' },
+        'veteran': { id: 'veteran', name: 'Veteran', color: 'text-purple-500', group: 'Epic' },
+        'banana_billionaire': { id: 'banana_billionaire', name: 'Banana Billionaire', color: 'text-purple-500', group: 'Epic' },
+        'tree_god': { id: 'tree_god', name: 'Tree God', color: 'text-red-500', group: 'Mythic' },
+        'the_myth_the_legend': { id: 'the_myth_the_legend', name: 'The Myth The Legend', color: 'text-yellow-400', group: 'Legendary' },
         // Limited Edition Titles
         'the_hacker': { id: 'the_hacker', name: 'The Hacker', color: 'text-red-500', group: 'Mythic', limited: true },
         'n1_grinder': { id: 'n1_grinder', name: 'The n1 Grinder', color: 'text-red-500', group: 'Mythic', limited: true },
@@ -3952,7 +3968,8 @@
             isInternalUpdate = true;
             updateBananas(bananas + finalAmount);
             
-            const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+            const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
+            const xpGain = baseGain + (level * 5);
             updateXp(xp + xpGain);
             while (xp >= getXpForLevel(level)) {
                 updateXp(xp - getXpForLevel(level));
@@ -4069,6 +4086,12 @@
             updateBananas(bananas - nextData.cost);
             isInternalUpdate = false;
             trees[selectedTreeIndex]++;
+            
+            const totalTreeLevel = trees.reduce((a, b) => a + b, 0);
+            if (totalTreeLevel >= 10) unlockTitle('tree_planter');
+            if (totalTreeLevel >= 50) unlockTitle('tree_lord');
+            if (totalTreeLevel >= 100) unlockTitle('tree_god');
+            
             syncData(bananas, trees);
             updateGameUI();
             handleTreeClick(selectedTreeIndex); 
@@ -4272,12 +4295,16 @@
                 spinResultMsg = "TAXES! The jungle government took your entire win!";
                 addLog('loss', betAmount, bananas, "Hi-Lo: Mega Bet Taxes");
                 playSound('loss');
+            } else if (data.result.status === 'push') {
+                spinResultMsg = `Push! The card was the same. Bet refunded!`;
+                addLog('push', 0, bananas, `Hi-Lo: Push`);
             } else if (won) {
                 spinResultMsg = `Correct! Won ${formatNumber(winVal)} 🍌!`;
                 addLog('win', winVal, bananas, `Hi-Lo: 2x`);
                 
                 isInternalUpdate = true;
-                const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+                const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
+            const xpGain = baseGain + (level * 5);
                 updateXp(xp + xpGain);
                 while (xp >= getXpForLevel(level)) {
                     updateXp(xp - getXpForLevel(level));
@@ -4480,7 +4507,8 @@
                 
                 // XP Gain
                 isInternalUpdate = true;
-                const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+                const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
+            const xpGain = baseGain + (level * 5);
                 updateXp(xp + xpGain);
                 while (xp >= getXpForLevel(level)) {
                     updateXp(xp - getXpForLevel(level));
@@ -4593,7 +4621,8 @@
                   addLog('win', winVal, bananas, `Roulette ${winningColor.toUpperCase()}`);
                   
                   // XP Gain
-                  const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+                  const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
+            const xpGain = baseGain + (level * 5);
                   updateXp(xp + xpGain);
                   while (xp >= getXpForLevel(level)) {
                       updateXp(xp - getXpForLevel(level));
@@ -4806,7 +4835,8 @@
                   addLog('win', winVal, bananas, 'Slots Win');
                   
                   // XP Gain
-                  const xpGain = activeBoosts.xp > Date.now() ? 50 : 25;
+                  const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
+            const xpGain = baseGain + (level * 5);
                   updateXp(xp + xpGain);
                   while (xp >= getXpForLevel(level)) {
                       updateXp(xp - getXpForLevel(level));
@@ -5446,6 +5476,11 @@
     }
 
     window.updateGameUI = function() {
+      if (level >= 10) unlockTitle('apprentice_monkey');
+      if (level >= 25) unlockTitle('the_dedicated');
+      if (level >= 50) unlockTitle('veteran');
+      if (level >= 100) unlockTitle('the_myth_the_legend');
+
       elDisplayPlayerName.innerText = playerName;
       elDisplayBananas.innerText = `${formatNumber(bananas)} 🍌`;
       const elDisplayBananasMobileHeader = document.getElementById('display-bananas-mobile');
