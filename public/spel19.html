@@ -986,25 +986,14 @@
                       <span class="slot-icon">🔔</span>
                     </div>
 
-                    <!-- Row 2 (Hidden by default) -->
-                    <div id="slot-4" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
+                    <!-- Row 2 -->
+                    <div id="slot-4" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden">
                       <span class="slot-icon">🍎</span>
                     </div>
-                    <div id="slot-5" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
+                    <div id="slot-5" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden">
                       <span class="slot-icon">🍎</span>
                     </div>
-                    <div id="slot-6" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
-                      <span class="slot-icon">🍎</span>
-                    </div>
-
-                    <!-- Row 3 (Hidden by default) -->
-                    <div id="slot-7" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
-                      <span class="slot-icon">🍎</span>
-                    </div>
-                    <div id="slot-8" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
-                      <span class="slot-icon">🍎</span>
-                    </div>
-                    <div id="slot-9" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden hidden">
+                    <div id="slot-6" class="slot-reel-container w-full aspect-square flex items-center justify-center rounded-lg overflow-hidden">
                       <span class="slot-icon">🍎</span>
                     </div>
                 </div>
@@ -1845,7 +1834,7 @@
         { title: 'Increased Chance', cost: 10000, desc: 'Roulette Green chance increased to 16%.' },
         { title: 'Speed reload', cost: 20000, desc: 'Lose a bet: 2s to click "Insurance" for 25% refund.' },
         { title: 'Banana Streak', cost: 100000, desc: 'Win streak of 1+: 2x win multiplier.' },
-        { title: 'More Slots', cost: 250000, desc: '3x3 Slots grid! Win on rows, columns, and diagonals.' },
+        { title: 'Dealer Peek', cost: 250000, desc: 'Blackjack: Dealer busting pays out 2.5x instead of 2.0x.' },
         { title: 'Mega Bet', cost: 500000, desc: 'All-in risk: 25% chance for 100x win, 25% chance to lose all (Taxes).' },
         ...Array(4).fill({ title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true })
     ];
@@ -2166,7 +2155,9 @@
     let serverBanActive = false;
     async function checkServerStatus() {
         try {
-            const data = await fetchWithRetry('/api/server-status', { method: 'GET' }, 1, 500);
+            const headers = {};
+            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+            const data = await fetchWithRetry('/api/server-status', { method: 'GET', headers }, 1, 500);
             if (data && data.server_ban === true && !serverBanActive) {
                 serverBanActive = true;
                 const overlay = document.getElementById('server-ban-overlay');
@@ -4727,8 +4718,7 @@
       
       spinResultMsg = "Spinning slots...";
       
-      const isMoreSlots = activeGadgets[4];
-      const slotCount = isMoreSlots ? 9 : 3;
+      const slotCount = 6;
       const slots = [];
       for (let i = 1; i <= slotCount; i++) {
           const s = document.getElementById(`slot-${i}`);
@@ -4796,12 +4786,8 @@
               }
           };
 
-          if (isMoreSlots) {
-              [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ].forEach(checkLine);
-          } else {
-              checkLine([0, 1, 2]);
-          }
-           winningIndices.forEach(idx => slots[idx].classList.add('slot-win'));
+          [ [0,1,2], [3,4,5] ].forEach(checkLine);
+          winningIndices.forEach(idx => slots[idx].classList.add('slot-win'));
 
            isInternalUpdate = true;
            updateBananas(Number(data.newBalance));
@@ -5603,19 +5589,6 @@
           elBettingControls.classList.toggle('hidden', gameMode === 'cases');
       }
 
-      // More Slots Gadget (Index 4)
-      const isMoreSlots = activeGadgets[4];
-      const slotsContainer = document.getElementById('slots-container');
-      if (slotsContainer) {
-          for (let i = 4; i <= 9; i++) {
-              const s = document.getElementById(`slot-${i}`);
-              if (s) {
-                  if (isMoreSlots) s.classList.remove('hidden');
-                  else s.classList.add('hidden');
-              }
-          }
-      }
-      
       controlColors.classList.toggle('hidden', gameMode !== 'roulette');
       controlBonus.classList.toggle('hidden', gameMode !== 'slots');
       
@@ -5893,6 +5866,9 @@
                 <span class="text-[8px] text-emerald-700 font-bold uppercase">Your Current Position</span>
             </div>`;
         }
+        
+        const updatedTime = lbUser.updated_at ? new Date(lbUser.updated_at).getTime() : 0;
+        const isOnline = (Date.now() - updatedTime) < (2 * 60 * 1000); // Online within last 2 minutes
 
         const rankColor = userRank === 1 ? 'text-yellow-400' : userRank === 2 ? 'text-gray-300' : userRank === 3 ? 'text-amber-600' : 'text-emerald-500';
         const rankBg = isMe ? 'bg-emerald-900/40 border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.1)]' : 'bg-emerald-950/50 border-emerald-800/30';
@@ -5904,7 +5880,8 @@
                 </div>
                 <div class="flex flex-col">
                     <div class="flex items-center gap-1.5">
-                        <span class="font-bold ${isMe ? 'text-yellow-400' : 'text-emerald-100'} text-xs md:text-sm truncate max-w-[80px] md:max-w-[120px]">${lbUser.name}</span>
+                        ${isOnline ? `<div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.8)] flex-shrink-0" title="Online"></div>` : `<div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-zinc-600 flex-shrink-0" title="Offline"></div>`}
+                        <span class="font-bold ${isMe ? 'text-yellow-400' : 'text-emerald-100'} text-xs md:text-sm truncate max-w-[70px] md:max-w-[110px]">${lbUser.name}</span>
                         ${isMe ? '<span class="bg-yellow-500 text-black text-[7px] font-black px-1 rounded-sm">YOU</span>' : ''}
                         ${!isMe ? `<button onclick="sendTradeRequest('${lbUser.id}')" class="ml-auto hidden group-hover:flex bg-yellow-500 hover:bg-yellow-400 text-yellow-950 text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm items-center gap-1 transition-all active:scale-95 whitespace-nowrap">🤝 TRADE</button>` : ''}
                     </div>
