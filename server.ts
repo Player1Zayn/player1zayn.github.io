@@ -421,6 +421,21 @@ const SKINS = [
 app.get("/api/server-status", async (req, res) => {
   try {
     const supabase = getSupabase();
+    
+    // Auth Check for online status (update last active)
+    const authHeader = req.headers['authorization'];
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      if (token) {
+        try {
+          const user = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
+          if (user && user.userId) {
+              await supabase.from('database').update({ updated_at: new Date().toISOString() }).eq('id', user.userId);
+          }
+        } catch(e) {}
+      }
+    }
+
     const { data, error } = await supabase
       .from('server_status')
       .select('server_ban')
@@ -530,16 +545,15 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 winAmount = 0n;
             }
         } else if (gameMode === 'slots') {
-            const isMoreSlots = activeGadgets[4];
-            const slotCount = isMoreSlots ? 9 : 3;
+            const slotCount = 6;
             const resultSlots = [];
             
             for (let i = 0; i < slotCount; i++) {
                 let r = Math.random() * 100;
-                const jackpotChance = isMoreSlots ? 0.5 : 2;
+                const jackpotChance = 1.0;
                 if (r < jackpotChance) resultSlots.push(JACKPOT_ICON);
                 else {
-                    const duplicateChance = isMoreSlots ? 0.03 : 0.08;
+                    const duplicateChance = 0.05;
                     if (i % 3 > 0 && Math.random() < duplicateChance) resultSlots.push(resultSlots[i - 1]);
                     else resultSlots.push(SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)]);
                 }
@@ -568,13 +582,9 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 return 0;
             };
 
-            if (isMoreSlots) {
-                [ [0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6] ].forEach(line => {
-                    totalWinMultiplier += checkLine(line);
-                });
-            } else {
-                totalWinMultiplier += checkLine([0, 1, 2]);
-            }
+            [ [0,1,2], [3,4,5] ].forEach(line => {
+                totalWinMultiplier += checkLine(line);
+            });
             
             resultData.winType = winType;
             winAmount = BigInt(Math.round(Number(bet) * totalWinMultiplier));
@@ -583,11 +593,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             if (isBonusBet && bonusBetAmount > 0 && bonusBetSelection) {
                 const checkBonus = (indices: number[]) => indices.every((idx, i) => resultSlots[idx] === bonusBetSelection[i]);
                 let bonusWin = false;
-                if (isMoreSlots) {
-                    if (checkBonus([0, 1, 2]) || checkBonus([3, 4, 5]) || checkBonus([6, 7, 8])) bonusWin = true;
-                } else {
-                    if (checkBonus([0, 1, 2])) bonusWin = true;
-                }
+                if (checkBonus([0, 1, 2]) || checkBonus([3, 4, 5])) bonusWin = true;
                 if (bonusWin) {
                     winAmount += BigInt(bonusBetAmount) * 50n;
                     resultData.bonusWin = true;
@@ -595,7 +601,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             }
         } else if (gameMode === 'blackjack') {
             const bjResult = req.body.bjResult; 
-            if (bjResult === 'win' || bjResult === 'dealerBust') winAmount = totalBet * 2n;
+            if (bjResult === 'dealerBust') winAmount = activeGadgets[4] ? totalBet * 5n / 2n : totalBet * 2n;
+            else if (bjResult === 'win') winAmount = totalBet * 2n;
             else if (bjResult === 'blackjack') winAmount = totalBet * 5n / 2n;
             else if (bjResult === 'push') winAmount = totalBet;
             else winAmount = 0n;
@@ -903,7 +910,7 @@ app.get("/api/leaderboard", async (req, res) => {
     // We query the 'database' table directly to ensure 100% accuracy
     const { data: top50, error: top50Error } = await supabase
       .from('database')
-      .select('id, name, score, level, coins, equipped_title')
+      .select('id, name, score, level, coins, equipped_title, updated_at')
       .or('banned.eq.false,banned.is.null')
       .order('score', { ascending: false })
       .limit(50);
@@ -923,7 +930,7 @@ app.get("/api/leaderboard", async (req, res) => {
         // Fetch user entry
         const { data: userEntry, error: userError } = await supabase
           .from('database')
-          .select('id, name, score, level, coins, equipped_title')
+          .select('id, name, score, level, coins, equipped_title, updated_at')
           .eq('id', userId)
           .maybeSingle();
           
@@ -1458,7 +1465,7 @@ app.post("/api/royal-pass/claim", authenticateToken, async (req: any, res) => {
                 'lucky_monkey': 1,
                 'xp_bar': 2,
                 'streak_booster': 3,
-                'more_slots': 4,
+                'dealer_peek': 4,
                 'mega_bet': 5
             };
             const idx = gadgetMap[reward.item_id] || -1;
