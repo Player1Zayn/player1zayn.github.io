@@ -140,7 +140,7 @@
 
   <!-- History Modal -->
   <div id="mega-bet-alert" class="fixed top-20 left-1/2 -translate-x-1/2 z-[200] pointer-events-none hidden flex flex-col items-center gap-2">
-    <div class="bg-yellow-500 text-yellow-950 font-black text-4xl px-8 py-4 rounded-2xl shadow-[0_10px_0_rgb(180,83,9)] animate-bounce uppercase italic tracking-tighter">100X MEGA WIN!</div>
+    <div class="bg-yellow-500 text-yellow-950 font-black text-4xl px-8 py-4 rounded-2xl shadow-[0_10px_0_rgb(180,83,9)] animate-bounce uppercase italic tracking-tighter">10X MEGA WIN!</div>
     <div class="text-yellow-400 font-bold text-lg drop-shadow-lg">The Mega Bet Gadget triggered!</div>
   </div>
   <div id="mega-bet-taxes-alert" class="fixed top-20 left-1/2 -translate-x-1/2 z-[200] pointer-events-none hidden flex flex-col items-center gap-2">
@@ -296,6 +296,24 @@
           <div id="trade-inventory-list" class="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
               <!-- Inventory items here -->
           </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Creator Code Modal -->
+  <div id="creator-code-modal" class="fixed inset-0 bg-black/95 z-[600] items-center justify-center hidden backdrop-blur-md p-4 overflow-y-auto">
+    <div class="bg-emerald-950 border-4 border-blue-500 w-full max-w-md rounded-[2rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col">
+      <div class="p-6 bg-emerald-900 border-b border-emerald-700 flex justify-between items-center">
+          <h2 class="text-2xl font-black text-blue-400 uppercase tracking-tighter italic">Support a Creator</h2>
+          <button onclick="closeCreatorCodeModal()" class="w-10 h-10 flex items-center justify-center bg-red-500/20 hover:bg-red-500/40 text-red-500 rounded-full transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+      </div>
+      <div class="p-8 text-center">
+          <div class="text-6xl mb-6">💙</div>
+          <p class="text-emerald-400 text-sm font-bold mb-6">Enter a valid creator code to receive a starter bonus. You can only claim this if your balance is under 10M bananas, and max once per minute.</p>
+          <input type="text" id="creator-code-input" placeholder="Enter Code" class="w-full bg-emerald-900 border-2 border-emerald-700 text-white p-4 rounded-xl text-center text-xl font-bold uppercase focus:border-blue-400 outline-none transition-colors mb-6" />
+          <button onclick="submitCreatorCode()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black text-xl rounded-2xl shadow-[0_6px_0_rgb(30,58,138)] active:translate-y-1 active:shadow-none transition-all uppercase">CLAIM BONUS</button>
       </div>
     </div>
   </div>
@@ -618,6 +636,7 @@
             <div class="space-y-4">
                 <input type="text" id="reg-name" maxlength="15" placeholder="Username" class="w-full bg-emerald-950 border-2 border-emerald-700 text-white p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors" />
                 <input type="password" id="reg-pass" placeholder="Password" class="w-full bg-emerald-950 border-2 border-emerald-700 text-white p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors" />
+                <input type="text" id="reg-starter" placeholder="Starter bonus code (optional)" class="w-full bg-emerald-950 border-2 border-emerald-700 text-yellow-300 p-3 rounded-xl text-center focus:border-yellow-400 outline-none transition-colors" />
                 <button onclick="handleRegister()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold py-3 rounded-xl transition-transform active:scale-95 border-b-4 border-yellow-600">CREATE & ENTER</button>
                 <button onclick="showAuthStep('choice')" class="text-emerald-500 text-xs font-bold uppercase tracking-widest hover:text-emerald-300 mt-2">Back</button>
             </div>
@@ -713,6 +732,24 @@
                             VIEW PASS
                         </button>
                     </div>
+                </div>
+            </div>
+          </div>
+
+          <!-- Creator Code Banner -->
+          <div class="mb-12 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 p-1 rounded-[2.5rem] shadow-[0_15px_30px_rgba(59,130,246,0.3)] group hover:scale-[1.02] transition-all cursor-pointer" onclick="openCreatorCodeModal()">
+            <div class="bg-emerald-950/90 rounded-[2.3rem] p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10 relative overflow-hidden">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
+                <div class="relative w-24 h-24 md:w-32 md:h-32 bg-blue-500 rounded-3xl -rotate-6 flex items-center justify-center text-6xl shadow-2xl group-hover:rotate-0 transition-transform duration-500 border-4 border-blue-400/50">
+                    💙
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <div class="inline-block bg-blue-500 text-blue-950 text-[10px] font-black px-3 py-1 rounded-full uppercase mb-3">Support</div>
+                    <h3 class="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-tight mb-2">Creator Code</h3>
+                    <p class="text-emerald-400 font-bold mb-4 max-w-md">Enter a creator code to support them and receive an instant bonus! Available if under 10M bananas (once per minute).</p>
+                    <button class="bg-blue-500 hover:bg-blue-400 text-blue-950 font-black py-3 px-8 rounded-2xl text-lg shadow-[0_6px_0_rgb(30,58,138)] transition-all active:translate-y-1 active:shadow-none">
+                        ENTER CODE
+                    </button>
                 </div>
             </div>
           </div>
@@ -1835,7 +1872,7 @@
         { title: 'Speed reload', cost: 20000, desc: 'Lose a bet: 2s to click "Insurance" for 25% refund.' },
         { title: 'Banana Streak', cost: 100000, desc: 'Win streak of 1+: 2x win multiplier.' },
         { title: 'Dealer Peek', cost: 250000, desc: 'Blackjack: Dealer busting pays out 2.5x instead of 2.0x.' },
-        { title: 'Mega Bet', cost: 500000, desc: 'All-in risk: 25% chance for 100x win, 25% chance to lose all (Taxes).' },
+        { title: 'Mega Bet', cost: 500000, desc: 'All-in risk: 5% chance for 10x win, 25% chance to lose all (Taxes).' },
         ...Array(4).fill({ title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true })
     ];
 
@@ -3124,6 +3161,7 @@
     async function handleRegister() {
         const name = elRegName.value.trim();
         const pass = elRegPass.value.trim();
+        const starterCode = document.getElementById('reg-starter').value.trim();
 
         if (!name || !pass) {
             alert("Please enter both name and password.");
@@ -3137,7 +3175,7 @@
             const response = await fetch(API_BASE + '/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, id: generateId(), password: pass })
+                body: JSON.stringify({ name, id: generateId(), password: pass, starterCode })
             });
 
             if (!response.ok) {
@@ -3946,12 +3984,12 @@
         
         let finalAmount = amount * multiplier;
         
-        // Mega Bet Logic (25% 100x, 25% Taxes, 50% Nothing)
+        // Mega Bet Logic (5% 10x, 25% Taxes, 70% Nothing)
         if (megaBetEligible && amount > 0) {
             const r = Math.random();
-            if (r < 0.25) {
-                finalAmount *= 100;
-            } else if (r < 0.50) {
+            if (r < 0.05) {
+                finalAmount *= 10;
+            } else if (r < 0.30) {
                 finalAmount = 0; // Taxes
             }
         }
@@ -5207,6 +5245,61 @@
         }
     }
 
+    function openCreatorCodeModal() {
+        const modal = document.getElementById('creator-code-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.getElementById('creator-code-input').value = '';
+    }
+
+    function closeCreatorCodeModal() {
+        const modal = document.getElementById('creator-code-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    async function submitCreatorCode() {
+        const codeInput = document.getElementById('creator-code-input');
+        const code = codeInput.value.trim();
+        if (!code) {
+            showNotification("Please enter a code.", "error");
+            return;
+        }
+
+        try {
+            const data = await fetchWithRetry('/api/creator-code/claim', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ code })
+            });
+
+            if (data && data.error) {
+                showNotification(data.error, "error");
+            } else if (data) {
+                showNotification(`Creator code claimed! +${formatNumber(data.bananasAdded)} 🍌`, "success");
+                
+                isInternalUpdate = true;
+                updateBananas(Number(data.newScore));
+                expectedDbBananas = Number(data.newScore);
+                isInternalUpdate = false;
+                
+                if (data.coinsAdded) {
+                    coins += Number(data.coinsAdded);
+                    updateCoins(coins);
+                    expectedDbCoins = coins;
+                }
+                
+                closeCreatorCodeModal();
+            }
+        } catch (e) {
+            console.error("Failed to claim creator code:", e);
+            showNotification("Server error claiming code.", "error");
+        }
+    }
+
     function openSkinValuesModal() {
         const modal = document.getElementById('skin-values-modal');
         modal.classList.remove('hidden');
@@ -6233,7 +6326,8 @@
         toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
         handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle, forceSync, openCase, massOpenCase, showCasesInventory, closeCaseResult, sellSkin,
         openSkinValuesModal, closeSkinValuesModal, updateSkinValuesTable,
-        openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, sellSkinToMerchant, cashOutCrash, hiloGuess
+        openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, sellSkinToMerchant, cashOutCrash, hiloGuess,
+        openCreatorCodeModal, closeCreatorCodeModal, submitCreatorCode
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
