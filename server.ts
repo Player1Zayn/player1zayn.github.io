@@ -62,7 +62,7 @@ const authenticateToken = (req: any, res: any, next: any) => {
 
 // Register
 app.post("/api/register", async (req, res) => {
-  const { name, id, password } = req.body;
+  const { name, id, password, starterCode } = req.body;
 
   if (!name || !id || !password) {
     return res.status(400).json({ error: "Missing fields" });
@@ -88,14 +88,37 @@ app.post("/api/register", async (req, res) => {
       return res.status(400).json({ error: "Name already taken" });
     }
 
+    let initialScore = 0;
+    let initialCoins = 0;
+
+    if (starterCode && typeof starterCode === 'string') {
+      try {
+        const { data: codeData, error: codeError } = await supabase.from('starter_codes').select('*').eq('code', starterCode.trim()).maybeSingle();
+        if (codeError) throw codeError;
+        
+        if (codeData && codeData.active) {
+          initialScore = Number(codeData.reward_bananas || 0);
+          initialCoins = Number(codeData.reward_coins || 0);
+        } else {
+          return res.status(400).json({ error: "Invalid or inactive starter code" });
+        }
+      } catch (err: any) {
+        if (err.code === 'PGRST116' || err.message?.includes('relation "starter_codes" does not exist')) {
+            console.warn("Starter codes table does not exist yet.");
+            return res.status(400).json({ error: "Starter codes not set up yet." });
+        }
+        return res.status(500).json({ error: "Error verifying starter code." });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const { error } = await supabase.from('database').insert({
       id,
       name,
       password: hashedPassword,
-      score: 0,
-      coins: 0,
+      score: initialScore,
+      coins: initialCoins,
       banana_box: 0,
       level: 1,
       xp: 0,
@@ -457,6 +480,76 @@ app.get("/api/server-status", async (req, res) => {
   }
 });
 
+// Creator Code Claim
+app.post("/api/creator-code/claim", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const { code } = req.body;
+
+  if (!code || typeof code !== 'string') {
+    return res.status(400).json({ error: "Invalid code" });
+  }
+
+  try {
+    const supabase = getSupabase();
+    
+    // Fetch user
+    const { data: user, error: userError } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+    if (userError || !user) return res.status(404).json({ error: "User not found" });
+
+    // Check balance limit (< 10,000,000 bananas)
+    const currentScore = Number(user.score || 0);
+    if (currentScore >= 10000000) {
+      return res.status(400).json({ error: "Balance too high to use a creator code (must be under 10M)." });
+    }
+
+    // Check time limit (once per minute)
+    const lastClaim = user.last_creator_code_claim ? new Date(user.last_creator_code_claim).getTime() : 0;
+    const now = Date.now();
+    if (now - lastClaim < 60 * 1000) {
+      return res.status(400).json({ error: "Please wait 1 minute between claiming creator codes." });
+    }
+
+    // Fetch code
+    const { data: codeData, error: codeError } = await supabase.from('creator_codes').select('*').eq('code', code.trim()).maybeSingle();
+    
+    if (codeError) {
+        if (codeError.code === 'PGRST116' || codeError.message?.includes('relation "creator_codes" does not exist')) {
+            return res.status(400).json({ error: "Creator codes not set up yet." });
+        }
+        throw codeError;
+    }
+
+    if (!codeData || !codeData.active) {
+      return res.status(400).json({ error: "Invalid or inactive creator code." });
+    }
+
+    // Apply reward
+    const rewardBananas = Number(codeData.reward_bananas || 0);
+    const rewardCoins = Number(codeData.reward_coins || 0);
+
+    const newScore = currentScore + rewardBananas;
+    const newCoins = Number(user.coins || 0) + rewardCoins;
+
+    const { error: updateError } = await supabase.from('database').update({
+      score: newScore,
+      coins: newCoins,
+      last_creator_code_claim: new Date(now).toISOString()
+    }).eq('id', userId);
+
+    if (updateError) throw updateError;
+
+    res.json({
+      success: true,
+      bananasAdded: rewardBananas,
+      coinsAdded: rewardCoins,
+      newScore: newScore
+    });
+
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Play Game (Server-side result generation)
 app.post("/api/play", authenticateToken, async (req: any, res) => {
     const { gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets } = req.body;
@@ -729,7 +822,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         if (gameMode !== 'cases' && winAmount > 0n && !isPushOutcome && activeGadgets[5]) {
             const r = Math.random();
             if (r < 0.05) {
-                winAmount = winAmount * 100n;
+                winAmount = winAmount * 10n;
                 megaBetOutcome = 'win';
             } else if (r < 0.30) {
                 winAmount = 0n;
