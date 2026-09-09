@@ -736,9 +736,31 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 { r: '6', v: 6 }, { r: '7', v: 7 }, { r: '8', v: 8 }, { r: '9', v: 9 },
                 { r: '10', v: 10 }, { r: 'J', v: 11 }, { r: 'Q', v: 12 }, { r: 'K', v: 13 }, { r: 'A', v: 14 }
             ];
+            
+            const getRankWeight = (v: number) => {
+                if (v >= 5 && v <= 8) return 33;
+                if (v === 3 || v === 4) return 15;
+                if (v >= 9 && v <= 13) return 6;
+                if (v === 2 || v === 14) return 4;
+                return 10;
+            };
+
+            const totalWeight = ranks.reduce((sum, rank) => sum + getRankWeight(rank.v), 0);
+            let randomWeight = Math.floor(Math.random() * totalWeight);
+            let selectedRank = ranks[0];
+            
+            for (const rank of ranks) {
+                const weight = getRankWeight(rank.v);
+                if (randomWeight < weight) {
+                    selectedRank = rank;
+                    break;
+                }
+                randomWeight -= weight;
+            }
+
             const suits = ['S', 'H', 'D', 'C'];
             const firstCard = { 
-                rank: ranks[Math.floor(Math.random() * ranks.length)],
+                rank: selectedRank,
                 suit: suits[Math.floor(Math.random() * suits.length)]
             };
             const cardObj = { rank: firstCard.rank.r, suit: firstCard.suit, value: firstCard.rank.v };
