@@ -791,22 +791,22 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             const r = Math.random() * 100;
             let rarity = 'Common';
             if (caseType === 'toverland') {
-                if (r < 20) rarity = 'Legendary';
-                else if (r < 50) rarity = 'Mythic';
-                else if (r < 80) rarity = 'Epic';
-                else if (r < 95) rarity = 'Rare';
-                else rarity = 'Common';
-            } else if (caseType === 'booster') {
                 if (r < 5) rarity = 'Legendary';
                 else if (r < 15) rarity = 'Mythic';
-                else if (r < 30) rarity = 'Epic';
-                else if (r < 70) rarity = 'Rare';
+                else if (r < 35) rarity = 'Epic';
+                else if (r < 65) rarity = 'Rare';
+                else rarity = 'Common';
+            } else if (caseType === 'booster') {
+                if (r < 1) rarity = 'Legendary';
+                else if (r < 5) rarity = 'Mythic';
+                else if (r < 15) rarity = 'Epic';
+                else if (r < 40) rarity = 'Rare';
                 else rarity = 'Common';
             } else {
-                if (r < 0.5) rarity = 'Legendary';
-                else if (r < 2) rarity = 'Mythic';
-                else if (r < 10) rarity = 'Epic';
-                else if (r < 30) rarity = 'Rare';
+                if (r < 0.1) rarity = 'Legendary';
+                else if (r < 1) rarity = 'Mythic';
+                else if (r < 5) rarity = 'Epic';
+                else if (r < 20) rarity = 'Rare';
                 else rarity = 'Common';
             }
             const skinPool = SKINS.filter(s => s.rarity === rarity);
