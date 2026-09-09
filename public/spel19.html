@@ -1869,7 +1869,7 @@
     const GADGET_DATA = [
         { title: 'Failsafe', cost: 50000, desc: 'Bet 100+: 25% chance to not lose bananas on a loss.' },
         { title: 'Increased Chance', cost: 10000, desc: 'Roulette Green chance increased to 16%.' },
-        { title: 'Speed reload', cost: 20000, desc: 'Lose a bet: 2s to click "Insurance" for 25% refund.' },
+        { title: 'Speed reload', cost: 20000, desc: 'Lose a bet: 2s to click "Insurance" for 25% refund. 25s Cooldown.' },
         { title: 'Banana Streak', cost: 100000, desc: 'Win streak of 1+: 2x win multiplier.' },
         { title: 'Dealer Peek', cost: 250000, desc: 'Blackjack: Dealer busting pays out 2.5x instead of 2.0x.' },
         { title: 'Mega Bet', cost: 500000, desc: 'All-in risk: 5% chance for 10x win, 25% chance to lose all (Taxes).' },
@@ -3931,7 +3931,11 @@
         updateGameUI();
     }
 
+    let lastInsuranceUseTime = 0;
+
     function showInsuranceButton(amount) {
+        const now = Date.now();
+        if (now - lastInsuranceUseTime < 25000) return; // 25s cooldown
         lastLossAmount = amount;
         const btn = document.getElementById('insurance-btn');
         btn.classList.remove('hidden');
@@ -3951,6 +3955,7 @@
         lastLossAmount = 0;
         document.getElementById('insurance-btn').classList.add('hidden');
         clearTimeout(insuranceTimer);
+        lastInsuranceUseTime = Date.now();
         updateGameUI();
         syncData(bananas, trees);
         addLog('refund', refund, bananas, 'Insurance Claim');
@@ -4266,7 +4271,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ gameMode: 'hilo_start', betAmount, activeGadgets })
+                body: JSON.stringify({ clientScore: bananas, gameMode: 'hilo_start', betAmount, activeGadgets })
             });
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
@@ -4303,7 +4308,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ gameMode: 'hilo_guess', betAmount: 0, guess: guess })
+                body: JSON.stringify({ clientScore: bananas, gameMode: 'hilo_guess', betAmount: 0, guess: guess })
             });
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
@@ -4393,7 +4398,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ gameMode: 'crash_start', betAmount, activeGadgets })
+                body: JSON.stringify({ clientScore: bananas, gameMode: 'crash_start', betAmount, activeGadgets })
             });
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
@@ -4506,7 +4511,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ gameMode: 'crash_cashout', multiplier: savedMultiplier.toFixed(2), betAmount: 0 })
+                body: JSON.stringify({ clientScore: bananas, gameMode: 'crash_cashout', multiplier: savedMultiplier.toFixed(2), betAmount: 0 })
             });
             const data = await response.json();
             
@@ -4587,7 +4592,7 @@
                   'Authorization': `Bearer ${authToken}`
               },
               body: JSON.stringify({
-                  gameMode: 'roulette',
+                  clientScore: bananas, gameMode: 'roulette',
                   betAmount,
                   betColor,
                   activeGadgets
@@ -4784,7 +4789,7 @@
                   'Authorization': `Bearer ${authToken}`
               },
               body: JSON.stringify({
-                  gameMode: 'slots',
+                  clientScore: bananas, gameMode: 'slots',
                   betAmount,
                   isBonusBet,
                   bonusBetAmount: currentBonusBet,
@@ -4952,7 +4957,7 @@
                     'Authorization': `Bearer ${authToken}`
                 },
                 body: JSON.stringify({
-                    gameMode: 'cases',
+                    clientScore: bananas, gameMode: 'cases',
                     caseType: caseType
                 })
             });
@@ -5024,7 +5029,7 @@
                 const data = await fetchWithRetry('/api/play', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ gameMode: 'cases', caseType: caseType })
+                    body: JSON.stringify({ clientScore: bananas, gameMode: 'cases', caseType: caseType })
                 });
 
                 if (!data.success) throw new Error(data.error || "Server error");
@@ -5457,7 +5462,7 @@
                   'Authorization': `Bearer ${authToken}`
               },
               body: JSON.stringify({
-                  gameMode: 'blackjack',
+                  clientScore: bananas, gameMode: 'blackjack',
                   betAmount,
                   bjResult: reason,
                   activeGadgets
@@ -6224,7 +6229,7 @@
         }
 
         if (input === 'DUNGEON') {
-            const success = Math.random() < 0.25;
+            const success = Math.random() < 0.75;
             if (success) {
                 showNotification("ACCESS GRANTED. Welcome to the Abyss.", "success");
                 closeSecretCodeModal();
