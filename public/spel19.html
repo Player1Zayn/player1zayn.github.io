@@ -1915,7 +1915,8 @@
         { title: 'Banana Streak', cost: 100000, desc: 'Win streak of 1+: 2x win multiplier.' },
         { title: 'Dealer Peek', cost: 250000, desc: 'Blackjack: Dealer busting pays out 2.5x instead of 2.0x.' },
         { title: 'Mega Bet', cost: 500000, desc: 'All-in risk: 5% chance for 10x win, 25% chance to lose all (Taxes).' },
-        ...Array(4).fill({ title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true })
+        { title: 'Instant Cases', cost: 75000, desc: 'Skips the animation for cases and gives your win almost instantly.' },
+        ...Array(3).fill({ title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true })
     ];
 
     let leaderboard = [];
@@ -5143,10 +5144,11 @@
         });
 
         return new Promise(resolve => {
+            const isInstant = activeGadgets[6];
             setTimeout(() => {
                 const itemWidth = 128 + 16;
                 const offset = (45 * itemWidth) - (view.offsetWidth / 2) + (itemWidth / 2);
-                spinner.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)';
+                spinner.style.transition = isInstant ? 'none' : 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)';
                 spinner.style.transform = `translateX(-${offset}px)`;
             }, 50);
 
@@ -5165,7 +5167,7 @@
                 playSound('win');
                 view.classList.add('hidden');
                 resolve();
-            }, 4500);
+            }, isInstant ? 100 : 4500);
         });
     }
 
