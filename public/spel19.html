@@ -1792,24 +1792,6 @@
     // Gadgets Data Structure
     let unlockedGadgets = Array(10).fill(false);
     let activeGadgets = Array(10).fill(false);
-    
-    // Shop & Boost State
-    let shopStock = Array(SHOP_ITEMS.length).fill(false); // [XP Boost, Speed Grove]
-    let shopPurchased = Array(SHOP_ITEMS.length).fill(false);
-    let shopRefreshTime = 0;
-    let activeBoosts = {
-        xp: 0,
-        speed: 0,
-        discount: 0,
-        merchant: 0,
-        fast_spin: 0,
-        dungeon_key: 0
-    };
-    let ludvigStep = 0;
-    let unlockedTitles = [];
-    let equippedTitle = null;
-    let consecutiveGreens = 0;
-    let consecutiveJackpots = 0;
 
     const TITLES = {
         'newbie_monkey': { id: 'newbie_monkey', name: 'Newbie Monkey', color: 'text-emerald-400', group: 'Common' },
@@ -1907,6 +1889,24 @@
             prop: 'dungeon_key'
         }
     ];
+    
+    // Shop & Boost State
+    let shopStock = Array(SHOP_ITEMS.length).fill(false); // [XP Boost, Speed Grove]
+    let shopPurchased = Array(SHOP_ITEMS.length).fill(false);
+    let shopRefreshTime = 0;
+    let activeBoosts = {
+        xp: 0,
+        speed: 0,
+        discount: 0,
+        merchant: 0,
+        fast_spin: 0,
+        dungeon_key: 0
+    };
+    let ludvigStep = 0;
+    let unlockedTitles = [];
+    let equippedTitle = null;
+    let consecutiveGreens = 0;
+    let consecutiveJackpots = 0;
 
     const GADGET_DATA = [
         { title: 'Failsafe', cost: 50000, desc: 'Bet 100+: 25% chance to not lose bananas on a loss.' },
