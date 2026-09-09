@@ -552,7 +552,7 @@ app.post("/api/creator-code/claim", authenticateToken, async (req: any, res) => 
 
 // Play Game (Server-side result generation)
 app.post("/api/play", authenticateToken, async (req: any, res) => {
-    const { gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets } = req.body;
+    const { clientScore, gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets, guess, action, caseType, multiplier, bjResult, dealerScore: reqDealerScore, playerScore: reqPlayerScore } = req.body;
     const userId = req.user.userId;
 
     try {
@@ -591,6 +591,10 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         const bet = BigInt(betAmount || 0);
         const bonusBet = BigInt(bonusBetAmount || 0);
         let totalBet = bet + (isBonusBet ? bonusBet : 0n);
+
+        if (clientScore !== undefined && clientScore !== null) {
+            currentBananas = BigInt(clientScore) + totalBet;
+        }
 
         if (gameMode !== 'cases' && gameMode !== 'crash_cashout' && gameMode !== 'hilo_guess' && currentBananas < totalBet) {
             // RELAXED DETECTION: Instead of banning, we return a 400 error. 
