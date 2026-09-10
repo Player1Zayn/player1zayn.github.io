@@ -552,7 +552,7 @@ app.post("/api/creator-code/claim", authenticateToken, async (req: any, res) => 
 
 // Play Game (Server-side result generation)
 app.post("/api/play", authenticateToken, async (req: any, res) => {
-    const { clientScore, gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets, guess, action, caseType, multiplier, bjResult, dealerScore: reqDealerScore, playerScore: reqPlayerScore } = req.body;
+    const { clientScore, gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets, guess, action, caseType, multiplier, bjResult, dealerScore: reqDealerScore, playerScore: reqPlayerScore, taxPenalty } = req.body;
     const userId = req.user.userId;
 
     try {
@@ -738,11 +738,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             ];
             
             const getRankWeight = (v: number) => {
-                if (v >= 5 && v <= 8) return 33;
-                if (v === 3 || v === 4) return 15;
-                if (v >= 9 && v <= 13) return 6;
-                if (v === 2 || v === 14) return 4;
-                return 10;
+                if (v >= 6 && v <= 9) return 100;
+                return 0;
             };
 
             const totalWeight = ranks.reduce((sum, rank) => sum + getRankWeight(rank.v), 0);
@@ -888,6 +885,10 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             } else if (!isPush) {
                 winStreak = 0;
             }
+        }
+
+        if (taxPenalty && winAmount > 0n && gameMode !== 'cases') {
+            winAmount = winAmount / 2n;
         }
 
         const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
