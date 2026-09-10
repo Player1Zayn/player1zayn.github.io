@@ -867,6 +867,14 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             isWin = winAmount > totalBet;
             isPush = winAmount === totalBet;
             
+            // Failsafe Gadget (Index 0)
+            if (!isWin && !isPush && totalBet >= 100n && activeGadgets[0]) {
+                if (Math.random() < 0.25) {
+                    winAmount = totalBet;
+                    resultData.failsafeActivated = true;
+                }
+            }
+            
             // Banana Streak Gadget (Multiplier)
             // User: "when you have a 1+ win streak (so when you have won 2 times in a row) ... get a 2x multiplier"
             // Translation: If winStreak >= 1 (they have won at least once before), double the win.
