@@ -2041,6 +2041,7 @@
 
     // Crash State
     let crashState = 'ready'; // ready, flying, crashed, cashed_out
+    let crashResultData = null;
     let crashMultiplier = 1.0;
     let crashStartTime = 0;
     let crashAnimationFrame = null;
@@ -3357,8 +3358,20 @@
       elRegName.value = ''; elRegPass.value = '';
       elLoginName.value = ''; elLoginPass.value = '';
       
-      localStorage.setItem('bananaCasinoSave', JSON.stringify({ userId, name: playerName, bananas, trees, gadgets: unlockedGadgets, activeGadgets, level, xp }));
+      const saveData = { 
+          id: userId, userId, name: playerName, bananas, bananaBox, coins,
+          trees, gadgets: unlockedGadgets, activeGadgets, level, xp,
+          unlockedTitles, equippedTitle, inventory, shopStock, shopPurchased, shopRefreshTime, activeBoosts,
+          expectedDbBananas, expectedDbCoins,
+          royalXP, royalClaimed
+      };
+      localStorage.setItem('bananaCasinoSave', JSON.stringify(saveData));
+      localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+      
       setView('game');
+      renderTreeGrid();
+      renderGadgets();
+      updateGameUI();
     }
 
     function copyUserId() {
@@ -3986,15 +3999,12 @@
         addLog('refund', refund, bananas, 'Insurance Claim');
     }
 
-    function processLoss(lossAmount, originalBet, defaultMessage) {
+    function processLoss(lossAmount, originalBet, defaultMessage, resultData = null) {
         winStreak = 0;
-        // Check for Failsafe Gadget (25% chance to save the bet)
-        if (originalBet >= 100 && activeGadgets[0] && Math.random() < 0.25) {
-            // Give back the bet since it was subtracted at the start
-            isInternalUpdate = true;
-            updateBananas(bananas + lossAmount);
-            isInternalUpdate = false;
-            return `Failsafe: Saved ${formatNumber(lossAmount)} bananas.`;
+        
+        if (resultData && resultData.failsafeActivated) {
+            playSound('win');
+            return `Failsafe: Saved ${formatNumber(lossAmount)} bananas!`;
         }
         
         // Note: No balance subtraction here! Bets are subtracted at the START of the game.
@@ -4381,10 +4391,8 @@
                 
                 playSound('win');
             } else {
-                spinResultMsg = `Wrong! Lost ${formatNumber(betAmount)} 🍌.`;
+                spinResultMsg = processLoss(betAmount, betAmount, `Wrong! Lost ${formatNumber(betAmount)} 🍌.`, data.result);
                 addLog('loss', betAmount, bananas, `Hi-Lo: Loss`);
-                if (activeGadgets[2]) showInsuranceButton(betAmount);
-                playSound('loss');
             }
             
             hiloState = 'gameOver';
@@ -4434,6 +4442,8 @@
             });
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
+            
+            crashResultData = data.result;
 
             crashState = 'flying';
             crashStartTime = performance.now();
@@ -4510,10 +4520,8 @@
         const translateStr = translateMatch ? translateMatch[0] : "translate(0px, 0px)";
         elRocket.style.transform = `${translateStr} rotate(180deg) scale(1.5)`;
         
-        playSound('loss');
-        spinResultMsg = `Crashed at ${crashPoint.toFixed(2)}x! Lost ${formatNumber(betAmount)} 🍌`;
+        spinResultMsg = processLoss(betAmount, betAmount, `Crashed at ${crashPoint.toFixed(2)}x! Lost ${formatNumber(betAmount)} 🍌`, crashResultData);
         addLog('loss', betAmount, bananas, `Crash: ${crashPoint.toFixed(2)}x`);
-        if (activeGadgets[2]) showInsuranceButton(betAmount);
         
         if (pendingSync) syncData(bananas, trees);
         updateGameUI();
@@ -4703,11 +4711,8 @@
             } else {
               consecutiveGreens = 0;
               if (betAmount > 100000) unlockTitle('unlucky');
-              spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Lost ${formatNumber(betAmount)} 🍌.`;
+              spinResultMsg = processLoss(betAmount, betAmount, `Landed on ${winningColor.toUpperCase()}! Lost ${formatNumber(betAmount)} 🍌.`, data.result);
               addLog('loss', betAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
-              
-              if (activeGadgets[2]) showInsuranceButton(betAmount);
-              playSound('loss');
             }
             endGameTurn();
           }, isFastSpin ? 1200 : 3200);
@@ -4910,10 +4915,8 @@
               }
               playSound('win');
           } else {
-              spinResultMsg = `No luck this time. Lost ${formatNumber(actualBet)} 🍌.`;
+              spinResultMsg = processLoss(actualBet, actualBet, `No luck this time. Lost ${formatNumber(actualBet)} 🍌.`, data.result);
               addLog('loss', actualBet, bananas, 'Slots Loss');
-              if (activeGadgets[2]) showInsuranceButton(actualBet);
-              playSound('loss');
           }
           endGameTurn();
 
@@ -5533,7 +5536,7 @@
           }
           else if (reason === 'bust') { 
               if (betAmount > 100000) unlockTitle('unlucky');
-              spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${formatNumber(betAmount)} 🍌.`); 
+              spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${formatNumber(betAmount)} 🍌.`, data.result); 
               addLog('loss', betAmount, bananas, 'Blackjack: Bust');
           }
           else if (reason === 'dealerBust' || reason === 'win') { 
@@ -5548,7 +5551,7 @@
           }
           else if (reason === 'lose') { 
               if (betAmount > 100000) unlockTitle('unlucky');
-              spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${formatNumber(betAmount)} 🍌.`); 
+              spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${formatNumber(betAmount)} 🍌.`, data.result); 
               addLog('loss', betAmount, bananas, 'Blackjack: Dealer Wins');
               playSound('loss');
           }
