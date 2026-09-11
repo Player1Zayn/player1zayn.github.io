@@ -1861,6 +1861,16 @@
 
     const SHOP_ITEMS = [
         { 
+            id: 'banana_cloak', 
+            title: 'Banana Cloak', 
+            desc: 'Stops the Jungle Government from appearing for 15 minutes.', 
+            cost: 10, 
+            chance: 1.0, 
+            duration: 15 * 60 * 1000,
+            icon: '🥷',
+            prop: 'banana_cloak'
+        },
+        { 
             id: 'xp_boost', 
             title: 'XP-Boost', 
             desc: 'Double XP gain for 10 minutes.', 
@@ -3181,7 +3191,9 @@
     // --- TAX SYSTEM ---
     let taxInterval = setInterval(() => {
         if (Math.random() < 0.40) {
-            if (!isPlaying && (typeof bjState === 'undefined' || bjState !== 'playing')) {
+            const isBettingMode = view === 'game' && gameMode !== 'cases';
+            const isCloaked = inventory && inventory['banana_cloak_expiry'] && inventory['banana_cloak_expiry'] > Date.now();
+            if (isBettingMode && !isCloaked && !isPlaying && (typeof bjState === 'undefined' || bjState !== 'playing')) {
                 if (isAutoBetting) {
                     isAutoBetting = false;
                     clearTimeout(autoBetTimer);
@@ -3772,7 +3784,13 @@
             const inStock = shopStock[i];
             const purchased = shopPurchased[i];
             const canAfford = coins >= item.cost;
-            const isBoostActive = activeBoosts[item.prop] > Date.now();
+            
+            let isBoostActive = false;
+            if (item.prop === 'banana_cloak') {
+                isBoostActive = inventory && inventory['banana_cloak_expiry'] && inventory['banana_cloak_expiry'] > Date.now();
+            } else {
+                isBoostActive = activeBoosts[item.prop] > Date.now();
+            }
 
             let statusHtml = '';
             let cardClass = 'bg-black/40 border-amber-900/30';
@@ -3900,7 +3918,11 @@
             isInternalUpdate = false;
             shopPurchased[index] = true;
             
-            if (item.prop) activeBoosts[item.prop] = Date.now() + item.duration;
+            if (item.prop === 'banana_cloak') {
+                inventory['banana_cloak_expiry'] = Date.now() + item.duration;
+            } else if (item.prop) {
+                activeBoosts[item.prop] = Date.now() + item.duration;
+            }
 
             playSound('purchase');
             renderShop();
