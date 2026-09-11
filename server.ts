@@ -697,13 +697,93 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 }
             }
         } else if (gameMode === 'blackjack') {
-            const bjResult = req.body.bjResult; 
-            if (bjResult === 'dealerBust') winAmount = activeGadgets[4] ? totalBet * 5n / 2n : totalBet * 2n;
-            else if (bjResult === 'win') winAmount = totalBet * 2n;
-            else if (bjResult === 'blackjack') winAmount = totalBet * 5n / 2n;
-            else if (bjResult === 'push') winAmount = totalBet;
-            else winAmount = 0n;
-            resultData.reason = bjResult;
+            const bjResults = Array.isArray(req.body.bjResult) ? req.body.bjResult : [req.body.bjResult];
+            const handBet = totalBet / BigInt(bjResults.length);
+            winAmount = 0n;
+            for (const res of bjResults) {
+                if (res === 'dealerBust') winAmount += activeGadgets[4] ? handBet * 5n / 2n : handBet * 2n;
+                else if (res === 'win') winAmount += handBet * 2n;
+                else if (res === 'blackjack') winAmount += handBet * 5n / 2n;
+                else if (res === 'push') winAmount += handBet;
+            }
+            resultData.reason = bjResults.join(', ');
+        } else if (gameMode === 'poker') {
+            const { pokerHand, pokerHeld } = req.body;
+            if (!Array.isArray(pokerHand) || pokerHand.length !== 5 || !Array.isArray(pokerHeld)) {
+                throw new Error("Invalid poker data");
+            }
+            
+            const suits = ['H', 'D', 'C', 'S'];
+            const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+            let deck: {suit: string, rank: string}[] = [];
+            for (let s of suits) {
+                for (let r of ranks) {
+                    deck.push({suit: s, rank: r});
+                }
+            }
+            deck.sort(() => Math.random() - 0.5);
+            
+            let finalHand: any[] = [];
+            for (let i = 0; i < 5; i++) {
+                if (pokerHeld[i] && pokerHand[i]) {
+                    finalHand.push(pokerHand[i]);
+                    deck = deck.filter(c => !(c.rank === pokerHand[i].rank && c.suit === pokerHand[i].suit));
+                } else {
+                    finalHand.push(null);
+                }
+            }
+            
+            for (let i = 0; i < 5; i++) {
+                if (!finalHand[i]) {
+                    finalHand[i] = deck.pop();
+                }
+            }
+            
+            const rankValues: Record<string, number> = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14};
+            
+            let ranksInHand = finalHand.map(c => rankValues[c.rank]).sort((a,b) => a-b);
+            let suitsInHand = finalHand.map(c => c.suit);
+            
+            let isFlush = suitsInHand.every(s => s === suitsInHand[0]);
+            let isStraight = false;
+            
+            if (ranksInHand[4] - ranksInHand[0] === 4 && new Set(ranksInHand).size === 5) isStraight = true;
+            if (ranksInHand[4] === 14 && ranksInHand[3] === 5 && ranksInHand[2] === 4 && ranksInHand[1] === 3 && ranksInHand[0] === 2) {
+                isStraight = true;
+            }
+            
+            let counts: Record<number, number> = {};
+            for (let r of ranksInHand) counts[r] = (counts[r] || 0) + 1;
+            let countVals = Object.values(counts).sort((a: any, b: any) => b-a);
+            
+            let multiplier = 0n;
+            let handName = "";
+            
+            if (isFlush && isStraight && ranksInHand[4] === 14 && ranksInHand[0] === 10) {
+                multiplier = 800n; handName = "ROYAL FLUSH";
+            } else if (isFlush && isStraight) {
+                multiplier = 50n; handName = "STRAIGHT FLUSH";
+            } else if (countVals[0] === 4) {
+                multiplier = 25n; handName = "FOUR OF A KIND";
+            } else if (countVals[0] === 3 && countVals[1] === 2) {
+                multiplier = 9n; handName = "FULL HOUSE";
+            } else if (isFlush) {
+                multiplier = 6n; handName = "FLUSH";
+            } else if (isStraight) {
+                multiplier = 4n; handName = "STRAIGHT";
+            } else if (countVals[0] === 3) {
+                multiplier = 3n; handName = "THREE OF A KIND";
+            } else if (countVals[0] === 2 && countVals[1] === 2) {
+                multiplier = 2n; handName = "TWO PAIR";
+            } else if (countVals[0] === 2) {
+                let pairRank = parseInt(Object.keys(counts).find(k => counts[k] === 2) || "0");
+                if (pairRank >= 11) {
+                    multiplier = 1n; handName = "JACKS OR BETTER";
+                }
+            }
+            
+            winAmount = multiplier > 0n ? totalBet * multiplier : 0n;
+            resultData = { finalHand, handName };
         } else if (gameMode === 'crash_start') {
             // Generate a random crash point with a slight house edge
             // e.g., Crash Point = 1.0 / Random(0..1) with a 5% instant crash chance
@@ -887,8 +967,9 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             }
         }
 
-        if (taxPenalty && winAmount > 0n && gameMode !== 'cases') {
-            winAmount = winAmount / 2n;
+        if (taxPenalty && winAmount > totalBet && gameMode !== 'cases') {
+            const profit = winAmount - totalBet;
+            winAmount = totalBet + (profit / 2n);
         }
 
         const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
