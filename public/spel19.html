@@ -441,6 +441,7 @@
               <button onclick="setGameMode('blackjack'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">BLACKJACK</button>
               <button onclick="setGameMode('crash'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">CRASH</button>
               <button onclick="setGameMode('hilo'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">HI-LO</button>
+              <button onclick="setGameMode('poker'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">POKER</button>
               <button onclick="setGameMode('cases'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">CASES</button>
             </div>
           </div>
@@ -1000,6 +1001,7 @@
               <button onclick="setGameMode('blackjack')" id="tab-blackjack" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">BLACKJACK</button>
               <button onclick="setGameMode('crash')" id="tab-crash" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">CRASH</button>
               <button onclick="setGameMode('hilo')" id="tab-hilo" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">HI-LO</button>
+              <button onclick="setGameMode('poker')" id="tab-poker" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">POKER</button>
               <button onclick="setGameMode('cases')" id="tab-cases" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">CASES</button>
             </div>
         </div>
@@ -1144,6 +1146,27 @@
                 </button>
                 <button onclick="hiloGuess('lower')" class="px-6 py-3 bg-red-500 hover:bg-red-400 text-white font-black rounded-xl border-b-4 border-red-700 shadow-xl text-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
                   LOWER <span class="text-2xl">📉</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Game: POKER -->
+          <div id="area-poker" class="w-full h-full flex flex-col items-center justify-center hidden">
+            <div class="relative w-full max-w-2xl bg-emerald-900/30 p-6 rounded-3xl border border-emerald-800 shadow-inner flex flex-col items-center justify-center min-h-[300px]">
+              
+              <div id="poker-message" class="text-emerald-400 font-bold mb-4 text-center h-6 uppercase tracking-widest text-sm">
+                JACKS OR BETTER
+              </div>
+              
+              <div id="poker-cards" class="flex gap-2 justify-center items-center h-32 md:h-40 my-4 min-h-[128px]">
+                <!-- Cards will be rendered here -->
+              </div>
+              
+              <div id="poker-actions" class="flex gap-4 mt-6 hidden">
+                <button onclick="pokerDraw()" class="px-8 py-3 bg-blue-500 hover:bg-blue-400 text-white font-black rounded-xl border-b-4 border-blue-700 shadow-xl text-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
+                  DRAW <span class="text-2xl">🔄</span>
                 </button>
               </div>
 
@@ -1342,10 +1365,16 @@
               <!-- Blackjack specific actions (Hidden initially) -->
               <div id="bj-action-btns" class="hidden flex gap-2 w-full">
                 <button onclick="bjHit()" id="bj-btn-hit" class="flex-1 py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-lg md:text-2xl shadow-xl transition-all active:scale-95 bg-blue-600 hover:bg-blue-500 text-white border-b-4 border-blue-800">
-                  HIT (Draw)
+                  HIT
                 </button>
                 <button onclick="bjStand()" id="bj-btn-stand" class="flex-1 py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-lg md:text-2xl shadow-xl transition-all active:scale-95 bg-red-600 hover:bg-red-500 text-white border-b-4 border-red-800">
-                  STAND (Hold)
+                  STAND
+                </button>
+                <button onclick="bjDoubleDown()" id="bj-btn-double" class="hidden flex-1 py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-lg md:text-2xl shadow-xl transition-all active:scale-95 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 border-b-4 border-yellow-700">
+                  DOUBLE
+                </button>
+                <button onclick="bjSplit()" id="bj-btn-split" class="hidden flex-1 py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-lg md:text-2xl shadow-xl transition-all active:scale-95 bg-purple-600 hover:bg-purple-500 text-white border-b-4 border-purple-800">
+                  SPLIT
                 </button>
               </div>
             </div>
@@ -2080,6 +2109,8 @@
     let bjDeck = [];
     let bjPlayer = [];
     let bjDealer = [];
+    let bjSplitHands = [];
+    let bjActiveHand = 0;
 
     // Crash State
     let crashState = 'ready'; // ready, flying, crashed, cashed_out
@@ -2091,6 +2122,12 @@
     // Hi-Lo State
     let hiloState = 'betting'; // betting, guessing, gameOver
     let hiloCards = [];
+    
+    // Poker State
+    let pokerState = 'betting'; // 'betting', 'holding', 'gameOver'
+    let pokerHand = [];
+    let pokerHeld = [false, false, false, false, false];
+    let pokerOriginalBet = 0;
 
 
     let syncTimeout = null;
@@ -2187,12 +2224,14 @@
     const areaBlackjack = document.getElementById('area-blackjack');
     const areaCrash = document.getElementById('area-crash');
     const areaHilo = document.getElementById('area-hilo');
+    const areaPoker = document.getElementById('area-poker');
     const areaCases = document.getElementById('area-cases');
     const tabRoulette = document.getElementById('tab-roulette');
     const tabSlots = document.getElementById('tab-slots');
     const tabBlackjack = document.getElementById('tab-blackjack');
     const tabCrash = document.getElementById('tab-crash');
     const tabHilo = document.getElementById('tab-hilo');
+    const tabPoker = document.getElementById('tab-poker');
     const tabCases = document.getElementById('tab-cases');
 
     // Controls areas
@@ -4403,6 +4442,11 @@
             playHilo();
             playSound('card');
         }
+      } else if (gameMode === 'poker') {
+        if (pokerState === 'betting' || pokerState === 'gameOver') {
+            playPoker();
+            playSound('card');
+        }
       }
     }
 
@@ -4516,6 +4560,109 @@
             
         } catch (err) {
             console.error("Hi-Lo guess error:", err);
+            isPlaying = false;
+            spinResultMsg = "Error: " + parseError(err);
+            updateGameUI();
+        }
+    }
+
+    // --- POKER LOGIC ---
+    function renderPokerCard(card, index) {
+      if (!card) return `<div class="w-12 h-16 md:w-16 md:h-24 rounded border-2 border-white/20 bg-white/5 shadow-xl shrink-0 cursor-pointer"></div>`;
+      const colorClass = (card.suit === 'H' || card.suit === 'D') ? 'text-red-600' : 'text-slate-900';
+      const suitIcon = {'H':'♥️', 'D':'♦️', 'C':'♣️', 'S':'♠️'}[card.suit];
+      const isHeld = pokerHeld[index];
+      const heldHTML = isHeld ? `<div class="absolute -top-3 bg-yellow-500 text-yellow-900 text-[10px] font-black px-2 py-0.5 rounded-full z-10 shadow-lg">HELD</div>` : '';
+      return `<div onclick="pokerHold(${index})" class="relative w-12 h-16 md:w-16 md:h-24 bg-white rounded border-2 ${isHeld ? 'border-yellow-400 -translate-y-2' : 'border-gray-300'} shadow-xl flex flex-col items-center justify-center ${colorClass} font-bold shrink-0 cursor-pointer transition-all hover:-translate-y-1 select-none">
+          ${heldHTML}
+          <div class="text-sm md:text-lg leading-none">${card.rank}</div>
+          <div class="text-xl md:text-2xl">${suitIcon}</div>
+      </div>`;
+    }
+
+    function playPoker() {
+      pokerOriginalBet = betAmount;
+      if (bananas < betAmount) {
+         showNotification("Not enough bananas!", "error");
+         return;
+      }
+      isInternalUpdate = true;
+      updateBananas(bananas - betAmount);
+      isInternalUpdate = false;
+      isPlaying = true;
+      pokerState = 'holding';
+      pokerHeld = [false, false, false, false, false];
+      
+      let deck = buildDeck(); // reuse blackjack deck generator
+      pokerHand = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
+      
+      spinResultMsg = "Select cards to hold, then DRAW.";
+      document.getElementById('poker-message').innerText = "JACKS OR BETTER";
+      updateGameUI();
+    }
+
+    function pokerHold(index) {
+      if (pokerState !== 'holding') return;
+      pokerHeld[index] = !pokerHeld[index];
+      playSound('click');
+      updateGameUI();
+    }
+
+    async function pokerDraw() {
+        if (pokerState !== 'holding') return;
+        
+        isPlaying = true;
+        pokerState = 'gameOver'; 
+        spinResultMsg = "Drawing cards...";
+        updateGameUI();
+        
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ taxPenalty: activeBoosts.tax_penalty > Date.now(), clientScore: bananas, gameMode: 'poker', betAmount: pokerOriginalBet, activeGadgets, pokerHand, pokerHeld })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Server error");
+            
+            pokerHand = data.result.finalHand;
+            
+            isInternalUpdate = true;
+            updateBananas(Number(data.newBalance));
+            expectedDbBananas = Number(data.newBalance);
+            isInternalUpdate = false;
+            
+            if (data.winStreak !== undefined) winStreak = data.winStreak;
+            handleMegaBetEffect(data);
+            
+            const winVal = Number(data.winAmount);
+            if (data.result.megaBet === 'taxes') {
+                spinResultMsg = "TAXES! The jungle government took your entire win!";
+                addLog('loss', pokerOriginalBet, bananas, "Poker: Mega Bet Taxes");
+                playSound('loss');
+            } else if (winVal > 0) {
+                spinResultMsg = `Got ${data.result.handName}! Won ${formatNumber(winVal)} 🍌!`;
+                addLog('win', winVal - pokerOriginalBet, bananas, `Poker: ${data.result.handName}`);
+                playSound('win');
+            } else {
+                if (pokerOriginalBet > 100000) unlockTitle('unlucky');
+                spinResultMsg = processLoss(pokerOriginalBet, pokerOriginalBet, `No winning hand. Lost ${formatNumber(pokerOriginalBet)} 🍌.`, data.result);
+                addLog('loss', pokerOriginalBet, bananas, `Poker: Loss`);
+                playSound('loss');
+            }
+            
+            document.getElementById('poker-message').innerText = (winVal > 0) ? data.result.handName : "GAME OVER";
+            
+            isPlaying = false;
+            syncData(bananas, trees);
+            if (betAmount > bananas) betAmount = bananas; 
+            updateGameUI();
+            
+        } catch (err) {
+            console.error("Poker draw error:", err);
             isPlaying = false;
             spinResultMsg = "Error: " + parseError(err);
             updateGameUI();
@@ -5572,26 +5719,25 @@
           <div class="text-xl md:text-2xl">${suitIcon}</div>
       </div>`;
     }
-    function playBlackjack() {
+    let bjOriginalBet = 0;
+    function playBlackjack() { bjOriginalBet = betAmount;
       if (bananas < betAmount) {
          showNotification("Not enough bananas!", "error");
          return;
       }
-
-      // Visual deduction at start
       isInternalUpdate = true;
       updateBananas(bananas - betAmount);
       isInternalUpdate = false;
-
       isPlaying = true;
       bjState = 'playing';
       bjDeck = buildDeck();
       bjPlayer = [drawCard(), drawCard()];
       bjDealer = [drawCard(), drawCard()];
+      bjSplitHands = [];
+      bjActiveHand = 0;
       
       spinResultMsg = "Your move: Hit or Stand?";
       updateGameUI();
-
       let pScore = calcScore(bjPlayer);
       if (pScore === 21) {
         bjState = 'dealerTurn';
@@ -5600,19 +5746,99 @@
         else bjEndGame('blackjack', 1.5);
       }
     }
+    
+    function bjSplit() {
+      if (bjState !== 'playing' || bjPlayer.length !== 2 || bjSplitHands.length > 0) return;
+      if (bjPlayer[0].rank !== bjPlayer[1].rank && calcScore([bjPlayer[0]]) !== calcScore([bjPlayer[1]])) return;
+      if (bananas < betAmount) {
+         showNotification("Not enough bananas to Split!", "error");
+         return;
+      }
+      isInternalUpdate = true;
+      updateBananas(bananas - betAmount);
+      isInternalUpdate = false;
+      betAmount *= 2; // total bet is doubled
+      
+      bjSplitHands = [
+          [bjPlayer[0], drawCard()],
+          [bjPlayer[1], drawCard()]
+      ];
+      bjPlayer = []; // Use bjSplitHands instead
+      
+      playSound('card');
+      updateGameUI();
+      
+      // Auto-check for blackjack on splits
+      if (calcScore(bjSplitHands[0]) === 21) {
+          bjActiveHand = 1;
+          updateGameUI();
+          if (calcScore(bjSplitHands[1]) === 21) {
+              bjStand();
+          }
+      }
+    }
+
     function bjHit() {
       if (bjState !== 'playing') return;
+      let hand = bjSplitHands.length > 0 ? bjSplitHands[bjActiveHand] : bjPlayer;
+      hand.push(drawCard());
+      playSound('card');
+      
+      if (calcScore(hand) > 21) {
+          if (bjSplitHands.length > 0) {
+              if (bjActiveHand === 0) {
+                  bjActiveHand = 1; // Move to next hand
+                  updateGameUI();
+              } else {
+                  bjStand(); // Both hands done
+              }
+          } else {
+              bjEndGame('bust', -1);
+          }
+      } else {
+          updateGameUI();
+      }
+    }
+
+    function bjDoubleDown() {
+      if (bjState !== 'playing') return;
+      if (bjSplitHands.length > 0) {
+          showNotification("Cannot Double Down on split hands!", "error");
+          return;
+      }
+      if (bjPlayer.length !== 2) return;
+      if (bananas < betAmount) {
+         showNotification("Not enough bananas to Double Down!", "error");
+         return;
+      }
+      isInternalUpdate = true;
+      updateBananas(bananas - betAmount);
+      isInternalUpdate = false;
+      betAmount *= 2;
+      
       bjPlayer.push(drawCard());
       playSound('card');
-      if (calcScore(bjPlayer) > 21) bjEndGame('bust', -1);
-      else updateGameUI();
+      if (calcScore(bjPlayer) > 21) {
+          bjEndGame('bust', -1);
+      } else {
+          bjStand();
+      }
     }
+
     function bjStand() {
       if (bjState !== 'playing') return;
+      
+      if (bjSplitHands.length > 0 && bjActiveHand === 0) {
+          bjActiveHand = 1;
+          playSound('click');
+          updateGameUI();
+          return;
+      }
+
       bjState = 'dealerTurn';
       playSound('click');
       updateGameUI();
-
+      
       const runDealer = setInterval(() => {
         let dScore = calcScore(bjDealer);
         if (dScore < 17) {
@@ -5621,14 +5847,28 @@
           updateGameUI();
         } else {
           clearInterval(runDealer);
-          let pScore = calcScore(bjPlayer);
-          if (dScore > 21) bjEndGame('dealerBust', 1);
-          else if (dScore > pScore) bjEndGame('lose', -1);
-          else if (dScore < pScore) bjEndGame('win', 1);
-          else bjEndGame('push', 0);
+          
+          if (bjSplitHands.length > 0) {
+              let results = bjSplitHands.map(hand => {
+                  let pScore = calcScore(hand);
+                  if (pScore > 21) return 'bust';
+                  if (dScore > 21) return 'dealerBust';
+                  if (dScore > pScore) return 'lose';
+                  if (dScore < pScore) return 'win';
+                  return 'push';
+              });
+              bjEndGame(results, 0);
+          } else {
+              let pScore = calcScore(bjPlayer);
+              if (dScore > 21) bjEndGame('dealerBust', 1);
+              else if (dScore > pScore) bjEndGame('lose', -1);
+              else if (dScore < pScore) bjEndGame('win', 1);
+              else bjEndGame('push', 0);
+          }
         }
       }, 800);
     }
+
     async function bjEndGame(reason, multiplier) {
       isPlaying = false; // Prevent interactions during fetch
       bjState = 'gameOver';
@@ -5647,32 +5887,43 @@
                   activeGadgets
               })
           });
-
           const data = await response.json();
           if (!data.success) throw new Error(data.error || "Server error");
-
+          
           isInternalUpdate = true;
           updateBananas(Number(data.newBalance));
           expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
           isInternalUpdate = false;
           
           if (data.winStreak !== undefined) winStreak = data.winStreak;
-
           handleMegaBetEffect(data);
-
+          
           if (data.earnedRoyalXP) {
               royalXP = Number(data.royalXP);
               document.getElementById('rp-current-xp').innerText = formatNumber(royalXP);
               showNotification("+1 Royal XP! Check the pass in Ludvig's shop.", "success");
           }
-
+          
           const winVal = Number(data.winAmount);
           const profit = winVal - betAmount;
-
+          
           if (data.result.megaBet === 'taxes') {
               spinResultMsg = "TAXES! The jungle government took your entire win!";
               addLog('loss', betAmount, bananas, 'Blackjack: Mega Bet Taxes');
               playSound('loss');
+          } else if (Array.isArray(reason)) {
+              if (profit > 0) {
+                  spinResultMsg = `Split Results: ${reason.join(', ')}. Won ${formatNumber(profit)} net profit!`;
+                  playSound('win');
+                  addLog('win', profit, bananas, 'Blackjack: Split Win');
+              } else if (profit < 0) {
+                  spinResultMsg = `Split Results: ${reason.join(', ')}. Lost ${formatNumber(Math.abs(profit))} net.`;
+                  playSound('loss');
+                  addLog('loss', Math.abs(profit), bananas, 'Blackjack: Split Loss');
+              } else {
+                  spinResultMsg = `Split Results: ${reason.join(', ')}. Pushed (Broke even).`;
+                  addLog('push', 0, bananas, 'Blackjack: Split Push');
+              }
           }
           else if (reason === 'bust') { 
               if (betAmount > 100000) unlockTitle('unlucky');
@@ -5739,7 +5990,7 @@
       }
       isPlaying = false;
       syncData(bananas, trees);
-      if (betAmount > bananas) betAmount = bananas; 
+      if (bjOriginalBet > 0) { betAmount = bjOriginalBet; bjOriginalBet = 0; } if (betAmount > bananas) betAmount = bananas; 
       updateGameUI();
     }
 
@@ -5845,8 +6096,8 @@
       renderGadgets();
       
       // Update Tab Styling
-      [tabRoulette, tabSlots, tabBlackjack, tabCrash, tabHilo, tabCases].forEach(t => { 
-        if (!t) return;
+      [tabRoulette, tabSlots, tabBlackjack, tabCrash, tabHilo, tabPoker, tabCases].forEach(t => { 
+         if (!t) return;
         t.classList.remove('bg-emerald-800', 'text-white', 'border-transparent'); 
         t.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); 
       });
@@ -5855,6 +6106,7 @@
       if (gameMode === 'blackjack') { tabBlackjack.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabBlackjack.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'crash') { tabCrash?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabCrash?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'hilo') { tabHilo?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabHilo?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
+      if (gameMode === 'poker') { tabPoker?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabPoker?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       if (gameMode === 'cases') { tabCases.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabCases.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       
       // Toggle Areas
@@ -5863,6 +6115,7 @@
       areaBlackjack.classList.toggle('hidden', gameMode !== 'blackjack');
       areaCrash?.classList.toggle('hidden', gameMode !== 'crash');
       areaHilo?.classList.toggle('hidden', gameMode !== 'hilo');
+      areaPoker?.classList.toggle('hidden', gameMode !== 'poker');
       areaCases.classList.toggle('hidden', gameMode !== 'cases');
 
       const elBettingControls = document.getElementById('betting-controls-container');
@@ -5897,7 +6150,7 @@
       });
 
       // Inputs & Buttons state
-      elBetAmountInput.disabled = isPlaying;
+      if(document.activeElement !== elBetAmountInput) elBetAmountInput.value = betAmount; elBetAmountInput.disabled = isPlaying;
       elMaxBetBtn.disabled = isPlaying;
       
       const autoBtn = document.getElementById('auto-bet-btn');
@@ -5934,6 +6187,7 @@
       else if (isSyncing || balanceDirty) { elMainActionBtn.innerText = "SYNCING..."; }
       else if (gameMode === 'blackjack') { elMainActionBtn.innerText = (bjState === 'gameOver') ? "DEAL AGAIN" : "DEAL"; }
       else if (gameMode === 'hilo') { elMainActionBtn.innerText = (hiloState === 'gameOver') ? "PLAY AGAIN" : "PLAY HI-LO"; }
+      else if (gameMode === 'poker') { elMainActionBtn.innerText = (pokerState === 'gameOver') ? "DEAL AGAIN" : "DEAL POKER"; }
       else if (gameMode === 'crash') { elMainActionBtn.innerText = "START FLIGHT"; }
       else { elMainActionBtn.innerText = "SPIN"; }
 
@@ -5944,10 +6198,42 @@
         elMainActionBtn.classList.toggle('hidden', showBjActions);
         controlAmount.classList.toggle('hidden', showBjActions);
         
-        document.getElementById('player-cards').innerHTML = bjPlayer.map(c => renderCard(c)).join('');
-        document.getElementById('dealer-cards').innerHTML = bjDealer.map((c, i) => renderCard(c, i === 1 && bjState === 'playing')).join('');
+        const doubleBtn = document.getElementById('bj-btn-double');
+        if (doubleBtn) {
+            if (showBjActions && bjSplitHands.length === 0 && bjPlayer.length === 2 && bananas >= betAmount) {
+                doubleBtn.classList.remove('hidden');
+            } else {
+                doubleBtn.classList.add('hidden');
+            }
+        }
+        const splitBtn = document.getElementById('bj-btn-split');
+        if (splitBtn) {
+            if (showBjActions && bjSplitHands.length === 0 && bjPlayer.length === 2 && bananas >= betAmount && 
+                (bjPlayer[0].rank === bjPlayer[1].rank || calcScore([bjPlayer[0]]) === calcScore([bjPlayer[1]]))) {
+                splitBtn.classList.remove('hidden');
+            } else {
+                splitBtn.classList.add('hidden');
+            }
+        }
         
-        document.getElementById('player-score').innerText = bjPlayer.length ? calcScore(bjPlayer) : '0';
+        if (bjSplitHands.length > 0) {
+            let html = '';
+            bjSplitHands.forEach((hand, idx) => {
+                const border = idx === bjActiveHand && bjState === 'playing' ? 'border-yellow-400 border-2' : 'border-transparent';
+                html += `<div class="flex flex-col items-center p-2 rounded-xl ${border}">`;
+                html += `<div class="flex gap-2 justify-center items-center h-20 md:h-24">`;
+                html += hand.map(c => renderCard(c)).join('');
+                html += `</div>`;
+                html += `<div class="mt-2 text-white font-bold bg-black/40 px-3 py-1 rounded-full text-xs">Score: ${calcScore(hand)}</div>`;
+                html += `</div>`;
+            });
+            document.getElementById('player-cards').innerHTML = `<div class="flex gap-4">${html}</div>`;
+            document.getElementById('player-score').innerText = 'Split';
+        } else {
+            document.getElementById('player-cards').innerHTML = bjPlayer.map(c => renderCard(c)).join('');
+            document.getElementById('player-score').innerText = bjPlayer.length ? calcScore(bjPlayer) : '0';
+        }
+        document.getElementById('dealer-cards').innerHTML = bjDealer.map((c, i) => renderCard(c, i === 1 && bjState === 'playing')).join('');
         document.getElementById('dealer-score').innerText = bjDealer.length ? (bjState === 'playing' ? calcScore([bjDealer[0]]) : calcScore(bjDealer)) : '?';
       } else if (gameMode === 'hilo') {
         const showHiloActions = hiloState === 'guessing' || hiloState === 'resolving';
@@ -5956,6 +6242,13 @@
         controlAmount.classList.toggle('hidden', showHiloActions);
         
         document.getElementById('hilo-cards').innerHTML = hiloCards.map(c => renderCard(c)).join('');
+      } else if (gameMode === 'poker') {
+        const showPokerActions = pokerState === 'holding';
+        document.getElementById('poker-actions').classList.toggle('hidden', !showPokerActions);
+        elMainActionBtn.classList.toggle('hidden', showPokerActions);
+        controlAmount.classList.toggle('hidden', showPokerActions);
+        
+        document.getElementById('poker-cards').innerHTML = pokerHand.map((c, i) => renderPokerCard(c, i)).join('');
       } else {
         controlBjActions.classList.add('hidden');
         document.getElementById('hilo-actions')?.classList.add('hidden');
@@ -6510,12 +6803,12 @@
         toggleMobileOptions,
         openRoyalPass, closeRoyalPass, claimRoyalReward,
         setGameMode, setBetColor, setMaxBet, toggleAutoBet, handleMainAction,
-        claimInsurance, bjHit, bjStand, copyUserId, handleTreeClick, buyGadget,
+        claimInsurance, bjHit, bjStand, bjDoubleDown, bjSplit, copyUserId, handleTreeClick, buyGadget,
         claimBananas, payTaxNow, acceptTaxPenalty,
         toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
         handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle, forceSync, openCase, massOpenCase, startAutoOpenCase, showCasesInventory, closeCaseResult, sellSkin,
         openSkinValuesModal, closeSkinValuesModal, updateSkinValuesTable,
-        openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, sellSkinToMerchant, cashOutCrash, hiloGuess,
+        openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, sellSkinToMerchant, cashOutCrash, hiloGuess, pokerHold, pokerDraw,
         openCreatorCodeModal, closeCreatorCodeModal, submitCreatorCode
     };
 
