@@ -1,114 +1,141 @@
-<!-- Ultimate Game Stash file--> 
+!-- Ultimate Game Stash file--> 
 <!-- For the regularly updating doc go to https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/ -->
 
-<!DOCTYPE html>
-<html lang="en-us">
 
-<head>
-    <base href="https://cdn.jsdelivr.net/gh/gn-math/assets@51462750d29b68ac1e33887c1bf13d9c478d5ead/198/">
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | Slope Plus</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-    <style>
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            height: 100%;
-            width: 100%;
-        }
-
-        #unity-container {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-    </style>
-    <script src="TemplateData/UnityProgress.js"></script>
-    <script src="Build/UnityLoader.js"></script>
+<base href="https://cdn.jsdelivr.net/gh/bubbls/subwaysurfersmerge/">
+<html>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+    <title>Subway Surfers</title>  
+    <link rel="icon" href="img/FirstAvatar.png">  
+ <script src="4399.js"></script>
     <script>
-        function mergeFiles(fileParts) {
-            return new Promise((resolve, reject) => {
-                let buffers = [];
-
-                function fetchPart(index) {
-                    if (index >= fileParts.length) {
-                        let mergedBlob = new Blob(buffers);
-                        let mergedFileUrl = URL.createObjectURL(mergedBlob);
-                        resolve(mergedFileUrl);
-                        return;
-                    }
-                    fetch(fileParts[index]).then((response) => response.arrayBuffer()).then((data) => {
-                        buffers.push(data);
-                        fetchPart(index + 1);
-                    }).catch(reject);
-                }
-                fetchPart(0);
-            });
-        }
-
-        function getParts(file, start, end) {
-            let parts = [];
-            for (let i = start; i <= end; i++) {
-                parts.push(file + ".part" + i);
-            }
-            return parts;
-        }
-
-        window.addEventListener('resize', resizeGameContainer);
-
-        function resizeGameContainer() {
-            const container = document.getElementById('gameContainer');
-            if (container) {
-                const width = window.innerWidth;
-                const height = window.innerHeight;
-                container.style.width = `${width}px`;
-                container.style.height = `${height}px`;
-            }
-        }
-
-        window.onload = function () {
-            resizeGameContainer();
-
-            Promise.all([
-                mergeFiles(getParts("https://cdn.jsdelivr.net/gh/gn-math/assets@51462750d29b68ac1e33887c1bf13d9c478d5ead/198/Build/WEB1.2.1.data.unityweb", 1, 2))
-            ]).then(([dataUrl]) => {
-                let json = {
-                    companyName: "Slope Plus",
-                    productName: "Slope Plus",
-                    dataUrl: dataUrl,
-                    wasmCodeUrl: "https://cdn.jsdelivr.net/gh/gn-math/assets@51462750d29b68ac1e33887c1bf13d9c478d5ead/198/Build/WEB1.2.1.wasm.code.unityweb",
-                    wasmFrameworkUrl: "https://cdn.jsdelivr.net/gh/gn-math/assets@51462750d29b68ac1e33887c1bf13d9c478d5ead/198/Build/WEB1.2.1.wasm.framework.unityweb",
-                    TOTAL_MEMORY: 268435456,
-                    graphicsAPI: ["WebGL 2.0", "WebGL 1.0"],
-                    webglContextAttributes: {
-                        preserveDrawingBuffer: false
-                    },
-                    splashScreenStyle: "Dark",
-                    backgroundColor: "#000000"
-                }
-                let blob = new Blob([JSON.stringify(json)], {
-                    type: 'application/json'
-                });
-                let blobUrl = URL.createObjectURL(blob);
-                UnityLoader.instantiate("gameContainer", json, {
-                    onProgress: UnityProgress,
-                    url: blobUrl
-                });
-            });
+        window.config = {
+            loader: "unity",
+            debug: false,
+            maxRatio: 16 / 9,
+            minRatio: 9 / 16,
+            title: 'Subway Surfers: London',
+            unityVersion: '2019.2.0f1',
+            unityWebglBuildUrl: 'London.json',
+            fileSize: 36,
+            cachedDecompressedFileSizes: {
+                'London.asm.code.unityweb': 9057207,
+                'London.asm.framework.unityweb': 89454,
+                'London.asm.memory.unityweb': 1004456,
+                'London.data.unityweb': 18923630,
+                'London.wasm.code.unityweb': 7336887,
+                'London.wasm.framework.unityweb': 93785,
+            },
         };
+        window.mergedBlobUrls = {};
+        window.assetsReady = false;
+
+        async function mergeSplitFile(fileUrlBase, numParts = 2) {
+            const partUrls = Array.from({ length: numParts }, (_, i) => 
+                `${fileUrlBase}.part${i + 1}`
+            );
+
+            try {
+                const responses = await Promise.all(
+                    partUrls.map(url => fetch(url))
+                );
+
+                if (responses.some(r => !r.ok)) {
+                    return null;
+                }
+
+                const parts = await Promise.all(
+                    responses.map(r => r.arrayBuffer())
+                );
+
+                const combinedBlob = new Blob(parts, {
+                    type: 'application/octet-stream'
+                });
+
+                return URL.createObjectURL(combinedBlob);
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function setupXHRInterceptor() {
+            if (window.xhrInterceptorInstalled) {
+                return;
+            }
+            
+            const originalOpen = XMLHttpRequest.prototype.open;
+            const originalSend = XMLHttpRequest.prototype.send;
+
+            XMLHttpRequest.prototype.open = function(method, url, ...args) {
+                this._url = url;
+                this._method = method;
+                this._args = args;
+                
+                let finalUrl = url;
+                for (const [filename, blobUrl] of Object.entries(window.mergedBlobUrls)) {
+                    if (url.includes(filename)) {
+                        finalUrl = blobUrl;
+                        break;
+                    }
+                }
+                
+                return originalOpen.call(this, method, finalUrl, ...args);
+            };
+
+            XMLHttpRequest.prototype.send = function(...args) {
+                const xhr = this;
+                
+                if (!window.assetsReady) {
+                    const checkReady = setInterval(() => { 
+                        if (window.assetsReady) {
+                            clearInterval(checkReady);
+                            originalSend.apply(xhr, args);
+                        }
+                    }, 50);
+                    return;
+                }
+                
+                return originalSend.apply(this, args);
+            };
+            
+            window.xhrInterceptorInstalled = true;
+        }
+
+        async function prepareGameAssets() {
+            try {
+                window.assetsReady = false;
+                delete window.xhrInterceptorInstalled;
+                window.mergedBlobUrls = {};
+                
+                setupXHRInterceptor();
+                
+                const filesToMerge = [
+                    'London.data.unityweb',
+                    'London.wasm.code.unityweb'
+                ];
+                 
+                for (const filename of filesToMerge) {
+                    const blobUrl = await mergeSplitFile(filename, 2);
+                    if (blobUrl) {
+                        window.mergedBlobUrls[filename] = blobUrl;
+                    } 
+                }
+                
+                window.assetsPrepared = true;
+                window.assetsReady = true;
+                
+            } catch (error) {
+                window.assetsPrepared = false;
+                window.assetsReady = true;
+            }
+        }
+
+        prepareGameAssets();
+
     </script>
 </head>
-
 <body>
-    <div class="webgl-content">
-        <div id="gameContainer"></div>
-    </div>
+    <script src="master-loader.js"></script>
 </body>
-
 </html>
