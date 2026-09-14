@@ -1,7 +1,57 @@
-
 <!-- Ultimate Game Stash file--> 
 <!-- For the regularly updating doc go to https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/ -->
 
 
+</style></head><body dir="ltr"><script src="https://cdn.jsdelivr.net/gh/n-101-1/1@main/UnityProgress.js"></script><script src="https://cdn.jsdelivr.net/gh/n-101-1/1@main/2.7.js"></script><script type="text/javascript">
+      var gameInstance;
 
-<html lang="en"> <head> <meta http-equiv="X-UA-Compatible" content="IE=edge" /> <meta http-equiv="pragma" content="no-cache"/> <meta name="apple-mobile-web-app-capable" content="yes" /> <meta name ="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" /> <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /> <meta charset="utf-8"/> <!-- Set the title bar of the page --> <title>Created with GameMaker: Studio</title> <!-- Set the background colour of the document --> <style> body { background: #0; color:#cccccc; margin: 0px; padding: 0px; border: 0px; } canvas { width: 100vw; display: block; } :-webkit-full-screen #canvas { width: 100%; height: 100%; } div.gm4html5_div_class { margin: 0px; padding: 0px; border: 0px; } /* START - Login Dialog Box */ div.gm4html5_login { padding: 20px; position: absolute; border: solid 2px #000000; background-color: #404040; color:#00ff00; border-radius: 15px; box-shadow: #101010 20px 20px 40px; } div.gm4html5_cancel_button { float: right; } div.gm4html5_login_button { float: left; } div.gm4html5_login_header { text-align: center; } /* END - Login Dialog Box */ :-webkit-full-screen { width: 100%; height: 100%; } </style> </head> <body> <div class="gm4html5_div_class" id="gm4html5_div_id"> <!-- Create the canvas element the game draws to --> <canvas id="canvas" width="1024" height="375" > <p>Your browser doesn't support HTML5 canvas.</p> </canvas> </div> <!-- Run the game code --> <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/bessiegasbarro/Rocked@8d9f4127e770f8d22db3153c305916ccf3ceb9f8/Rl2D.js"></script> <script>window.onload = GameMaker_Init;</script> </body> </html> <div style="text-align: center;"><span style="background-color: transparent;"><b style=""><font size="3" color="#000">If the keys do not work, then click on this text and continue playing. </font></b></span></div>
+      window.onload = function () {
+        gameInstance = UnityLoader.instantiate("gameContainer", "https://cdn.jsdelivr.net/gh/n-101-1/1@main/2.7.json", {
+          onProgress: UnityProgress,
+          Module: {
+            onRuntimeInitialized: function () {
+              UnityProgress(gameInstance, "complete");
+            },
+          },
+        });
+      };
+    </script>
+    <div class="webgl-content">
+      <div id="gameContainer" style="width: 100%; height: 100%; margin: 0px; padding: 0px; border: 0px; position: relative; background: rgb(0, 0, 0);"><canvas id="#canvas" style="width: 100%; height: 100%; cursor: default;" width="1018" height="926"></canvas><div class="logo Dark" style="display: none;"></div><div class="progress Dark" style="display: none;"><div class="empty" style="width: 0%;"></div><div class="full" style="width: 100%;"></div></div></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/gh/n-101-1/1@main/1firebase-app.js"></script>
+
+    <!-- Add Firebase products that you want to use -->
+    <script src="https://cdn.jsdelivr.net/gh/n-101-1/1@main/1firebase-auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n-101-1/1@main/1firebase-firestore.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/gh/n-101-1/1@main/1firebase.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n-101-1/1@main/1login.js?v=2"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n-101-1/1@main/1firestore.js"></script>
+
+    <script>
+      initializeFireBase();
+
+      function showAds() {
+        console.log("show ads");
+      }
+      function requestNewAd() {
+        // Show video ad
+        unityAdFinishedCallback();
+      }
+      function unityAdFinishedCallback() {
+        try {
+          if (gameInstance) gameInstance.SendMessage("AdsManager", "OnWebCallback");
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    </script>
+  
+
+
+
+
+
+
+</script><script src="blob:https://gotlgsogl-opensocial.googleusercontent.com/43fddd1c-53cc-4d6d-88c5-93762d972e03" id="a96bf7f9ec45ce9224c9b5b9b42b17b2"></script></body></html>
