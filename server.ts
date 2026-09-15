@@ -593,7 +593,12 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         let totalBet = bet + (isBonusBet ? bonusBet : 0n);
 
         if (clientScore !== undefined && clientScore !== null) {
-            currentBananas = BigInt(clientScore) + totalBet;
+            let caseCost = 0n;
+            if (gameMode === 'cases') {
+                const costs: any = { 'normal': 10000n, 'booster': 100000n, 'toverland': 2000000n };
+                caseCost = costs[req.body.caseType] || 0n;
+            }
+            currentBananas = BigInt(clientScore) + totalBet + caseCost;
         }
 
         if (gameMode !== 'cases' && gameMode !== 'crash_cashout' && gameMode !== 'hilo_guess' && currentBananas < totalBet) {
