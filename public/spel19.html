@@ -209,6 +209,62 @@
     </div>
   </div>
 
+  <!-- Gamemode Choose Modal -->
+  <div id="gamemode-modal" class="fixed inset-0 bg-slate-950/90 z-[12000] hidden flex flex-col items-center justify-center p-4 backdrop-blur-xl animate-in fade-in duration-300">
+    <div class="bg-slate-900 border-2 border-emerald-800 p-6 md:p-8 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scroll relative shadow-[0_0_50px_rgba(6,78,59,0.5)]">
+      <button onclick="document.getElementById('gamemode-modal').classList.add('hidden')" class="absolute top-4 right-4 text-emerald-500 hover:text-white bg-emerald-900/50 hover:bg-emerald-800 p-2 rounded-xl transition-all">
+        <i data-lucide="x"></i>
+      </button>
+      
+      <h2 class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-yellow-400 mb-2 text-center uppercase tracking-widest">Select Gamemode</h2>
+      <p class="text-slate-400 text-center mb-8 font-medium">Choose your preferred way to multiply your bananas!</p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div onclick="setGameMode('roulette'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🎡</div>
+          <h3 class="text-xl font-bold text-white mb-2">Roulette</h3>
+          <p class="text-sm text-slate-400">Classic wheel of fortune. Bet on colors for massive multipliers.</p>
+        </div>
+        
+        <div onclick="setGameMode('slots'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🎰</div>
+          <h3 class="text-xl font-bold text-white mb-2">Slots</h3>
+          <p class="text-sm text-slate-400">Spin the reels and hit the jackpot with special bonus bets.</p>
+        </div>
+        
+        <div onclick="setGameMode('blackjack'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🃏</div>
+          <h3 class="text-xl font-bold text-white mb-2">Blackjack</h3>
+          <p class="text-sm text-slate-400">Beat the dealer to 21. Features splits, double downs & insurance.</p>
+        </div>
+
+        <div onclick="setGameMode('crash'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🚀</div>
+          <h3 class="text-xl font-bold text-white mb-2">Crash</h3>
+          <p class="text-sm text-slate-400">Watch the multiplier rise, but cash out before the rocket crashes!</p>
+        </div>
+
+        <div onclick="setGameMode('hilo'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🎴</div>
+          <h3 class="text-xl font-bold text-white mb-2">Hi-Lo</h3>
+          <p class="text-sm text-slate-400">Guess if the next card is higher or lower. Simple but thrilling.</p>
+        </div>
+
+        <div onclick="setGameMode('poker'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">♠️</div>
+          <h3 class="text-xl font-bold text-white mb-2">Video Poker</h3>
+          <p class="text-sm text-slate-400">Hold the best cards and aim for a Royal Flush to win big.</p>
+        </div>
+
+        <div onclick="setGameMode('cases'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">📦</div>
+          <h3 class="text-xl font-bold text-white mb-2">Cases</h3>
+          <p class="text-sm text-slate-400">Open premium cases to unlock ultra-rare and legendary skins.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Jungle Government Tax Modal -->
   <div id="tax-government-overlay" class="fixed inset-0 bg-red-950/90 z-[11000] hidden flex flex-col items-center justify-center text-center p-6 backdrop-blur-md overflow-hidden animate-in fade-in duration-500">
       <div class="absolute inset-0 pointer-events-none overflow-hidden">
@@ -435,14 +491,8 @@
           <!-- Game Modes in Options -->
           <div class="col-span-2 bg-emerald-900/50 p-6 rounded-3xl border border-emerald-800">
             <h3 class="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">🕹️ SWITCH GAME</h3>
-            <div class="grid grid-cols-2 gap-3">
-              <button onclick="setGameMode('roulette'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">ROULETTE</button>
-              <button onclick="setGameMode('slots'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">SLOTS</button>
-              <button onclick="setGameMode('blackjack'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">BLACKJACK</button>
-              <button onclick="setGameMode('crash'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">CRASH</button>
-              <button onclick="setGameMode('hilo'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">HI-LO</button>
-              <button onclick="setGameMode('poker'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">POKER</button>
-              <button onclick="setGameMode('cases'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all">CASES</button>
+            <div class="grid grid-cols-1 gap-3">
+              <button onclick="document.getElementById('gamemode-modal').classList.remove('hidden'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all shadow-[0_4px_0_rgb(6,78,59)] flex items-center justify-center gap-2">🕹️ CHOOSE GAMEMODE</button>
             </div>
           </div>
 
@@ -996,13 +1046,7 @@
               </div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
-              <button onclick="setGameMode('roulette')" id="tab-roulette" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-800 text-white font-black text-[10px] md:text-sm border-2 border-transparent transition-all">ROULETTE</button>
-              <button onclick="setGameMode('slots')" id="tab-slots" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">SLOTS</button>
-              <button onclick="setGameMode('blackjack')" id="tab-blackjack" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">BLACKJACK</button>
-              <button onclick="setGameMode('crash')" id="tab-crash" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">CRASH</button>
-              <button onclick="setGameMode('hilo')" id="tab-hilo" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">HI-LO</button>
-              <button onclick="setGameMode('poker')" id="tab-poker" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">POKER</button>
-              <button onclick="setGameMode('cases')" id="tab-cases" class="flex-1 py-1.5 md:py-2 rounded bg-emerald-950 text-emerald-400 font-black text-[10px] md:text-sm border-2 border-emerald-800 transition-all">CASES</button>
+              <button onclick="document.getElementById('gamemode-modal').classList.remove('hidden')" class="w-full max-w-sm py-2 md:py-3 rounded bg-emerald-800 hover:bg-emerald-700 text-white font-black text-xs md:text-sm border-2 border-transparent transition-all shadow-[0_4px_0_rgb(6,78,59)] active:translate-y-1 active:shadow-none flex items-center justify-center gap-2">🕹️ CHOOSE GAMEMODE</button>
             </div>
         </div>
         
@@ -2226,13 +2270,6 @@
     const areaHilo = document.getElementById('area-hilo');
     const areaPoker = document.getElementById('area-poker');
     const areaCases = document.getElementById('area-cases');
-    const tabRoulette = document.getElementById('tab-roulette');
-    const tabSlots = document.getElementById('tab-slots');
-    const tabBlackjack = document.getElementById('tab-blackjack');
-    const tabCrash = document.getElementById('tab-crash');
-    const tabHilo = document.getElementById('tab-hilo');
-    const tabPoker = document.getElementById('tab-poker');
-    const tabCases = document.getElementById('tab-cases');
 
     // Controls areas
     const controlColors = document.getElementById('bet-color-picker');
@@ -6094,20 +6131,6 @@
 
       renderTreeGrid();
       renderGadgets();
-      
-      // Update Tab Styling
-      [tabRoulette, tabSlots, tabBlackjack, tabCrash, tabHilo, tabPoker, tabCases].forEach(t => { 
-         if (!t) return;
-        t.classList.remove('bg-emerald-800', 'text-white', 'border-transparent'); 
-        t.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); 
-      });
-      if (gameMode === 'roulette') { tabRoulette.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabRoulette.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
-      if (gameMode === 'slots') { tabSlots.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabSlots.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
-      if (gameMode === 'blackjack') { tabBlackjack.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabBlackjack.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
-      if (gameMode === 'crash') { tabCrash?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabCrash?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
-      if (gameMode === 'hilo') { tabHilo?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabHilo?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
-      if (gameMode === 'poker') { tabPoker?.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabPoker?.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
-      if (gameMode === 'cases') { tabCases.classList.add('bg-emerald-800', 'text-white', 'border-transparent'); tabCases.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800'); }
       
       // Toggle Areas
       areaRoulette.classList.toggle('hidden', gameMode !== 'roulette');
