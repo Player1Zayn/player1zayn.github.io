@@ -128,6 +128,7 @@ app.post("/api/register", async (req, res) => {
       equipped_title: null,
       inventory: JSON.stringify({}),
       active_gadgets: JSON.stringify(Array(10).fill(false)),
+      vladimir_quest_status: req.body.vladimir_quest_status !== undefined ? Number(req.body.vladimir_quest_status) : 0,
       banned: false
     });
 
@@ -194,7 +195,7 @@ app.post("/api/login", async (req, res) => {
 
 // Save Data
 app.post("/api/save", authenticateToken, async (req: any, res) => {
-  const { userId, name, score, coins, bananaBox, trees, gadgets, level, xp, unlocked_titles, equipped_title, inventory } = req.body;
+  const { userId, name, score, coins, bananaBox, trees, gadgets, level, xp, unlocked_titles, equipped_title, inventory, vladimir_quest_status } = req.body;
 
   if (req.user.userId !== userId) {
     return res.status(403).json({ error: "Cannot save data for another user" });
