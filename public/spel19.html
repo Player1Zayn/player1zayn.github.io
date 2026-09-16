@@ -737,6 +737,10 @@
                   <div class="absolute inset-0 bg-orange-500/20 blur-[50px] rounded-full pointer-events-none"></div>
                   <div class="w-full h-full flex items-center justify-center text-9xl md:text-[10rem] drop-shadow-[0_0_30px_rgba(249,115,22,0.6)] select-none">🍌</div>
               </div>
+              <div id="golden-banana" onclick="clickGoldenBanana(event)" class="absolute hidden cursor-pointer hover:scale-110 active:scale-95 transition-transform z-[1500]">
+                  <div class="absolute inset-0 bg-yellow-400/50 blur-[20px] rounded-full animate-pulse pointer-events-none"></div>
+                  <div class="text-6xl drop-shadow-[0_0_20px_rgba(250,204,21,1)] select-none animate-float-up">🍌</div>
+              </div>
           </div>
           
           <!-- Right: Upgrades -->
@@ -1529,8 +1533,8 @@
     </div>
   </div>
 
-  <div id="cheat-warning" class="fixed inset-0 bg-red-600/90 flex items-center justify-center z-[9999] hidden pointer-events-none">
-    <div class="text-white font-black text-4xl md:text-6xl uppercase tracking-tighter animate-bounce">Stop cheating</div>
+  <div id="cheat-warning" class="fixed top-4 left-4 z-[9999] hidden pointer-events-none">
+    <div class="text-red-500 font-black text-4xl animate-bounce drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">❌</div>
   </div>
 
   <!-- Server Ban Overlay -->
@@ -3549,26 +3553,21 @@
             royalClaimed = data.royal_claimed || [];
             
             // AUTHORITATIVE LOADING OF COMPLEX FIELDS
-            if (data.inventory) {
-                inventory = typeof data.inventory === 'string' ? JSON.parse(data.inventory) : data.inventory;
-                if (typeof inventory !== 'object' || inventory === null) inventory = {};
-            }
-            if (data.trees) {
-                trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : data.trees;
-                if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
-                while(trees.length < 20) trees.push(0);
-                if (trees.every(t => t === 0)) trees[0] = 1;
-            }
-            if (data.gadgets) {
-                unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : data.gadgets;
-                if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
-                while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
-            }
-            if (data.active_gadgets) {
-                activeGadgets = typeof data.active_gadgets === 'string' ? JSON.parse(data.active_gadgets) : data.active_gadgets;
-                if (!Array.isArray(activeGadgets)) activeGadgets = Array(10).fill(false);
-                while(activeGadgets.length < 10) activeGadgets.push(false);
-            }
+            try { inventory = typeof data.inventory === 'string' ? JSON.parse(data.inventory) : (data.inventory || inventory); } catch(e){}
+            if (typeof inventory !== 'object' || inventory === null) inventory = {};
+
+            try { trees = typeof data.trees === 'string' ? JSON.parse(data.trees) : (data.trees || trees); } catch(e){}
+            if (!Array.isArray(trees)) trees = [1, ...Array(19).fill(0)];
+            while(trees.length < 20) trees.push(0);
+            if (trees.every(t => t === 0)) trees[0] = 1;
+
+            try { unlockedGadgets = typeof data.gadgets === 'string' ? JSON.parse(data.gadgets) : (data.gadgets || unlockedGadgets); } catch(e){}
+            if (!Array.isArray(unlockedGadgets)) unlockedGadgets = Array(10).fill(false);
+            while(unlockedGadgets.length < 10) unlockedGadgets.push(false);
+
+            try { activeGadgets = typeof data.active_gadgets === 'string' ? JSON.parse(data.active_gadgets) : (data.active_gadgets || activeGadgets); } catch(e){}
+            if (!Array.isArray(activeGadgets)) activeGadgets = Array(10).fill(false);
+            while(activeGadgets.length < 10) activeGadgets.push(false);
             
             isInternalUpdate = false;
             
@@ -6968,8 +6967,11 @@
         { id: "bank", name: "Banana Bank", baseCost: 1400000, cps: 1400, count: 0, icon: "🏦" },
         { id: "temple", name: "Banana Temple", baseCost: 20000000, cps: 7800, count: 0, icon: "🕍" },
         { id: "wizard", name: "Banana Wizard Tower", baseCost: 330000000, cps: 44000, count: 0, icon: "🧙‍♂️" },
-        { id: "shipment", name: "Banana Shipment", baseCost: 5100000000, cps: 260000, count: 0, icon: "🚀" }
+        { id: "shipment", name: "Banana Shipment", baseCost: 5100000000, cps: 260000, count: 0, icon: "🚀" },
+        { id: "golden1", name: "Golden Frequency", baseCost: 77777, cps: 0, count: 0, icon: "🌟" },
+        { id: "golden2", name: "Golden Multiplier", baseCost: 777777, cps: 0, count: 0, icon: "✨" }
     ];
+    let goldenBananaInterval = null;
     let bcInterval = null;
 
     function initVladimir() {
@@ -7115,6 +7117,50 @@
         }
     }
 
+    function spawnGoldenBanana() {
+        const gb = document.getElementById("golden-banana");
+        if (!gb) return;
+        
+        // Ensure we don't spawn multiple
+        if (!gb.classList.contains("hidden")) return;
+
+        // Position randomly within left panel
+        const leftPanel = gb.parentElement;
+        const rect = leftPanel.getBoundingClientRect();
+        const maxX = rect.width - 100;
+        const maxY = rect.height - 100;
+        
+        gb.style.left = Math.max(20, Math.floor(Math.random() * maxX)) + "px";
+        gb.style.top = Math.max(20, Math.floor(Math.random() * maxY)) + "px";
+        gb.classList.remove("hidden");
+
+        // Despawn after 10 seconds
+        setTimeout(() => {
+            gb.classList.add("hidden");
+        }, 10000);
+    }
+
+    function clickGoldenBanana(e) {
+        if (e) e.stopPropagation();
+        const gb = document.getElementById("golden-banana");
+        if (gb) gb.classList.add("hidden");
+
+        const goldMult = bcUpgrades.find(u => u.id === 'golden2');
+        const multVal = goldMult ? (1 + goldMult.count) : 1;
+        
+        const cps = getBcCps();
+        // Base reward is 100 + 30 seconds of CPS
+        const reward = (100 + cps * 30) * multVal;
+        
+        bcScore += reward;
+        updateBcUI();
+        playSound('win');
+        
+        if (e && e.clientX) {
+            spawnFloatingText(e.clientX, e.clientY, `+${Math.floor(reward)} 🌟`);
+        }
+    }
+
     function spawnFloatingText(x, y, text) {
         const el = document.createElement("div");
         el.className = "fixed pointer-events-none text-orange-400 font-black text-2xl drop-shadow-md z-[1200] animate-float-up";
@@ -7143,6 +7189,18 @@
         initBcStore();
         updateBcUI();
         if (bcInterval) clearInterval(bcInterval);
+        if (goldenBananaInterval) clearInterval(goldenBananaInterval);
+        
+        goldenBananaInterval = setInterval(() => {
+            const freqUpg = bcUpgrades.find(u => u.id === 'golden1');
+            const freqMult = freqUpg ? (1 + (freqUpg.count * 0.5)) : 1;
+            const chance = 0.05 * freqMult; // 5% base chance every 10 seconds
+            
+            if (Math.random() < chance) {
+                spawnGoldenBanana();
+            }
+        }, 10000);
+
         bcInterval = setInterval(() => {
             const cps = getBcCps();
             if (cps > 0) {
@@ -7159,6 +7217,7 @@
         const modal = document.getElementById("banana-clicker-modal");
         if(modal) modal.classList.add("hidden");
         if (bcInterval) clearInterval(bcInterval);
+        if (goldenBananaInterval) clearInterval(goldenBananaInterval);
     }
 
     // Expose necessary functions to window for HTML event handlers (Read-only to prevent console modification)
@@ -7175,7 +7234,7 @@
         handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle, forceSync, openCase, massOpenCase, startAutoOpenCase, showCasesInventory, closeCaseResult, sellSkin,
         openSkinValuesModal, closeSkinValuesModal, updateSkinValuesTable,
         openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, sellSkinToMerchant, cashOutCrash, hiloGuess, pokerHold, pokerDraw,
-        openCreatorCodeModal, closeCreatorCodeModal, submitCreatorCode, talkToVladimir, advanceVladimir, clickBanana, buyBcUpgrade, openBananaClicker, closeBananaClicker
+        openCreatorCodeModal, closeCreatorCodeModal, submitCreatorCode, talkToVladimir, advanceVladimir, clickBanana, buyBcUpgrade, openBananaClicker, closeBananaClicker, clickGoldenBanana
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
