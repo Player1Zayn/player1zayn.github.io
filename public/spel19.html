@@ -335,6 +335,67 @@
     </div>
   </div>
 
+  
+  <!-- Profile Modal -->
+  <div id="profile-modal" class="fixed inset-0 bg-black/95 z-[550] items-center justify-center hidden backdrop-blur-md p-4 overflow-y-auto">
+    <div class="bg-emerald-950 border-4 border-emerald-500 w-full max-w-2xl rounded-3xl shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col relative">
+      <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-emerald-500 hover:text-emerald-300 z-50">
+          <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+      </button>
+      
+      <!-- Loading State -->
+      <div id="profile-loading" class="p-12 flex items-center justify-center">
+          <div class="animate-spin text-5xl">🍌</div>
+      </div>
+      
+      <!-- Content State -->
+      <div id="profile-content" class="hidden flex-col">
+          <!-- Header -->
+          <div class="p-8 bg-emerald-900 border-b border-emerald-700 flex flex-col items-center text-center relative overflow-hidden">
+             <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+             <div class="relative z-10 w-full">
+                 <div class="text-sm font-black text-emerald-400 mb-1 tracking-widest uppercase" id="profile-title"></div>
+                 <h2 class="text-4xl md:text-5xl font-black text-yellow-400 uppercase tracking-tighter mb-4 drop-shadow-md" id="profile-name">PLAYER</h2>
+                 <div class="flex flex-wrap justify-center gap-4 text-white font-bold">
+                     <div class="bg-black/40 px-4 py-2 rounded-xl border border-emerald-700/50 flex items-center gap-2 shadow-inner">
+                        <span class="text-emerald-500 text-xs uppercase tracking-widest">LVL</span>
+                        <span class="text-xl" id="profile-level">1</span>
+                     </div>
+                     <div class="bg-black/40 px-4 py-2 rounded-xl border border-emerald-700/50 flex items-center gap-2 shadow-inner">
+                        <span class="text-yellow-500 text-xs uppercase tracking-widest">COINS</span>
+                        <span class="text-xl font-mono text-yellow-400" id="profile-coins">0</span>
+                     </div>
+                     <div class="bg-black/40 px-4 py-2 rounded-xl border border-emerald-700/50 flex items-center gap-2 shadow-inner">
+                        <span class="text-orange-500 text-xs uppercase tracking-widest">SCORE</span>
+                        <span class="text-xl" id="profile-score">0 🍌</span>
+                     </div>
+                 </div>
+                 
+                 <div class="mt-8 flex justify-center">
+                    <button id="profile-trade-btn" class="bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-black px-8 py-4 rounded-xl shadow-[0_6px_0_rgb(161,98,7)] transition-all active:translate-y-1 active:shadow-none flex items-center gap-2 text-xl">
+                        🤝 SEND TRADE REQUEST
+                    </button>
+                 </div>
+             </div>
+          </div>
+          
+          <!-- Skins Toggle -->
+          <div class="p-6 flex flex-col bg-emerald-950">
+              <button onclick="toggleProfileSkins()" class="w-full bg-emerald-800 hover:bg-emerald-700 text-white font-black py-4 rounded-xl transition-all shadow-md flex justify-between items-center px-6 border border-emerald-600">
+                  <span class="tracking-widest text-lg">VIEW PLAYER'S SKINS</span>
+                  <span id="profile-skins-caret" class="text-xl">▼</span>
+              </button>
+              
+              <div id="profile-skins-container" class="hidden mt-4 bg-black/60 p-4 rounded-xl border border-emerald-900/50 shadow-inner">
+                  <div id="profile-skins-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-[300px] overflow-y-auto custom-scroll p-2">
+                      <!-- Skins dynamically populated here -->
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Trading Modal -->
   <div id="trade-modal" class="fixed inset-0 bg-black/95 z-[500] items-center justify-center hidden backdrop-blur-md p-4 overflow-y-auto">
     <div class="bg-emerald-950 border-4 border-emerald-500 w-full max-w-5xl rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col min-h-[80vh]">
@@ -726,13 +787,13 @@
       <!-- Content -->
       <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
           <!-- Left: Big Banana -->
-          <div class="flex-1 flex flex-col items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] relative">
-              <div class="text-center mb-8 bg-black/50 p-6 rounded-3xl border border-orange-500/30 w-full max-w-sm backdrop-blur-sm shadow-2xl">
+          <div class="w-full md:w-1/3 max-w-md flex flex-col items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] relative border-r border-gray-800">
+              <div class="text-center mb-8 bg-black/50 p-6 rounded-3xl border border-orange-500/30 w-full backdrop-blur-sm shadow-2xl">
                   <h3 class="text-orange-500 font-black text-xl uppercase tracking-widest mb-1">Clicker Bananas</h3>
                   <div class="text-white font-black text-4xl md:text-5xl drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" id="bc-score">0</div>
                   <div class="text-orange-300/70 font-bold text-sm mt-2"><span id="bc-cps">0</span> bananas per second</div>
               </div>
-              
+                 
               <div class="relative w-48 h-48 md:w-64 md:h-64 cursor-pointer hover:scale-105 active:scale-95 transition-transform" onclick="clickBanana(event)">
                   <div class="absolute inset-0 bg-orange-500/20 blur-[50px] rounded-full pointer-events-none"></div>
                   <div class="w-full h-full flex items-center justify-center text-9xl md:text-[10rem] drop-shadow-[0_0_30px_rgba(249,115,22,0.6)] select-none">🍌</div>
@@ -743,8 +804,18 @@
               </div>
           </div>
           
+          <!-- Middle: Buildings Visual -->
+          <div class="flex-1 flex flex-col bg-gray-950 overflow-y-auto custom-scroll relative">
+              <div class="p-4 bg-gray-900 border-b border-gray-800 text-center sticky top-0 z-10 shadow-lg">
+                  <h3 class="text-white font-black uppercase tracking-widest">Empire</h3>
+              </div>
+              <div id="bc-buildings" class="flex-1 p-4 space-y-6">
+                  <!-- Buildings will be generated here -->
+              </div>
+          </div>
+             
           <!-- Right: Upgrades -->
-          <div class="w-full md:w-80 bg-gray-900 border-l border-gray-800 flex flex-col h-[50vh] md:h-full">
+          <div class="w-full md:w-80 lg:w-96 bg-gray-900 border-l border-gray-800 flex flex-col h-[50vh] md:h-full">
               <div class="p-4 bg-gray-950 border-b border-gray-800 text-center">
                   <h3 class="text-white font-black uppercase tracking-widest">Store</h3>
               </div>
@@ -775,6 +846,7 @@
           <button onclick="closeSecretCodeModal()" class="flex-1 py-4 bg-gray-800 hover:bg-gray-700 text-gray-500 font-black rounded-2xl transition-all">BACK</button>
           <button id="dungeon-submit-btn" onclick="submitDungeonCode()" class="flex-[2] py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl shadow-[0_6px_0_rgb(5,150,105)] transition-all active:translate-y-1 active:shadow-none">SUBMIT</button>
         </div>
+        <button id="dungeon-bypass-btn" onclick="bypassDungeonCooldown()" class="hidden w-full mt-4 py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-black rounded-2xl shadow-[0_6px_0_rgb(161,98,7)] transition-all active:translate-y-1 active:shadow-none">BYPASS WITH KEY</button>
       </div>
     </div>
     <div id="view-name_entry" class="flex-1 flex flex-col items-center justify-center bg-emerald-950 p-4 md:p-6 hidden overflow-y-auto">
@@ -2976,6 +3048,109 @@
             const skin = SKINS.find(s => s.id === id);
             return total + (TRADE_RARITY_DEFAULTS[skin?.rarity || 'Common'] || 0);
         }, 0);
+    }
+
+    // --- PROFILE SYSTEM ---
+    let currentProfileId = null;
+
+    async function openProfile(id) {
+        currentProfileId = id;
+        const modal = document.getElementById('profile-modal');
+        const loading = document.getElementById('profile-loading');
+        const content = document.getElementById('profile-content');
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        loading.classList.remove('hidden');
+        content.classList.add('hidden');
+        
+        document.getElementById('profile-skins-container').classList.add('hidden');
+        document.getElementById('profile-skins-caret').innerText = '▼';
+        
+        try {
+            const response = await fetch(`/api/profile/${id}`);
+            const data = await response.json();
+            
+            if (data.error) throw new Error(data.error);
+            
+            document.getElementById('profile-name').innerText = data.name;
+            document.getElementById('profile-level').innerText = data.level || 1;
+            document.getElementById('profile-coins').innerText = formatNumber(data.coins);
+            document.getElementById('profile-score').innerText = formatNumber(data.score) + ' 🍌';
+            
+            const titleEl = document.getElementById('profile-title');
+            if (data.equipped_title && TITLES[data.equipped_title]) {
+                titleEl.innerText = TITLES[data.equipped_title].name;
+                titleEl.className = `text-sm font-black mb-1 uppercase tracking-widest ${TITLES[data.equipped_title].color || 'text-emerald-400'}`;
+            } else {
+                titleEl.innerText = 'PLAYER';
+                titleEl.className = `text-sm font-black mb-1 uppercase tracking-widest text-gray-500`;
+            }
+            
+            const tradeBtn = document.getElementById('profile-trade-btn');
+            if (id === userId) {
+                tradeBtn.classList.add('hidden');
+            } else {
+                tradeBtn.classList.remove('hidden');
+                tradeBtn.onclick = () => {
+                    closeProfileModal();
+                    sendTradeRequest(id);
+                };
+            }
+            
+            const grid = document.getElementById('profile-skins-grid');
+            grid.innerHTML = '';
+            
+            const inv = data.inventory || {};
+            let hasSkins = false;
+            
+            Object.entries(inv).forEach(([skinId, count]) => {
+                const skin = SKINS.find(s => s.id === skinId);
+                if (count > 0 && skin) {
+                    hasSkins = true;
+                    grid.innerHTML += `
+                        <div class="bg-gray-900 border border-gray-700 rounded-xl p-3 text-center relative flex flex-col items-center hover:bg-gray-800 transition-colors shadow-lg">
+                            <div class="w-14 h-14 flex items-center justify-center text-4xl drop-shadow-md mb-2" style="filter: drop-shadow(0 0 5px ${skin.color})">🍌</div>
+                            <div class="text-[9px] md:text-[10px] font-black text-gray-300 truncate w-full uppercase tracking-wider">${skin.name}</div>
+                            <div class="absolute -top-2 -right-2 bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full z-10 border-2 border-blue-400 shadow-md">x${count}</div>
+                        </div>
+                    `;
+                }
+            });
+            
+            if (!hasSkins) {
+                grid.innerHTML = `<div class="col-span-full text-center text-gray-500 font-bold text-sm py-8 italic">No skins unlocked yet.</div>`;
+            }
+            
+            loading.classList.add('hidden');
+            content.classList.remove('hidden');
+            content.classList.add('flex');
+        } catch (e) {
+            console.error(e);
+            closeProfileModal();
+            showNotification("Could not load profile", "error");
+        }
+    }
+
+    function closeProfileModal() {
+        const modal = document.getElementById('profile-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        currentProfileId = null;
+    }
+
+    function toggleProfileSkins() {
+        const container = document.getElementById('profile-skins-container');
+        const caret = document.getElementById('profile-skins-caret');
+        if (container.classList.contains('hidden')) {
+            container.classList.remove('hidden');
+            caret.innerText = '▲';
+        } else {
+            container.classList.add('hidden');
+            caret.innerText = '▼';
+        }
     }
 
     async function sendTradeRequest(targetId) {
@@ -6613,9 +6788,8 @@
                 <div class="flex flex-col">
                     <div class="flex items-center gap-1.5">
                         ${isOnline ? `<div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.8)] flex-shrink-0" title="Online"></div>` : `<div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-zinc-600 flex-shrink-0" title="Offline"></div>`}
-                        <span class="font-bold ${isMe ? 'text-yellow-400' : 'text-emerald-100'} text-xs md:text-sm truncate max-w-[70px] md:max-w-[110px]">${lbUser.name}</span>
+                        <span onclick="openProfile('${lbUser.id}')" class="font-bold ${isMe ? 'text-yellow-400' : 'text-emerald-100 hover:text-white cursor-pointer hover:underline'} text-xs md:text-sm truncate max-w-[70px] md:max-w-[110px] transition-colors">${lbUser.name}</span>
                         ${isMe ? '<span class="bg-yellow-500 text-black text-[7px] font-black px-1 rounded-sm">YOU</span>' : ''}
-                        ${!isMe ? `<button onclick="sendTradeRequest('${lbUser.id}')" class="ml-auto hidden group-hover:flex bg-yellow-500 hover:bg-yellow-400 text-yellow-950 text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm items-center gap-1 transition-all active:scale-95 whitespace-nowrap">🤝 TRADE</button>` : ''}
                     </div>
                     <div class="flex items-center gap-1.5 mt-0.5">
                         ${lbUser.equipped_title ? `<span class="text-[8px] md:text-[9px] font-black uppercase ${TITLES[lbUser.equipped_title]?.color || 'text-emerald-400'}">${TITLES[lbUser.equipped_title]?.name || ''}</span>` : ''}
@@ -6794,6 +6968,17 @@
     }
 
     // --- LUDVIG'S DUNGEON LOGIC ---
+    function updateBypassButton() {
+        const bypassBtn = document.getElementById('dungeon-bypass-btn');
+        if (!bypassBtn) return;
+        const hasDungeonKey = activeBoosts.dungeon_key > Date.now();
+        if (checkDungeonCooldown() && hasDungeonKey) {
+            bypassBtn.classList.remove('hidden');
+        } else {
+            bypassBtn.classList.add('hidden');
+        }
+    }
+
     function openSecretCodeModal() {
         if (checkDungeonCooldown()) {
             const cooldownEl = document.getElementById('dungeon-cooldown-text');
@@ -6813,6 +6998,7 @@
                 submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
+        updateBypassButton();
         const modal = document.getElementById('secret-code-modal');
         if (modal) modal.classList.remove('hidden');
         const input = document.getElementById('dungeon-code-input');
@@ -6832,6 +7018,7 @@
         
         dungeonTimerInterval = setInterval(() => {
             const remaining = dungeonCooldownEnd - Date.now();
+            updateBypassButton();
             if (remaining <= 0) {
                 clearInterval(dungeonTimerInterval);
                 const cooldownEl = document.getElementById('dungeon-cooldown-text');
@@ -6851,6 +7038,16 @@
 
     function checkDungeonCooldown() {
         return Date.now() < dungeonCooldownEnd;
+    }
+    
+    function bypassDungeonCooldown() {
+        const hasDungeonKey = activeBoosts.dungeon_key > Date.now();
+        if (hasDungeonKey) {
+            dungeonCooldownEnd = 0;
+            localStorage.setItem('dungeonCooldownEnd', 0);
+            showNotification("Cooldown Bypassed using Key!", "success");
+            openSecretCodeModal(); // Refresh modal
+        }
     }
 
     function submitDungeonCode() {
@@ -6968,6 +7165,13 @@
         { id: "temple", name: "Banana Temple", baseCost: 20000000, cps: 7800, count: 0, icon: "🕍" },
         { id: "wizard", name: "Banana Wizard Tower", baseCost: 330000000, cps: 44000, count: 0, icon: "🧙‍♂️" },
         { id: "shipment", name: "Banana Shipment", baseCost: 5100000000, cps: 260000, count: 0, icon: "🚀" },
+        { id: "alchemylab", name: "Alchemy Lab", baseCost: 75000000000, cps: 1600000, count: 0, icon: "⚗️" },
+        { id: "portal", name: "Portal", baseCost: 1000000000000, cps: 10000000, count: 0, icon: "🌌" },
+        { id: "timemachine", name: "Time Machine", baseCost: 14000000000000, cps: 65000000, count: 0, icon: "⏳" },
+        { id: "antimatter", name: "Antimatter Condenser", baseCost: 170000000000000, cps: 430000000, count: 0, icon: "⚛️" },
+        { id: "prism", name: "Prism", baseCost: 2100000000000000, cps: 2900000000, count: 0, icon: "🌈" },
+        { id: "chancemaker", name: "Chancemaker", baseCost: 26000000000000000, cps: 21000000000, count: 0, icon: "🎲" },
+        { id: "fractalengine", name: "Fractal Engine", baseCost: 310000000000000000, cps: 150000000000, count: 0, icon: "🌀" },
         { id: "golden1", name: "Golden Frequency", baseCost: 77777, cps: 0, count: 0, icon: "🌟" },
         { id: "golden2", name: "Golden Multiplier", baseCost: 777777, cps: 0, count: 0, icon: "✨" }
     ];
@@ -7104,6 +7308,36 @@
                 costEl.className = `${canAfford ? "text-green-400" : "text-red-400"} font-black text-xs`;
             }
         });
+        
+        renderBcBuildings();
+    }
+
+    function renderBcBuildings() {
+        const buildingsEl = document.getElementById("bc-buildings");
+        if (!buildingsEl) return;
+        
+        let html = '';
+        bcUpgrades.forEach(u => {
+            if (u.count > 0) {
+                html += `
+                <div class="bg-gray-900/50 rounded-2xl border border-gray-800 p-4 relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-transparent to-transparent z-10 pointer-events-none"></div>
+                    <div class="flex items-center gap-2 mb-3 relative z-20">
+                        <div class="text-2xl">${u.icon}</div>
+                        <h4 class="text-white font-bold text-lg">${u.name}</h4>
+                        <span class="text-orange-400 font-black ml-auto bg-orange-900/30 px-3 py-1 rounded-lg border border-orange-500/30">x${u.count}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 text-3xl opacity-80 relative z-0">
+                        ${Array(u.count).fill(u.icon).join('')}
+                    </div>
+                </div>`;
+            }
+        });
+        
+        // Only update if HTML changed to prevent flashing
+        if (buildingsEl.innerHTML !== html) {
+            buildingsEl.innerHTML = html;
+        }
     }
 
     function clickBanana(e) {
@@ -7233,7 +7467,7 @@
         toggleGadget, toggleBonusBet, showAuthStep, handleRegister, handleLogin,
         handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle, forceSync, openCase, massOpenCase, startAutoOpenCase, showCasesInventory, closeCaseResult, sellSkin,
         openSkinValuesModal, closeSkinValuesModal, updateSkinValuesTable,
-        openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, sellSkinToMerchant, cashOutCrash, hiloGuess, pokerHold, pokerDraw,
+        openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, bypassDungeonCooldown, sellSkinToMerchant, openProfile, closeProfileModal, toggleProfileSkins, cashOutCrash, hiloGuess, pokerHold, pokerDraw,
         openCreatorCodeModal, closeCreatorCodeModal, submitCreatorCode, talkToVladimir, advanceVladimir, clickBanana, buyBcUpgrade, openBananaClicker, closeBananaClicker, clickGoldenBanana
     };
 
