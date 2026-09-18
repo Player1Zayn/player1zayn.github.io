@@ -348,7 +348,7 @@ const SLOT_ICONS = ['🍎', '🍉', '🥝', '🍐', '🍍', '🍇', '🍓', '�
 const JACKPOT_ICON = '💰';
 
 const SKINS = [
-    // Common (20)
+    // Common (36)
     { id: 'c1', name: 'Green Banana', rarity: 'Common', color: '#22c55e' },
     { id: 'c2', name: 'Blue Banana', rarity: 'Common', color: '#22c55e' },
     { id: 'c3', name: 'Red Banana', rarity: 'Common', color: '#22c55e' },
@@ -379,7 +379,14 @@ const SKINS = [
     { id: 'c28', name: 'Coral Banana', rarity: 'Common', color: '#22c55e' },
     { id: 'c29', name: 'Autumn Banana', rarity: 'Common', color: '#22c55e' },
     { id: 'c30', name: 'Spring Banana', rarity: 'Common', color: '#22c55e' },
-    // Rare (18)
+    { id: 'c31', name: 'Ash Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c32', name: 'Clay Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c33', name: 'Moss Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c34', name: 'Dune Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c35', name: 'Pebble Banana', rarity: 'Common', color: '#22c55e' },
+    { id: 'c36', name: 'Twilight Banana', rarity: 'Common', color: '#22c55e' },
+
+    // Rare (36)
     { id: 'r1', name: 'Spotted Banana', rarity: 'Rare', color: '#3b82f6' },
     { id: 'r2', name: 'Striped Banana', rarity: 'Rare', color: '#3b82f6' },
     { id: 'r3', name: 'Polka Dot Banana', rarity: 'Rare', color: '#3b82f6' },
@@ -408,7 +415,16 @@ const SKINS = [
     { id: 'r26', name: 'Neon Banana', rarity: 'Rare', color: '#3b82f6' },
     { id: 'r27', name: 'Pastel Banana', rarity: 'Rare', color: '#3b82f6' },
     { id: 'r28', name: 'Metallic Banana', rarity: 'Rare', color: '#3b82f6' },
-    // Epic (10)
+    { id: 'r29', name: 'Amethyst Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r30', name: 'Topaz Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r31', name: 'Prismatic Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r32', name: 'Carbon Fiber Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r33', name: 'Chrome Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r34', name: 'Matrix Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r35', name: 'Magma Banana', rarity: 'Rare', color: '#3b82f6' },
+    { id: 'r36', name: 'Frostbite Banana', rarity: 'Rare', color: '#3b82f6' },
+
+    // Epic (26)
     { id: 'e1', name: 'Fire Banana', rarity: 'Epic', color: '#a855f7' },
     { id: 'e2', name: 'Ice Banana', rarity: 'Epic', color: '#a855f7' },
     { id: 'e3', name: 'Thunder Banana', rarity: 'Epic', color: '#a855f7' },
@@ -429,17 +445,55 @@ const SKINS = [
     { id: 'e18', name: 'Ethereal Banana', rarity: 'Epic', color: '#a855f7' },
     { id: 'e19', name: 'Void Banana', rarity: 'Epic', color: '#a855f7' },
     { id: 'e20', name: 'Pulsing Banana', rarity: 'Epic', color: '#a855f7' },
-    // Mythic (5)
+    { id: 'e21', name: 'Molten Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e22', name: 'Glacial Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e23', name: 'Tempest Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e24', name: 'Vortex Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e25', name: 'Chrono Banana', rarity: 'Epic', color: '#a855f7' },
+    { id: 'e26', name: 'Gravity Banana', rarity: 'Epic', color: '#a855f7' },
+
+    // Mythic (12)
     { id: 'm1', name: 'Galaxy Banana', rarity: 'Mythic', color: '#ef4444' },
     { id: 'm2', name: 'Nebula Banana', rarity: 'Mythic', color: '#ef4444' },
     { id: 'm3', name: 'Supernova Banana', rarity: 'Mythic', color: '#ef4444' },
     { id: 'm4', name: 'Black Hole Banana', rarity: 'Mythic', color: '#ef4444' },
     { id: 'm5', name: 'Cosmic Banana', rarity: 'Mythic', color: '#ef4444' },
-    // Legendary (3)
+    { id: 'm6', name: 'Dark Matter Banana', rarity: 'Mythic', color: '#ef4444' },
+    { id: 'm7', name: 'Singularity Banana', rarity: 'Mythic', color: '#ef4444' },
+    { id: 'm8', name: 'Quasar Banana', rarity: 'Mythic', color: '#ef4444' },
+    { id: 'm9', name: 'Eclipse Banana', rarity: 'Mythic', color: '#ef4444' },
+    { id: 'm10', name: 'Hypernova Banana', rarity: 'Mythic', color: '#ef4444' },
+    { id: 'm11', name: 'Event Horizon Banana', rarity: 'Mythic', color: '#ef4444' },
+    { id: 'm12', name: 'Celestial Dragon Banana', rarity: 'Mythic', color: '#ef4444' },
+
+    // Legendary (9)
     { id: 'l1', name: 'Golden Banana', rarity: 'Legendary', color: '#facc15' },
     { id: 'l2', name: 'Diamond Banana', rarity: 'Legendary', color: '#facc15' },
-    { id: 'l3', name: 'Rainbow Banana', rarity: 'Legendary', color: '#facc15' }
+    { id: 'l3', name: 'Rainbow Banana', rarity: 'Legendary', color: '#facc15' },
+    { id: 'l4', name: 'Emerald King Banana', rarity: 'Legendary', color: '#facc15' },
+    { id: 'l5', name: 'Ruby Sovereign Banana', rarity: 'Legendary', color: '#facc15' },
+    { id: 'l6', name: 'Sapphire Titan Banana', rarity: 'Legendary', color: '#facc15' },
+    { id: 'l7', name: 'Platinum Banana', rarity: 'Legendary', color: '#facc15' },
+    { id: 'l8', name: 'Obsidian Banana', rarity: 'Legendary', color: '#facc15' },
+    { id: 'l9', name: 'Sun God Banana', rarity: 'Legendary', color: '#facc15' },
+
+    // Ominous (5) - Higher than Legendary!
+    { id: 'o1', name: 'Eldritch Banana', rarity: 'Ominous', color: '#000000' },
+    { id: 'o2', name: 'Abyssal Monarch Banana', rarity: 'Ominous', color: '#000000' },
+    { id: 'o3', name: 'Doomsday Banana', rarity: 'Ominous', color: '#000000' },
+    { id: 'o4', name: 'Void Sovereign Banana', rarity: 'Ominous', color: '#000000' },
+    { id: 'o5', name: 'Blood Moon Banana', rarity: 'Ominous', color: '#000000' }
 ];
+
+const CASE_COSTS: Record<string, bigint> = {
+    'normal': 10000n,
+    'booster': 100000n,
+    'jungle': 500000n,
+    'toverland': 2000000n,
+    'cosmic': 50000000n,
+    'abyssal': 750000000n,
+    'void': 10000000000n
+};
 
 // Get Server Status
 app.get("/api/server-status", async (req, res) => {
@@ -596,8 +650,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         if (clientScore !== undefined && clientScore !== null) {
             let caseCost = 0n;
             if (gameMode === 'cases') {
-                const costs: any = { 'normal': 10000n, 'booster': 100000n, 'toverland': 2000000n };
-                caseCost = costs[req.body.caseType] || 0n;
+                caseCost = CASE_COSTS[req.body.caseType] || 0n;
             }
             currentBananas = BigInt(clientScore) + totalBet + caseCost;
         }
@@ -890,32 +943,63 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             totalBet = 0n; // Bet was already deducted
         } else if (gameMode === 'cases') {
             const caseType = req.body.caseType; 
-            const costs: any = { 'normal': 10000n, 'booster': 100000n, 'toverland': 2000000n };
-            const cost = costs[caseType] || 0n;
+            const cost = CASE_COSTS[caseType] || 0n;
             if (currentBananas < cost) return res.status(400).json({ error: "Not enough bananas" });
             const r = Math.random() * 100;
             let rarity = 'Common';
-            if (caseType === 'toverland') {
-                if (r < 5) rarity = 'Legendary';
-                else if (r < 15) rarity = 'Mythic';
-                else if (r < 35) rarity = 'Epic';
-                else if (r < 65) rarity = 'Rare';
+            
+            if (caseType === 'void') {
+                // 10B Void Case: 4.5% Ominous, 40.5% Legendary, 40% Mythic, 15% Epic
+                if (r < 4.5) rarity = 'Ominous';
+                else if (r < 45.0) rarity = 'Legendary';
+                else if (r < 85.0) rarity = 'Mythic';
+                else rarity = 'Epic';
+            } else if (caseType === 'abyssal') {
+                // 750M Abyssal Case: 1.5% Ominous, 28.5% Legendary, 40% Mythic, 30% Epic
+                if (r < 1.5) rarity = 'Ominous';
+                else if (r < 30.0) rarity = 'Legendary';
+                else if (r < 70.0) rarity = 'Mythic';
+                else rarity = 'Epic';
+            } else if (caseType === 'cosmic') {
+                // 50M Cosmic Case: 0.5% Ominous, 14.5% Legendary, 35% Mythic, 35% Epic, 15% Rare
+                if (r < 0.5) rarity = 'Ominous';
+                else if (r < 15.0) rarity = 'Legendary';
+                else if (r < 50.0) rarity = 'Mythic';
+                else if (r < 85.0) rarity = 'Epic';
+                else rarity = 'Rare';
+            } else if (caseType === 'toverland') {
+                // 2M Toverland Case: 0.05% Ominous, 5.95% Legendary, 18% Mythic, 36% Epic, 30% Rare, 10% Common
+                if (r < 0.05) rarity = 'Ominous';
+                else if (r < 6.0) rarity = 'Legendary';
+                else if (r < 24.0) rarity = 'Mythic';
+                else if (r < 60.0) rarity = 'Epic';
+                else if (r < 90.0) rarity = 'Rare';
+                else rarity = 'Common';
+            } else if (caseType === 'jungle') {
+                // 500K Jungle Case: 2.5% Legendary, 10% Mythic, 25% Epic, 40% Rare, 22.5% Common
+                if (r < 2.5) rarity = 'Legendary';
+                else if (r < 12.5) rarity = 'Mythic';
+                else if (r < 37.5) rarity = 'Epic';
+                else if (r < 77.5) rarity = 'Rare';
                 else rarity = 'Common';
             } else if (caseType === 'booster') {
-                if (r < 1) rarity = 'Legendary';
-                else if (r < 5) rarity = 'Mythic';
-                else if (r < 15) rarity = 'Epic';
-                else if (r < 40) rarity = 'Rare';
+                // 100K Booster Case
+                if (r < 1.0) rarity = 'Legendary';
+                else if (r < 5.0) rarity = 'Mythic';
+                else if (r < 20.0) rarity = 'Epic';
+                else if (r < 60.0) rarity = 'Rare';
                 else rarity = 'Common';
             } else {
+                // 10K Normal Case
                 if (r < 0.1) rarity = 'Legendary';
-                else if (r < 1) rarity = 'Mythic';
-                else if (r < 5) rarity = 'Epic';
-                else if (r < 20) rarity = 'Rare';
+                else if (r < 1.0) rarity = 'Mythic';
+                else if (r < 6.0) rarity = 'Epic';
+                else if (r < 30.0) rarity = 'Rare';
                 else rarity = 'Common';
             }
+            
             const skinPool = SKINS.filter(s => s.rarity === rarity);
-            const selectedSkin = skinPool[Math.floor(Math.random() * skinPool.length)];
+            const selectedSkin = skinPool[Math.floor(Math.random() * skinPool.length)] || SKINS[0];
             winAmount = 0n; 
             currentBananas -= cost;
             newInventory[selectedSkin.id] = (newInventory[selectedSkin.id] || 0) + 1;
@@ -1278,7 +1362,8 @@ async function updateDynamicSkinValues() {
       const rarity = SKINS_METADATA[skinId] || 'Common';
       let change = 0;
       
-      if (rarity === 'Legendary') change = delta * -15000000;
+      if (rarity === 'Ominous') change = delta * -50000000;
+      else if (rarity === 'Legendary') change = delta * -15000000;
       else if (rarity === 'Mythic') change = delta * -5000000;
       else if (rarity === 'Epic') change = delta * -150000;
       else if (rarity === 'Rare') change = delta * -15000;
@@ -1328,23 +1413,14 @@ const DEFAULT_RARITY_VALUES: Record<string, number> = {
   'Rare': 15000,
   'Epic': 200000,
   'Mythic': 1000000,
-  'Legendary': 10000000
+  'Legendary': 10000000,
+  'Ominous': 250000000
 };
 
-const SKINS_METADATA: Record<string, string> = {
-  'c1': 'Common', 'c2': 'Common', 'c3': 'Common', 'c4': 'Common', 'c5': 'Common',
-  'c6': 'Common', 'c7': 'Common', 'c8': 'Common', 'c9': 'Common', 'c10': 'Common',
-  'c11': 'Common', 'c12': 'Common', 'c13': 'Common', 'c14': 'Common', 'c15': 'Common',
-  'c16': 'Common', 'c17': 'Common', 'c18': 'Common', 'c19': 'Common', 'c20': 'Common',
-  'r1': 'Rare', 'r2': 'Rare', 'r3': 'Rare', 'r4': 'Rare', 'r5': 'Rare',
-  'r6': 'Rare', 'r7': 'Rare', 'r8': 'Rare', 'r9': 'Rare', 'r10': 'Rare',
-  'r11': 'Rare', 'r12': 'Rare', 'r13': 'Rare', 'r14': 'Rare', 'r15': 'Rare',
-  'r16': 'Rare', 'r17': 'Rare', 'r18': 'Rare',
-  'e1': 'Epic', 'e2': 'Epic', 'e3': 'Epic', 'e4': 'Epic', 'e5': 'Epic',
-  'e6': 'Epic', 'e7': 'Epic', 'e8': 'Epic', 'e9': 'Epic', 'e10': 'Epic',
-  'm1': 'Mythic', 'm2': 'Mythic', 'm3': 'Mythic', 'm4': 'Mythic', 'm5': 'Mythic',
-  'l1': 'Legendary', 'l2': 'Legendary', 'l3': 'Legendary'
-};
+const SKINS_METADATA: Record<string, string> = {};
+SKINS.forEach(s => {
+  SKINS_METADATA[s.id] = s.rarity;
+});
 
 function calculateTradeValue(skins: string[]) {
   return skins.reduce((total, id) => {
@@ -1367,7 +1443,11 @@ app.get("/api/skin-values", async (req, res) => {
   if (Object.keys(DYNAMIC_SKIN_VALUES).length === 0) {
     await refreshSkinValues();
   }
-  res.json(DYNAMIC_SKIN_VALUES);
+  const result: Record<string, number> = {};
+  SKINS.forEach(s => {
+    result[s.id] = DYNAMIC_SKIN_VALUES[s.id] ?? (DEFAULT_RARITY_VALUES[s.rarity] || 1000);
+  });
+  res.json({ ...result, ...DYNAMIC_SKIN_VALUES });
 });
 
 // Request a trade
@@ -1585,6 +1665,155 @@ app.post("/api/trade/cancel", authenticateToken, async (req: any, res) => {
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// Gift Bananas or Skin to another player
+app.post("/api/gift", authenticateToken, async (req: any, res) => {
+  const senderId = req.user.userId;
+  const { targetId, type, amount, skinId } = req.body;
+
+  if (!targetId || senderId === targetId) {
+    return res.status(400).json({ error: "Invalid recipient" });
+  }
+
+  try {
+    const supabase = getSupabase();
+
+    // Fetch sender and receiver
+    const { data: users, error: fetchErr } = await supabase
+      .from('database')
+      .select('id, name, score, level, inventory')
+      .in('id', [senderId, targetId]);
+
+    if (fetchErr || !users || users.length !== 2) {
+      return res.status(404).json({ error: "Recipient not found" });
+    }
+
+    const sender = users.find(u => u.id === senderId);
+    const target = users.find(u => u.id === targetId);
+
+    if (!sender || !target) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const senderScore = BigInt(sender.score || 0);
+    const targetScore = BigInt(target.score || 0);
+    const senderLevel = Number(sender.level || 1);
+    const targetLevel = Number(target.level || 1);
+
+    let senderInv = sender.inventory;
+    if (typeof senderInv === 'string') {
+      try { senderInv = JSON.parse(senderInv); } catch(e) { senderInv = {}; }
+    }
+    if (!senderInv || typeof senderInv !== 'object') senderInv = {};
+
+    let targetInv = target.inventory;
+    if (typeof targetInv === 'string') {
+      try { targetInv = JSON.parse(targetInv); } catch(e) { targetInv = {}; }
+    }
+    if (!targetInv || typeof targetInv !== 'object') targetInv = {};
+
+    if (type === 'bananas') {
+      const giftAmount = BigInt(amount || 0);
+      if (giftAmount <= 0n) {
+        return res.status(400).json({ error: "Amount must be greater than 0" });
+      }
+
+      // Max 25% of balance limit
+      const maxAllowed = senderScore / 4n;
+      if (giftAmount > maxAllowed) {
+        return res.status(400).json({ 
+          error: `Cannot gift more than 25% of your balance (Max: ${maxAllowed.toString()} 🍌)` 
+        });
+      }
+
+      if (senderScore < giftAmount) {
+        return res.status(400).json({ error: "Insufficient bananas in balance" });
+      }
+
+      // Level difference must be within 10 levels
+      const levelDiff = Math.abs(senderLevel - targetLevel);
+      if (levelDiff > 10) {
+        return res.status(400).json({ 
+          error: `Level requirement not met! You can only gift bananas to players within 10 levels of your level (Yours: ${senderLevel}, Recipient: ${targetLevel})` 
+        });
+      }
+
+      const newSenderScore = (senderScore - giftAmount).toString();
+      const newTargetScore = (targetScore + giftAmount).toString();
+
+      await supabase.from('database').update({ score: newSenderScore }).eq('id', senderId);
+      await supabase.from('database').update({ score: newTargetScore }).eq('id', targetId);
+
+      return res.json({
+        success: true,
+        type: 'bananas',
+        amount: giftAmount.toString(),
+        newBalance: newSenderScore,
+        message: `Successfully gifted ${giftAmount.toString()} 🍌 to ${target.name}!`
+      });
+
+    } else if (type === 'skin') {
+      if (!skinId) {
+        return res.status(400).json({ error: "No skin selected" });
+      }
+
+      const skin = SKINS.find(s => s.id === skinId);
+      if (!skin) {
+        return res.status(400).json({ error: "Invalid skin" });
+      }
+
+      const senderCount = Number(senderInv[skinId] || 0);
+      if (senderCount <= 0) {
+        return res.status(400).json({ error: "You do not own this skin" });
+      }
+
+      // Calculate market value & 50% tax
+      const marketValue = BigInt(DYNAMIC_SKIN_VALUES[skin.id] || DEFAULT_RARITY_VALUES[skin.rarity] || 1000);
+      const tax = marketValue / 2n;
+
+      if (senderScore < tax) {
+        return res.status(400).json({ 
+          error: `Insufficient bananas to pay the gifting tax! You need ${tax.toString()} 🍌 (50% of market value ${marketValue.toString()} 🍌)` 
+        });
+      }
+
+      // Deduct 1 skin from sender, add to target
+      senderInv[skinId] = senderCount - 1;
+      if (senderInv[skinId] <= 0) delete senderInv[skinId];
+      targetInv[skinId] = (Number(targetInv[skinId] || 0)) + 1;
+
+      // Deduct tax from sender balance
+      const newSenderScore = (senderScore - tax).toString();
+
+      await supabase.from('database').update({
+        score: newSenderScore,
+        inventory: JSON.stringify(senderInv)
+      }).eq('id', senderId);
+
+      await supabase.from('database').update({
+        inventory: JSON.stringify(targetInv)
+      }).eq('id', targetId);
+
+      return res.json({
+        success: true,
+        type: 'skin',
+        skinId,
+        skinName: skin.name,
+        tax: tax.toString(),
+        newBalance: newSenderScore,
+        newInventory: senderInv,
+        message: `Successfully gifted ${skin.name} to ${target.name}! Paid ${tax.toString()} 🍌 in gifting taxes.`
+      });
+
+    } else {
+      return res.status(400).json({ error: "Invalid gift type" });
+    }
+
+  } catch (error: any) {
+    console.error("Gift error:", error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // --- VITE MIDDLEWARE ---
