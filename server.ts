@@ -1115,6 +1115,35 @@ app.get("/api/debug", authenticateToken, async (req: any, res) => {
   }
 });
 
+
+// Get User Profile
+app.get("/api/profile/:id", async (req, res) => {
+  try {
+    const supabase = getSupabase();
+    const { data: user, error } = await supabase
+      .from('database')
+      .select('id, name, score, coins, level, inventory, equipped_title, unlocked_titles')
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json({
+      id: user.id,
+      name: user.name,
+      score: user.score,
+      coins: user.coins,
+      level: user.level,
+      equipped_title: user.equipped_title,
+      unlocked_titles: user.unlocked_titles ? JSON.parse(user.unlocked_titles) : [],
+      inventory: user.inventory ? JSON.parse(user.inventory) : {}
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get Leaderboard
 app.get("/api/leaderboard", async (req, res) => {
   try {
