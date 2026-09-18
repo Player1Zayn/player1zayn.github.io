@@ -371,9 +371,12 @@
                      </div>
                  </div>
                  
-                 <div class="mt-8 flex justify-center">
-                    <button id="profile-trade-btn" class="bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-black px-8 py-4 rounded-xl shadow-[0_6px_0_rgb(161,98,7)] transition-all active:translate-y-1 active:shadow-none flex items-center gap-2 text-xl">
+                 <div class="mt-8 flex flex-wrap justify-center gap-3">
+                    <button id="profile-trade-btn" class="bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-black px-6 py-3 rounded-xl shadow-[0_6px_0_rgb(161,98,7)] transition-all active:translate-y-1 active:shadow-none flex items-center gap-2 text-base md:text-lg">
                         🤝 SEND TRADE REQUEST
+                    </button>
+                    <button id="profile-gift-btn" class="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-black px-6 py-3 rounded-xl shadow-[0_6px_0_rgb(147,51,234)] transition-all active:translate-y-1 active:shadow-none flex items-center gap-2 text-base md:text-lg">
+                        🎁 GIFT PLAYER
                     </button>
                  </div>
              </div>
@@ -391,6 +394,123 @@
                       <!-- Skins dynamically populated here -->
                   </div>
               </div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gifting Modal -->
+  <div id="gift-modal" class="fixed inset-0 bg-black/90 z-[500] items-center justify-center hidden backdrop-blur-md p-4 overflow-y-auto">
+    <div class="bg-emerald-950 border-4 border-purple-500 w-full max-w-2xl rounded-[2.5rem] shadow-[0_0_80px_rgba(168,85,247,0.3)] overflow-hidden flex flex-col my-auto">
+      <!-- Modal Header -->
+      <div class="p-6 bg-gradient-to-r from-purple-950 via-emerald-950 to-purple-950 border-b border-purple-800/60 flex justify-between items-center">
+          <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-purple-900/60 border border-purple-500/50 flex items-center justify-center text-2xl shadow-inner">
+                  🎁
+              </div>
+              <div>
+                  <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic flex items-center gap-2">
+                      Gifting Center
+                  </h2>
+                  <div class="flex items-center gap-2 mt-0.5">
+                      <span class="text-xs text-purple-300 font-bold">To:</span>
+                      <span id="gift-target-name" class="text-sm font-black text-yellow-400">Player</span>
+                      <span id="gift-target-level-badge" class="bg-purple-900/80 text-purple-200 border border-purple-600/50 text-[10px] font-black px-2 py-0.5 rounded-full">LVL 1</span>
+                  </div>
+              </div>
+          </div>
+          <button onclick="closeGiftModal()" class="w-10 h-10 rounded-xl bg-black/40 hover:bg-red-600 text-gray-400 hover:text-white font-bold flex items-center justify-center transition-all">✕</button>
+      </div>
+
+      <!-- Gift Option Tabs -->
+      <div class="flex bg-black/40 p-2 gap-2 border-b border-emerald-800/40">
+          <button id="gift-tab-bananas-btn" onclick="switchGiftTab('bananas')" class="flex-1 py-2.5 rounded-xl font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-amber-600 text-yellow-950 shadow-md">
+              🍌 Gift Bananas
+          </button>
+          <button id="gift-tab-skin-btn" onclick="switchGiftTab('skin')" class="flex-1 py-2.5 rounded-xl font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 text-gray-400 hover:text-white">
+              🎨 Gift Banana Skin
+          </button>
+      </div>
+
+      <!-- Modal Content Body -->
+      <div class="p-6 flex flex-col gap-4">
+          <!-- BANANAS PANE -->
+          <div id="gift-bananas-pane" class="flex flex-col gap-4">
+              <!-- Level Status Banner -->
+              <div id="gift-level-status" class="p-3 rounded-xl text-xs font-bold flex items-start gap-2 bg-emerald-950/60 border border-emerald-700/60 text-emerald-200">
+                  <!-- Populated dynamically -->
+              </div>
+
+              <!-- Balance Info Box -->
+              <div class="grid grid-cols-2 gap-3">
+                  <div class="bg-black/40 p-3 rounded-xl border border-emerald-800/60">
+                      <div class="text-[10px] text-gray-400 uppercase font-black tracking-wider">Your Balance</div>
+                      <div id="gift-sender-balance" class="text-lg md:text-xl font-black text-yellow-400 mt-1">0 🍌</div>
+                  </div>
+                  <div class="bg-black/40 p-3 rounded-xl border border-purple-800/60">
+                      <div class="text-[10px] text-purple-300 uppercase font-black tracking-wider">Max Gift (25% Limit)</div>
+                      <div id="gift-max-bananas" class="text-lg md:text-xl font-black text-purple-300 mt-1">0 🍌</div>
+                  </div>
+              </div>
+
+              <!-- Quick percentage buttons -->
+              <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-400 font-bold uppercase">Quick Fill:</span>
+                  <button onclick="setGiftBananaPercent(5)" class="px-2.5 py-1 bg-emerald-900/60 hover:bg-emerald-800 border border-emerald-700/60 rounded-lg text-[11px] font-bold text-white transition-all">5%</button>
+                  <button onclick="setGiftBananaPercent(10)" class="px-2.5 py-1 bg-emerald-900/60 hover:bg-emerald-800 border border-emerald-700/60 rounded-lg text-[11px] font-bold text-white transition-all">10%</button>
+                  <button onclick="setGiftBananaPercent(15)" class="px-2.5 py-1 bg-emerald-900/60 hover:bg-emerald-800 border border-emerald-700/60 rounded-lg text-[11px] font-bold text-white transition-all">15%</button>
+                  <button onclick="setGiftBananaPercent(25)" class="px-2.5 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/50 rounded-lg text-[11px] font-black text-yellow-300 transition-all">25% (MAX)</button>
+              </div>
+
+              <!-- Input Field -->
+              <div class="flex flex-col gap-1.5">
+                  <label class="text-xs text-gray-300 font-bold uppercase tracking-wider">Bananas to Gift</label>
+                  <div class="relative">
+                      <input id="gift-bananas-input" type="number" min="1" placeholder="Enter amount of bananas..." oninput="validateGiftBananaInput()" class="w-full bg-black/60 border-2 border-emerald-700 rounded-xl px-4 py-3 text-lg font-black text-white focus:outline-none focus:border-yellow-400 transition-all pr-12 font-mono">
+                      <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xl">🍌</span>
+                  </div>
+                  <div class="text-[10px] text-gray-400 italic">
+                      * Rule: You cannot gift more than 25% of your total banana balance, and the recipient must be within ±10 levels.
+                  </div>
+              </div>
+
+              <!-- Action Button -->
+              <button id="gift-send-bananas-btn" onclick="sendBananaGift()" class="mt-2 w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-black text-base rounded-2xl shadow-[0_6px_0_rgb(161,98,7)] transition-all active:translate-y-1 active:shadow-none uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+                  SEND BANANAS
+              </button>
+          </div>
+
+          <!-- SKIN PANE -->
+          <div id="gift-skin-pane" class="hidden flex flex-col gap-4">
+              <!-- Skin Tax Info Banner -->
+              <div class="p-3 rounded-xl text-xs font-bold flex items-start gap-2 bg-purple-950/60 border border-purple-700/60 text-purple-200">
+                  <span class="text-base">⚖️</span>
+                  <div>
+                      <span class="font-black text-purple-300">Gifting Tax Rule:</span>
+                      When you gift a skin, you must pay <span class="text-yellow-400 font-black">50% (half)</span> of the skin's market value in bananas as taxes upon transfer.
+                  </div>
+              </div>
+
+              <!-- Skins Picker -->
+              <div class="flex flex-col gap-2">
+                  <div class="flex justify-between items-center">
+                      <label class="text-xs text-gray-300 font-bold uppercase tracking-wider">Select a Skin from Your Inventory</label>
+                      <span id="gift-skins-count" class="text-xs text-purple-400 font-mono font-bold">0 Available</span>
+                  </div>
+                  <div id="gift-skins-picker-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-[220px] overflow-y-auto custom-scroll p-2 bg-black/40 rounded-2xl border border-emerald-900/60">
+                      <!-- Dynamically rendered -->
+                  </div>
+              </div>
+
+              <!-- Selected Skin Tax & Summary Box -->
+              <div id="gift-selected-skin-summary" class="hidden bg-purple-950/40 p-3.5 rounded-2xl border border-purple-700/60 flex flex-col gap-2">
+                  <!-- Populated dynamically -->
+              </div>
+
+              <!-- Action Button -->
+              <button id="gift-send-skin-btn" onclick="sendSkinGift()" class="mt-2 w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-black text-base rounded-2xl shadow-[0_6px_0_rgb(147,51,234)] transition-all active:translate-y-1 active:shadow-none uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+                  SELECT A SKIN TO GIFT
+              </button>
           </div>
       </div>
     </div>
@@ -1393,10 +1513,10 @@
                 </div>
             </div>
 
-            <!-- BUY CASES VIEW -->
-            <div id="case-buy-view" class="flex flex-col items-center gap-4 w-full max-w-2xl mb-12 flex-1 justify-center">
+                        <!-- BUY CASES VIEW -->
+            <div id="case-buy-view" class="flex flex-col items-center gap-4 w-full max-w-2xl mb-12 flex-1 overflow-y-auto max-h-[75vh] custom-scrollbar pr-1">
               <!-- Normal Case -->
-              <div class="w-full bg-emerald-900/40 border-2 border-emerald-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all">
+              <div class="w-full bg-emerald-900/40 border-2 border-emerald-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all shrink-0">
                 <div class="text-5xl group-hover:scale-110 transition-transform shrink-0">📦</div>
                 <div class="flex-1">
                   <h3 class="text-white font-black text-xl">NORMAL CASE</h3>
@@ -1411,12 +1531,13 @@
                     </div>
                 </div>
               </div>
+
               <!-- Booster Case -->
-              <div class="w-full bg-blue-900/40 border-2 border-blue-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all">
+              <div class="w-full bg-blue-900/40 border-2 border-blue-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all shrink-0">
                 <div class="text-5xl group-hover:scale-110 transition-transform shrink-0">🚀</div>
                 <div class="flex-1">
                   <h3 class="text-white font-black text-xl">BOOSTER CASE</h3>
-                  <p class="text-blue-400 text-xs">Better odds for Rares</p>
+                  <p class="text-blue-400 text-xs">Better odds for Rares & Epics</p>
                 </div>
                 <div class="flex flex-col gap-2">
                     <button onclick="openCase('booster')" id="btn-open-booster-1" class="px-6 py-2 bg-blue-700 hover:bg-blue-600 text-white font-bold rounded-xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap text-sm">1x: 100,000 🍌</button>
@@ -1427,12 +1548,30 @@
                     </div>
                 </div>
               </div>
+
+              <!-- Jungle Case (Between Booster and Toverland) -->
+              <div class="w-full bg-lime-900/40 border-2 border-lime-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all shrink-0">
+                <div class="text-5xl group-hover:scale-110 transition-transform shrink-0">🌴</div>
+                <div class="flex-1">
+                  <h3 class="text-white font-black text-xl">JUNGLE CASE</h3>
+                  <p class="text-lime-400 text-xs">High Rare & Epic drops, solid Mythic chance</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button onclick="openCase('jungle')" id="btn-open-jungle-1" class="px-6 py-2 bg-lime-700 hover:bg-lime-600 text-white font-bold rounded-xl border-b-4 border-lime-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap text-sm">1x: 500,000 🍌</button>
+                    <div class="flex gap-2">
+                        <button onclick="massOpenCase('jungle', 5)" id="btn-open-jungle-5" class="flex-1 py-1.5 bg-lime-800/80 hover:bg-lime-700 text-lime-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-lime-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">5x</button>
+                        <button onclick="massOpenCase('jungle', 10)" id="btn-open-jungle-10" class="flex-1 py-1.5 bg-lime-800/80 hover:bg-lime-700 text-lime-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-lime-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">10x</button>
+                        <button onclick="startAutoOpenCase('jungle')" id="btn-open-jungle-auto" class="flex-1 py-1.5 bg-lime-800/80 hover:bg-lime-700 text-yellow-300 font-black rounded-lg text-[10px] uppercase border-b-2 border-lime-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">Auto</button>
+                    </div>
+                </div>
+              </div>
+
               <!-- Toverland Case -->
-              <div class="w-full bg-purple-900/40 border-2 border-purple-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all">
+              <div class="w-full bg-purple-900/40 border-2 border-purple-700 p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-500 transition-all shrink-0">
                 <div class="text-5xl group-hover:scale-110 transition-transform shrink-0">✨</div>
                 <div class="flex-1">
                   <h3 class="text-white font-black text-xl">TOVERLAND CASE</h3>
-                  <p class="text-purple-400 text-xs">High Mythic/Legendary chance</p>
+                  <p class="text-purple-400 text-xs">High Mythic & Legendary chance</p>
                 </div>
                 <div class="flex flex-col gap-2">
                     <button onclick="openCase('toverland')" id="btn-open-toverland-1" class="px-6 py-2 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-xl border-b-4 border-purple-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap text-sm">1x: 2M 🍌</button>
@@ -1440,6 +1579,60 @@
                         <button onclick="massOpenCase('toverland', 5)" id="btn-open-toverland-5" class="flex-1 py-1.5 bg-purple-800/80 hover:bg-purple-700 text-purple-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-purple-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">5x</button>
                         <button onclick="massOpenCase('toverland', 10)" id="btn-open-toverland-10" class="flex-1 py-1.5 bg-purple-800/80 hover:bg-purple-700 text-purple-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-purple-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">10x</button>
                         <button onclick="startAutoOpenCase('toverland')" id="btn-open-toverland-auto" class="flex-1 py-1.5 bg-purple-800/80 hover:bg-purple-700 text-yellow-300 font-black rounded-lg text-[10px] uppercase border-b-2 border-purple-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">Auto</button>
+                    </div>
+                </div>
+              </div>
+
+              <!-- Cosmic Case (Between Toverland and Void) -->
+              <div class="w-full bg-indigo-950/60 border-2 border-indigo-600 p-4 rounded-2xl flex items-center gap-6 group hover:border-cyan-400 transition-all shrink-0">
+                <div class="text-5xl group-hover:scale-110 transition-transform shrink-0">🌌</div>
+                <div class="flex-1">
+                  <h3 class="text-white font-black text-xl">COSMIC CASE</h3>
+                  <p class="text-indigo-300 text-xs">High Mythics & Legendaries, 0.5% Ominous</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button onclick="openCase('cosmic')" id="btn-open-cosmic-1" class="px-6 py-2 bg-indigo-700 hover:bg-indigo-600 text-white font-bold rounded-xl border-b-4 border-indigo-900 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap text-sm">1x: 50M 🍌</button>
+                    <div class="flex gap-2">
+                        <button onclick="massOpenCase('cosmic', 5)" id="btn-open-cosmic-5" class="flex-1 py-1.5 bg-indigo-800/80 hover:bg-indigo-700 text-indigo-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-indigo-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">5x</button>
+                        <button onclick="massOpenCase('cosmic', 10)" id="btn-open-cosmic-10" class="flex-1 py-1.5 bg-indigo-800/80 hover:bg-indigo-700 text-indigo-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-indigo-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">10x</button>
+                        <button onclick="startAutoOpenCase('cosmic')" id="btn-open-cosmic-auto" class="flex-1 py-1.5 bg-indigo-800/80 hover:bg-indigo-700 text-yellow-300 font-black rounded-lg text-[10px] uppercase border-b-2 border-indigo-950 active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">Auto</button>
+                    </div>
+                </div>
+              </div>
+
+              <!-- Abyssal Case (Between Toverland and Void) -->
+              <div class="w-full bg-rose-950/60 border-2 border-rose-800 p-4 rounded-2xl flex items-center gap-6 group hover:border-red-500 transition-all shrink-0">
+                <div class="text-5xl group-hover:scale-110 transition-transform shrink-0">🌋</div>
+                <div class="flex-1">
+                  <h3 class="text-white font-black text-xl">ABYSSAL CASE</h3>
+                  <p class="text-rose-300 text-xs">28.5% Legendary, 40% Mythic, 1.5% Ominous</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button onclick="openCase('abyssal')" id="btn-open-abyssal-1" class="px-6 py-2 bg-rose-800 hover:bg-rose-700 text-white font-bold rounded-xl border-b-4 border-rose-950 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap text-sm">1x: 750M 🍌</button>
+                    <div class="flex gap-2">
+                        <button onclick="massOpenCase('abyssal', 5)" id="btn-open-abyssal-5" class="flex-1 py-1.5 bg-rose-900/80 hover:bg-rose-800 text-rose-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-black active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">5x</button>
+                        <button onclick="massOpenCase('abyssal', 10)" id="btn-open-abyssal-10" class="flex-1 py-1.5 bg-rose-900/80 hover:bg-rose-800 text-rose-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-black active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">10x</button>
+                        <button onclick="startAutoOpenCase('abyssal')" id="btn-open-abyssal-auto" class="flex-1 py-1.5 bg-rose-900/80 hover:bg-rose-800 text-yellow-300 font-black rounded-lg text-[10px] uppercase border-b-2 border-black active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">Auto</button>
+                    </div>
+                </div>
+              </div>
+
+              <!-- Void Case (10B Pinnacle Case) -->
+              <div class="w-full bg-gradient-to-r from-black via-zinc-950 to-neutral-900 border-2 border-rose-600 shadow-[0_0_25px_rgba(255,0,85,0.35)] p-4 rounded-2xl flex items-center gap-6 group hover:border-yellow-400 hover:shadow-[0_0_35px_rgba(255,0,85,0.6)] transition-all shrink-0">
+                <div class="text-5xl group-hover:scale-110 transition-transform shrink-0 drop-shadow-[0_0_12px_rgba(255,0,85,0.8)]">🕳️</div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-white font-black text-xl tracking-tight">VOID CASE</h3>
+                    <span class="bg-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase animate-pulse">Ominous Tier</span>
+                  </div>
+                  <p class="text-rose-400 text-xs">Highest Ominous chance (4.5%), 40.5% Legendary</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button onclick="openCase('void')" id="btn-open-void-1" class="px-6 py-2 bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white font-black rounded-xl border-b-4 border-rose-950 active:border-b-0 active:translate-y-1 transition-all whitespace-nowrap text-sm shadow-lg">1x: 10B 🍌</button>
+                    <div class="flex gap-2">
+                        <button onclick="massOpenCase('void', 5)" id="btn-open-void-5" class="flex-1 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-rose-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-black active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">5x</button>
+                        <button onclick="massOpenCase('void', 10)" id="btn-open-void-10" class="flex-1 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-rose-200 font-black rounded-lg text-[10px] uppercase border-b-2 border-black active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">10x</button>
+                        <button onclick="startAutoOpenCase('void')" id="btn-open-void-auto" class="flex-1 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-yellow-300 font-black rounded-lg text-[10px] uppercase border-b-2 border-black active:border-b-0 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">Auto</button>
                     </div>
                 </div>
               </div>
@@ -2210,7 +2403,7 @@
     const JACKPOT_ICON = '💰';
 
     const SKINS = [
-        // Common (20)
+        // Common (36)
         { id: 'c1', name: 'Green Banana', rarity: 'Common', color: '#22c55e' },
         { id: 'c2', name: 'Blue Banana', rarity: 'Common', color: '#22c55e' },
         { id: 'c3', name: 'Red Banana', rarity: 'Common', color: '#22c55e' },
@@ -2241,7 +2434,14 @@
         { id: 'c28', name: 'Coral Banana', rarity: 'Common', color: '#22c55e' },
         { id: 'c29', name: 'Autumn Banana', rarity: 'Common', color: '#22c55e' },
         { id: 'c30', name: 'Spring Banana', rarity: 'Common', color: '#22c55e' },
-        // Rare (18)
+        { id: 'c31', name: 'Ash Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c32', name: 'Clay Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c33', name: 'Moss Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c34', name: 'Dune Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c35', name: 'Pebble Banana', rarity: 'Common', color: '#22c55e' },
+        { id: 'c36', name: 'Twilight Banana', rarity: 'Common', color: '#22c55e' },
+
+        // Rare (36)
         { id: 'r1', name: 'Spotted Banana', rarity: 'Rare', color: '#3b82f6' },
         { id: 'r2', name: 'Striped Banana', rarity: 'Rare', color: '#3b82f6' },
         { id: 'r3', name: 'Polka Dot Banana', rarity: 'Rare', color: '#3b82f6' },
@@ -2270,7 +2470,16 @@
         { id: 'r26', name: 'Neon Banana', rarity: 'Rare', color: '#3b82f6' },
         { id: 'r27', name: 'Pastel Banana', rarity: 'Rare', color: '#3b82f6' },
         { id: 'r28', name: 'Metallic Banana', rarity: 'Rare', color: '#3b82f6' },
-        // Epic (10)
+        { id: 'r29', name: 'Amethyst Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r30', name: 'Topaz Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r31', name: 'Prismatic Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r32', name: 'Carbon Fiber Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r33', name: 'Chrome Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r34', name: 'Matrix Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r35', name: 'Magma Banana', rarity: 'Rare', color: '#3b82f6' },
+        { id: 'r36', name: 'Frostbite Banana', rarity: 'Rare', color: '#3b82f6' },
+
+        // Epic (26)
         { id: 'e1', name: 'Fire Banana', rarity: 'Epic', color: '#a855f7' },
         { id: 'e2', name: 'Ice Banana', rarity: 'Epic', color: '#a855f7' },
         { id: 'e3', name: 'Thunder Banana', rarity: 'Epic', color: '#a855f7' },
@@ -2291,16 +2500,44 @@
         { id: 'e18', name: 'Ethereal Banana', rarity: 'Epic', color: '#a855f7' },
         { id: 'e19', name: 'Void Banana', rarity: 'Epic', color: '#a855f7' },
         { id: 'e20', name: 'Pulsing Banana', rarity: 'Epic', color: '#a855f7' },
-        // Mythic (5)
+        { id: 'e21', name: 'Molten Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e22', name: 'Glacial Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e23', name: 'Tempest Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e24', name: 'Vortex Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e25', name: 'Chrono Banana', rarity: 'Epic', color: '#a855f7' },
+        { id: 'e26', name: 'Gravity Banana', rarity: 'Epic', color: '#a855f7' },
+
+        // Mythic (12)
         { id: 'm1', name: 'Galaxy Banana', rarity: 'Mythic', color: '#ef4444' },
         { id: 'm2', name: 'Nebula Banana', rarity: 'Mythic', color: '#ef4444' },
         { id: 'm3', name: 'Supernova Banana', rarity: 'Mythic', color: '#ef4444' },
         { id: 'm4', name: 'Black Hole Banana', rarity: 'Mythic', color: '#ef4444' },
         { id: 'm5', name: 'Cosmic Banana', rarity: 'Mythic', color: '#ef4444' },
-        // Legendary (3)
+        { id: 'm6', name: 'Dark Matter Banana', rarity: 'Mythic', color: '#ef4444' },
+        { id: 'm7', name: 'Singularity Banana', rarity: 'Mythic', color: '#ef4444' },
+        { id: 'm8', name: 'Quasar Banana', rarity: 'Mythic', color: '#ef4444' },
+        { id: 'm9', name: 'Eclipse Banana', rarity: 'Mythic', color: '#ef4444' },
+        { id: 'm10', name: 'Hypernova Banana', rarity: 'Mythic', color: '#ef4444' },
+        { id: 'm11', name: 'Event Horizon Banana', rarity: 'Mythic', color: '#ef4444' },
+        { id: 'm12', name: 'Celestial Dragon Banana', rarity: 'Mythic', color: '#ef4444' },
+
+        // Legendary (9)
         { id: 'l1', name: 'Golden Banana', rarity: 'Legendary', color: '#facc15' },
         { id: 'l2', name: 'Diamond Banana', rarity: 'Legendary', color: '#facc15' },
-        { id: 'l3', name: 'Rainbow Banana', rarity: 'Legendary', color: '#facc15' }
+        { id: 'l3', name: 'Rainbow Banana', rarity: 'Legendary', color: '#facc15' },
+        { id: 'l4', name: 'Emerald King Banana', rarity: 'Legendary', color: '#facc15' },
+        { id: 'l5', name: 'Ruby Sovereign Banana', rarity: 'Legendary', color: '#facc15' },
+        { id: 'l6', name: 'Sapphire Titan Banana', rarity: 'Legendary', color: '#facc15' },
+        { id: 'l7', name: 'Platinum Banana', rarity: 'Legendary', color: '#facc15' },
+        { id: 'l8', name: 'Obsidian Banana', rarity: 'Legendary', color: '#facc15' },
+        { id: 'l9', name: 'Sun God Banana', rarity: 'Legendary', color: '#facc15' },
+
+        // Ominous (5) - Higher than Legendary!
+        { id: 'o1', name: 'Eldritch Banana', rarity: 'Ominous', color: '#000000' },
+        { id: 'o2', name: 'Abyssal Monarch Banana', rarity: 'Ominous', color: '#000000' },
+        { id: 'o3', name: 'Doomsday Banana', rarity: 'Ominous', color: '#000000' },
+        { id: 'o4', name: 'Void Sovereign Banana', rarity: 'Ominous', color: '#000000' },
+        { id: 'o5', name: 'Blood Moon Banana', rarity: 'Ominous', color: '#000000' }
     ];
 
     let inventory = JSON.parse(localStorage.getItem('bananaInventory') || '{}');
@@ -3034,7 +3271,8 @@
         'Rare': 15000,
         'Epic': 200000,
         'Mythic': 1000000,
-        'Legendary': 10000000
+        'Legendary': 10000000,
+        'Ominous': 250000000
     };
 
     function calculateTradeTotal(skinIds) {
@@ -3088,14 +3326,23 @@
             }
             
             const tradeBtn = document.getElementById('profile-trade-btn');
+            const giftBtn = document.getElementById('profile-gift-btn');
             if (id === userId) {
                 tradeBtn.classList.add('hidden');
+                if (giftBtn) giftBtn.classList.add('hidden');
             } else {
                 tradeBtn.classList.remove('hidden');
                 tradeBtn.onclick = () => {
                     closeProfileModal();
                     sendTradeRequest(id);
                 };
+                if (giftBtn) {
+                    giftBtn.classList.remove('hidden');
+                    giftBtn.onclick = () => {
+                        closeProfileModal();
+                        openGiftModal(id, data.name, data.level || 1);
+                    };
+                }
             }
             
             const grid = document.getElementById('profile-skins-grid');
@@ -3108,10 +3355,12 @@
                 const skin = SKINS.find(s => s.id === skinId);
                 if (count > 0 && skin) {
                     hasSkins = true;
+                    const isOminous = skin.rarity === 'Ominous';
                     grid.innerHTML += `
-                        <div class="bg-gray-900 border border-gray-700 rounded-xl p-3 text-center relative flex flex-col items-center hover:bg-gray-800 transition-colors shadow-lg">
-                            <div class="w-14 h-14 flex items-center justify-center text-4xl drop-shadow-md mb-2" style="filter: drop-shadow(0 0 5px ${skin.color})">🍌</div>
-                            <div class="text-[9px] md:text-[10px] font-black text-gray-300 truncate w-full uppercase tracking-wider">${skin.name}</div>
+                        <div class="${isOminous ? 'bg-black border-2 border-zinc-600 shadow-[0_0_12px_rgba(255,255,255,0.15)]' : 'bg-gray-900 border border-gray-700'} rounded-xl p-3 text-center relative flex flex-col items-center hover:bg-gray-800 transition-colors shadow-lg" style="${!isOminous ? `border-color: ${skin.color}55` : ''}">
+                            <div class="w-14 h-14 flex items-center justify-center text-4xl drop-shadow-md mb-2 ${isOminous ? 'filter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]' : ''}" style="${!isOminous ? `filter: drop-shadow(0 0 8px ${skin.color})` : ''}">🍌</div>
+                            <div class="text-[9px] md:text-[10px] font-black text-gray-200 truncate w-full uppercase tracking-wider">${skin.name}</div>
+                            <div class="text-[8px] font-black uppercase tracking-wider mt-0.5 ${isOminous ? 'bg-zinc-900 text-white px-1 py-0.5 rounded border border-zinc-700' : ''}" style="${!isOminous ? `color: ${skin.color}` : ''}">${skin.rarity}</div>
                             <div class="absolute -top-2 -right-2 bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full z-10 border-2 border-blue-400 shadow-md">x${count}</div>
                         </div>
                     `;
@@ -3359,9 +3608,9 @@
             return;
         }
 
-        // Sort items by rarity (legendary to common)
+        // Sort items by rarity (ominous to common)
         const sortedItems = myItems.sort((a, b) => {
-            const rarities = ['Legendary', 'Mythic', 'Epic', 'Rare', 'Common'];
+            const rarities = ['Ominous', 'Legendary', 'Mythic', 'Epic', 'Rare', 'Common'];
             const rA = SKINS.find(s => s.id === a)?.rarity || 'Common';
             const rB = SKINS.find(s => s.id === b)?.rarity || 'Common';
             return rarities.indexOf(rA) - rarities.indexOf(rB);
@@ -3527,6 +3776,382 @@
 
     // Start polling trades
     setInterval(pollTrades, 3000);
+
+    // --- GIFTING SYSTEM ---
+    let currentGiftTarget = null; // { id, name, level }
+    let currentGiftTab = 'bananas'; // 'bananas' | 'skin'
+    let selectedGiftSkinId = null;
+
+    function openGiftModal(targetId, targetName, targetLevel) {
+        if (!userId) {
+            showNotification("Please log in to gift players", "error");
+            return;
+        }
+        if (targetId === userId) {
+            showNotification("You cannot gift yourself!", "error");
+            return;
+        }
+
+        currentGiftTarget = {
+            id: targetId,
+            name: targetName || 'Player',
+            level: Number(targetLevel || 1)
+        };
+
+        selectedGiftSkinId = null;
+        currentGiftTab = 'bananas';
+
+        const modal = document.getElementById('gift-modal');
+        if (!modal) return;
+
+        document.getElementById('gift-target-name').innerText = currentGiftTarget.name;
+        document.getElementById('gift-target-level-badge').innerText = `LVL ${currentGiftTarget.level}`;
+        
+        switchGiftTab('bananas');
+        updateGiftBananasUI();
+        renderGiftSkinsPicker();
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeGiftModal() {
+        const modal = document.getElementById('gift-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        currentGiftTarget = null;
+        selectedGiftSkinId = null;
+    }
+
+    function switchGiftTab(tab) {
+        currentGiftTab = tab;
+        const bananasBtn = document.getElementById('gift-tab-bananas-btn');
+        const skinBtn = document.getElementById('gift-tab-skin-btn');
+        const bananasPane = document.getElementById('gift-bananas-pane');
+        const skinPane = document.getElementById('gift-skin-pane');
+
+        if (tab === 'bananas') {
+            bananasBtn.className = "flex-1 py-2.5 rounded-xl font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-amber-600 text-yellow-950 shadow-md";
+            skinBtn.className = "flex-1 py-2.5 rounded-xl font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 text-gray-400 hover:text-white";
+            bananasPane.classList.remove('hidden');
+            skinPane.classList.add('hidden');
+            updateGiftBananasUI();
+        } else {
+            skinBtn.className = "flex-1 py-2.5 rounded-xl font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md";
+            bananasBtn.className = "flex-1 py-2.5 rounded-xl font-black text-xs md:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 text-gray-400 hover:text-white";
+            skinPane.classList.remove('hidden');
+            bananasPane.classList.add('hidden');
+            renderGiftSkinsPicker();
+        }
+    }
+
+    function updateGiftBananasUI() {
+        if (!currentGiftTarget) return;
+        const myLevel = Number(level || 1);
+        const targetLevel = currentGiftTarget.level;
+        const levelDiff = Math.abs(myLevel - targetLevel);
+        const isLevelEligible = levelDiff <= 10;
+        const minRange = Math.max(1, myLevel - 10);
+        const maxRange = myLevel + 10;
+
+        const statusEl = document.getElementById('gift-level-status');
+        const inputEl = document.getElementById('gift-bananas-input');
+
+        if (isLevelEligible) {
+            statusEl.className = "p-3 rounded-xl text-xs font-bold flex items-start gap-2 bg-emerald-950/60 border border-emerald-700/60 text-emerald-200";
+            statusEl.innerHTML = `
+                <span class="text-base">✅</span>
+                <div>
+                    <span class="font-black text-emerald-400">Level Eligible:</span> Recipient is <strong>LVL ${targetLevel}</strong> (Your Level: <strong>${myLevel}</strong>). Within the allowable 10-level range (LVL ${minRange} – LVL ${maxRange}).
+                </div>
+            `;
+        } else {
+            statusEl.className = "p-3 rounded-xl text-xs font-bold flex items-start gap-2 bg-red-950/60 border border-red-700/60 text-red-200";
+            statusEl.innerHTML = `
+                <span class="text-base">⚠️</span>
+                <div>
+                    <span class="font-black text-red-400">Level Requirement Not Met:</span> Recipient is <strong>LVL ${targetLevel}</strong> (Your Level: <strong>${myLevel}</strong>). You can only gift bananas to players within 10 levels of your level (LVL ${minRange} – LVL ${maxRange}).
+                </div>
+            `;
+        }
+
+        const myBananas = Number(bananas || 0);
+        const maxGift = Math.floor(myBananas * 0.25);
+
+        document.getElementById('gift-sender-balance').innerText = `${formatNumber(myBananas)} 🍌`;
+        document.getElementById('gift-max-bananas').innerText = `${formatNumber(maxGift)} 🍌`;
+
+        validateGiftBananaInput();
+    }
+
+    function validateGiftBananaInput() {
+        if (!currentGiftTarget) return;
+        const myLevel = Number(level || 1);
+        const targetLevel = currentGiftTarget.level;
+        const isLevelEligible = Math.abs(myLevel - targetLevel) <= 10;
+        const sendBtn = document.getElementById('gift-send-bananas-btn');
+        const inputEl = document.getElementById('gift-bananas-input');
+        const val = Number(inputEl.value || 0);
+        const myBananas = Number(bananas || 0);
+        const maxGift = Math.floor(myBananas * 0.25);
+
+        if (!isLevelEligible) {
+            sendBtn.disabled = true;
+            sendBtn.innerText = "❌ RECIPIENT OUTSIDE LEVEL RANGE";
+            return;
+        }
+
+        if (maxGift <= 0) {
+            sendBtn.disabled = true;
+            sendBtn.innerText = "❌ INSUFFICIENT BALANCE (Need > 0 🍌)";
+            return;
+        }
+
+        if (val <= 0) {
+            sendBtn.disabled = true;
+            sendBtn.innerText = "ENTER BANANA AMOUNT";
+            return;
+        }
+
+        if (val > maxGift) {
+            sendBtn.disabled = true;
+            sendBtn.innerText = `EXCEEDS 25% LIMIT (Max: ${formatNumber(maxGift)} 🍌)`;
+            return;
+        }
+
+        sendBtn.disabled = false;
+        sendBtn.innerText = `🍌 SEND ${formatNumber(val)} BANANAS`;
+    }
+
+    function setGiftBananaPercent(percent) {
+        const myBananas = Number(bananas || 0);
+        const maxGift = Math.floor(myBananas * 0.25);
+        const amount = Math.floor(myBananas * (percent / 100));
+        const finalAmount = Math.min(amount, maxGift);
+        const inputEl = document.getElementById('gift-bananas-input');
+        inputEl.value = finalAmount;
+        validateGiftBananaInput();
+    }
+
+    async function sendBananaGift() {
+        if (!currentGiftTarget || !authToken) return;
+        const inputEl = document.getElementById('gift-bananas-input');
+        const amount = Number(inputEl.value || 0);
+        const myBananas = Number(bananas || 0);
+        const maxGift = Math.floor(myBananas * 0.25);
+
+        if (amount <= 0 || amount > maxGift) {
+            showNotification(`Amount must be between 1 and ${formatNumber(maxGift)} 🍌 (25% max)`, "error");
+            return;
+        }
+
+        const sendBtn = document.getElementById('gift-send-bananas-btn');
+        sendBtn.disabled = true;
+        sendBtn.innerText = "SENDING GIFT...";
+
+        try {
+            const res = await fetchWithRetry('/api/gift', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    targetId: currentGiftTarget.id,
+                    type: 'bananas',
+                    amount: amount
+                })
+            });
+
+            if (!res.success) {
+                throw new Error(res.error || "Failed to send gift");
+            }
+
+            isInternalUpdate = true;
+            updateBananas(Number(res.newBalance));
+            expectedDbBananas = Number(res.newBalance);
+            isInternalUpdate = false;
+            savePersistentData();
+
+            showNotification(res.message || `Successfully sent ${formatNumber(amount)} 🍌 to ${currentGiftTarget.name}!`, "success");
+            playSound('win');
+            closeGiftModal();
+            if (typeof fetchLeaderboard === 'function') fetchLeaderboard();
+        } catch (e) {
+            showNotification(e.message, "error");
+            validateGiftBananaInput();
+        }
+    }
+
+    function renderGiftSkinsPicker() {
+        const grid = document.getElementById('gift-skins-picker-grid');
+        const countEl = document.getElementById('gift-skins-count');
+        const summaryEl = document.getElementById('gift-selected-skin-summary');
+        const sendBtn = document.getElementById('gift-send-skin-btn');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+        let totalCount = 0;
+
+        const rarities = ['Ominous', 'Legendary', 'Mythic', 'Epic', 'Rare', 'Common'];
+
+        rarities.forEach(rarity => {
+            const skinsInRarity = SKINS.filter(s => s.rarity === rarity);
+            skinsInRarity.forEach(skin => {
+                const count = inventory[skin.id] || 0;
+                if (count > 0) {
+                    totalCount += count;
+                    const isSelected = selectedGiftSkinId === skin.id;
+                    const isOminous = skin.rarity === 'Ominous';
+                    const card = document.createElement('div');
+                    card.className = `p-2 rounded-xl flex flex-col items-center text-center cursor-pointer transition-all ${isSelected ? 'ring-2 ring-purple-400 bg-purple-950/80 scale-105' : 'hover:scale-102 bg-black/50'} ${isOminous ? 'border-2 border-zinc-600' : 'border border-emerald-800/60'}`;
+                    if (!isOminous) card.style.borderColor = skin.color;
+
+                    const val = (dynamicSkinValues && dynamicSkinValues[skin.id]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || 0;
+
+                    card.innerHTML = `
+                        <div class="text-xl mb-0.5">🍌</div>
+                        <div class="text-[8px] font-black uppercase truncate w-full ${isOminous ? 'bg-zinc-900 text-white px-1 py-0.5 rounded border border-zinc-700' : ''}" style="${!isOminous ? `color: ${skin.color}` : ''}">${skin.rarity}</div>
+                        <div class="text-[10px] font-bold text-white truncate w-full mt-0.5">${skin.name}</div>
+                        <div class="text-[8px] text-emerald-400 font-mono font-bold mt-1">${formatNumber(val)} 🍌</div>
+                        <div class="text-[8px] text-purple-300 font-mono mt-0.5">Qty: ${count}</div>
+                    `;
+
+                    card.onclick = () => {
+                        selectedGiftSkinId = skin.id;
+                        renderGiftSkinsPicker();
+                    };
+
+                    grid.appendChild(card);
+                }
+            });
+        });
+
+        if (countEl) countEl.innerText = `${totalCount} Available`;
+
+        if (totalCount === 0) {
+            grid.innerHTML = `<div class="col-span-full py-8 text-center text-emerald-800 font-bold text-xs uppercase tracking-widest">No skins in your inventory to gift!</div>`;
+        }
+
+        // Update selected summary
+        if (selectedGiftSkinId && inventory[selectedGiftSkinId] > 0) {
+            const skin = SKINS.find(s => s.id === selectedGiftSkinId);
+            if (skin) {
+                const marketValue = (dynamicSkinValues && dynamicSkinValues[skin.id]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || 0;
+                const tax = Math.floor(marketValue / 2);
+                const myBananas = Number(bananas || 0);
+                const canAffordTax = myBananas >= tax;
+                const isOminous = skin.rarity === 'Ominous';
+
+                summaryEl.classList.remove('hidden');
+                summaryEl.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="text-2xl">🍌</div>
+                            <div>
+                                <div class="text-xs font-black text-white">${skin.name}</div>
+                                <div class="text-[9px] font-bold uppercase ${isOminous ? 'text-zinc-300' : ''}" style="${!isOminous ? `color: ${skin.color}` : ''}">${skin.rarity} (Owned: ${inventory[skin.id]})</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[9px] text-gray-400 uppercase font-bold">Market Value:</div>
+                            <div class="text-xs font-mono font-black text-yellow-400">${formatNumber(marketValue)} 🍌</div>
+                        </div>
+                    </div>
+                    <div class="h-px bg-purple-800/50 my-1"></div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-purple-300 font-bold uppercase">Gifting Tax (50%):</span>
+                        <span class="font-mono font-black text-rose-400 text-sm">${formatNumber(tax)} 🍌</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-400 font-bold uppercase">Your Balance:</span>
+                        <span class="font-mono font-black ${canAffordTax ? 'text-emerald-400' : 'text-red-400'}">${formatNumber(myBananas)} 🍌</span>
+                    </div>
+                    ${!canAffordTax ? `
+                        <div class="text-[10px] text-red-400 font-black bg-red-950/60 p-1.5 rounded-lg border border-red-800/80 text-center uppercase">
+                            ⚠️ Not enough bananas to pay the ${formatNumber(tax)} 🍌 tax!
+                        </div>
+                    ` : ''}
+                `;
+
+                sendBtn.disabled = !canAffordTax;
+                if (canAffordTax) {
+                    sendBtn.innerText = `🎁 PAY ${formatNumber(tax)} 🍌 TAX & SEND ${skin.name}`;
+                } else {
+                    sendBtn.innerText = `❌ NEED ${formatNumber(tax)} 🍌 FOR TAX`;
+                }
+                return;
+            }
+        }
+
+        summaryEl.classList.add('hidden');
+        sendBtn.disabled = true;
+        sendBtn.innerText = "SELECT A SKIN TO GIFT";
+    }
+
+    async function sendSkinGift() {
+        if (!currentGiftTarget || !selectedGiftSkinId || !authToken) return;
+        const skin = SKINS.find(s => s.id === selectedGiftSkinId);
+        if (!skin || !inventory[skin.id] || inventory[skin.id] <= 0) {
+            showNotification("You no longer own this skin", "error");
+            return;
+        }
+
+        const marketValue = (dynamicSkinValues && dynamicSkinValues[skin.id]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || 0;
+        const tax = Math.floor(marketValue / 2);
+        const myBananas = Number(bananas || 0);
+
+        if (myBananas < tax) {
+            showNotification(`You need ${formatNumber(tax)} 🍌 to pay the gifting tax!`, "error");
+            return;
+        }
+
+        const sendBtn = document.getElementById('gift-send-skin-btn');
+        sendBtn.disabled = true;
+        sendBtn.innerText = "SENDING SKIN & PAYING TAX...";
+
+        try {
+            const res = await fetchWithRetry('/api/gift', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    targetId: currentGiftTarget.id,
+                    type: 'skin',
+                    skinId: skin.id
+                })
+            });
+
+            if (!res.success) {
+                throw new Error(res.error || "Failed to send skin gift");
+            }
+
+            // Deduct 1 skin locally
+            inventory[skin.id]--;
+            if (inventory[skin.id] <= 0) delete inventory[skin.id];
+            localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+
+            // Deduct tax locally
+            isInternalUpdate = true;
+            updateBananas(Number(res.newBalance));
+            expectedDbBananas = Number(res.newBalance);
+            isInternalUpdate = false;
+            savePersistentData();
+
+            renderInventory();
+
+            showNotification(res.message || `Successfully gifted ${skin.name} to ${currentGiftTarget.name}! Paid ${formatNumber(tax)} 🍌 in taxes.`, "success");
+            playSound('win');
+            closeGiftModal();
+        } catch (e) {
+            showNotification(e.message, "error");
+            renderGiftSkinsPicker();
+        }
+    }
 
     // --- TAX SYSTEM ---
     let taxInterval = setInterval(() => {
@@ -5585,7 +6210,15 @@
     async function openCase(caseType) {
         if (isPlaying || isSyncing || balanceDirty) return;
         
-        const costs = { 'normal': 10000, 'booster': 100000, 'toverland': 2000000 };
+        const costs = { 
+            'normal': 10000, 
+            'booster': 100000, 
+            'jungle': 500000, 
+            'toverland': 2000000, 
+            'cosmic': 50000000, 
+            'abyssal': 750000000, 
+            'void': 10000000000 
+        };
         const cost = costs[caseType];
         
         if (bananas < cost) {
@@ -5631,13 +6264,22 @@
             await runCaseOpeningAnimation(winningSkin, data.newBalance);
 
             // Show result
+            const isOminous = winningSkin.rarity === 'Ominous';
             document.getElementById('result-skin-name').innerText = winningSkin.name;
-            document.getElementById('result-skin-name').style.color = winningSkin.color;
+            document.getElementById('result-skin-name').style.color = isOminous ? '#ffffff' : winningSkin.color;
             const rarityEl = document.getElementById('result-skin-rarity');
             rarityEl.innerText = winningSkin.rarity;
-            rarityEl.style.backgroundColor = winningSkin.color + '33';
-            rarityEl.style.color = winningSkin.color;
-            rarityEl.style.border = `1px solid ${winningSkin.color}`;
+            if (isOminous) {
+                rarityEl.style.backgroundColor = '#000000';
+                rarityEl.style.color = '#ffffff';
+                rarityEl.style.border = '2px solid #52525b';
+                rarityEl.style.boxShadow = '0 0 15px rgba(255,255,255,0.2)';
+            } else {
+                rarityEl.style.backgroundColor = winningSkin.color + '33';
+                rarityEl.style.color = winningSkin.color;
+                rarityEl.style.border = `1px solid ${winningSkin.color}`;
+                rarityEl.style.boxShadow = 'none';
+            }
             
             document.getElementById('case-result-view').classList.remove('hidden');
             isPlaying = false;
@@ -5667,7 +6309,15 @@
 
     async function massOpenCase(caseType, count) {
         if (isPlaying || isSyncing || balanceDirty) return;
-        const costs = { 'normal': 10000, 'booster': 100000, 'toverland': 2000000 };
+        const costs = { 
+            'normal': 10000, 
+            'booster': 100000, 
+            'jungle': 500000, 
+            'toverland': 2000000, 
+            'cosmic': 50000000, 
+            'abyssal': 750000000, 
+            'void': 10000000000 
+        };
         const totalCost = costs[caseType] * count;
         
         if (bananas < totalCost) {
@@ -5707,13 +6357,22 @@
 
                 // Show result for 1 second
                 const resultView = document.getElementById('case-result-view');
+                const isOminous = winningSkin.rarity === 'Ominous';
                 document.getElementById('result-skin-name').innerText = `[${i + 1}/${count}] ${winningSkin.name}`;
-                document.getElementById('result-skin-name').style.color = winningSkin.color;
+                document.getElementById('result-skin-name').style.color = isOminous ? '#ffffff' : winningSkin.color;
                 const rarityEl = document.getElementById('result-skin-rarity');
                 rarityEl.innerText = winningSkin.rarity;
-                rarityEl.style.backgroundColor = winningSkin.color + '33';
-                rarityEl.style.color = winningSkin.color;
-                rarityEl.style.border = `1px solid ${winningSkin.color}`;
+                if (isOminous) {
+                    rarityEl.style.backgroundColor = '#000000';
+                    rarityEl.style.color = '#ffffff';
+                    rarityEl.style.border = '2px solid #52525b';
+                    rarityEl.style.boxShadow = '0 0 15px rgba(255,255,255,0.2)';
+                } else {
+                    rarityEl.style.backgroundColor = winningSkin.color + '33';
+                    rarityEl.style.color = winningSkin.color;
+                    rarityEl.style.border = `1px solid ${winningSkin.color}`;
+                    rarityEl.style.boxShadow = 'none';
+                }
                 
                 resultView.classList.remove('hidden');
                 
@@ -5762,13 +6421,14 @@
         items[45] = winningSkin;
 
         items.forEach((skin, i) => {
+            const isOminous = skin.rarity === 'Ominous';
             const itemEl = document.createElement('div');
-            itemEl.className = `w-32 h-32 shrink-0 bg-emerald-900/50 border-2 rounded-xl flex flex-col items-center justify-center p-2 text-center`;
-            itemEl.style.borderColor = skin.color;
+            itemEl.className = `w-32 h-32 shrink-0 ${isOminous ? 'bg-black border-2 border-zinc-600 shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-emerald-900/50 border-2'} rounded-xl flex flex-col items-center justify-center p-2 text-center`;
+            if (!isOminous) itemEl.style.borderColor = skin.color;
             itemEl.innerHTML = `
-                <div class="text-3xl mb-1">🍌</div>
-                <div class="text-[10px] font-black uppercase" style="color: ${skin.color}">${skin.rarity}</div>
-                <div class="text-[12px] font-bold text-white leading-tight">${skin.name}</div>
+                <div class="text-3xl mb-1 ${isOminous ? 'filter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]' : ''}">🍌</div>
+                <div class="text-[10px] font-black uppercase ${isOminous ? 'bg-zinc-900 text-white px-2 py-0.5 rounded border border-zinc-700 shadow' : ''}" style="${!isOminous ? `color: ${skin.color}` : ''}">${skin.rarity}</div>
+                <div class="text-[12px] font-bold text-white leading-tight mt-0.5">${skin.name}</div>
             `;
             spinner.appendChild(itemEl);
         });
@@ -5816,11 +6476,12 @@
             'Rare': 15000,
             'Epic': 200000,
             'Mythic': 1000000,
-            'Legendary': 10000000
+            'Legendary': 10000000,
+            'Ominous': 250000000
         };
 
-        // Group by rarity for display
-        const rarities = ['Legendary', 'Mythic', 'Epic', 'Rare', 'Common'];
+        // Group by rarity for display (Ominous at the top)
+        const rarities = ['Ominous', 'Legendary', 'Mythic', 'Epic', 'Rare', 'Common'];
         
         rarities.forEach(rarity => {
             const raritySkins = SKINS.filter(s => s.rarity === rarity);
@@ -5830,14 +6491,19 @@
                     totalSkins += count;
                     const itemEl = document.createElement('div');
                     const isSelected = selectedInventorySkin === skin.id;
-                    itemEl.className = `bg-emerald-950/80 border-2 p-3 rounded-xl flex flex-col items-center text-center relative group hover:scale-105 transition-all cursor-pointer ${isSelected ? 'ring-2 ring-white' : ''}`;
-                    itemEl.style.borderColor = skin.color;
+                    const isOminous = skin.rarity === 'Ominous';
+                    itemEl.className = `${isOminous ? 'bg-black border-2 border-zinc-600 shadow-[0_0_15px_rgba(255,255,255,0.15)] ring-1 ring-zinc-700' : 'bg-emerald-950/80 border-2'} p-3 rounded-xl flex flex-col items-center text-center relative group hover:scale-105 transition-all cursor-pointer ${isSelected ? 'ring-2 ring-white' : ''}`;
+                    if (!isOminous) itemEl.style.borderColor = skin.color;
                     
+                    const rarityBadge = isOminous 
+                        ? `<div class="text-[8px] font-black uppercase bg-zinc-900 text-white border border-zinc-700 px-1.5 py-0.5 rounded shadow">OMINOUS</div>` 
+                        : `<div class="text-[8px] font-black uppercase" style="color: ${skin.color}">${skin.rarity}</div>`;
+
                     let innerHTML = `
                         <div class="absolute top-1 right-2 text-[10px] font-mono text-emerald-500">x${count}</div>
-                        <div class="text-2xl mb-1">🍌</div>
-                        <div class="text-[8px] font-black uppercase" style="color: ${skin.color}">${skin.rarity}</div>
-                        <div class="text-[10px] font-bold text-white leading-tight">${skin.name}</div>
+                        <div class="text-2xl mb-1 ${isOminous ? 'filter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]' : ''}">🍌</div>
+                        ${rarityBadge}
+                        <div class="text-[10px] font-bold text-white leading-tight mt-0.5">${skin.name}</div>
                     `;
 
                     if (isSelected) {
@@ -5873,7 +6539,8 @@
             'Rare': 15000,
             'Epic': 200000,
             'Mythic': 1000000,
-            'Legendary': 10000000
+            'Legendary': 10000000,
+            'Ominous': 250000000
         };
 
         const price = sellPrices[skin.rarity] || 0;
@@ -5993,7 +6660,7 @@
 
         let sortedSkins = [...SKINS];
 
-        const rarityOrder = { 'Legendary': 5, 'Mythic': 4, 'Epic': 3, 'Rare': 2, 'Common': 1 };
+        const rarityOrder = { 'Ominous': 6, 'Legendary': 5, 'Mythic': 4, 'Epic': 3, 'Rare': 2, 'Common': 1 };
 
         if (sortBy === 'rarity') {
             sortedSkins.sort((a, b) => rarityOrder[b.rarity] - rarityOrder[a.rarity]);
@@ -6425,8 +7092,16 @@
       if (view === 'shop') renderShop();
 
       // Update Case Buttons Disabling
-      const costs = { 'normal': 10000, 'booster': 100000, 'toverland': 2000000 };
-      ['normal', 'booster', 'toverland'].forEach(c => {
+      const costs = { 
+            'normal': 10000, 
+            'booster': 100000, 
+            'jungle': 500000, 
+            'toverland': 2000000, 
+            'cosmic': 50000000, 
+            'abyssal': 750000000, 
+            'void': 10000000000 
+        };
+      ['normal', 'booster', 'jungle', 'toverland', 'cosmic', 'abyssal', 'void'].forEach(c => {
           const btn1 = document.getElementById(`btn-open-${c}-1`);
           const btn5 = document.getElementById(`btn-open-${c}-5`);
           const btn10 = document.getElementById(`btn-open-${c}-10`);
@@ -6797,14 +7472,21 @@
                     </div>
                 </div>
             </div>
-            <div class="flex flex-col items-end">
-                <div class="flex items-center gap-1">
-                    <span class="text-emerald-400 font-black text-xs md:text-sm group-hover:text-emerald-300 transition-colors">${formatNumber(score)}</span>
-                    <span class="text-[10px]">🍌</span>
-                </div>
-                <div class="flex items-center gap-1">
-                    <span class="text-yellow-500/80 font-mono text-[9px] md:text-[10px]">${formatNumber(coinsVal)}</span>
-                    <span class="text-[8px]">🪙</span>
+            <div class="flex items-center gap-1.5 md:gap-2">
+                ${!isMe ? `
+                    <button onclick="event.stopPropagation(); openGiftModal('${lbUser.id}', '${lbUser.name.replace(/'/g, "\\'")}', ${userLevel})" class="hidden group-hover:inline-flex items-center gap-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-black text-[9px] px-2 py-1 rounded-md shadow-md transition-all active:scale-95 uppercase tracking-wider" title="Gift to ${lbUser.name}">
+                        🎁 GIFT
+                    </button>
+                ` : ''}
+                <div class="flex flex-col items-end">
+                    <div class="flex items-center gap-1">
+                        <span class="text-emerald-400 font-black text-xs md:text-sm group-hover:text-emerald-300 transition-colors">${formatNumber(score)}</span>
+                        <span class="text-[10px]">🍌</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-yellow-500/80 font-mono text-[9px] md:text-[10px]">${formatNumber(coinsVal)}</span>
+                        <span class="text-[8px]">🪙</span>
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -7468,7 +8150,8 @@
         handleLogout, advanceLudvig, buyShopItem, exchangeBananasForCoins, cycleBonusIcon, toggleTitle, forceSync, openCase, massOpenCase, startAutoOpenCase, showCasesInventory, closeCaseResult, sellSkin,
         openSkinValuesModal, closeSkinValuesModal, updateSkinValuesTable,
         openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, bypassDungeonCooldown, sellSkinToMerchant, openProfile, closeProfileModal, toggleProfileSkins, cashOutCrash, hiloGuess, pokerHold, pokerDraw,
-        openCreatorCodeModal, closeCreatorCodeModal, submitCreatorCode, talkToVladimir, advanceVladimir, clickBanana, buyBcUpgrade, openBananaClicker, closeBananaClicker, clickGoldenBanana
+        openCreatorCodeModal, closeCreatorCodeModal, submitCreatorCode, talkToVladimir, advanceVladimir, clickBanana, buyBcUpgrade, openBananaClicker, closeBananaClicker, clickGoldenBanana,
+        openGiftModal, closeGiftModal, switchGiftTab, validateGiftBananaInput, setGiftBananaPercent, sendBananaGift, renderGiftSkinsPicker, sendSkinGift
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
