@@ -22,18 +22,43 @@
     #leaderboard-container::-webkit-scrollbar,
     .custom-scroll::-webkit-scrollbar,
     .custom-scrollbar::-webkit-scrollbar {
-      width: 4px;
+      width: 6px;
+      height: 6px;
     }
     #leaderboard-container::-webkit-scrollbar-track,
     .custom-scroll::-webkit-scrollbar-track,
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(6, 78, 59, 0.1);
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
     }
     #leaderboard-container::-webkit-scrollbar-thumb,
     .custom-scroll::-webkit-scrollbar-thumb,
     .custom-scrollbar::-webkit-scrollbar-thumb {
       background: #facc15;
-      border-radius: 10px;
+      border-radius: 8px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover,
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #fbbf24;
+    }
+    .custom-scroll,
+    .custom-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #facc15 rgba(0, 0, 0, 0.4);
+    }
+    
+    @keyframes golden-pulse-glow {
+      0%, 100% {
+        transform: translateY(0px) scale(1);
+        filter: drop-shadow(0 0 20px rgba(250, 204, 21, 0.95)) drop-shadow(0 0 35px rgba(234, 179, 8, 0.7));
+      }
+      50% {
+        transform: translateY(-8px) scale(1.08);
+        filter: drop-shadow(0 0 30px rgba(250, 204, 21, 1)) drop-shadow(0 0 55px rgba(245, 158, 11, 0.9));
+      }
+    }
+    .animate-golden-banana {
+      animation: golden-pulse-glow 2s ease-in-out infinite;
     }
     
     /* General Mobile UI Fixes */
@@ -268,6 +293,12 @@
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">📦</div>
           <h3 class="text-xl font-bold text-white mb-2">Cases</h3>
           <p class="text-sm text-slate-400">Open premium cases to unlock ultra-rare and legendary skins.</p>
+        </div>
+
+        <div onclick="tryOpenBananaClickerFromGamemode()" class="bg-slate-800 hover:bg-orange-950/80 border-2 border-slate-700 hover:border-orange-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🍌</div>
+          <h3 class="text-xl font-bold text-white mb-2">Banana Clicker</h3>
+          <p class="text-sm text-slate-400">Click the giant banana, build an idle empire, and catch golden bananas!</p>
         </div>
       </div>
     </div>
@@ -892,54 +923,135 @@
     </div>
 
     <!-- MODAL: BANANA CLICKER -->
-    <div id="banana-clicker-modal" class="fixed inset-0 z-[1100] bg-black/95 backdrop-blur-xl hidden flex-col">
+    <div id="banana-clicker-modal" class="fixed inset-0 z-[1100] bg-black/95 backdrop-blur-xl hidden flex-col overflow-hidden">
       <!-- Header -->
-      <div class="p-4 bg-orange-950/80 border-b border-orange-900 flex justify-between items-center z-10 shadow-2xl">
-        <div class="flex items-center gap-4">
-            <h2 class="text-2xl md:text-4xl font-black text-orange-400 uppercase tracking-tighter italic leading-none">Banana Clicker</h2>
+      <div class="p-3 md:p-4 bg-orange-950/90 border-b border-orange-900 flex justify-between items-center z-10 shadow-2xl shrink-0">
+        <div class="flex items-center gap-3">
+            <span class="text-3xl">🍌</span>
+            <div>
+              <h2 class="text-xl md:text-3xl font-black text-orange-400 uppercase tracking-tighter italic leading-none">Banana Clicker</h2>
+              <p class="text-[10px] md:text-xs text-orange-300/70 font-semibold tracking-wide">Produce bananas, expand your empire & catch golden bananas</p>
+            </div>
         </div>
-        <button onclick="closeBananaClicker()" class="bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 font-black px-4 py-2 rounded-xl transition-all flex items-center gap-2 border border-gray-700 shadow-lg">
-          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+        <button onclick="closeBananaClicker()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white font-black px-4 py-2 rounded-xl transition-all flex items-center gap-2 border border-gray-700 shadow-lg text-sm">
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
           EXIT
         </button>
       </div>
       
-      <!-- Content -->
-      <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-          <!-- Left: Big Banana -->
-          <div class="w-full md:w-1/3 max-w-md flex flex-col items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] relative border-r border-gray-800">
-              <div class="text-center mb-8 bg-black/50 p-6 rounded-3xl border border-orange-500/30 w-full backdrop-blur-sm shadow-2xl">
-                  <h3 class="text-orange-500 font-black text-xl uppercase tracking-widest mb-1">Clicker Bananas</h3>
-                  <div class="text-white font-black text-4xl md:text-5xl drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]" id="bc-score">0</div>
-                  <div class="text-orange-300/70 font-bold text-sm mt-2"><span id="bc-cps">0</span> bananas per second</div>
+      <!-- IN-GAMEMODE NOTIFICATION BANNER / TOAST -->
+      <div id="bc-toast" class="absolute top-16 md:top-20 left-1/2 -translate-x-1/2 z-[1250] max-w-md w-[92%] transition-all duration-300 pointer-events-none opacity-0 -translate-y-4 scale-95">
+        <div id="bc-toast-inner" class="p-3.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl flex items-center gap-3 border text-sm font-black transition-all">
+          <span id="bc-toast-icon" class="text-2xl shrink-0">⚠️</span>
+          <div class="flex-1 text-left min-w-0">
+            <div id="bc-toast-title" class="uppercase tracking-wider text-[11px] font-black">Notification</div>
+            <div id="bc-toast-msg" class="text-xs font-semibold leading-snug">Message</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content: 3-column layout -->
+      <div class="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 w-full">
+          <!-- Left: Big Banana & Stats & Wavy Physics Smoothie (resembling Cookie Clicker milk) -->
+          <div id="bc-left-panel" class="w-full md:w-80 lg:w-96 flex flex-col items-center justify-between p-4 md:p-5 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] bg-gray-950/80 relative border-b md:border-b-0 md:border-r border-gray-800 shrink-0 overflow-hidden select-none">
+              
+              <!-- Active Buff / Frenzy Banner -->
+              <div id="bc-buff-banner" class="w-full hidden relative z-20 mb-2">
+                  <div class="bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 p-2 rounded-2xl text-yellow-950 font-black text-center shadow-[0_0_20px_rgba(250,204,21,0.6)] border border-yellow-300 animate-pulse">
+                      <div class="flex items-center justify-between px-2 text-xs">
+                          <span id="bc-buff-title" class="uppercase tracking-wider font-extrabold flex items-center gap-1">🔥 BANANA FRENZY</span>
+                          <span id="bc-buff-timer" class="font-mono font-black">20s</span>
+                      </div>
+                      <div class="w-full bg-black/30 h-1.5 rounded-full mt-1 overflow-hidden">
+                          <div id="bc-buff-bar" class="bg-white h-full transition-all duration-100" style="width: 100%"></div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Score Box at Top -->
+              <div class="text-center mb-2 bg-black/70 p-3.5 md:p-4 rounded-3xl border border-orange-500/30 w-full backdrop-blur-md shadow-2xl relative z-20">
+                  <div class="flex items-center justify-center gap-2 mb-1">
+                      <span class="text-[11px] font-black uppercase tracking-widest text-orange-400">Clicker Bananas</span>
+                      <span class="bg-orange-500/20 text-orange-300 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-orange-500/30">IDLE</span>
+                  </div>
+                  <div class="text-white font-black text-3xl md:text-4xl drop-shadow-[0_0_15px_rgba(249,115,22,0.8)] font-mono tracking-tight" id="bc-score">0</div>
+                  <div class="text-orange-300/80 font-bold text-xs mt-1 flex items-center justify-center gap-1">
+                      <span id="bc-cps" class="font-mono text-white font-black text-sm">0.0</span>
+                      <span>bananas / sec</span>
+                  </div>
+                  <div class="mt-2 pt-1.5 border-t border-gray-800/80 text-[11px] text-gray-400 font-bold flex justify-between items-center px-1">
+                      <span>Click Power:</span>
+                      <span id="bc-click-power" class="text-yellow-400 font-mono font-black">+1 🍌</span>
+                  </div>
               </div>
                  
-              <div class="relative w-48 h-48 md:w-64 md:h-64 cursor-pointer hover:scale-105 active:scale-95 transition-transform" onclick="clickBanana(event)">
-                  <div class="absolute inset-0 bg-orange-500/20 blur-[50px] rounded-full pointer-events-none"></div>
-                  <div class="w-full h-full flex items-center justify-center text-9xl md:text-[10rem] drop-shadow-[0_0_30px_rgba(249,115,22,0.6)] select-none">🍌</div>
+              <!-- Big Banana at Center-Left, dipping right above/into the wavy smoothie -->
+              <div id="bc-big-banana-wrapper" class="relative w-40 h-40 md:w-52 md:h-52 cursor-pointer hover:scale-105 active:scale-90 transition-transform duration-100 flex items-center justify-center z-20 my-auto" onclick="clickBanana(event)" title="Click the Banana!">
+                  <div class="absolute inset-0 bg-orange-500/20 blur-[40px] rounded-full pointer-events-none"></div>
+                  <div id="bc-big-banana-emoji" class="w-full h-full flex items-center justify-center text-8xl md:text-9xl drop-shadow-[0_0_30px_rgba(249,115,22,0.6)] select-none transition-transform duration-75">🍌</div>
               </div>
-              <div id="golden-banana" onclick="clickGoldenBanana(event)" class="absolute hidden cursor-pointer hover:scale-110 active:scale-95 transition-transform z-[1500]">
-                  <div class="absolute inset-0 bg-yellow-400/50 blur-[20px] rounded-full animate-pulse pointer-events-none"></div>
-                  <div class="text-6xl drop-shadow-[0_0_20px_rgba(250,204,21,1)] select-none animate-float-up">🍌</div>
+
+              <!-- Golden Banana Entity (Fixed appearance duration, pulsing golden glow) -->
+              <div id="golden-banana" onclick="clickGoldenBanana(event)" class="absolute hidden cursor-pointer hover:scale-125 active:scale-95 transition-transform z-30 animate-golden-banana p-2" title="CLICK ME! Golden Banana!">
+                  <div class="absolute inset-0 bg-yellow-400/50 blur-[20px] rounded-full pointer-events-none"></div>
+                  <div class="text-5xl md:text-6xl select-none">🍌</div>
               </div>
+
+              <!-- Smoothie Info Badge & Casino Exchange -->
+              <div class="relative w-full z-20 flex flex-col items-center mt-2">
+                  <div class="flex items-center justify-center gap-2 w-full max-w-xs">
+                      <div id="bc-smoothie-badge" onclick="cycleSmoothieFlavor()" class="flex-1 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-yellow-500/30 text-center shadow-lg flex items-center gap-2 cursor-pointer hover:border-yellow-400 hover:bg-black/90 transition-all group" title="Click to cycle smoothie flavors!">
+                          <span id="bc-smoothie-icon" class="text-xl group-hover:scale-125 transition-transform duration-200">🥤</span>
+                          <div class="text-left min-w-0">
+                              <div class="flex items-center gap-1">
+                                  <span id="bc-smoothie-name" class="text-yellow-300 font-extrabold text-[11px] uppercase tracking-wider truncate">Banana Milk</span>
+                                  <span class="text-[8px] bg-yellow-500/20 text-yellow-300 px-1 py-0.2 rounded font-mono font-bold">SMOOTHIE</span>
+                              </div>
+                              <div id="bc-smoothie-desc" class="text-[10px] text-yellow-200/70 font-mono font-bold truncate">+5% CPS • Click to stir!</div>
+                          </div>
+                      </div>
+                      
+                      <!-- Export / Convert Button -->
+                      <button onclick="exportSmoothieToCasino()" class="bg-yellow-500/15 hover:bg-yellow-500/30 border border-yellow-500/40 hover:border-yellow-300 text-yellow-300 text-[10px] font-extrabold px-3 py-2 rounded-2xl transition-all flex flex-col items-center justify-center shadow-sm active:scale-95 shrink-0" title="Exchange 50,000 Clicker Bananas for 1,000 Casino Bananas!">
+                          <span class="text-xs leading-none mb-0.5">🏦</span>
+                          <span class="text-[8px] uppercase tracking-wider font-mono leading-none">Export</span>
+                      </button>
+                  </div>
+                  <p class="text-[10px] text-gray-400/80 font-bold uppercase tracking-wider text-center mt-1.5 drop-shadow">
+                      Click banana or stir liquid below
+                  </p>
+              </div>
+
+              <!-- Wavy Physics Liquid Smoothie Canvas (Resembling Cookie Clicker milk) -->
+              <canvas id="bc-smoothie-canvas" class="absolute bottom-0 left-0 w-full h-[52%] z-10 pointer-events-auto cursor-pointer" title="Wavy Banana Smoothie - Click or drag to make ripples!"></canvas>
           </div>
           
-          <!-- Middle: Buildings Visual -->
-          <div class="flex-1 flex flex-col bg-gray-950 overflow-y-auto custom-scroll relative">
-              <div class="p-4 bg-gray-900 border-b border-gray-800 text-center sticky top-0 z-10 shadow-lg">
-                  <h3 class="text-white font-black uppercase tracking-widest">Empire</h3>
+          <!-- Middle: Buildings Visual (Empire) with scrollbar -->
+          <div class="flex-1 flex flex-col bg-gray-950 min-h-0 overflow-hidden relative border-b md:border-b-0 md:border-r border-gray-800">
+              <div class="p-3 md:p-4 bg-gray-900 border-b border-gray-800 text-center sticky top-0 z-10 shadow-lg shrink-0 flex items-center justify-between">
+                  <div class="w-16"></div>
+                  <div class="flex items-center gap-2">
+                      <span class="text-lg">🏛️</span>
+                      <h3 class="text-white font-black uppercase tracking-widest text-sm md:text-base">Empire</h3>
+                  </div>
+                  <span id="bc-empire-count" class="text-[10px] md:text-xs font-mono font-black text-orange-400 bg-orange-950/70 border border-orange-800/60 px-2.5 py-1 rounded-lg">0 ENTITIES</span>
               </div>
-              <div id="bc-buildings" class="flex-1 p-4 space-y-6">
+              <div id="bc-buildings" class="flex-1 p-4 space-y-4 overflow-y-auto custom-scroll min-h-0">
                   <!-- Buildings will be generated here -->
               </div>
           </div>
              
-          <!-- Right: Upgrades -->
-          <div class="w-full md:w-80 lg:w-96 bg-gray-900 border-l border-gray-800 flex flex-col h-[50vh] md:h-full">
-              <div class="p-4 bg-gray-950 border-b border-gray-800 text-center">
-                  <h3 class="text-white font-black uppercase tracking-widest">Store</h3>
+          <!-- Right: Upgrades (Store) with scrollbar -->
+          <div class="w-full md:w-80 lg:w-96 bg-gray-900 flex flex-col min-h-0 h-full overflow-hidden shrink-0">
+              <div class="p-3 md:p-4 bg-gray-950 border-b border-gray-800 text-center shrink-0 flex items-center justify-between">
+                  <div class="w-8"></div>
+                  <div class="flex items-center gap-2">
+                      <span class="text-lg">🛒</span>
+                      <h3 class="text-white font-black uppercase tracking-widest text-sm md:text-base">Store & Upgrades</h3>
+                  </div>
+                  <div class="w-8"></div>
               </div>
-              <div class="flex-1 overflow-y-auto p-2 space-y-2 custom-scroll" id="bc-store">
+              <div class="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scroll min-h-0" id="bc-store">
                   <!-- Store items here -->
               </div>
           </div>
@@ -7854,33 +7966,454 @@
         { id: "prism", name: "Prism", baseCost: 2100000000000000, cps: 2900000000, count: 0, icon: "🌈" },
         { id: "chancemaker", name: "Chancemaker", baseCost: 26000000000000000, cps: 21000000000, count: 0, icon: "🎲" },
         { id: "fractalengine", name: "Fractal Engine", baseCost: 310000000000000000, cps: 150000000000, count: 0, icon: "🌀" },
-        { id: "golden1", name: "Golden Frequency", baseCost: 77777, cps: 0, count: 0, icon: "🌟" },
-        { id: "golden2", name: "Golden Multiplier", baseCost: 777777, cps: 0, count: 0, icon: "✨" }
+        { id: "click_percent", name: "Reinforced Peels", baseCost: 2500, cps: 0, count: 0, icon: "🍌", effect: "+1% CPS to Clicks" },
+        { id: "blender", name: "Smoothie Blender", baseCost: 25000, cps: 0, count: 0, icon: "🌪️", effect: "+15% CPS & Wave Surge" },
+        { id: "golden1", name: "Golden Frequency", baseCost: 77777, cps: 0, count: 0, icon: "🌟", effect: "Faster Golden Bananas" },
+        { id: "golden2", name: "Golden Multiplier", baseCost: 777777, cps: 0, count: 0, icon: "✨", effect: "+Reward Multiplier" }
     ];
-    let goldenBananaInterval = null;
+    let goldenBananaDespawnTimer = null;
+    let goldenBananaNextSpawnTimer = null;
     let bcInterval = null;
+    let bcActiveBuff = null;
 
+    // --- SMOOTHIE FLAVORS & EFFECT SYSTEM ---
+    const SMOOTHIE_FLAVORS = [
+        {
+            id: 'banana_milk',
+            name: 'Fresh Banana Milk',
+            icon: '🍌',
+            unlockScore: 0,
+            cpsMult: 0.05,
+            desc: '+5% CPS • Creamy Banana Puree',
+            colors: {
+                top: '#fffde7',
+                mid: '#fef08a',
+                bottom: '#eab308',
+                deep: '#ca8a04',
+                bgWave: 'rgba(234, 179, 8, 0.4)',
+                foam: 'rgba(255, 255, 255, 0.92)'
+            },
+            particleEmoji: '🍌'
+        },
+        {
+            id: 'strawberry_banana',
+            name: 'Strawberry Banana',
+            icon: '🍓',
+            unlockScore: 5000,
+            cpsMult: 0.12,
+            desc: '+12% CPS • Sweet Berry Swirl',
+            colors: {
+                top: '#ffe4e6',
+                mid: '#fda4af',
+                bottom: '#f43f5e',
+                deep: '#be123c',
+                bgWave: 'rgba(244, 63, 94, 0.4)',
+                foam: 'rgba(255, 241, 242, 0.92)'
+            },
+            particleEmoji: '🍓'
+        },
+        {
+            id: 'choco_banana',
+            name: 'Choco Banana Shake',
+            icon: '🍫',
+            unlockScore: 100000,
+            cpsMult: 0.20,
+            desc: '+20% CPS • Rich Cocoa Infusion',
+            colors: {
+                top: '#ffedd5',
+                mid: '#b45309',
+                bottom: '#78350f',
+                deep: '#451a03',
+                bgWave: 'rgba(120, 53, 15, 0.45)',
+                foam: 'rgba(254, 215, 170, 0.88)'
+            },
+            particleEmoji: '🍫'
+        },
+        {
+            id: 'golden_nectar',
+            name: 'Golden Nectar',
+            icon: '🍯',
+            unlockScore: 2500000,
+            cpsMult: 0.35,
+            desc: '+35% CPS • 24K Royal Ambrosia',
+            colors: {
+                top: '#fef9c3',
+                mid: '#facc15',
+                bottom: '#d97706',
+                deep: '#78350f',
+                bgWave: 'rgba(217, 119, 6, 0.5)',
+                foam: 'rgba(254, 240, 138, 0.95)'
+            },
+            particleEmoji: '✨'
+        },
+        {
+            id: 'cosmic_void',
+            name: 'Cosmic Void Smoothie',
+            icon: '🌌',
+            unlockScore: 50000000,
+            cpsMult: 0.60,
+            desc: '+60% CPS • Starstuff & Dark Matter',
+            colors: {
+                top: '#e0e7ff',
+                mid: '#818cf8',
+                bottom: '#6366f1',
+                deep: '#312e81',
+                bgWave: 'rgba(99, 102, 241, 0.5)',
+                foam: 'rgba(224, 231, 255, 0.95)'
+            },
+            particleEmoji: '💫'
+        }
+    ];
+
+    let activeSmoothieFlavorIdx = 0;
+    function getCurrentSmoothieFlavor() {
+        return SMOOTHIE_FLAVORS[activeSmoothieFlavorIdx] || SMOOTHIE_FLAVORS[0];
+    }
+
+    function cycleSmoothieFlavor() {
+        const unlocked = SMOOTHIE_FLAVORS.filter(f => bcScore >= f.unlockScore || f.unlockScore === 0);
+        if (unlocked.length <= 1) {
+            const nextFlavor = SMOOTHIE_FLAVORS[1];
+            if (nextFlavor) {
+                showBcToast("info", "Flavor Locked", `Next flavor "${nextFlavor.name}" unlocks at ${formatNumber(nextFlavor.unlockScore)} Clicker Bananas!`);
+            }
+            return;
+        }
+        activeSmoothieFlavorIdx = (activeSmoothieFlavorIdx + 1) % unlocked.length;
+        const selected = unlocked[activeSmoothieFlavorIdx];
+        localStorage.setItem("bcSmoothieFlavor_" + playerName, selected.id);
+        updateSmoothieBadge();
+        updateBcUI();
+        playSound('win');
+        showBcToast("success", "Smoothie Flavor Changed", `Switched smoothie to ${selected.name} (${selected.desc})!`);
+    }
+
+    function updateSmoothieBadge() {
+        const flavor = getCurrentSmoothieFlavor();
+        const iconEl = document.getElementById("bc-smoothie-icon");
+        const nameEl = document.getElementById("bc-smoothie-name");
+        const descEl = document.getElementById("bc-smoothie-desc");
+        if (iconEl) iconEl.innerText = flavor.icon;
+        if (nameEl) nameEl.innerText = flavor.name;
+        if (descEl) descEl.innerText = flavor.desc;
+    }
+
+    // --- SMOOTHIE WAVE & LIQUID PHYSICS ENGINE ---
+    let smoothieCanvas = null;
+    let smoothieCtx = null;
+    let smoothieAnimId = null;
+    let smoothieNodes = [];
+    const NUM_SMOOTHIE_NODES = 75;
+    const SMOOTHIE_TENSION = 0.028;
+    const SMOOTHIE_DAMPING = 0.038;
+    const SMOOTHIE_SPREAD = 0.26;
+    let smoothieDroplets = [];
+    let smoothieFloatingItems = [
+        { xRatio: 0.18, type: 'banana', size: 22 },
+        { xRatio: 0.42, type: 'bubble', size: 10 },
+        { xRatio: 0.68, type: 'banana', size: 20 },
+        { xRatio: 0.86, type: 'bubble', size: 12 }
+    ];
+
+    function initSmoothiePhysics(w, h) {
+        smoothieNodes = [];
+        const targetY = h * 0.42;
+        for (let i = 0; i < NUM_SMOOTHIE_NODES; i++) {
+            smoothieNodes.push({
+                height: targetY,
+                targetHeight: targetY,
+                speed: 0
+            });
+        }
+    }
+
+    function splashSmoothie(x, speed) {
+        if (!smoothieCanvas || smoothieNodes.length === 0) return;
+        const w = smoothieCanvas.width;
+        if (w <= 0) return;
+        const index = Math.min(NUM_SMOOTHIE_NODES - 1, Math.max(0, Math.round((x / w) * (NUM_SMOOTHIE_NODES - 1))));
+        const radius = 8;
+        for (let offset = -radius; offset <= radius; offset++) {
+            const idx = index + offset;
+            if (idx >= 0 && idx < NUM_SMOOTHIE_NODES) {
+                const weight = Math.cos((offset / radius) * (Math.PI / 2));
+                smoothieNodes[idx].speed += speed * weight;
+            }
+        }
+        const count = Math.min(10, Math.floor(Math.abs(speed) * 0.35));
+        const flavor = getCurrentSmoothieFlavor();
+        for (let i = 0; i < count; i++) {
+            smoothieDroplets.push({
+                x: x + (Math.random() - 0.5) * 35,
+                y: smoothieNodes[index] ? smoothieNodes[index].height : 30,
+                vx: (Math.random() - 0.5) * 5,
+                vy: -Math.random() * 7 - 3.5,
+                size: Math.random() * 3.5 + 2.5,
+                life: 1
+            });
+        }
+    }
+
+    function renderSmoothie() {
+        if (!smoothieCanvas || !smoothieCtx) return;
+        const w = smoothieCanvas.width;
+        const h = smoothieCanvas.height;
+        if (w <= 0 || h <= 0) {
+            smoothieAnimId = requestAnimationFrame(renderSmoothie);
+            return;
+        }
+
+        smoothieCtx.clearRect(0, 0, w, h);
+
+        const blender = bcUpgrades.find(u => u.id === 'blender');
+        const blenderWaveMult = blender && blender.count > 0 ? (1 + blender.count * 0.15) : 1;
+
+        // 1. Spring-node physics
+        const t = performance.now() * 0.002 * blenderWaveMult;
+        for (let i = 0; i < NUM_SMOOTHIE_NODES; i++) {
+            const node = smoothieNodes[i];
+            const diff = node.targetHeight - node.height;
+            node.speed += diff * SMOOTHIE_TENSION - node.speed * SMOOTHIE_DAMPING;
+            node.height += node.speed;
+            
+            // Continuous organic swell & wobble
+            const swell = Math.sin(t * 1.6 + i * 0.14) * 2.2 + Math.cos(t * 2.3 + i * 0.08) * 1.5;
+            node.height += swell * 0.04 * blenderWaveMult;
+        }
+
+        // 2. Neighbor wave spread (5 iterations)
+        for (let iter = 0; iter < 5; iter++) {
+            for (let i = 0; i < NUM_SMOOTHIE_NODES; i++) {
+                if (i > 0) {
+                    const leftDelta = SMOOTHIE_SPREAD * (smoothieNodes[i].height - smoothieNodes[i - 1].height);
+                    smoothieNodes[i - 1].speed += leftDelta;
+                    smoothieNodes[i - 1].height += leftDelta;
+                }
+                if (i < NUM_SMOOTHIE_NODES - 1) {
+                    const rightDelta = SMOOTHIE_SPREAD * (smoothieNodes[i].height - smoothieNodes[i + 1].height);
+                    smoothieNodes[i + 1].speed += rightDelta;
+                    smoothieNodes[i + 1].height += rightDelta;
+                }
+            }
+        }
+
+        const flavor = getCurrentSmoothieFlavor();
+        const col = flavor.colors;
+
+        // 3. Background Wave (depth shadow)
+        smoothieCtx.fillStyle = col.bgWave;
+        smoothieCtx.beginPath();
+        smoothieCtx.moveTo(0, h);
+        smoothieCtx.lineTo(0, smoothieNodes[0].targetHeight);
+        for (let i = 0; i < NUM_SMOOTHIE_NODES; i++) {
+            const x = (i / (NUM_SMOOTHIE_NODES - 1)) * w;
+            const bgY = smoothieNodes[i].height - 9 + Math.sin(t * 2.1 + i * 0.17) * 5;
+            smoothieCtx.lineTo(x, bgY);
+        }
+        smoothieCtx.lineTo(w, h);
+        smoothieCtx.closePath();
+        smoothieCtx.fill();
+
+        // 4. Foreground Wave with rich gradient
+        const grad = smoothieCtx.createLinearGradient(0, h * 0.35, 0, h);
+        grad.addColorStop(0, col.top);
+        grad.addColorStop(0.2, col.mid);
+        grad.addColorStop(0.65, col.bottom);
+        grad.addColorStop(1, col.deep);
+
+        smoothieCtx.fillStyle = grad;
+        smoothieCtx.beginPath();
+        smoothieCtx.moveTo(0, h);
+        smoothieCtx.lineTo(0, smoothieNodes[0].height);
+
+        for (let i = 0; i < NUM_SMOOTHIE_NODES - 1; i++) {
+            const x1 = (i / (NUM_SMOOTHIE_NODES - 1)) * w;
+            const y1 = smoothieNodes[i].height;
+            const x2 = ((i + 1) / (NUM_SMOOTHIE_NODES - 1)) * w;
+            const y2 = smoothieNodes[i + 1].height;
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            smoothieCtx.quadraticCurveTo(x1, y1, midX, midY);
+        }
+        smoothieCtx.lineTo(w, smoothieNodes[NUM_SMOOTHIE_NODES - 1].height);
+        smoothieCtx.lineTo(w, h);
+        smoothieCtx.closePath();
+        smoothieCtx.fill();
+
+        // 5. Specular / Foam Rim along surface wave
+        smoothieCtx.save();
+        smoothieCtx.strokeStyle = col.foam;
+        smoothieCtx.lineWidth = 3.5;
+        smoothieCtx.shadowColor = col.top;
+        smoothieCtx.shadowBlur = 8;
+        smoothieCtx.beginPath();
+        smoothieCtx.moveTo(0, smoothieNodes[0].height);
+        for (let i = 0; i < NUM_SMOOTHIE_NODES - 1; i++) {
+            const x1 = (i / (NUM_SMOOTHIE_NODES - 1)) * w;
+            const y1 = smoothieNodes[i].height;
+            const x2 = ((i + 1) / (NUM_SMOOTHIE_NODES - 1)) * w;
+            const y2 = smoothieNodes[i + 1].height;
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            smoothieCtx.quadraticCurveTo(x1, y1, midX, midY);
+        }
+        smoothieCtx.lineTo(w, smoothieNodes[NUM_SMOOTHIE_NODES - 1].height);
+        smoothieCtx.stroke();
+        smoothieCtx.restore();
+
+        // 6. Floating Banana Slices & Bubbles
+        smoothieFloatingItems.forEach(item => {
+            const itemX = item.xRatio * w;
+            const idx = Math.min(NUM_SMOOTHIE_NODES - 2, Math.max(0, Math.floor(item.xRatio * (NUM_SMOOTHIE_NODES - 1))));
+            const itemY = (smoothieNodes[idx].height + smoothieNodes[idx + 1].height) / 2;
+            
+            const dx = (1 / (NUM_SMOOTHIE_NODES - 1)) * w;
+            const dy = smoothieNodes[idx + 1].height - smoothieNodes[idx].height;
+            const angle = Math.atan2(dy, dx);
+
+            smoothieCtx.save();
+            smoothieCtx.translate(itemX, itemY - (item.type === 'banana' ? 3 : 0));
+            smoothieCtx.rotate(angle * 0.7);
+            if (item.type === 'banana') {
+                smoothieCtx.font = `${item.size}px serif`;
+                smoothieCtx.textAlign = 'center';
+                smoothieCtx.textBaseline = 'middle';
+                smoothieCtx.fillText(flavor.particleEmoji || '🍌', 0, 0);
+            } else {
+                smoothieCtx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+                smoothieCtx.beginPath();
+                smoothieCtx.arc(0, 0, item.size / 2, 0, Math.PI * 2);
+                smoothieCtx.fill();
+                smoothieCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                smoothieCtx.lineWidth = 1;
+                smoothieCtx.stroke();
+            }
+            smoothieCtx.restore();
+        });
+
+        // 7. Render airborne droplets
+        for (let i = smoothieDroplets.length - 1; i >= 0; i--) {
+            const d = smoothieDroplets[i];
+            d.x += d.vx;
+            d.y += d.vy;
+            d.vy += 0.45;
+            d.life -= 0.025;
+
+            if (d.life <= 0 || d.y > h) {
+                smoothieDroplets.splice(i, 1);
+                continue;
+            }
+
+            smoothieCtx.save();
+            smoothieCtx.globalAlpha = Math.max(0, d.life);
+            smoothieCtx.fillStyle = col.top;
+            smoothieCtx.beginPath();
+            smoothieCtx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+            smoothieCtx.fill();
+            smoothieCtx.restore();
+        }
+
+        smoothieAnimId = requestAnimationFrame(renderSmoothie);
+    }
+
+    function startSmoothieCanvas() {
+        smoothieCanvas = document.getElementById("bc-smoothie-canvas");
+        if (!smoothieCanvas) return;
+        smoothieCtx = smoothieCanvas.getContext("2d");
+        
+        const resize = () => {
+            if (!smoothieCanvas || !smoothieCanvas.parentElement) return;
+            smoothieCanvas.width = smoothieCanvas.parentElement.clientWidth || 320;
+            smoothieCanvas.height = Math.floor((smoothieCanvas.parentElement.clientHeight || 500) * 0.52);
+            initSmoothiePhysics(smoothieCanvas.width, smoothieCanvas.height);
+        };
+
+        resize();
+        window.addEventListener("resize", resize);
+
+        let isStirring = false;
+        smoothieCanvas.onmousedown = (e) => {
+            isStirring = true;
+            const rect = smoothieCanvas.getBoundingClientRect();
+            splashSmoothie(e.clientX - rect.left, 24);
+            playSound('click');
+        };
+        window.addEventListener("mouseup", () => { isStirring = false; });
+        smoothieCanvas.onmousemove = (e) => {
+            if (isStirring) {
+                const rect = smoothieCanvas.getBoundingClientRect();
+                splashSmoothie(e.clientX - rect.left, 14);
+            }
+        };
+        smoothieCanvas.ontouchstart = (e) => {
+            if (e.touches && e.touches[0]) {
+                const rect = smoothieCanvas.getBoundingClientRect();
+                splashSmoothie(e.touches[0].clientX - rect.left, 24);
+            }
+        };
+        smoothieCanvas.ontouchmove = (e) => {
+            if (e.touches && e.touches[0]) {
+                const rect = smoothieCanvas.getBoundingClientRect();
+                splashSmoothie(e.touches[0].clientX - rect.left, 14);
+            }
+        };
+
+        updateSmoothieBadge();
+
+        if (smoothieAnimId) cancelAnimationFrame(smoothieAnimId);
+        smoothieAnimId = requestAnimationFrame(renderSmoothie);
+    }
+
+    function stopSmoothieCanvas() {
+        if (smoothieAnimId) {
+            cancelAnimationFrame(smoothieAnimId);
+            smoothieAnimId = null;
+        }
+    }
+
+    // --- VLADIMIR BEH QUEST & ACCESS LOGIC ---
+    // If quest is done (vladimirQuestStatus === 2), player no longer needs less than 10B bananas!
     function initVladimir() {
         vladimirQuestStatus = parseInt(localStorage.getItem("vladimirQuestStatus_" + playerName)) || 0;
         const container = document.getElementById("dungeon-vladimir-container");
-        if (level >= 15 && bananas < 10000000000) {
-            if (Math.random() < 0.6 || vladimirQuestStatus === 2) {
-                if(container) container.classList.remove("hidden");
+        if (vladimirQuestStatus === 2) {
+            // Quest completed: Permanent access regardless of banana count!
+            if (container) container.classList.remove("hidden");
+        } else if (level >= 15 && bananas < 10000000000) {
+            if (Math.random() < 0.6 || vladimirQuestStatus === 1) {
+                if (container) container.classList.remove("hidden");
             } else {
-                if(container) container.classList.add("hidden");
+                if (container) container.classList.add("hidden");
             }
         } else {
-            if(container) container.classList.add("hidden");
+            if (container) container.classList.add("hidden");
+        }
+    }
+
+    function tryOpenBananaClickerFromGamemode() {
+        vladimirQuestStatus = parseInt(localStorage.getItem("vladimirQuestStatus_" + playerName)) || 0;
+        if (vladimirQuestStatus === 2) {
+            const gmModal = document.getElementById('gamemode-modal');
+            if (gmModal) gmModal.classList.add('hidden');
+            openBananaClicker();
+        } else if (vladimirQuestStatus === 1) {
+            showNotification("Vladimir Beh awaits your proof! Go All-In on Green in Roulette without gadgets to unlock the Clicker!", "warning");
+        } else {
+            if (level >= 15 && bananas < 10000000000) {
+                showNotification("Locked! Seek out Vladimir Beh in the Secret Dungeon to unlock the Banana Clicker.", "info");
+            } else {
+                showNotification("Locked! Seek out Vladimir Beh in the Secret Dungeon (Requires Level 15+ and under 10B 🍌).", "warning");
+            }
         }
     }
 
     let vladimirStep = 0;
     function talkToVladimir() {
         const overlay = document.getElementById("vladimir-dialogue-overlay");
-        if(overlay) overlay.classList.remove("hidden");
+        if (overlay) overlay.classList.remove("hidden");
         vladimirStep = 0;
         const textEl = document.getElementById("vladimir-text");
-        if(textEl) {
+        if (textEl) {
             if (vladimirQuestStatus === 0) {
                 textEl.innerText = "Ah, another wanderer in the deep. Do you seek the true power of the banana?";
             } else if (vladimirQuestStatus === 1) {
@@ -7890,6 +8423,7 @@
             }
         }
     }
+
     function advanceVladimir() {
         vladimirStep++;
         const textEl = document.getElementById("vladimir-text");
@@ -7903,7 +8437,7 @@
                 textEl.innerText = "Your task is simple: Go All-In on Green in Roulette. No gadgets. No tricks. Pure faith.";
                 vladimirQuestStatus = 1;
                 localStorage.setItem("vladimirQuestStatus_" + playerName, "1");
-                if (typeof syncData === "function") syncData(bananas, trees); /* Optional */ 
+                if (typeof syncData === "function") syncData(bananas, trees);
             } else {
                 document.getElementById("vladimir-dialogue-overlay").classList.add("hidden");
             }
@@ -7915,7 +8449,7 @@
         }
     }
 
-
+    // --- BANANA CLICKER STORAGE & PRODUCTION ---
     function loadBananaClicker() {
         const saved = localStorage.getItem("bananaClickerSave_" + playerName);
         if (saved) {
@@ -7924,10 +8458,18 @@
                 bcScore = data.score || 0;
                 if (data.upgrades) {
                     bcUpgrades.forEach((u, i) => {
-                        if (data.upgrades[i]) u.count = data.upgrades[i].count;
+                        const found = data.upgrades.find(item => item && item.id === u.id) || data.upgrades[i];
+                        if (found && typeof found.count === 'number') {
+                            u.count = found.count;
+                        }
                     });
                 }
             } catch (e) {}
+        }
+        const savedFlavor = localStorage.getItem("bcSmoothieFlavor_" + playerName);
+        if (savedFlavor) {
+            const fIdx = SMOOTHIE_FLAVORS.findIndex(f => f.id === savedFlavor);
+            if (fIdx !== -1) activeSmoothieFlavorIdx = fIdx;
         }
     }
 
@@ -7935,19 +8477,51 @@
         if (!playerName) return;
         const data = {
             score: bcScore,
-            upgrades: bcUpgrades.map(u => ({ count: u.count }))
+            upgrades: bcUpgrades.map(u => ({ id: u.id, count: u.count }))
         };
         localStorage.setItem("bananaClickerSave_" + playerName, JSON.stringify(data));
     }
 
     function getBcCps() {
-        return bcUpgrades.reduce((sum, u) => sum + (u.count * u.cps), 0);
+        let base = bcUpgrades.reduce((sum, u) => sum + (u.count * u.cps), 0);
+        
+        // Smoothie Blender upgrade bonus
+        const blender = bcUpgrades.find(u => u.id === 'blender');
+        if (blender && blender.count > 0) {
+            base *= (1 + blender.count * 0.15);
+        }
+
+        // Active Smoothie Flavor multiplier
+        const flavor = getCurrentSmoothieFlavor();
+        if (flavor && flavor.cpsMult) {
+            base *= (1 + flavor.cpsMult);
+        }
+
+        // Banana Frenzy buff
+        if (bcActiveBuff && bcActiveBuff.type === 'frenzy') {
+            base *= bcActiveBuff.multiplier;
+        }
+
+        return base;
     }
 
-    
     function getBcClickPower() {
         const cursor = bcUpgrades.find(u => u.id === 'cursor');
-        return 1 + (cursor ? cursor.count : 0);
+        let power = 1 + (cursor ? cursor.count : 0);
+
+        // Reinforced Peels: +1% of raw CPS added to clicks
+        const peels = bcUpgrades.find(u => u.id === 'click_percent');
+        if (peels && peels.count > 0) {
+            const rawCps = bcUpgrades.reduce((sum, u) => sum + (u.count * u.cps), 0);
+            power += Math.floor(rawCps * 0.01 * peels.count);
+        }
+
+        // Click Frenzy buff
+        if (bcActiveBuff && bcActiveBuff.type === 'click_frenzy') {
+            power *= bcActiveBuff.multiplier;
+        }
+
+        return Math.max(1, power);
     }
 
     function initBcStore() {
@@ -7955,24 +8529,86 @@
         if (!storeEl) return;
         storeEl.innerHTML = "";
         bcUpgrades.forEach((u, index) => {
+            let effectLabel = '';
+            if (u.cps > 0) {
+                effectLabel = `+${formatNumber(u.cps)} CPS`;
+            } else if (u.effect) {
+                effectLabel = u.effect;
+            } else if (u.id === 'golden1') {
+                effectLabel = 'Faster Golden Bananas';
+            } else {
+                effectLabel = '+Reward Multiplier';
+            }
+            
             storeEl.innerHTML += `
-                <div id="bc-upgrade-${index}" onclick="buyBcUpgrade(${index})" class="flex items-center p-3 rounded-xl border-2 transition-all select-none">
-                    <div class="text-3xl mr-3">${u.icon}</div>
-                    <div class="flex-1">
-                        <div class="text-white font-bold text-sm">${u.name} <span class="text-gray-500 text-xs ml-1" id="bc-u-count-${index}">x${u.count}</span></div>
-                        <div id="bc-u-cost-${index}" class="font-black text-xs">🍌</div>
+                <div id="bc-upgrade-${index}" onclick="buyBcUpgrade(${index})" class="flex items-center p-3 rounded-2xl border-2 transition-all select-none gap-3 shadow-md">
+                    <div class="text-3xl shrink-0 w-10 text-center">${u.icon}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <span class="text-white font-bold text-xs md:text-sm truncate">${u.name}</span>
+                            <span class="text-gray-400 font-mono text-[11px] ml-1 font-bold shrink-0" id="bc-u-count-${index}">x${u.count}</span>
+                        </div>
+                        <div class="flex items-center justify-between mt-1">
+                            <span id="bc-u-cost-${index}" class="font-black text-xs font-mono">...</span>
+                            <span class="text-[10px] text-orange-400 font-bold shrink-0">${effectLabel}</span>
+                        </div>
                     </div>
-                    <div class="text-[10px] text-gray-500 font-bold">+${u.cps} CPS</div>
                 </div>
             `;
         });
     }
 
+    function updateBcBuffUI() {
+        const banner = document.getElementById("bc-buff-banner");
+        if (!bcActiveBuff) {
+            if (banner && !banner.classList.contains("hidden")) banner.classList.add("hidden");
+            return;
+        }
+        const remainingMs = bcActiveBuff.expiresAt - Date.now();
+        if (remainingMs <= 0) {
+            bcActiveBuff = null;
+            if (banner) banner.classList.add("hidden");
+            updateBcUI();
+            return;
+        }
+        if (banner && banner.classList.contains("hidden")) banner.classList.remove("hidden");
+        const timerEl = document.getElementById("bc-buff-timer");
+        const barEl = document.getElementById("bc-buff-bar");
+        if (timerEl) timerEl.innerText = `${Math.ceil(remainingMs / 1000)}s`;
+        if (barEl) {
+            const pct = Math.max(0, Math.min(100, (remainingMs / bcActiveBuff.duration) * 100));
+            barEl.style.width = `${pct}%`;
+        }
+    }
+
+    function activateBcBuff(type, title, multiplier, durationSec) {
+        bcActiveBuff = {
+            type,
+            title,
+            multiplier,
+            expiresAt: Date.now() + durationSec * 1000,
+            duration: durationSec * 1000
+        };
+        const banner = document.getElementById("bc-buff-banner");
+        const titleEl = document.getElementById("bc-buff-title");
+        if (banner) banner.classList.remove("hidden");
+        if (titleEl) titleEl.innerText = title;
+        playSound('win');
+    }
+
     function updateBcUI() {
         const scoreEl = document.getElementById("bc-score");
         const cpsEl = document.getElementById("bc-cps");
-        if (scoreEl) scoreEl.innerText = Math.floor(bcScore).toLocaleString();
+        const clickPowerEl = document.getElementById("bc-click-power");
+        const empireCountEl = document.getElementById("bc-empire-count");
+
+        if (scoreEl) scoreEl.innerText = formatNumber(Math.floor(bcScore));
         if (cpsEl) cpsEl.innerText = getBcCps().toFixed(1);
+        if (clickPowerEl) clickPowerEl.innerText = `+${formatNumber(getBcClickPower())} 🍌`;
+        if (empireCountEl) {
+            const totalEntities = bcUpgrades.reduce((sum, u) => (u.cps > 0 ? sum + u.count : sum), 0);
+            empireCountEl.innerText = `${totalEntities} ENTITIES`;
+        }
 
         bcUpgrades.forEach((u, index) => {
             const cost = Math.ceil(u.baseCost * Math.pow(1.15, u.count));
@@ -7982,41 +8618,70 @@
             const costEl = document.getElementById(`bc-u-cost-${index}`);
             
             if (container) {
-                container.className = `flex items-center p-3 rounded-xl border-2 ${canAfford ? "bg-gray-800 border-gray-700 hover:border-orange-500 cursor-pointer" : "bg-gray-900 border-gray-800 opacity-50 cursor-not-allowed"} transition-all select-none`;
+                container.className = `flex items-center p-3 rounded-2xl border-2 transition-all select-none gap-3 ${
+                    canAfford 
+                    ? "bg-gray-800/90 border-gray-700 hover:border-orange-500 hover:bg-gray-800 cursor-pointer shadow-md" 
+                    : "bg-gray-900/60 border-gray-800 opacity-60 cursor-not-allowed"
+                }`;
             }
             if (countEl) countEl.innerText = `x${u.count}`;
             if (costEl) {
-                costEl.innerText = `${cost.toLocaleString()} 🍌`;
-                costEl.className = `${canAfford ? "text-green-400" : "text-red-400"} font-black text-xs`;
+                costEl.innerText = `${formatNumber(cost)} 🍌`;
+                costEl.className = `${canAfford ? "text-emerald-400" : "text-rose-400"} font-black text-xs font-mono`;
             }
         });
         
         renderBcBuildings();
+        updateSmoothieBadge();
+        updateBcBuffUI();
     }
 
     function renderBcBuildings() {
         const buildingsEl = document.getElementById("bc-buildings");
         if (!buildingsEl) return;
         
+        const ownedBuildings = bcUpgrades.filter(u => u.count > 0 && u.cps > 0);
+        
+        if (ownedBuildings.length === 0) {
+            buildingsEl.innerHTML = `
+                <div class="h-full min-h-[300px] flex flex-col items-center justify-center text-center p-8 text-gray-600">
+                    <div class="text-6xl mb-3 opacity-40">🏛️</div>
+                    <h4 class="text-gray-400 font-black text-base uppercase tracking-wider mb-1">Empire Awaits</h4>
+                    <p class="text-xs text-gray-500 max-w-xs">Purchase monkeys, farms, and mines from the Store on the right to watch your banana civilization thrive!</p>
+                </div>
+            `;
+            return;
+        }
+
         let html = '';
-        bcUpgrades.forEach(u => {
-            if (u.count > 0) {
-                html += `
-                <div class="bg-gray-900/50 rounded-2xl border border-gray-800 p-4 relative overflow-hidden">
-                    <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-transparent to-transparent z-10 pointer-events-none"></div>
-                    <div class="flex items-center gap-2 mb-3 relative z-20">
-                        <div class="text-2xl">${u.icon}</div>
-                        <h4 class="text-white font-bold text-lg">${u.name}</h4>
-                        <span class="text-orange-400 font-black ml-auto bg-orange-900/30 px-3 py-1 rounded-lg border border-orange-500/30">x${u.count}</span>
+        ownedBuildings.forEach(u => {
+            const maxVisibleIcons = 40;
+            const shownCount = Math.min(u.count, maxVisibleIcons);
+            const extraCount = u.count - shownCount;
+            const totalCps = (u.count * u.cps);
+
+            html += `
+            <div class="bg-gray-900/80 rounded-2xl border border-gray-800 p-4 relative overflow-hidden shadow-lg hover:border-orange-500/30 transition-all">
+                <div class="absolute inset-0 bg-gradient-to-r from-orange-950/10 via-transparent to-transparent pointer-events-none"></div>
+                <div class="flex items-center justify-between gap-3 mb-3 relative z-10 border-b border-gray-800/80 pb-2">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-3xl">${u.icon}</span>
+                        <div>
+                            <h4 class="text-white font-black text-sm md:text-base">${u.name}</h4>
+                            <div class="text-[10px] text-orange-400/80 font-mono font-bold">+${formatNumber(totalCps)} CPS total</div>
+                        </div>
                     </div>
-                    <div class="flex flex-wrap gap-2 text-3xl opacity-80 relative z-0">
-                        ${Array(u.count).fill(u.icon).join('')}
-                    </div>
-                </div>`;
-            }
+                    <span class="text-orange-400 font-black text-xs font-mono bg-orange-950/80 px-3 py-1 rounded-xl border border-orange-700/50 shadow-inner">
+                        x${u.count}
+                    </span>
+                </div>
+                <div class="flex flex-wrap gap-1.5 text-2xl opacity-90 relative z-10 select-none">
+                    ${Array(shownCount).fill(u.icon).join('')}
+                    ${extraCount > 0 ? `<span class="text-xs font-black text-gray-400 bg-gray-800/80 px-2 py-1 rounded-lg border border-gray-700 self-center">+${extraCount} more</span>` : ''}
+                </div>
+            </div>`;
         });
         
-        // Only update if HTML changed to prevent flashing
         if (buildingsEl.innerHTML !== html) {
             buildingsEl.innerHTML = html;
         }
@@ -8025,56 +8690,185 @@
     function clickBanana(e) {
         const power = getBcClickPower();
         bcScore += power;
+        playSound("click");
         updateBcUI();
-        
-        // Spawn floating text if event exists
-        if (e && e.clientX) {
-            spawnFloatingText(e.clientX, e.clientY, `+${power}`);
+
+        // Banana squish feedback
+        const emojiEl = document.getElementById("bc-big-banana-emoji");
+        if (emojiEl) {
+            emojiEl.style.transform = "scale(0.85, 1.15) translateY(8px)";
+            setTimeout(() => {
+                if (emojiEl) emojiEl.style.transform = "scale(1, 1) translateY(0px)";
+            }, 90);
         }
+
+        if (e && e.clientX) {
+            const isFrenzy = bcActiveBuff && bcActiveBuff.type === 'click_frenzy';
+            const txt = isFrenzy ? `+${formatNumber(power)} ⚡` : `+${formatNumber(power)}`;
+            spawnFloatingText(e.clientX, e.clientY, txt);
+        }
+    }
+
+    let bcToastTimer = null;
+    function showBcToast(type, title, msg) {
+        const toast = document.getElementById("bc-toast");
+        const inner = document.getElementById("bc-toast-inner");
+        const iconEl = document.getElementById("bc-toast-icon");
+        const titleEl = document.getElementById("bc-toast-title");
+        const msgEl = document.getElementById("bc-toast-msg");
+        if (!toast || !inner) return;
+
+        if (bcToastTimer) {
+            clearTimeout(bcToastTimer);
+            bcToastTimer = null;
+        }
+
+        if (type === "warning" || type === "error") {
+            inner.className = "p-3.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl flex items-center gap-3 border border-red-500/60 bg-red-950/95 text-red-100";
+            if (iconEl) iconEl.innerText = "⚠️";
+            if (titleEl) {
+                titleEl.innerText = title || "Warning";
+                titleEl.className = "uppercase tracking-wider text-[11px] font-black text-red-400";
+            }
+            playSound("wrong");
+        } else if (type === "success") {
+            inner.className = "p-3.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl flex items-center gap-3 border border-emerald-500/60 bg-emerald-950/95 text-emerald-100";
+            if (iconEl) iconEl.innerText = "✅";
+            if (titleEl) {
+                titleEl.innerText = title || "Success";
+                titleEl.className = "uppercase tracking-wider text-[11px] font-black text-emerald-400";
+            }
+        } else {
+            inner.className = "p-3.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl flex items-center gap-3 border border-yellow-500/60 bg-yellow-950/95 text-yellow-100";
+            if (iconEl) iconEl.innerText = "💡";
+            if (titleEl) {
+                titleEl.innerText = title || "Notice";
+                titleEl.className = "uppercase tracking-wider text-[11px] font-black text-yellow-400";
+            }
+        }
+
+        if (msgEl) msgEl.innerText = msg;
+
+        toast.classList.remove("opacity-0", "-translate-y-4", "scale-95", "pointer-events-none");
+        toast.classList.add("opacity-100", "translate-y-0", "scale-100");
+
+        bcToastTimer = setTimeout(() => {
+            toast.classList.remove("opacity-100", "translate-y-0", "scale-100");
+            toast.classList.add("opacity-0", "-translate-y-4", "scale-95", "pointer-events-none");
+        }, 4000);
+    }
+
+    function exportSmoothieToCasino() {
+        const exportCost = 50000;
+        const casinoGain = 1000;
+        if (bcScore < exportCost) {
+            showBcToast(
+                "warning",
+                "Not Enough Bananas to Export",
+                `You need at least ${formatNumber(exportCost)} Clicker Bananas to export to the Casino. (You currently have ${formatNumber(bcScore)} 🍌)`
+            );
+            return;
+        }
+        bcScore -= exportCost;
+        bananas += casinoGain;
+        saveBananaClicker();
+        updateBcUI();
+        if (typeof updateBalanceUI === 'function') updateBalanceUI();
+        if (typeof syncData === 'function') syncData(bananas, trees);
+        playSound('win');
+        showBcToast(
+            "success",
+            "Casino Transfer Complete",
+            `Successfully transferred ${formatNumber(exportCost)} Clicker Bananas for +${formatNumber(casinoGain)} Casino 🍌!`
+        );
+    }
+
+    function getGoldenBananaIntervalMs() {
+        const freqUpg = bcUpgrades.find(u => u.id === 'golden1');
+        const count = freqUpg ? freqUpg.count : 0;
+        const baseWait = 45000 / (1 + count * 0.35);
+        const variance = (Math.random() * 0.3 - 0.15) * baseWait;
+        return Math.max(7000, Math.floor(baseWait + variance));
+    }
+
+    function scheduleNextGoldenBanana() {
+        if (goldenBananaNextSpawnTimer) {
+            clearTimeout(goldenBananaNextSpawnTimer);
+            goldenBananaNextSpawnTimer = null;
+        }
+        const delay = getGoldenBananaIntervalMs();
+        goldenBananaNextSpawnTimer = setTimeout(() => {
+            spawnGoldenBanana();
+        }, delay);
     }
 
     function spawnGoldenBanana() {
         const gb = document.getElementById("golden-banana");
         if (!gb) return;
-        
-        // Ensure we don't spawn multiple
         if (!gb.classList.contains("hidden")) return;
 
-        // Position randomly within left panel
-        const leftPanel = gb.parentElement;
-        const rect = leftPanel.getBoundingClientRect();
-        const maxX = rect.width - 100;
-        const maxY = rect.height - 100;
+        if (goldenBananaDespawnTimer) {
+            clearTimeout(goldenBananaDespawnTimer);
+            goldenBananaDespawnTimer = null;
+        }
+
+        const leftPanel = document.getElementById("bc-left-panel") || gb.parentElement;
+        const panelW = leftPanel ? (leftPanel.clientWidth || 300) : 300;
+        const panelH = leftPanel ? (leftPanel.clientHeight || 500) : 500;
         
-        gb.style.left = Math.max(20, Math.floor(Math.random() * maxX)) + "px";
-        gb.style.top = Math.max(20, Math.floor(Math.random() * maxY)) + "px";
+        const maxX = Math.max(30, panelW - 90);
+        const maxY = Math.max(80, panelH - 120);
+        
+        const posX = Math.floor(20 + Math.random() * (maxX - 20));
+        const posY = Math.floor(70 + Math.random() * (maxY - 70));
+        
+        gb.style.left = posX + "px";
+        gb.style.top = posY + "px";
         gb.classList.remove("hidden");
 
-        // Despawn after 10 seconds
-        setTimeout(() => {
-            gb.classList.add("hidden");
-        }, 10000);
+        const APPEARANCE_DURATION = 14000;
+        goldenBananaDespawnTimer = setTimeout(() => {
+            despawnGoldenBanana(false);
+        }, APPEARANCE_DURATION);
+    }
+
+    function despawnGoldenBanana(wasClicked = false) {
+        if (goldenBananaDespawnTimer) {
+            clearTimeout(goldenBananaDespawnTimer);
+            goldenBananaDespawnTimer = null;
+        }
+        const gb = document.getElementById("golden-banana");
+        if (gb) gb.classList.add("hidden");
+
+        scheduleNextGoldenBanana();
     }
 
     function clickGoldenBanana(e) {
         if (e) e.stopPropagation();
-        const gb = document.getElementById("golden-banana");
-        if (gb) gb.classList.add("hidden");
+        playSound('win');
 
         const goldMult = bcUpgrades.find(u => u.id === 'golden2');
-        const multVal = goldMult ? (1 + goldMult.count) : 1;
-        
+        const multVal = goldMult ? (1 + goldMult.count * 1.5) : 1;
         const cps = getBcCps();
-        // Base reward is 100 + 30 seconds of CPS
-        const reward = (100 + cps * 30) * multVal;
-        
-        bcScore += reward;
-        updateBcUI();
-        playSound('win');
-        
-        if (e && e.clientX) {
-            spawnFloatingText(e.clientX, e.clientY, `+${Math.floor(reward)} 🌟`);
+
+        const roll = Math.random();
+        if (roll < 0.38) {
+            // Banana Frenzy (7x CPS for 25s)
+            activateBcBuff('frenzy', '🔥 BANANA FRENZY (7x CPS)', 7, 25);
+            if (e && e.clientX) spawnFloatingText(e.clientX, e.clientY, "🔥 7x FRENZY!");
+        } else if (roll < 0.68) {
+            // Click Frenzy (777x Click Power for 12s)
+            activateBcBuff('click_frenzy', '⚡ CLICK FRENZY (777x Clicks)', 777, 12);
+            if (e && e.clientX) spawnFloatingText(e.clientX, e.clientY, "⚡ 777x CLICKS!");
+        } else {
+            // Golden Harvest
+            const reward = Math.max(150, Math.ceil((150 + cps * 40) * multVal));
+            bcScore += reward;
+            if (e && e.clientX) spawnFloatingText(e.clientX, e.clientY, `+${formatNumber(reward)} 🌟 GOLDEN!`);
         }
+
+        updateBcUI();
+        despawnGoldenBanana(true);
     }
 
     function spawnFloatingText(x, y, text) {
@@ -8093,47 +8887,82 @@
         if (bcScore >= cost) {
             bcScore -= cost;
             u.count++;
+            playSound('bet');
             updateBcUI();
             saveBananaClicker();
+
+            if (u.id === 'golden1') {
+                const gb = document.getElementById("golden-banana");
+                if (gb && gb.classList.contains("hidden")) {
+                    scheduleNextGoldenBanana();
+                }
+            }
         }
     }
 
     function openBananaClicker() {
         loadBananaClicker();
         const modal = document.getElementById("banana-clicker-modal");
-        if(modal) modal.classList.remove("hidden");
+        if (modal) {
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
         initBcStore();
         updateBcUI();
-        if (bcInterval) clearInterval(bcInterval);
-        if (goldenBananaInterval) clearInterval(goldenBananaInterval);
-        
-        goldenBananaInterval = setInterval(() => {
-            const freqUpg = bcUpgrades.find(u => u.id === 'golden1');
-            const freqMult = freqUpg ? (1 + (freqUpg.count * 0.5)) : 1;
-            const chance = 0.05 * freqMult; // 5% base chance every 10 seconds
-            
-            if (Math.random() < chance) {
-                spawnGoldenBanana();
-            }
-        }, 10000);
+        startSmoothieCanvas();
 
+        if (bcInterval) clearInterval(bcInterval);
+        if (goldenBananaDespawnTimer) clearTimeout(goldenBananaDespawnTimer);
+        if (goldenBananaNextSpawnTimer) clearTimeout(goldenBananaNextSpawnTimer);
+        
         bcInterval = setInterval(() => {
             const cps = getBcCps();
             if (cps > 0) {
                 bcScore += cps / 10;
                 updateBcUI();
+            } else {
+                updateBcBuffUI();
             }
-            if (Math.random() < 0.1) saveBananaClicker();
+            if (Math.random() < 0.05) saveBananaClicker();
         }, 100);
-    }
 
+        const initialDelay = Math.min(16000, getGoldenBananaIntervalMs());
+        goldenBananaNextSpawnTimer = setTimeout(() => {
+            spawnGoldenBanana();
+        }, initialDelay);
+    }
 
     function closeBananaClicker() {
         saveBananaClicker();
+        stopSmoothieCanvas();
+        if (bcToastTimer) {
+            clearTimeout(bcToastTimer);
+            bcToastTimer = null;
+        }
+        const toast = document.getElementById("bc-toast");
+        if (toast) {
+            toast.classList.add("opacity-0", "-translate-y-4", "scale-95", "pointer-events-none");
+            toast.classList.remove("opacity-100", "translate-y-0", "scale-100");
+        }
         const modal = document.getElementById("banana-clicker-modal");
-        if(modal) modal.classList.add("hidden");
-        if (bcInterval) clearInterval(bcInterval);
-        if (goldenBananaInterval) clearInterval(goldenBananaInterval);
+        if (modal) {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+        if (bcInterval) {
+            clearInterval(bcInterval);
+            bcInterval = null;
+        }
+        if (goldenBananaDespawnTimer) {
+            clearTimeout(goldenBananaDespawnTimer);
+            goldenBananaDespawnTimer = null;
+        }
+        if (goldenBananaNextSpawnTimer) {
+            clearTimeout(goldenBananaNextSpawnTimer);
+            goldenBananaNextSpawnTimer = null;
+        }
+        const gb = document.getElementById("golden-banana");
+        if (gb) gb.classList.add("hidden");
     }
 
     // Expose necessary functions to window for HTML event handlers (Read-only to prevent console modification)
@@ -8151,7 +8980,8 @@
         openSkinValuesModal, closeSkinValuesModal, updateSkinValuesTable,
         openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, bypassDungeonCooldown, sellSkinToMerchant, openProfile, closeProfileModal, toggleProfileSkins, cashOutCrash, hiloGuess, pokerHold, pokerDraw,
         openCreatorCodeModal, closeCreatorCodeModal, submitCreatorCode, talkToVladimir, advanceVladimir, clickBanana, buyBcUpgrade, openBananaClicker, closeBananaClicker, clickGoldenBanana,
-        openGiftModal, closeGiftModal, switchGiftTab, validateGiftBananaInput, setGiftBananaPercent, sendBananaGift, renderGiftSkinsPicker, sendSkinGift
+        openGiftModal, closeGiftModal, switchGiftTab, validateGiftBananaInput, setGiftBananaPercent, sendBananaGift, renderGiftSkinsPicker, sendSkinGift,
+        tryOpenBananaClickerFromGamemode, cycleSmoothieFlavor, exportSmoothieToCasino, splashSmoothie, showBcToast
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
