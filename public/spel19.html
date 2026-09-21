@@ -925,18 +925,42 @@
     <!-- MODAL: BANANA CLICKER -->
     <div id="banana-clicker-modal" class="fixed inset-0 z-[1100] bg-black/95 backdrop-blur-xl hidden flex-col overflow-hidden">
       <!-- Header -->
-      <div class="p-3 md:p-4 bg-orange-950/90 border-b border-orange-900 flex justify-between items-center z-10 shadow-2xl shrink-0">
-        <div class="flex items-center gap-3">
-            <span class="text-3xl">🍌</span>
+      <div class="p-2.5 md:p-3.5 bg-orange-950/90 border-b border-orange-900 flex flex-wrap justify-between items-center z-10 shadow-2xl shrink-0 gap-2">
+        <div class="flex items-center gap-2.5 md:gap-3">
+            <span class="text-2xl md:text-3xl">🍌</span>
             <div>
-              <h2 class="text-xl md:text-3xl font-black text-orange-400 uppercase tracking-tighter italic leading-none">Banana Clicker</h2>
-              <p class="text-[10px] md:text-xs text-orange-300/70 font-semibold tracking-wide">Produce bananas, expand your empire & catch golden bananas</p>
+              <h2 class="text-lg md:text-2xl font-black text-orange-400 uppercase tracking-tighter italic leading-none">Banana Clicker</h2>
+              <p class="text-[9px] md:text-xs text-orange-300/70 font-semibold tracking-wide">Produce bananas, expand your empire & ascend to the cosmos</p>
             </div>
         </div>
-        <button onclick="closeBananaClicker()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white font-black px-4 py-2 rounded-xl transition-all flex items-center gap-2 border border-gray-700 shadow-lg text-sm">
-          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
-          EXIT
-        </button>
+        <div class="flex items-center gap-1.5 md:gap-2">
+            <!-- Legacy / Ascend Button -->
+            <button id="bc-legacy-btn" onclick="openBcLegacyModal()" class="relative overflow-hidden group bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-700 hover:from-indigo-600 hover:to-pink-600 text-white font-black px-3 py-1.5 md:px-3.5 md:py-2 rounded-xl shadow-[0_0_15px_rgba(147,51,234,0.5)] border border-purple-400/50 transition-all flex items-center gap-1.5 text-xs active:scale-95" title="Cosmic Ascension & Heavenly Upgrades">
+                <span class="text-sm animate-pulse">🌟</span>
+                <div class="text-left leading-tight">
+                    <div class="text-[10px] md:text-xs uppercase tracking-wider font-extrabold flex items-center gap-1">
+                        LEGACY
+                        <span id="bc-hdr-prestige-tag" class="bg-black/40 text-purple-200 px-1 rounded text-[8px] font-mono">lvl 0</span>
+                    </div>
+                    <div class="text-[8px] md:text-[9px] text-purple-200 font-mono font-bold" id="bc-hdr-chips-tag">+0 chips</div>
+                </div>
+            </button>
+            <!-- Stats Button -->
+            <button onclick="openBcStatsModal()" class="bg-gray-800 hover:bg-gray-700 text-amber-300 font-extrabold px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl border border-gray-700 flex items-center gap-1 text-xs shadow transition-all active:scale-95" title="Empire Statistics">
+                <span>📊</span>
+                <span class="hidden sm:inline">Stats</span>
+            </button>
+            <!-- Achievements Button -->
+            <button onclick="openBcAchievementsModal()" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 font-extrabold px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl border border-gray-700 flex items-center gap-1 text-xs shadow transition-all active:scale-95" title="Milestones & Achievements">
+                <span>🏆</span>
+                <span id="bc-hdr-ach-count" class="font-mono text-[11px]">0/24</span>
+            </button>
+            <!-- Exit Button -->
+            <button onclick="closeBananaClicker()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white font-black px-3 py-1.5 md:px-3.5 md:py-2 rounded-xl transition-all flex items-center gap-1.5 border border-gray-700 shadow-lg text-xs md:text-sm">
+              <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+              EXIT
+            </button>
+        </div>
       </div>
       
       <!-- IN-GAMEMODE NOTIFICATION BANNER / TOAST -->
@@ -1043,18 +1067,206 @@
              
           <!-- Right: Upgrades (Store) with scrollbar -->
           <div class="w-full md:w-80 lg:w-96 bg-gray-900 flex flex-col min-h-0 h-full overflow-hidden shrink-0">
-              <div class="p-3 md:p-4 bg-gray-950 border-b border-gray-800 text-center shrink-0 flex items-center justify-between">
-                  <div class="w-8"></div>
-                  <div class="flex items-center gap-2">
-                      <span class="text-lg">🛒</span>
-                      <h3 class="text-white font-black uppercase tracking-widest text-sm md:text-base">Store & Upgrades</h3>
+              <div class="p-2.5 md:p-3 bg-gray-950 border-b border-gray-800 shrink-0 flex items-center justify-between gap-2 shadow-md">
+                  <div class="flex items-center gap-1.5">
+                      <span class="text-base">🛒</span>
+                      <h3 class="text-white font-black uppercase tracking-widest text-xs md:text-sm">Store</h3>
                   </div>
-                  <div class="w-8"></div>
+                  <!-- Bulk Buy Selector (Cookie Clicker style) -->
+                  <div class="flex items-center bg-gray-900 rounded-xl p-0.5 border border-gray-800 text-[10px] font-mono font-black select-none">
+                      <span class="text-gray-500 px-1 text-[9px] uppercase hidden sm:inline">Buy</span>
+                      <button id="bc-bulk-1" onclick="setBcBulkBuyMode(1)" class="px-2 py-0.5 rounded-lg bg-orange-500 text-white shadow transition-all">1</button>
+                      <button id="bc-bulk-10" onclick="setBcBulkBuyMode(10)" class="px-2 py-0.5 rounded-lg text-gray-400 hover:text-white transition-all">10</button>
+                      <button id="bc-bulk-100" onclick="setBcBulkBuyMode(100)" class="px-2 py-0.5 rounded-lg text-gray-400 hover:text-white transition-all">100</button>
+                  </div>
+              </div>
+              <!-- Upgrades Shelf (Cookie Clicker style Tiered Upgrades) -->
+              <div id="bc-upgrades-container" class="bg-gray-950/95 border-b border-gray-800 p-2 shrink-0">
+                  <div class="flex items-center justify-between mb-1.5 text-[10px] text-gray-400 font-extrabold uppercase tracking-wider px-1">
+                      <span>Upgrades</span>
+                      <span id="bc-upgrades-counter" class="font-mono text-orange-400 font-bold">0 AVAILABLE</span>
+                  </div>
+                  <div id="bc-upgrades-shelf" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scroll p-1.5 bg-black/40 rounded-xl border border-gray-800/80 min-h-[46px] items-center">
+                      <span class="text-[10px] text-gray-500 italic px-2">Upgrades appear as your empire grows</span>
+                  </div>
               </div>
               <div class="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scroll min-h-0" id="bc-store">
                   <!-- Store items here -->
               </div>
           </div>
+      </div>
+    </div>
+
+    <!-- CELESTIAL ASCENSION / LEGACY MODAL -->
+    <div id="bc-ascend-modal" class="fixed inset-0 z-[1300] bg-black/95 backdrop-blur-2xl hidden flex-col overflow-hidden text-white font-sans">
+      <!-- Cosmic Header -->
+      <div class="p-3.5 md:p-4 bg-gradient-to-r from-indigo-950 via-purple-950 to-indigo-950 border-b border-purple-800/60 flex justify-between items-center shadow-2xl shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-purple-600/30 border border-purple-400/50 flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(168,85,247,0.5)]">
+            🌌
+          </div>
+          <div>
+            <h2 class="text-lg md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-pink-200 to-amber-200 uppercase tracking-wider">
+              Celestial Ascension
+            </h2>
+            <p class="text-[10px] md:text-xs text-purple-300/80 font-medium">Reincarnate your banana civilization to unlock heavenly powers</p>
+          </div>
+        </div>
+        <button onclick="closeBcLegacyModal()" class="bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white font-black px-3.5 py-1.5 md:px-4 md:py-2 rounded-xl transition-all border border-gray-700 text-xs">
+          RETURN TO REALITY ✕
+        </button>
+      </div>
+
+      <!-- Main Ascension Content: 2 columns (Overview + Heavenly Upgrades Tree) -->
+      <div class="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-950/40 via-gray-950 to-black p-3 md:p-6 gap-4 md:gap-6">
+        <!-- Left Column: Ascension Summary & Reincarnate CTA -->
+        <div class="w-full lg:w-96 flex flex-col gap-3 md:gap-4 shrink-0 overflow-y-auto custom-scroll pr-1">
+          <!-- Prestige Box -->
+          <div class="bg-purple-950/40 border border-purple-500/40 rounded-3xl p-4 md:p-5 shadow-[0_0_30px_rgba(147,51,234,0.2)] text-center relative overflow-hidden backdrop-blur-md">
+            <div class="absolute -right-8 -bottom-8 text-8xl opacity-10 pointer-events-none">✨</div>
+            <div class="text-[11px] font-black uppercase tracking-widest text-purple-300 mb-1">Current Prestige Level</div>
+            <div id="bc-asc-prestige-lvl" class="text-3xl md:text-4xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 drop-shadow">0</div>
+            <div id="bc-asc-prestige-bonus" class="text-xs text-emerald-400 font-bold mt-1">+0% Permanent CPS Bonus</div>
+            
+            <div class="mt-4 pt-4 border-t border-purple-800/60 grid grid-cols-2 gap-3 text-left">
+              <div>
+                <div class="text-[10px] text-gray-400 font-bold uppercase">Heavenly Chips</div>
+                <div id="bc-asc-chips-owned" class="text-xl font-black font-mono text-yellow-300">0 🌟</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-gray-400 font-bold uppercase">Ascensions</div>
+                <div id="bc-asc-total-count" class="text-xl font-black font-mono text-purple-200">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pending Ascension Box -->
+          <div class="bg-indigo-950/40 border border-indigo-500/40 rounded-3xl p-4 md:p-5 shadow-xl text-center backdrop-blur-md">
+            <div class="text-[11px] font-black uppercase tracking-widest text-indigo-300 mb-1">Ascend Now To Gain</div>
+            <div id="bc-asc-chips-gain" class="text-2xl md:text-3xl font-black font-mono text-yellow-400">+0 Heavenly Chips 🌟</div>
+            
+            <!-- Progress to next chip -->
+            <div class="mt-3">
+              <div class="flex justify-between text-[11px] font-bold text-gray-400 mb-1">
+                <span>Next Heavenly Chip</span>
+                <span id="bc-asc-next-pct" class="font-mono text-indigo-300">0.0%</span>
+              </div>
+              <div class="w-full bg-gray-900 rounded-full h-2.5 overflow-hidden border border-indigo-950">
+                <div id="bc-asc-progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+              <div id="bc-asc-next-req" class="text-[10px] text-gray-500 font-mono mt-1 text-right">0 / 0 🍌</div>
+            </div>
+
+            <!-- Reincarnate Action Button -->
+            <button id="bc-reincarnate-btn" onclick="executeAscension()" class="w-full mt-5 py-3.5 px-4 rounded-2xl font-black text-xs md:text-sm uppercase tracking-wider transition-all duration-200 shadow-xl flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-yellow-950 active:scale-95 border border-yellow-300">
+              <span>🌟</span>
+              <span>ASCEND & REINCARNATE</span>
+            </button>
+            <p class="text-[10px] text-gray-400 mt-2 leading-tight">
+              Reset your current bananas and buildings to claim Heavenly Chips and permanent +1% CPS per level.
+            </p>
+          </div>
+        </div>
+
+        <!-- Right Column: Heavenly Upgrades Tree/Shop -->
+        <div class="flex-1 flex flex-col min-h-0 bg-gray-950/60 rounded-3xl border border-purple-900/40 p-4 md:p-5 overflow-hidden shadow-2xl backdrop-blur-md">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-800/80 mb-3 shrink-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">✨</span>
+              <h3 class="font-black text-sm md:text-base uppercase tracking-wider text-purple-200">Heavenly Upgrades Tree</h3>
+            </div>
+            <span id="bc-heavenly-unlocked-count" class="text-xs font-mono font-bold text-yellow-400 bg-purple-950/60 px-3 py-1 rounded-xl border border-purple-800/60">0 / 10 UNLOCKED</span>
+          </div>
+
+          <!-- Upgrades Grid -->
+          <div id="bc-heavenly-upgrades-grid" class="flex-1 overflow-y-auto custom-scroll grid grid-cols-1 md:grid-cols-2 gap-3 min-h-0 pr-1">
+            <!-- Dynamically populated heavenly upgrade cards -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS MODAL -->
+    <div id="bc-stats-modal" class="fixed inset-0 z-[1300] bg-black/90 backdrop-blur-xl hidden items-center justify-center p-4 md:p-6 overflow-y-auto">
+      <div class="bg-gray-900 border-2 border-orange-500/40 rounded-3xl max-w-2xl w-full p-5 md:p-6 shadow-[0_0_50px_rgba(249,115,22,0.3)] text-white relative">
+        <div class="flex justify-between items-center mb-5 pb-3 border-b border-gray-800">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl md:text-3xl">📊</span>
+            <div>
+              <h3 class="text-lg md:text-xl font-black text-orange-400 uppercase tracking-tight">Banana Statistics</h3>
+              <p class="text-[10px] md:text-xs text-gray-400">Complete historical metrics of your banana empire</p>
+            </div>
+          </div>
+          <button onclick="closeBcStatsModal()" class="text-gray-400 hover:text-white p-2 text-xl font-black">✕</button>
+        </div>
+
+        <div class="space-y-4 max-h-[70vh] overflow-y-auto custom-scroll pr-1">
+          <!-- General Metrics -->
+          <div class="bg-gray-950 p-4 rounded-2xl border border-gray-800">
+            <h4 class="text-xs font-black uppercase tracking-wider text-orange-400 mb-2.5">General Metrics</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div class="flex justify-between py-1 border-b border-gray-900"><span class="text-gray-400">Bananas in Bank:</span><span id="bc-stat-bank" class="font-mono font-bold text-white">0</span></div>
+              <div class="flex justify-between py-1 border-b border-gray-900"><span class="text-gray-400">Bananas (This Run):</span><span id="bc-stat-run-baked" class="font-mono font-bold text-white">0</span></div>
+              <div class="flex justify-between py-1 border-b border-gray-900"><span class="text-gray-400">Bananas (All Time):</span><span id="bc-stat-all-baked" class="font-mono font-bold text-yellow-300">0</span></div>
+              <div class="flex justify-between py-1 border-b border-gray-900"><span class="text-gray-400">Big Banana Clicks:</span><span id="bc-stat-clicks" class="font-mono font-bold text-white">0</span></div>
+              <div class="flex justify-between py-1 border-b border-gray-900"><span class="text-gray-400">Golden Bananas Clicked:</span><span id="bc-stat-golden-clicks" class="font-mono font-bold text-amber-300">0</span></div>
+              <div class="flex justify-between py-1 border-b border-gray-900"><span class="text-gray-400">Buildings Owned:</span><span id="bc-stat-buildings" class="font-mono font-bold text-white">0</span></div>
+            </div>
+          </div>
+
+          <!-- Production & Multipliers -->
+          <div class="bg-gray-950 p-4 rounded-2xl border border-gray-800">
+            <h4 class="text-xs font-black uppercase tracking-wider text-amber-400 mb-2.5">Production & Multipliers</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div class="flex justify-between py-1 border-b border-gray-900"><span class="text-gray-400">Current CPS:</span><span id="bc-stat-cps" class="font-mono font-bold text-emerald-400">0</span></div>
+              <div class="flex justify-between py-1 border-b border-gray-900"><span class="text-gray-400">Click Power:</span><span id="bc-stat-click-power" class="font-mono font-bold text-yellow-400">0</span></div>
+              <div class="flex justify-between py-1 border-b border-gray-900"><span class="text-gray-400">Active Flavor:</span><span id="bc-stat-flavor" class="font-bold text-white">Banana Milk</span></div>
+              <div class="flex justify-between py-1 border-b border-gray-900"><span class="text-gray-400">Milk Bonus:</span><span id="bc-stat-milk" class="font-mono font-bold text-cyan-400">+0% CPS</span></div>
+            </div>
+          </div>
+
+          <!-- Legacy & Celestial Stats -->
+          <div class="bg-purple-950/30 p-4 rounded-2xl border border-purple-800/40">
+            <h4 class="text-xs font-black uppercase tracking-wider text-purple-300 mb-2.5">Legacy & Celestial Stats</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div class="flex justify-between py-1 border-b border-purple-900/40"><span class="text-gray-400">Prestige Level:</span><span id="bc-stat-prestige" class="font-mono font-bold text-yellow-300">0</span></div>
+              <div class="flex justify-between py-1 border-b border-purple-900/40"><span class="text-gray-400">Heavenly Chips:</span><span id="bc-stat-chips" class="font-mono font-bold text-yellow-300">0</span></div>
+              <div class="flex justify-between py-1 border-b border-purple-900/40"><span class="text-gray-400">Total Ascensions:</span><span id="bc-stat-ascensions" class="font-mono font-bold text-purple-300">0</span></div>
+              <div class="flex justify-between py-1 border-b border-purple-900/40"><span class="text-gray-400">Heavenly Upgrades:</span><span id="bc-stat-h-upgrades" class="font-mono font-bold text-white">0 / 10</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACHIEVEMENTS MODAL -->
+    <div id="bc-achievements-modal" class="fixed inset-0 z-[1300] bg-black/90 backdrop-blur-xl hidden items-center justify-center p-4 md:p-6 overflow-y-auto">
+      <div class="bg-gray-900 border-2 border-yellow-500/40 rounded-3xl max-w-3xl w-full p-5 md:p-6 shadow-[0_0_60px_rgba(234,179,8,0.3)] text-white relative">
+        <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-800">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl md:text-3xl">🏆</span>
+            <div>
+              <h3 class="text-lg md:text-xl font-black text-yellow-400 uppercase tracking-tight">Milestones & Achievements</h3>
+              <p class="text-[10px] md:text-xs text-gray-400">Each unlocked milestone enhances your Smoothie Milk by <span class="text-yellow-300 font-bold">+4% CPS</span></p>
+            </div>
+          </div>
+          <button onclick="closeBcAchievementsModal()" class="text-gray-400 hover:text-white p-2 text-xl font-black">✕</button>
+        </div>
+
+        <div class="flex items-center justify-between bg-yellow-950/40 border border-yellow-500/30 rounded-2xl p-3.5 mb-4">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🥛</span>
+            <div>
+              <div class="text-xs font-black uppercase text-yellow-300">Smoothie Milk Rank</div>
+              <div id="bc-ach-milk-desc" class="text-[11px] text-yellow-200/80 font-semibold">0 Achievements • +0% CPS Boost</div>
+            </div>
+          </div>
+          <span id="bc-ach-progress-count" class="font-mono font-black text-xs md:text-sm bg-yellow-400/20 text-yellow-300 px-3 py-1 rounded-xl border border-yellow-400/30">0 / 24</span>
+        </div>
+
+        <div id="bc-achievements-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[60vh] overflow-y-auto custom-scroll pr-1">
+          <!-- Achievements populated dynamically -->
+        </div>
       </div>
     </div>
 
@@ -8039,27 +8251,140 @@
     // --- BANANA CLICKER LOGIC ---
     let vladimirQuestStatus = 0;
     let bcScore = 0;
+    let bcBulkBuyMode = 1;
+    let bcAllTimeBananas = 0;
+    let bcAscensionBananas = 0;
+    let bcPrestigeLevel = 0;
+    let bcHeavenlyChips = 0;
+    let bcAscensions = 0;
+    let bcHeavenlyUpgrades = [];
+    let bcTieredUpgrades = [];
+    let bcTotalClicks = 0;
+    let bcGoldenClicks = 0;
+    let bcAchievements = [];
+
     let bcUpgrades = [
-        { id: "cursor", name: "Cursor", baseCost: 15, cps: 0.1, count: 0, icon: "👆" },
-        { id: "grandma", name: "Monkey", baseCost: 100, cps: 1, count: 0, icon: "🐒" },
-        { id: "farm", name: "Banana Farm", baseCost: 1100, cps: 8, count: 0, icon: "🧑‍🌾" },
-        { id: "mine", name: "Banana Mine", baseCost: 12000, cps: 47, count: 0, icon: "⛏️" },
-        { id: "factory", name: "Banana Factory", baseCost: 130000, cps: 260, count: 0, icon: "🏭" },
-        { id: "bank", name: "Banana Bank", baseCost: 1400000, cps: 1400, count: 0, icon: "🏦" },
-        { id: "temple", name: "Banana Temple", baseCost: 20000000, cps: 7800, count: 0, icon: "🕍" },
-        { id: "wizard", name: "Banana Wizard Tower", baseCost: 330000000, cps: 44000, count: 0, icon: "🧙‍♂️" },
-        { id: "shipment", name: "Banana Shipment", baseCost: 5100000000, cps: 260000, count: 0, icon: "🚀" },
-        { id: "alchemylab", name: "Alchemy Lab", baseCost: 75000000000, cps: 1600000, count: 0, icon: "⚗️" },
-        { id: "portal", name: "Portal", baseCost: 1000000000000, cps: 10000000, count: 0, icon: "🌌" },
-        { id: "timemachine", name: "Time Machine", baseCost: 14000000000000, cps: 65000000, count: 0, icon: "⏳" },
-        { id: "antimatter", name: "Antimatter Condenser", baseCost: 170000000000000, cps: 430000000, count: 0, icon: "⚛️" },
-        { id: "prism", name: "Prism", baseCost: 2100000000000000, cps: 2900000000, count: 0, icon: "🌈" },
-        { id: "chancemaker", name: "Chancemaker", baseCost: 26000000000000000, cps: 21000000000, count: 0, icon: "🎲" },
-        { id: "fractalengine", name: "Fractal Engine", baseCost: 310000000000000000, cps: 150000000000, count: 0, icon: "🌀" },
-        { id: "click_percent", name: "Reinforced Peels", baseCost: 2500, cps: 0, count: 0, icon: "🍌", effect: "+1% CPS to Clicks" },
-        { id: "blender", name: "Smoothie Blender", baseCost: 25000, cps: 0, count: 0, icon: "🌪️", effect: "+15% CPS & Wave Surge" },
-        { id: "golden1", name: "Golden Frequency", baseCost: 77777, cps: 0, count: 0, icon: "🌟", effect: "Faster Golden Bananas" },
-        { id: "golden2", name: "Golden Multiplier", baseCost: 777777, cps: 0, count: 0, icon: "✨", effect: "+Reward Multiplier" }
+        { id: "cursor", name: "Cursor", baseCost: 15, cps: 0.1, count: 0, icon: "👆", costRatio: 1.15 },
+        { id: "grandma", name: "Monkey", baseCost: 100, cps: 1, count: 0, icon: "🐒", costRatio: 1.15 },
+        { id: "farm", name: "Banana Farm", baseCost: 1100, cps: 8, count: 0, icon: "🧑‍🌾", costRatio: 1.15 },
+        { id: "mine", name: "Banana Mine", baseCost: 12000, cps: 47, count: 0, icon: "⛏️", costRatio: 1.15 },
+        { id: "factory", name: "Banana Factory", baseCost: 130000, cps: 260, count: 0, icon: "🏭", costRatio: 1.15 },
+        { id: "bank", name: "Banana Bank", baseCost: 1400000, cps: 1400, count: 0, icon: "🏦", costRatio: 1.15 },
+        { id: "temple", name: "Banana Temple", baseCost: 20000000, cps: 7800, count: 0, icon: "🕍", costRatio: 1.15 },
+        { id: "wizard", name: "Banana Wizard Tower", baseCost: 330000000, cps: 44000, count: 0, icon: "🧙‍♂️", costRatio: 1.15 },
+        { id: "shipment", name: "Banana Shipment", baseCost: 5100000000, cps: 260000, count: 0, icon: "🚀", costRatio: 1.15 },
+        { id: "alchemylab", name: "Alchemy Lab", baseCost: 75000000000, cps: 1600000, count: 0, icon: "⚗️", costRatio: 1.15 },
+        { id: "portal", name: "Portal", baseCost: 1000000000000, cps: 10000000, count: 0, icon: "🌌", costRatio: 1.15 },
+        { id: "timemachine", name: "Time Machine", baseCost: 14000000000000, cps: 65000000, count: 0, icon: "⏳", costRatio: 1.15 },
+        { id: "antimatter", name: "Antimatter Condenser", baseCost: 170000000000000, cps: 430000000, count: 0, icon: "⚛️", costRatio: 1.15 },
+        { id: "prism", name: "Prism", baseCost: 2100000000000000, cps: 2900000000, count: 0, icon: "🌈", costRatio: 1.15 },
+        { id: "chancemaker", name: "Chancemaker", baseCost: 26000000000000000, cps: 21000000000, count: 0, icon: "🎲", costRatio: 1.15 },
+        { id: "fractalengine", name: "Fractal Engine", baseCost: 310000000000000000, cps: 150000000000, count: 0, icon: "🌀", costRatio: 1.15 },
+        { id: "javascript", name: "Javascript Console", baseCost: 7100000000000000000, cps: 1100000000000, count: 0, icon: "💻", costRatio: 1.15 },
+        { id: "idleverse", name: "Idleverse", baseCost: 120000000000000000000, cps: 8300000000000, count: 0, icon: "🪐", costRatio: 1.15 },
+        { id: "click_percent", name: "Reinforced Peels", baseCost: 25000, cps: 0, count: 0, icon: "🍌", effect: "+0.1% CPS to Clicks (Max 2%)", costRatio: 1.5 },
+        { id: "blender", name: "Smoothie Blender", baseCost: 75000, cps: 0, count: 0, icon: "🌪️", effect: "+4% CPS & Wave Surge", costRatio: 1.3 },
+        { id: "golden1", name: "Golden Frequency", baseCost: 500000, cps: 0, count: 0, icon: "🌟", effect: "Faster Golden Bananas", costRatio: 1.4 },
+        { id: "golden2", name: "Golden Multiplier", baseCost: 1500000, cps: 0, count: 0, icon: "✨", effect: "+20% Harvest Drops", costRatio: 1.4 }
+    ];
+
+    // --- HEAVENLY UPGRADES (ASCENSION TREE) ---
+    const HEAVENLY_UPGRADES = [
+        { id: "h_chips", name: "Heavenly Bananas", cost: 1, icon: "🍌", desc: "Each Prestige Level grants +2% CPS instead of +1%." },
+        { id: "h_offline", name: "Twin Gates of Transcendence", cost: 2, icon: "⛩️", desc: "Generates 10% CPS while Banana Clicker is closed (up to 4 hours offline)." },
+        { id: "h_starter", name: "Golden Starter Basket", cost: 3, icon: "🧺", desc: "Start every new ascension with 2,500 free starter bananas." },
+        { id: "h_peels", name: "Angelic Monkey Grip", cost: 5, icon: "✨", desc: "Base Click Power multiplied by 2x permanently across all runs." },
+        { id: "h_golden", name: "Cosmic Golden Clover", cost: 8, icon: "🍀", desc: "Golden Bananas appear 25% more frequently." },
+        { id: "h_duration", name: "Aura of Time Dilation", cost: 12, icon: "⌛", desc: "Banana Frenzy and Click Frenzy buffs last +5 seconds longer." },
+        { id: "h_harvest", name: "Bountiful Golden Harvest", cost: 20, icon: "🌟", desc: "Golden Harvest lucky drops yield double (2x) the bananas." },
+        { id: "h_monkeys", name: "Primate Enlightenment", cost: 35, icon: "🐒", desc: "All Monkeys produce 3x more bananas permanently." },
+        { id: "h_smoothie", name: "Ambrosia Recipe", cost: 60, icon: "🥤", desc: "All Smoothie Flavor CPS bonuses are doubled (2x)." },
+        { id: "h_halo", name: "Cosmic Halo of Eternity", cost: 120, icon: "💫", desc: "Permanent +30% CPS multiplier across all buildings." }
+    ];
+
+    // --- TIERED UPGRADES (COOKIE CLICKER STYLE UPGRADE SHELF) ---
+    const TIERED_UPGRADES = [
+        // Cursor
+        { id: "upg_cursor_1", buildingId: "cursor", req: 1, cost: 100, name: "Reinforced Index Finger", icon: "👆", desc: "Cursors and clicks are twice as efficient." },
+        { id: "upg_cursor_2", buildingId: "cursor", req: 10, cost: 500, name: "Carpal Tunnel Prevention", icon: "🩹", desc: "Cursors and clicks are twice as efficient." },
+        { id: "upg_cursor_3", buildingId: "cursor", req: 25, cost: 10000, name: "Ambidextrous", icon: "🖐️", desc: "Cursors and clicks are twice as efficient." },
+        { id: "upg_cursor_4", buildingId: "cursor", req: 50, cost: 100000, name: "Thousand Fingers", icon: "⚡", desc: "Cursors gain +0.1 CPS for each non-cursor building owned." },
+
+        // Monkey
+        { id: "upg_monkey_1", buildingId: "grandma", req: 1, cost: 1000, name: "Forwards from Monkey", icon: "🐒", desc: "Monkeys are twice as efficient." },
+        { id: "upg_monkey_2", buildingId: "grandma", req: 10, cost: 5000, name: "Steel-plated Banana Rollers", icon: "🛡️", desc: "Monkeys are twice as efficient." },
+        { id: "upg_monkey_3", buildingId: "grandma", req: 25, cost: 50000, name: "Primate Wisdom", icon: "📜", desc: "Monkeys are twice as efficient." },
+        { id: "upg_monkey_4", buildingId: "grandma", req: 50, cost: 500000, name: "Gorilla Elder Council", icon: "👑", desc: "Monkeys are twice as efficient." },
+
+        // Farm
+        { id: "upg_farm_1", buildingId: "farm", req: 1, cost: 11000, name: "Cheap Hoes", icon: "🧑‍🌾", desc: "Banana Farms are twice as efficient." },
+        { id: "upg_farm_2", buildingId: "farm", req: 10, cost: 55000, name: "Fertilizer", icon: "🌱", desc: "Banana Farms are twice as efficient." },
+        { id: "upg_farm_3", buildingId: "farm", req: 25, cost: 550000, name: "Cookie-infused Soil", icon: "🍪", desc: "Banana Farms are twice as efficient." },
+
+        // Mine
+        { id: "upg_mine_1", buildingId: "mine", req: 1, cost: 120000, name: "Sugar Gas", icon: "⛏️", desc: "Banana Mines are twice as efficient." },
+        { id: "upg_mine_2", buildingId: "mine", req: 10, cost: 600000, name: "Megadrill", icon: "🚜", desc: "Banana Mines are twice as efficient." },
+        { id: "upg_mine_3", buildingId: "mine", req: 25, cost: 6000000, name: "Ultradrill", icon: "💎", desc: "Banana Mines are twice as efficient." },
+
+        // Factory
+        { id: "upg_factory_1", buildingId: "factory", req: 1, cost: 1300000, name: "Sturdier Conveyor Belts", icon: "🏭", desc: "Banana Factories are twice as efficient." },
+        { id: "upg_factory_2", buildingId: "factory", req: 10, cost: 6500000, name: "Child Labor Laws Repeal", icon: "📦", desc: "Banana Factories are twice as efficient." },
+
+        // Bank
+        { id: "upg_bank_1", buildingId: "bank", req: 1, cost: 14000000, name: "Taller Tellers", icon: "🏦", desc: "Banana Banks are twice as efficient." },
+        { id: "upg_bank_2", buildingId: "bank", req: 10, cost: 70000000, name: "Scissor-resistant Cards", icon: "💳", desc: "Banana Banks are twice as efficient." },
+
+        // Temple
+        { id: "upg_temple_1", buildingId: "temple", req: 1, cost: 200000000, name: "Golden Idols", icon: "🕍", desc: "Banana Temples are twice as efficient." },
+        { id: "upg_temple_2", buildingId: "temple", req: 10, cost: 1000000000, name: "Sacrifices to the Peel", icon: "🔥", desc: "Banana Temples are twice as efficient." },
+
+        // Wizard Tower
+        { id: "upg_wizard_1", buildingId: "wizard", req: 1, cost: 3300000000, name: "Pointier Hats", icon: "🧙‍♂️", desc: "Banana Wizard Towers are twice as efficient." },
+
+        // Shipment
+        { id: "upg_shipment_1", buildingId: "shipment", req: 1, cost: 51000000000, name: "Vanilla Nebulae", icon: "🚀", desc: "Banana Shipments are twice as efficient." },
+
+        // Alchemy Lab
+        { id: "upg_alchemylab_1", buildingId: "alchemylab", req: 1, cost: 750000000000, name: "Antimony Transmutation", icon: "⚗️", desc: "Alchemy Labs are twice as efficient." },
+
+        // Portal
+        { id: "upg_portal_1", buildingId: "portal", req: 1, cost: 10000000000000, name: "Ancient Gateway", icon: "🌌", desc: "Portals are twice as efficient." },
+
+        // Time Machine
+        { id: "upg_timemachine_1", buildingId: "timemachine", req: 1, cost: 140000000000000, name: "Flux Capacitors", icon: "⏳", desc: "Time Machines are twice as efficient." }
+    ];
+
+    // --- ACHIEVEMENTS & MILESTONES (COOKIE CLICKER MILK SYSTEM) ---
+    const BC_ACHIEVEMENTS = [
+        { id: "ach_click_1", name: "First Peel", icon: "🍌", desc: "Click the big banana 1 time.", check: (s) => s.clicks >= 1 },
+        { id: "ach_click_100", name: "Finger Workout", icon: "👆", desc: "Click the big banana 100 times.", check: (s) => s.clicks >= 100 },
+        { id: "ach_click_1000", name: "Clicking Frenzy", icon: "⚡", desc: "Click the big banana 1,000 times.", check: (s) => s.clicks >= 1000 },
+        { id: "ach_click_5000", name: "Master of the Peel", icon: "👑", desc: "Click the big banana 5,000 times.", check: (s) => s.clicks >= 5000 },
+
+        { id: "ach_score_1k", name: "Banana Stand", icon: "🏪", desc: "Produce 1,000 bananas in one run.", check: (s) => s.runBananas >= 1000 },
+        { id: "ach_score_100k", name: "Fruitful Venture", icon: "🌴", desc: "Produce 100,000 bananas in one run.", check: (s) => s.runBananas >= 100000 },
+        { id: "ach_score_1m", name: "Millionaire Monkey", icon: "💰", desc: "Produce 1,000,000 bananas in one run.", check: (s) => s.runBananas >= 1000000 },
+        { id: "ach_score_1b", name: "Billionaire Gorilla", icon: "🏦", desc: "Produce 1 Billion bananas in one run.", check: (s) => s.runBananas >= 1e9 },
+        { id: "ach_score_1t", name: "Trillionaire Sovereign", icon: "💎", desc: "Produce 1 Trillion bananas in one run.", check: (s) => s.runBananas >= 1e12 },
+        { id: "ach_score_1qa", name: "Cosmic Harvest", icon: "🌌", desc: "Produce 1 Quadrillion bananas in one run.", check: (s) => s.runBananas >= 1e15 },
+
+        { id: "ach_cps_10", name: "Smoothie Operator", icon: "🥤", desc: "Reach 10 bananas per second.", check: (s) => s.cps >= 10 },
+        { id: "ach_cps_1k", name: "Banana Engine", icon: "⚙️", desc: "Reach 1,000 bananas per second.", check: (s) => s.cps >= 1000 },
+        { id: "ach_cps_100k", name: "Industrial Revolution", icon: "🏭", desc: "Reach 100,000 bananas per second.", check: (s) => s.cps >= 100000 },
+        { id: "ach_cps_10m", name: "Global Conglomerate", icon: "🌍", desc: "Reach 10 Million bananas per second.", check: (s) => s.cps >= 1e7 },
+        { id: "ach_cps_1b", name: "Planetary Production", icon: "🪐", desc: "Reach 1 Billion bananas per second.", check: (s) => s.cps >= 1e9 },
+
+        { id: "ach_monkeys_10", name: "Monkey Business", icon: "🐒", desc: "Own 10 Monkeys.", check: (s) => (s.buildingCounts['grandma'] || 0) >= 10 },
+        { id: "ach_monkeys_50", name: "Primate Parliament", icon: "🦍", desc: "Own 50 Monkeys.", check: (s) => (s.buildingCounts['grandma'] || 0) >= 50 },
+        { id: "ach_farms_25", name: "Banana Republic", icon: "🧑‍🌾", desc: "Own 25 Banana Farms.", check: (s) => (s.buildingCounts['farm'] || 0) >= 25 },
+        { id: "ach_buildings_100", name: "Centennial Empire", icon: "🏛️", desc: "Own 100 total buildings.", check: (s) => s.totalBuildings >= 100 },
+
+        { id: "ach_golden_1", name: "Golden Touch", icon: "🌟", desc: "Click 1 Golden Banana.", check: (s) => s.goldenClicks >= 1 },
+        { id: "ach_golden_7", name: "Fortune Seeker", icon: "🍀", desc: "Click 7 Golden Bananas.", check: (s) => s.goldenClicks >= 7 },
+        { id: "ach_golden_27", name: "Banana Alchemist", icon: "⚗️", desc: "Click 27 Golden Bananas.", check: (s) => s.goldenClicks >= 27 },
+
+        { id: "ach_ascend_1", name: "To the Heavens", icon: "✨", desc: "Ascend for the first time.", check: (s) => s.ascensions >= 1 },
+        { id: "ach_ascend_prestige_10", name: "Cosmic Enlightenment", icon: "🌠", desc: "Reach Prestige Level 10.", check: (s) => s.prestigeLevel >= 10 }
     ];
     let goldenBananaDespawnTimer = null;
     let goldenBananaNextSpawnTimer = null;
@@ -8557,12 +8882,29 @@
     }
 
     // --- BANANA CLICKER STORAGE & PRODUCTION ---
+    function calcPrestigeLevel(bananas) {
+        if (!bananas || bananas < 1000000) return 0;
+        return Math.floor(Math.cbrt(bananas / 1000000));
+    }
+
     function loadBananaClicker() {
         const saved = localStorage.getItem("bananaClickerSave_" + playerName);
         if (saved) {
             try {
                 const data = JSON.parse(saved);
-                bcScore = data.score || 0;
+                bcScore = Number(data.score) || 0;
+                bcBulkBuyMode = Number(data.bulkMode) || 1;
+                bcAllTimeBananas = Number(data.allTime) || bcScore;
+                bcAscensionBananas = Number(data.runBananas) || bcScore;
+                bcPrestigeLevel = Number(data.prestige) || 0;
+                bcHeavenlyChips = Number(data.heavenlyChips) || 0;
+                bcAscensions = Number(data.ascensions) || 0;
+                bcTotalClicks = Number(data.clicks) || 0;
+                bcGoldenClicks = Number(data.goldenClicks) || 0;
+                bcHeavenlyUpgrades = Array.isArray(data.heavenlyUpgrades) ? data.heavenlyUpgrades : [];
+                bcTieredUpgrades = Array.isArray(data.tieredUpgrades) ? data.tieredUpgrades : [];
+                bcAchievements = Array.isArray(data.achievements) ? data.achievements : [];
+
                 if (data.upgrades) {
                     bcUpgrades.forEach((u, i) => {
                         const found = data.upgrades.find(item => item && item.id === u.id) || data.upgrades[i];
@@ -8571,19 +8913,53 @@
                         }
                     });
                 }
-            } catch (e) {}
+
+                // Twin Gates of Transcendence: offline production
+                if (data.lastTime && bcHeavenlyUpgrades.includes('h_offline')) {
+                    const elapsedSec = Math.max(0, (Date.now() - data.lastTime) / 1000);
+                    const maxSec = 14400; // 4 hours max
+                    const effectiveSec = Math.min(elapsedSec, maxSec);
+                    if (effectiveSec > 10) {
+                        const offlineCps = getBcCps();
+                        const offlineGain = Math.floor(offlineCps * 0.1 * effectiveSec);
+                        if (offlineGain > 0) {
+                            bcScore += offlineGain;
+                            bcAscensionBananas += offlineGain;
+                            bcAllTimeBananas += offlineGain;
+                            setTimeout(() => {
+                                showBcToast("success", "Welcome Back!", `Transcendence Gates produced ${formatNumber(offlineGain)} 🍌 while away!`);
+                            }, 1200);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load Banana Clicker save", e);
+            }
         }
         const savedFlavor = localStorage.getItem("bcSmoothieFlavor_" + playerName);
         if (savedFlavor) {
             const fIdx = SMOOTHIE_FLAVORS.findIndex(f => f.id === savedFlavor);
             if (fIdx !== -1) activeSmoothieFlavorIdx = fIdx;
         }
+        setBcBulkBuyMode(bcBulkBuyMode || 1);
     }
 
     function saveBananaClicker() {
         if (!playerName) return;
         const data = {
             score: bcScore,
+            bulkMode: bcBulkBuyMode,
+            allTime: bcAllTimeBananas,
+            runBananas: bcAscensionBananas,
+            prestige: bcPrestigeLevel,
+            heavenlyChips: bcHeavenlyChips,
+            ascensions: bcAscensions,
+            heavenlyUpgrades: bcHeavenlyUpgrades,
+            tieredUpgrades: bcTieredUpgrades,
+            clicks: bcTotalClicks,
+            goldenClicks: bcGoldenClicks,
+            achievements: bcAchievements,
+            lastTime: Date.now(),
             upgrades: bcUpgrades.map(u => ({ id: u.id, count: u.count }))
         };
         localStorage.setItem("bananaClickerSave_" + playerName, JSON.stringify(data));
@@ -8598,19 +8974,58 @@
         return bcActiveBuff.type === type;
     }
 
+    function getBuildingMultiplier(bId) {
+        let mult = 1;
+        if (bId === 'grandma' && bcHeavenlyUpgrades.includes('h_monkeys')) {
+            mult *= 3;
+        }
+        TIERED_UPGRADES.forEach(u => {
+            if (u.buildingId === bId && bcTieredUpgrades.includes(u.id) && u.id !== 'upg_cursor_4') {
+                mult *= 2;
+            }
+        });
+        return mult;
+    }
+
+    function getThousandFingersBonus() {
+        if (!bcTieredUpgrades.includes('upg_cursor_4')) return 0;
+        const nonCursorBuildings = bcUpgrades.reduce((sum, u) => (u.id !== 'cursor' && u.cps > 0 ? sum + u.count : sum), 0);
+        return nonCursorBuildings * 0.1;
+    }
+
     function getBcCps() {
-        let base = bcUpgrades.reduce((sum, u) => sum + (u.count * u.cps), 0);
+        let base = bcUpgrades.reduce((sum, u) => {
+            if (u.cps <= 0) return sum;
+            const bMult = getBuildingMultiplier(u.id);
+            const extra = (u.id === 'cursor') ? getThousandFingersBonus() : 0;
+            return sum + (u.count * (u.cps * bMult + extra));
+        }, 0);
         
-        // Smoothie Blender upgrade bonus
+        // Smoothie Blender upgrade bonus (+4% per blender, nerfed)
         const blender = bcUpgrades.find(u => u.id === 'blender');
         if (blender && blender.count > 0) {
-            base *= (1 + blender.count * 0.15);
+            base *= (1 + blender.count * 0.04);
         }
 
-        // Active Smoothie Flavor multiplier
+        // Active Smoothie Flavor multiplier (doubled if Ambrosia Recipe unlocked)
         const flavor = getCurrentSmoothieFlavor();
         if (flavor && flavor.cpsMult) {
-            base *= (1 + flavor.cpsMult);
+            const flavorMult = bcHeavenlyUpgrades.includes('h_smoothie') ? (flavor.cpsMult * 2) : flavor.cpsMult;
+            base *= (1 + flavorMult);
+        }
+
+        // Prestige level multiplier (+1% per level, or +2% with Heavenly Bananas)
+        const prestigePct = bcHeavenlyUpgrades.includes('h_chips') ? 0.02 : 0.01;
+        base *= (1 + bcPrestigeLevel * prestigePct);
+
+        // Cosmic Halo of Eternity (+30% permanent CPS)
+        if (bcHeavenlyUpgrades.includes('h_halo')) {
+            base *= 1.30;
+        }
+
+        // Milk bonus from achievements (+1.5% CPS per achievement)
+        if (bcAchievements.length > 0) {
+            base *= (1 + bcAchievements.length * 0.015);
         }
 
         // Banana Frenzy buff: multiplies CPS by 7x!
@@ -8623,13 +9038,23 @@
 
     function getBcClickPower() {
         const cursor = bcUpgrades.find(u => u.id === 'cursor');
-        let power = 1 + (cursor ? cursor.count : 0);
+        const cursorCount = cursor ? cursor.count : 0;
+        const cursorMult = getBuildingMultiplier('cursor');
+        const fingersBonus = getThousandFingersBonus();
 
-        // Reinforced Peels: +1% of raw CPS added to clicks
+        let power = 1 + (cursorCount * cursorMult) + fingersBonus;
+
+        // Angelic Monkey Grip: 2x base clicks
+        if (bcHeavenlyUpgrades.includes('h_peels')) {
+            power *= 2;
+        }
+
+        // Reinforced Peels: +0.1% of raw CPS added to clicks, capped at 2% (nerfed from OP 1% uncapped)
         const peels = bcUpgrades.find(u => u.id === 'click_percent');
         if (peels && peels.count > 0) {
             const rawCps = bcUpgrades.reduce((sum, u) => sum + (u.count * u.cps), 0);
-            power += Math.floor(rawCps * 0.01 * peels.count);
+            const peelPct = Math.min(0.02, peels.count * 0.001);
+            power += Math.floor(rawCps * peelPct);
         }
 
         // Banana Frenzy buff: multiplies Click Power by 7x!
@@ -8645,6 +9070,107 @@
         return Math.max(1, Math.floor(power));
     }
 
+    function getBcUpgradeCost(u, amount = 1) {
+        const ratio = u.costRatio || 1.15;
+        let total = 0;
+        for (let i = 0; i < amount; i++) {
+            total += Math.ceil(u.baseCost * Math.pow(ratio, u.count + i));
+        }
+        return total;
+    }
+
+    function setBcBulkBuyMode(mode) {
+        bcBulkBuyMode = mode;
+        [1, 10, 100].forEach(m => {
+            const btn = document.getElementById(`bc-bulk-${m}`);
+            if (!btn) return;
+            if (m === mode) {
+                btn.className = "px-2 py-0.5 rounded text-[10px] font-mono font-black transition-all bg-orange-500 text-black shadow";
+            } else {
+                btn.className = "px-2 py-0.5 rounded text-[10px] font-mono font-black transition-all text-gray-400 hover:text-white";
+            }
+        });
+        updateBcUI();
+    }
+
+    function renderBcUpgradesShelf() {
+        const shelfEl = document.getElementById("bc-upgrades-shelf");
+        if (!shelfEl) return;
+
+        const availableUpgrades = TIERED_UPGRADES.filter(upg => {
+            if (bcTieredUpgrades.includes(upg.id)) return false;
+            const b = bcUpgrades.find(item => item.id === upg.buildingId);
+            return b && b.count >= upg.req;
+        });
+
+        if (availableUpgrades.length === 0) {
+            shelfEl.innerHTML = `
+                <div class="col-span-4 text-center py-2 text-gray-500 text-[11px] italic">
+                    ${bcTieredUpgrades.length > 0 ? "All unlocked shelf upgrades acquired! ⭐" : "Purchase buildings to discover upgrades"}
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        availableUpgrades.slice(0, 8).forEach(upg => {
+            const canAfford = bcScore >= upg.cost;
+            html += `
+                <button onclick="buyBcTieredUpgrade('${upg.id}')" title="${upg.name} (${formatNumber(upg.cost)} 🍌) - ${upg.desc}" class="group relative flex items-center justify-center p-2 rounded-xl border transition-all ${
+                    canAfford 
+                    ? "bg-amber-950/60 border-amber-600/70 hover:border-amber-400 hover:scale-105 shadow-md shadow-amber-950/40" 
+                    : "bg-gray-900/60 border-gray-800 opacity-60 cursor-not-allowed"
+                }">
+                    <span class="text-xl group-hover:scale-110 transition-transform">${upg.icon}</span>
+                    <span class="absolute -bottom-1.5 -right-1 bg-black/90 text-orange-400 text-[9px] font-mono font-black px-1 rounded border border-gray-800">
+                        ${formatNumber(upg.cost)}
+                    </span>
+                </button>
+            `;
+        });
+        shelfEl.innerHTML = html;
+    }
+
+    function buyBcTieredUpgrade(upgId) {
+        const upg = TIERED_UPGRADES.find(u => u.id === upgId);
+        if (!upg || bcTieredUpgrades.includes(upgId)) return;
+        if (bcScore >= upg.cost) {
+            bcScore -= upg.cost;
+            bcTieredUpgrades.push(upgId);
+            playSound('win');
+            checkBcAchievements();
+            renderBcUpgradesShelf();
+            updateBcUI();
+            saveBananaClicker();
+            showBcToast("success", "Upgrade Unlocked!", `${upg.name}: ${upg.desc}`);
+        } else {
+            showBcToast("warning", "Need More Bananas", `You need ${formatNumber(upg.cost)} 🍌 to unlock ${upg.name}`);
+        }
+    }
+
+    function buyBcUpgrade(index) {
+        const u = bcUpgrades[index];
+        if (!u) return;
+        const amount = (u.cps === 0) ? 1 : bcBulkBuyMode;
+        const cost = getBcUpgradeCost(u, amount);
+        if (bcScore >= cost) {
+            bcScore -= cost;
+            u.count += amount;
+            playSound('bet');
+            checkBcAchievements();
+            renderBcUpgradesShelf();
+            updateBcUI();
+            saveBananaClicker();
+
+            if (u.id === 'golden1') {
+                const gb = document.getElementById("golden-banana");
+                if (gb && gb.classList.contains("hidden")) {
+                    scheduleNextGoldenBanana();
+                }
+            }
+        }
+    }
+
     function initBcStore() {
         const storeEl = document.getElementById("bc-store");
         if (!storeEl) return;
@@ -8652,7 +9178,9 @@
         bcUpgrades.forEach((u, index) => {
             let effectLabel = '';
             if (u.cps > 0) {
-                effectLabel = `+${formatNumber(u.cps)} CPS`;
+                const bMult = getBuildingMultiplier(u.id);
+                const effectiveCps = u.cps * bMult;
+                effectLabel = `+${formatNumber(effectiveCps)} CPS`;
             } else if (u.effect) {
                 effectLabel = u.effect;
             } else if (u.id === 'golden1') {
@@ -8671,12 +9199,13 @@
                         </div>
                         <div class="flex items-center justify-between mt-1">
                             <span id="bc-u-cost-${index}" class="font-black text-xs font-mono">...</span>
-                            <span class="text-[10px] text-orange-400 font-bold shrink-0">${effectLabel}</span>
+                            <span id="bc-u-effect-${index}" class="text-[10px] text-orange-400 font-bold shrink-0">${effectLabel}</span>
                         </div>
                     </div>
                 </div>
             `;
         });
+        renderBcUpgradesShelf();
     }
 
     function updateBcBuffUI() {
@@ -8698,12 +9227,14 @@
     }
 
     function activateBcBuff(type, title, multiplier, durationSec) {
+        // Aura of Time Dilation heavenly upgrade (+5s duration)
+        const effectiveSec = bcHeavenlyUpgrades.includes('h_duration') ? (durationSec + 5) : durationSec;
         bcActiveBuff = {
             type,
             title,
             multiplier,
-            expiresAt: Date.now() + durationSec * 1000,
-            duration: durationSec * 1000
+            expiresAt: Date.now() + effectiveSec * 1000,
+            duration: effectiveSec * 1000
         };
         const banner = document.getElementById("bc-buff-banner");
         const titleEl = document.getElementById("bc-buff-title");
@@ -8731,11 +9262,13 @@
         }
 
         bcUpgrades.forEach((u, index) => {
-            const cost = Math.ceil(u.baseCost * Math.pow(1.15, u.count));
+            const amount = (u.cps === 0) ? 1 : bcBulkBuyMode;
+            const cost = getBcUpgradeCost(u, amount);
             const canAfford = bcScore >= cost;
             const container = document.getElementById(`bc-upgrade-${index}`);
             const countEl = document.getElementById(`bc-u-count-${index}`);
             const costEl = document.getElementById(`bc-u-cost-${index}`);
+            const effectEl = document.getElementById(`bc-u-effect-${index}`);
             
             if (container) {
                 container.className = `flex items-center p-3 rounded-2xl border-2 transition-all select-none gap-3 ${
@@ -8746,11 +9279,17 @@
             }
             if (countEl) countEl.innerText = `x${u.count}`;
             if (costEl) {
-                costEl.innerText = `${formatNumber(cost)} 🍌`;
+                const buyLabel = amount > 1 ? `[${amount}x] ` : '';
+                costEl.innerText = `${buyLabel}${formatNumber(cost)} 🍌`;
                 costEl.className = `${canAfford ? "text-emerald-400" : "text-rose-400"} font-black text-xs font-mono`;
+            }
+            if (effectEl && u.cps > 0) {
+                const bMult = getBuildingMultiplier(u.id);
+                effectEl.innerText = `+${formatNumber(u.cps * bMult)} CPS`;
             }
         });
         
+        renderBcUpgradesShelf();
         renderBcBuildings();
         updateSmoothieBadge();
         updateBcBuffUI();
@@ -8778,7 +9317,9 @@
             const maxVisibleIcons = 40;
             const shownCount = Math.min(u.count, maxVisibleIcons);
             const extraCount = u.count - shownCount;
-            const totalCps = (u.count * u.cps);
+            const bMult = getBuildingMultiplier(u.id);
+            const extra = (u.id === 'cursor') ? getThousandFingersBonus() : 0;
+            const totalCps = (u.count * (u.cps * bMult + extra));
 
             html += `
             <div class="bg-gray-900/80 rounded-2xl border border-gray-800 p-4 relative overflow-hidden shadow-lg hover:border-orange-500/30 transition-all">
@@ -8807,10 +9348,266 @@
         }
     }
 
+    function checkBcAchievements() {
+        const state = {
+            clicks: bcTotalClicks,
+            goldenClicks: bcGoldenClicks,
+            runBananas: bcAscensionBananas,
+            allTimeBananas: bcAllTimeBananas,
+            cps: getBcCps(),
+            ascensions: bcAscensions,
+            prestigeLevel: bcPrestigeLevel,
+            totalBuildings: bcUpgrades.reduce((sum, u) => (u.cps > 0 ? sum + u.count : sum), 0),
+            buildingCounts: bcUpgrades.reduce((acc, u) => { acc[u.id] = u.count; return acc; }, {})
+        };
+
+        let newEarned = false;
+        BC_ACHIEVEMENTS.forEach(ach => {
+            if (!bcAchievements.includes(ach.id) && ach.check(state)) {
+                bcAchievements.push(ach.id);
+                newEarned = true;
+                showBcToast("success", "🏆 Achievement Unlocked!", `${ach.name}: ${ach.desc}`);
+                playSound('win');
+            }
+        });
+
+        if (newEarned) {
+            saveBananaClicker();
+        }
+    }
+
+    // --- LEGACY / ASCENSION MODAL LOGIC ---
+    function openBcLegacyModal() {
+        updateBcLegacyUI();
+        const modal = document.getElementById("bc-ascend-modal");
+        if (modal) {
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+    }
+
+    function closeBcLegacyModal() {
+        const modal = document.getElementById("bc-ascend-modal");
+        if (modal) {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+    }
+
+    function updateBcLegacyUI() {
+        const potentialTotal = calcPrestigeLevel(bcAllTimeBananas);
+        const chipsGained = Math.max(0, potentialTotal - bcPrestigeLevel);
+        const prestigePct = bcHeavenlyUpgrades.includes('h_chips') ? 2 : 1;
+
+        const potChipsEl = document.getElementById("bc-ascend-potential-chips");
+        const currChipsEl = document.getElementById("bc-ascend-curr-chips");
+        const currMultEl = document.getElementById("bc-ascend-curr-mult");
+        const runBananasEl = document.getElementById("bc-ascend-run-bananas");
+
+        if (potChipsEl) potChipsEl.innerText = `+${formatNumber(chipsGained)} 🌟`;
+        if (currChipsEl) currChipsEl.innerText = formatNumber(bcHeavenlyChips);
+        if (currMultEl) currMultEl.innerText = `+${bcPrestigeLevel * prestigePct}%`;
+        if (runBananasEl) runBananasEl.innerText = formatNumber(Math.floor(bcAscensionBananas));
+
+        const listEl = document.getElementById("bc-heavenly-upgrades-list");
+        if (!listEl) return;
+
+        let html = '';
+        HEAVENLY_UPGRADES.forEach(h => {
+            const isOwned = bcHeavenlyUpgrades.includes(h.id);
+            const canAfford = bcHeavenlyChips >= h.cost;
+
+            html += `
+                <div class="p-3.5 rounded-2xl border transition-all flex items-start gap-3 relative ${
+                    isOwned 
+                    ? "bg-amber-950/40 border-amber-500/80 shadow-md" 
+                    : (canAfford 
+                        ? "bg-gray-800/90 border-gray-700 hover:border-amber-400 cursor-pointer" 
+                        : "bg-gray-900/60 border-gray-800 opacity-60 cursor-not-allowed")
+                }">
+                    <div class="text-3xl shrink-0 p-2 bg-black/40 rounded-xl border border-gray-700/50">${h.icon}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-white font-bold text-xs md:text-sm truncate">${h.name}</h4>
+                            <span class="font-mono font-black text-xs ${isOwned ? "text-amber-400" : (canAfford ? "text-amber-300" : "text-gray-500")}">
+                                ${isOwned ? "OWNED ✓" : `${h.cost} 🌟`}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1 leading-snug">${h.desc}</p>
+                        ${!isOwned ? `
+                            <button onclick="buyHeavenlyUpgrade('${h.id}')" class="mt-2 text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-wider transition-all ${
+                                canAfford 
+                                ? "bg-amber-500 text-black hover:bg-amber-400 shadow cursor-pointer" 
+                                : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                            }">
+                                Purchase Upgrade
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        listEl.innerHTML = html;
+    }
+
+    function buyHeavenlyUpgrade(hId) {
+        const h = HEAVENLY_UPGRADES.find(item => item.id === hId);
+        if (!h || bcHeavenlyUpgrades.includes(hId)) return;
+        if (bcHeavenlyChips >= h.cost) {
+            bcHeavenlyChips -= h.cost;
+            bcHeavenlyUpgrades.push(hId);
+            playSound('win');
+            updateBcLegacyUI();
+            updateBcUI();
+            saveBananaClicker();
+            showBcToast("success", "Heavenly Power Awakened", `Unlocked ${h.name}!`);
+        } else {
+            showBcToast("warning", "Need Heavenly Chips", `You need ${h.cost} Heavenly Chips to unlock this upgrade.`);
+        }
+    }
+
+    function executeAscension() {
+        const potentialTotal = calcPrestigeLevel(bcAllTimeBananas);
+        const chipsGained = Math.max(0, potentialTotal - bcPrestigeLevel);
+
+        if (chipsGained === 0 && bcPrestigeLevel === 0 && bcAscensionBananas < 1000000) {
+            showBcToast("warning", "Ascension Not Ready", "You need to produce at least 1,000,000 all-time bananas to earn your first Heavenly Chip!");
+            return;
+        }
+
+        bcHeavenlyChips += chipsGained;
+        bcPrestigeLevel = potentialTotal;
+        bcAscensions++;
+
+        // Reset run state
+        bcScore = bcHeavenlyUpgrades.includes('h_starter') ? 2500 : 0;
+        bcAscensionBananas = bcScore;
+        bcUpgrades.forEach(u => { u.count = 0; });
+        bcTieredUpgrades = [];
+        bcActiveBuff = null;
+
+        checkBcAchievements();
+        saveBananaClicker();
+        updateBcLegacyUI();
+        initBcStore();
+        updateBcUI();
+        closeBcLegacyModal();
+
+        playSound('win');
+        showBcToast("success", "Ascension Complete! ✨", `You ascended to the heavens and claimed +${chipsGained} Heavenly Chips! All production is permanently boosted!`);
+    }
+
+    // --- STATS MODAL LOGIC ---
+    function openBcStatsModal() {
+        updateBcStatsUI();
+        const modal = document.getElementById("bc-stats-modal");
+        if (modal) {
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+    }
+
+    function closeBcStatsModal() {
+        const modal = document.getElementById("bc-stats-modal");
+        if (modal) {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+    }
+
+    function updateBcStatsUI() {
+        const sCurrent = document.getElementById("bc-stat-current-bananas");
+        const sRun = document.getElementById("bc-stat-run-bananas");
+        const sAllTime = document.getElementById("bc-stat-alltime-bananas");
+        const sClicks = document.getElementById("bc-stat-clicks");
+        const sGolden = document.getElementById("bc-stat-golden-clicks");
+        const sAscensions = document.getElementById("bc-stat-ascensions");
+        const sPrestige = document.getElementById("bc-stat-prestige");
+        const sChips = document.getElementById("bc-stat-heavenly-chips");
+        const sCps = document.getElementById("bc-stat-cps");
+        const sClickPower = document.getElementById("bc-stat-click-power");
+
+        if (sCurrent) sCurrent.innerText = formatNumber(Math.floor(bcScore));
+        if (sRun) sRun.innerText = formatNumber(Math.floor(bcAscensionBananas));
+        if (sAllTime) sAllTime.innerText = formatNumber(Math.floor(bcAllTimeBananas));
+        if (sClicks) sClicks.innerText = formatNumber(bcTotalClicks);
+        if (sGolden) sGolden.innerText = formatNumber(bcGoldenClicks);
+        if (sAscensions) sAscensions.innerText = bcAscensions;
+        if (sPrestige) sPrestige.innerText = `Level ${bcPrestigeLevel}`;
+        if (sChips) sChips.innerText = formatNumber(bcHeavenlyChips);
+        if (sCps) sCps.innerText = formatNumber(getBcCps());
+        if (sClickPower) sClickPower.innerText = formatNumber(getBcClickPower());
+    }
+
+    // --- ACHIEVEMENTS MODAL LOGIC ---
+    function openBcAchievementsModal() {
+        updateBcAchievementsUI();
+        const modal = document.getElementById("bc-achievements-modal");
+        if (modal) {
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+    }
+
+    function closeBcAchievementsModal() {
+        const modal = document.getElementById("bc-achievements-modal");
+        if (modal) {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+    }
+
+    function updateBcAchievementsUI() {
+        const countEl = document.getElementById("bc-achievements-count");
+        const milkEl = document.getElementById("bc-milk-unlocked");
+        const gridEl = document.getElementById("bc-achievements-grid");
+
+        const earnedCount = bcAchievements.length;
+        const totalCount = BC_ACHIEVEMENTS.length;
+        const milkPct = Math.min(100, Math.round((earnedCount / totalCount) * 100));
+
+        if (countEl) countEl.innerText = `${earnedCount} / ${totalCount} Unlocked`;
+        if (milkEl) milkEl.innerText = `${milkPct}% Milk (${(earnedCount * 1.5).toFixed(1)}% CPS Boost)`;
+
+        if (!gridEl) return;
+
+        let html = '';
+        BC_ACHIEVEMENTS.forEach(ach => {
+            const isUnlocked = bcAchievements.includes(ach.id);
+            html += `
+                <div class="p-3 rounded-2xl border transition-all flex items-center gap-3 relative ${
+                    isUnlocked 
+                    ? "bg-gray-800/90 border-amber-500/60 shadow-md shadow-amber-950/20" 
+                    : "bg-gray-900/60 border-gray-800/80 opacity-50"
+                }">
+                    <div class="text-3xl shrink-0 p-2 rounded-xl bg-black/40 border ${isUnlocked ? "border-amber-500/40" : "border-gray-800 grayscale"}">
+                        ${isUnlocked ? ach.icon : "🔒"}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-xs md:text-sm truncate ${isUnlocked ? "text-white" : "text-gray-500"}">${ach.name}</h4>
+                            <span class="text-[10px] font-black uppercase font-mono px-2 py-0.5 rounded ${
+                                isUnlocked ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-gray-800 text-gray-500"
+                            }">
+                                ${isUnlocked ? "UNLOCKED" : "LOCKED"}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-0.5 leading-snug">${ach.desc}</p>
+                    </div>
+                </div>
+            `;
+        });
+        gridEl.innerHTML = html;
+    }
+
     function clickBanana(e) {
         const power = getBcClickPower();
         bcScore += power;
+        bcAscensionBananas += power;
+        bcAllTimeBananas += power;
+        bcTotalClicks++;
         playSound("click");
+        checkBcAchievements();
         updateBcUI();
 
         // Banana squish feedback
@@ -8907,9 +9704,12 @@
     function getGoldenBananaIntervalMs() {
         const freqUpg = bcUpgrades.find(u => u.id === 'golden1');
         const count = freqUpg ? freqUpg.count : 0;
-        const baseWait = 45000 / (1 + count * 0.35);
+        let baseWait = 45000 / (1 + count * 0.35);
+        if (bcHeavenlyUpgrades.includes('h_golden')) {
+            baseWait *= 0.75;
+        }
         const variance = (Math.random() * 0.3 - 0.15) * baseWait;
-        return Math.max(7000, Math.floor(baseWait + variance));
+        return Math.max(6000, Math.floor(baseWait + variance));
     }
 
     function scheduleNextGoldenBanana() {
@@ -8967,9 +9767,13 @@
     function clickGoldenBanana(e) {
         if (e) e.stopPropagation();
         playSound('win');
+        bcGoldenClicks++;
 
         const goldMult = bcUpgrades.find(u => u.id === 'golden2');
-        const multVal = goldMult ? (1 + goldMult.count * 1.5) : 1;
+        let multVal = goldMult ? (1 + goldMult.count * 0.20) : 1; // nerfed OP multiplier to +20% per upgrade
+        if (bcHeavenlyUpgrades.includes('h_harvest')) {
+            multVal *= 2;
+        }
         const cps = getBcCps();
 
         const roll = Math.random();
@@ -8983,11 +9787,14 @@
             if (e && e.clientX) spawnFloatingText(e.clientX, e.clientY, "⚡ 777x CLICKS!");
         } else {
             // Golden Harvest
-            const reward = Math.max(150, Math.ceil((150 + cps * 40) * multVal));
+            const reward = Math.max(150, Math.ceil((150 + cps * 30) * multVal));
             bcScore += reward;
+            bcAscensionBananas += reward;
+            bcAllTimeBananas += reward;
             if (e && e.clientX) spawnFloatingText(e.clientX, e.clientY, `+${formatNumber(reward)} 🌟 GOLDEN!`);
         }
 
+        checkBcAchievements();
         updateBcUI();
         despawnGoldenBanana(true);
     }
@@ -9000,25 +9807,6 @@
         el.innerText = text;
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 1000);
-    }
-
-    function buyBcUpgrade(index) {
-        const u = bcUpgrades[index];
-        const cost = Math.ceil(u.baseCost * Math.pow(1.15, u.count));
-        if (bcScore >= cost) {
-            bcScore -= cost;
-            u.count++;
-            playSound('bet');
-            updateBcUI();
-            saveBananaClicker();
-
-            if (u.id === 'golden1') {
-                const gb = document.getElementById("golden-banana");
-                if (gb && gb.classList.contains("hidden")) {
-                    scheduleNextGoldenBanana();
-                }
-            }
-        }
     }
 
     function openBananaClicker() {
@@ -9041,10 +9829,16 @@
             updateBcBuffUI();
             const cps = getBcCps();
             if (cps > 0) {
-                bcScore += cps / 10;
+                const gain = cps / 10;
+                bcScore += gain;
+                bcAscensionBananas += gain;
+                bcAllTimeBananas += gain;
             }
             updateBcUI();
-            if (Math.random() < 0.05) saveBananaClicker();
+            if (Math.random() < 0.05) {
+                checkBcAchievements();
+                saveBananaClicker();
+            }
         }, 100);
 
         const initialDelay = Math.min(16000, getGoldenBananaIntervalMs());
@@ -9103,7 +9897,11 @@
         openSecretCodeModal, closeSecretCodeModal, submitDungeonCode, bypassDungeonCooldown, sellSkinToMerchant, openProfile, closeProfileModal, toggleProfileSkins, cashOutCrash, hiloGuess, pokerHold, pokerDraw,
         openCreatorCodeModal, closeCreatorCodeModal, submitCreatorCode, talkToVladimir, advanceVladimir, clickBanana, buyBcUpgrade, openBananaClicker, closeBananaClicker, clickGoldenBanana,
         openGiftModal, closeGiftModal, switchGiftTab, validateGiftBananaInput, setGiftBananaPercent, sendBananaGift, renderGiftSkinsPicker, sendSkinGift,
-        tryOpenBananaClickerFromGamemode, cycleSmoothieFlavor, exportSmoothieToCasino, splashSmoothie, showBcToast
+        tryOpenBananaClickerFromGamemode, cycleSmoothieFlavor, exportSmoothieToCasino, splashSmoothie, showBcToast,
+        openBcLegacyModal, closeBcLegacyModal, buyHeavenlyUpgrade, executeAscension,
+        openBcStatsModal, closeBcStatsModal,
+        openBcAchievementsModal, closeBcAchievementsModal,
+        setBcBulkBuyMode, buyBcTieredUpgrade
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
