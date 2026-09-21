@@ -1303,7 +1303,9 @@ async function refreshSkinValues() {
     if (data) {
       const newValues: Record<string, number> = {};
       data.forEach((item: any) => {
-        newValues[item.id] = Number(item.value);
+        const rarity = SKINS_METADATA[item.id] || 'Common';
+        const minVal = rarity === 'Ominous' ? 100000000000 : Math.floor((DEFAULT_RARITY_VALUES[rarity] || 1000) * 0.1);
+        newValues[item.id] = Math.max(minVal, Number(item.value));
       });
       DYNAMIC_SKIN_VALUES = newValues;
       console.log(`[SKIN VALUES] Refreshed ${data.length} skin values.`);
@@ -1359,21 +1361,23 @@ async function updateDynamicSkinValues() {
       const delta = currentCount - prevCount;
       if (delta === 0) return;
 
+      // RULE: Skin values can NOT reduce when you get one (delta > 0), only get higher when you sell/trade (delta < 0)
+      if (delta > 0) return;
+
       const rarity = SKINS_METADATA[skinId] || 'Common';
-      let change = 0;
+      const countSold = Math.abs(delta);
+      let increase = 0;
       
-      if (rarity === 'Ominous') change = delta * -50000000;
-      else if (rarity === 'Legendary') change = delta * -15000000;
-      else if (rarity === 'Mythic') change = delta * -5000000;
-      else if (rarity === 'Epic') change = delta * -150000;
-      else if (rarity === 'Rare') change = delta * -15000;
-      else if (rarity === 'Common') change = delta * -1500;
+      if (rarity === 'Ominous') increase = countSold * 5000000000;
+      else if (rarity === 'Legendary') increase = countSold * 15000000;
+      else if (rarity === 'Mythic') increase = countSold * 5000000;
+      else if (rarity === 'Epic') increase = countSold * 150000;
+      else if (rarity === 'Rare') increase = countSold * 15000;
+      else if (rarity === 'Common') increase = countSold * 1500;
       
-      const currentValue = DYNAMIC_SKIN_VALUES[skinId] || DEFAULT_RARITY_VALUES[rarity] || 1000;
-      let newValue = currentValue + change;
-      
-      // Security: Prevent value from dropping below 10% of its base value
-      const minCap = Math.floor((DEFAULT_RARITY_VALUES[rarity] || 1000) * 0.1);
+      const minCap = rarity === 'Ominous' ? 100000000000 : Math.floor((DEFAULT_RARITY_VALUES[rarity] || 1000) * 0.1);
+      const currentValue = Math.max(minCap, DYNAMIC_SKIN_VALUES[skinId] || DEFAULT_RARITY_VALUES[rarity] || 1000);
+      let newValue = currentValue + increase;
       newValue = Math.max(minCap, newValue);
       
       updates.push({ id: skinId, value: newValue });
@@ -1414,7 +1418,7 @@ const DEFAULT_RARITY_VALUES: Record<string, number> = {
   'Epic': 200000,
   'Mythic': 1000000,
   'Legendary': 10000000,
-  'Ominous': 250000000
+  'Ominous': 100000000000 // 100 B minimum value
 };
 
 const SKINS_METADATA: Record<string, string> = {};
@@ -1424,13 +1428,14 @@ SKINS.forEach(s => {
 
 function calculateTradeValue(skins: string[]) {
   return skins.reduce((total, id) => {
+    const rarity = SKINS_METADATA[id] || 'Common';
+    const minVal = rarity === 'Ominous' ? 100000000000 : (DEFAULT_RARITY_VALUES[rarity] || 1000);
     // 1. Try dynamic value from DB
     if (DYNAMIC_SKIN_VALUES[id] !== undefined) {
-      return total + DYNAMIC_SKIN_VALUES[id];
+      return total + Math.max(minVal, DYNAMIC_SKIN_VALUES[id]);
     }
     // 2. Fallback to rarity defaults
-    const rarity = SKINS_METADATA[id] || 'Common';
-    return total + (DEFAULT_RARITY_VALUES[rarity] || 0);
+    return total + minVal;
   }, 0);
 }
 
@@ -1445,9 +1450,11 @@ app.get("/api/skin-values", async (req, res) => {
   }
   const result: Record<string, number> = {};
   SKINS.forEach(s => {
-    result[s.id] = DYNAMIC_SKIN_VALUES[s.id] ?? (DEFAULT_RARITY_VALUES[s.rarity] || 1000);
+    const minVal = s.rarity === 'Ominous' ? 100000000000 : (DEFAULT_RARITY_VALUES[s.rarity] || 1000);
+    const curr = DYNAMIC_SKIN_VALUES[s.id] ?? minVal;
+    result[s.id] = Math.max(minVal, curr);
   });
-  res.json({ ...result, ...DYNAMIC_SKIN_VALUES });
+  res.json(result);
 });
 
 // Request a trade
@@ -1643,9 +1650,87 @@ app.post("/api/trade/execute", authenticateToken, async (req: any, res) => {
     await supabase.from('database').update({ inventory: JSON.stringify(receiverInv) }).eq('id', trade.receiver_id);
     await supabase.from('trades').update({ status: 'completed' }).eq('id', tradeId);
 
+    // RULE: Skin values increase when traded
+    const tradedSkinIds = [...senderSkins, ...receiverSkins];
+    for (const sid of tradedSkinIds) {
+      const rarity = SKINS_METADATA[sid] || 'Common';
+      const minVal = rarity === 'Ominous' ? 100000000000 : (DEFAULT_RARITY_VALUES[rarity] || 1000);
+      const curr = Math.max(minVal, DYNAMIC_SKIN_VALUES[sid] || minVal);
+      let tradeBoost = 0;
+      if (rarity === 'Ominous') tradeBoost = 2500000000;
+      else if (rarity === 'Legendary') tradeBoost = 1000000;
+      else if (rarity === 'Mythic') tradeBoost = 250000;
+      else if (rarity === 'Epic') tradeBoost = 25000;
+      else if (rarity === 'Rare') tradeBoost = 2500;
+      else tradeBoost = 250;
+      
+      const newV = curr + tradeBoost;
+      DYNAMIC_SKIN_VALUES[sid] = newV;
+      try {
+        await supabase.from('skin_values').upsert({ id: sid, value: newV });
+      } catch (e) {}
+    }
+
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint to boost skin value when sold
+app.post("/api/skin/sell", authenticateToken, async (req: any, res) => {
+  const { skinId } = req.body;
+  if (!skinId) return res.status(400).json({ error: "Missing skinId" });
+  try {
+    const supabase = getSupabase();
+    const rarity = SKINS_METADATA[skinId] || 'Common';
+    const minVal = rarity === 'Ominous' ? 100000000000 : (DEFAULT_RARITY_VALUES[rarity] || 1000);
+    const curr = Math.max(minVal, DYNAMIC_SKIN_VALUES[skinId] || minVal);
+    let boost = 0;
+    if (rarity === 'Ominous') boost = 5000000000;
+    else if (rarity === 'Legendary') boost = 2000000;
+    else if (rarity === 'Mythic') boost = 500000;
+    else if (rarity === 'Epic') boost = 50000;
+    else if (rarity === 'Rare') boost = 5000;
+    else boost = 500;
+    
+    const newV = curr + boost;
+    DYNAMIC_SKIN_VALUES[skinId] = newV;
+    try {
+      await supabase.from('skin_values').upsert({ id: skinId, value: newV });
+    } catch (e) {}
+    res.json({ success: true, newValue: newV });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint to drop skin value when sold in dungeon (the way it used to drop)
+app.post("/api/skin/dungeon-sell", authenticateToken, async (req: any, res) => {
+  const { skinId } = req.body;
+  if (!skinId) return res.status(400).json({ error: "Missing skinId" });
+  try {
+    const supabase = getSupabase();
+    const rarity = SKINS_METADATA[skinId] || 'Common';
+    const minCap = rarity === 'Ominous' ? 100000000000 : Math.floor((DEFAULT_RARITY_VALUES[rarity] || 1000) * 0.1);
+    const curr = Math.max(minCap, DYNAMIC_SKIN_VALUES[skinId] || DEFAULT_RARITY_VALUES[rarity] || 1000);
+    
+    let drop = 1500;
+    if (rarity === 'Ominous') drop = 5000000000;
+    else if (rarity === 'Legendary') drop = 15000000;
+    else if (rarity === 'Mythic') drop = 5000000;
+    else if (rarity === 'Epic') drop = 150000;
+    else if (rarity === 'Rare') drop = 15000;
+    else if (rarity === 'Common') drop = 1500;
+
+    const newV = Math.max(minCap, curr - drop);
+    DYNAMIC_SKIN_VALUES[skinId] = newV;
+    try {
+      await supabase.from('skin_values').upsert({ id: skinId, value: newV });
+    } catch (e) {}
+    res.json({ success: true, newValue: newV, droppedBy: drop });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 
