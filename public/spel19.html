@@ -295,7 +295,7 @@
           <p class="text-sm text-slate-400">Open premium cases to unlock ultra-rare and legendary skins.</p>
         </div>
 
-        <div onclick="tryOpenBananaClickerFromGamemode()" class="bg-slate-800 hover:bg-orange-950/80 border-2 border-slate-700 hover:border-orange-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+        <div id="gamemode-card-banana-clicker" onclick="tryOpenBananaClickerFromGamemode()" class="bg-slate-800 hover:bg-orange-950/80 border-2 border-slate-700 hover:border-orange-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center hidden">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🍌</div>
           <h3 class="text-xl font-bold text-white mb-2">Banana Clicker</h3>
           <p class="text-sm text-slate-400">Click the giant banana, build an idle empire, and catch golden bananas!</p>
@@ -712,7 +712,7 @@
           <div class="col-span-2 bg-emerald-900/50 p-6 rounded-3xl border border-emerald-800">
             <h3 class="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">🕹️ SWITCH GAME</h3>
             <div class="grid grid-cols-1 gap-3">
-              <button onclick="document.getElementById('gamemode-modal').classList.remove('hidden'); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all shadow-[0_4px_0_rgb(6,78,59)] flex items-center justify-center gap-2">🕹️ CHOOSE GAMEMODE</button>
+              <button onclick="openGamemodeModal(); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all shadow-[0_4px_0_rgb(6,78,59)] flex items-center justify-center gap-2">🕹️ CHOOSE GAMEMODE</button>
             </div>
           </div>
 
@@ -1434,7 +1434,7 @@
               </div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
-              <button onclick="document.getElementById('gamemode-modal').classList.remove('hidden')" class="w-full max-w-sm py-2 md:py-3 rounded bg-emerald-800 hover:bg-emerald-700 text-white font-black text-xs md:text-sm border-2 border-transparent transition-all shadow-[0_4px_0_rgb(6,78,59)] active:translate-y-1 active:shadow-none flex items-center justify-center gap-2">🕹️ CHOOSE GAMEMODE</button>
+              <button onclick="openGamemodeModal()" class="w-full max-w-sm py-2 md:py-3 rounded bg-emerald-800 hover:bg-emerald-700 text-white font-black text-xs md:text-sm border-2 border-transparent transition-all shadow-[0_4px_0_rgb(6,78,59)] active:translate-y-1 active:shadow-none flex items-center justify-center gap-2">🕹️ CHOOSE GAMEMODE</button>
             </div>
         </div>
         
@@ -2229,6 +2229,7 @@
             fetchGlobalInventory(); // Pre-load counts for the table
         }
         await setupSupabaseListeners();
+        if (typeof updateGamemodeModalVisibility === 'function') updateGamemodeModalVisibility();
 
         if (isMobile()) {
             document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
@@ -2459,7 +2460,7 @@
             title: 'Dungeon Bypass', 
             desc: '100% chance to enter Ludvig\'s Dungeon for 10 minutes.', 
             cost: 4, 
-            chance: 0.20, 
+            chance: 0.65, 
             duration: 10 * 60 * 1000,
             icon: '🗝️',
             prop: 'dungeon_key'
@@ -2786,12 +2787,51 @@
       return 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
     }
 
+    const NUMBER_SUFFIX_LIST = [
+        { exp: 63, sym: 'Vg' },
+        { exp: 60, sym: 'Nod' },
+        { exp: 57, sym: 'Ocd' },
+        { exp: 54, sym: 'Spd' },
+        { exp: 51, sym: 'Sxd' },
+        { exp: 48, sym: 'Qid' },
+        { exp: 45, sym: 'Qad' },
+        { exp: 42, sym: 'Td' },
+        { exp: 39, sym: 'Dd' },
+        { exp: 36, sym: 'Ud' },
+        { exp: 33, sym: 'Dc' },
+        { exp: 30, sym: 'No' },
+        { exp: 27, sym: 'Oc' },
+        { exp: 24, sym: 'Sp' },
+        { exp: 21, sym: 'Sx' },
+        { exp: 18, sym: 'Qi' },
+        { exp: 15, sym: 'Qa' },
+        { exp: 12, sym: 'T' },
+        { exp: 9,  sym: 'B' },
+        { exp: 6,  sym: 'M' }
+    ];
+
     function formatNumber(num) {
-        const n = typeof num === 'bigint' ? num : BigInt(Math.floor(num || 0));
-        if (n >= 1000000000000n) return (Number(n / 100000000000n) / 10).toFixed(1).replace(/\.0$/, '') + 'T';
-        if (n >= 1000000000n) return (Number(n / 100000000n) / 10).toFixed(1).replace(/\.0$/, '') + 'B';
-        if (n >= 1000000n) return (Number(n / 100000n) / 10).toFixed(1).replace(/\.0$/, '') + 'M';
-        return n.toLocaleString();
+        if (num === null || num === undefined) return '0';
+        if (typeof num === 'bigint') {
+            for (const s of NUMBER_SUFFIX_LIST) {
+                const threshold = 10n ** BigInt(s.exp);
+                if (num >= threshold) {
+                    const divisor = 10n ** BigInt(s.exp - 1);
+                    return (Number(num / divisor) / 10).toFixed(1).replace(/\.0$/, '') + s.sym;
+                }
+            }
+            return num.toLocaleString();
+        }
+
+        const n = Number(num);
+        if (!isFinite(n) || isNaN(n)) return '0';
+        for (const s of NUMBER_SUFFIX_LIST) {
+            const div = Math.pow(10, s.exp);
+            if (n >= div) {
+                return (n / div).toFixed(1).replace(/\.0$/, '') + s.sym;
+            }
+        }
+        return Math.floor(n).toLocaleString();
     }
 
     function handleMegaBetEffect(data) {
@@ -3371,6 +3411,11 @@
             const data = await fetchWithRetry('/api/skin-values', { method: 'GET' });
             if (data && !data.error) {
                 dynamicSkinValues = data;
+                SKINS.forEach(s => {
+                    if (s.rarity === 'Ominous') {
+                        dynamicSkinValues[s.id] = Math.max(100000000000, dynamicSkinValues[s.id] || 100000000000);
+                    }
+                });
                 console.log("[SKIN VALUES] Loaded dynamic values.");
             }
         } catch (e) {
@@ -3384,19 +3429,23 @@
         'Epic': 200000,
         'Mythic': 1000000,
         'Legendary': 10000000,
-        'Ominous': 250000000
+        'Ominous': 100000000000
     };
 
     function calculateTradeTotal(skinIds) {
         if (!skinIds) return 0;
         return skinIds.reduce((total, id) => {
+            const skin = SKINS.find(s => s.id === id);
+            const isOminous = skin?.rarity === 'Ominous';
+            let val = 0;
             // 1. Try dynamic value
             if (dynamicSkinValues[id] !== undefined) {
-                return total + dynamicSkinValues[id];
+                val = dynamicSkinValues[id];
+            } else {
+                val = (TRADE_RARITY_DEFAULTS[skin?.rarity || 'Common'] || 0);
             }
-            // 2. Fallback to rarity
-            const skin = SKINS.find(s => s.id === id);
-            return total + (TRADE_RARITY_DEFAULTS[skin?.rarity || 'Common'] || 0);
+            if (isOminous) val = Math.max(100000000000, val);
+            return total + val;
         }, 0);
     }
 
@@ -4267,7 +4316,12 @@
 
     // --- TAX SYSTEM ---
     let taxInterval = setInterval(() => {
-        if (Math.random() < 0.40) {
+        if (Math.random() < 0.30) {
+            // Jungle Government CANNOT tax in Banana Clicker gamemode!
+            const isClickerOpen = (typeof isBananaClickerOpen !== 'undefined' && isBananaClickerOpen) || 
+                (document.getElementById('banana-clicker-modal') && !document.getElementById('banana-clicker-modal').classList.contains('hidden'));
+            if (isClickerOpen) return;
+
             const isBettingMode = view === 'game' && gameMode !== 'cases';
             const isCloaked = inventory && inventory['banana_cloak_expiry'] && inventory['banana_cloak_expiry'] > Date.now();
             if (isBettingMode && !isCloaked && !isPlaying && (typeof bjState === 'undefined' || bjState !== 'playing')) {
@@ -6652,10 +6706,13 @@
             'Epic': 200000,
             'Mythic': 1000000,
             'Legendary': 10000000,
-            'Ominous': 250000000
+            'Ominous': 100000000000
         };
 
-        const price = sellPrices[skin.rarity] || 0;
+        let price = (dynamicSkinValues && dynamicSkinValues[skin.id]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || sellPrices[skin.rarity] || 0;
+        if (skin.rarity === 'Ominous') {
+            price = Math.max(100000000000, price);
+        }
         
         // Remove 1 skin
         inventory[skinId]--;
@@ -6676,6 +6733,14 @@
             selectedInventorySkin = null;
         }
         
+        // Boost skin value on sale
+        fetchWithRetry('/api/skin/sell', {
+            method: 'POST',
+            body: JSON.stringify({ skinId })
+        }).then(() => {
+            fetchSkinValues();
+        }).catch(() => {});
+
         savePersistentData();
         renderInventory();
     }
@@ -7861,8 +7926,8 @@
                 closeSecretCodeModal();
                 setView('dungeon');
             } else {
-                showNotification("ACCESS DENIED. The dungeon is sealed for 10 minutes.", "error");
-                dungeonCooldownEnd = Date.now() + (10 * 60 * 1000);
+                showNotification("ACCESS DENIED. The dungeon is sealed for 5 minutes.", "error");
+                dungeonCooldownEnd = Date.now() + (5 * 60 * 1000);
                 localStorage.setItem('dungeonCooldownEnd', dungeonCooldownEnd);
                 openSecretCodeModal(); // Refresh view
             }
@@ -7928,7 +7993,10 @@
         const skin = SKINS.find(s => s.id === skinId);
         if (!skin || !inventory[skinId] || inventory[skinId] <= 0) return;
 
-        const value = (dynamicSkinValues && dynamicSkinValues[skin.id]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || 0;
+        let value = (dynamicSkinValues && dynamicSkinValues[skin.id]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || 0;
+        if (skin.rarity === 'Ominous') {
+            value = Math.max(100000000000, value);
+        }
         
         // Remove 1 skin
         inventory[skinId]--;
@@ -7942,8 +8010,30 @@
         savePersistentData();
         playSound('collect');
         
+        // Drop skin market value when sold in dungeon (the way it used to drop)
+        const dungeonDropAmounts = {
+            'Ominous': 5000000000,
+            'Legendary': 15000000,
+            'Mythic': 5000000,
+            'Epic': 150000,
+            'Rare': 15000,
+            'Common': 1500
+        };
+        const minCap = skin.rarity === 'Ominous' ? 100000000000 : Math.floor(((TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || 1000) * 0.1);
+        const dropVal = dungeonDropAmounts[skin.rarity] || 1500;
+        if (dynamicSkinValues && dynamicSkinValues[skinId] !== undefined) {
+            dynamicSkinValues[skinId] = Math.max(minCap, dynamicSkinValues[skinId] - dropVal);
+        }
+
+        fetchWithRetry('/api/skin/dungeon-sell', {
+            method: 'POST',
+            body: JSON.stringify({ skinId })
+        }).then(() => {
+            fetchSkinValues();
+        }).catch(() => {});
+
         updateDungeonUI();
-        showNotification(`Sold ${skin.name} for ${formatNumber(value)} 🍌!`, "success");
+        showNotification(`Sold ${skin.name} to merchant for ${formatNumber(value)} 🍌!`, "success");
     }
 
     // --- BANANA CLICKER LOGIC ---
@@ -8372,9 +8462,31 @@
     }
 
     // --- VLADIMIR BEH QUEST & ACCESS LOGIC ---
+    let isBananaClickerOpen = false;
+
+    function updateGamemodeModalVisibility() {
+        const storedStatus = parseInt(localStorage.getItem("vladimirQuestStatus_" + playerName)) || 0;
+        vladimirQuestStatus = storedStatus;
+        const card = document.getElementById("gamemode-card-banana-clicker");
+        if (card) {
+            if (vladimirQuestStatus === 2) {
+                card.classList.remove("hidden");
+            } else {
+                card.classList.add("hidden");
+            }
+        }
+    }
+
+    function openGamemodeModal() {
+        updateGamemodeModalVisibility();
+        const modal = document.getElementById('gamemode-modal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
     // If quest is done (vladimirQuestStatus === 2), player no longer needs less than 10B bananas!
     function initVladimir() {
         vladimirQuestStatus = parseInt(localStorage.getItem("vladimirQuestStatus_" + playerName)) || 0;
+        updateGamemodeModalVisibility();
         const container = document.getElementById("dungeon-vladimir-container");
         if (vladimirQuestStatus === 2) {
             // Quest completed: Permanent access regardless of banana count!
@@ -8396,14 +8508,9 @@
             const gmModal = document.getElementById('gamemode-modal');
             if (gmModal) gmModal.classList.add('hidden');
             openBananaClicker();
-        } else if (vladimirQuestStatus === 1) {
-            showNotification("Vladimir Beh awaits your proof! Go All-In on Green in Roulette without gadgets to unlock the Clicker!", "warning");
         } else {
-            if (level >= 15 && bananas < 10000000000) {
-                showNotification("Locked! Seek out Vladimir Beh in the Secret Dungeon to unlock the Banana Clicker.", "info");
-            } else {
-                showNotification("Locked! Seek out Vladimir Beh in the Secret Dungeon (Requires Level 15+ and under 10B 🍌).", "warning");
-            }
+            showNotification("Banana Clicker is locked! Complete Vladimir Beh's quest to unlock it.", "warning");
+            updateGamemodeModalVisibility();
         }
     }
 
@@ -8482,6 +8589,15 @@
         localStorage.setItem("bananaClickerSave_" + playerName, JSON.stringify(data));
     }
 
+    function isBcBuffActive(type) {
+        if (!bcActiveBuff) return false;
+        if (Date.now() >= bcActiveBuff.expiresAt) {
+            bcActiveBuff = null;
+            return false;
+        }
+        return bcActiveBuff.type === type;
+    }
+
     function getBcCps() {
         let base = bcUpgrades.reduce((sum, u) => sum + (u.count * u.cps), 0);
         
@@ -8497,8 +8613,8 @@
             base *= (1 + flavor.cpsMult);
         }
 
-        // Banana Frenzy buff
-        if (bcActiveBuff && bcActiveBuff.type === 'frenzy') {
+        // Banana Frenzy buff: multiplies CPS by 7x!
+        if (isBcBuffActive('frenzy')) {
             base *= bcActiveBuff.multiplier;
         }
 
@@ -8516,12 +8632,17 @@
             power += Math.floor(rawCps * 0.01 * peels.count);
         }
 
-        // Click Frenzy buff
-        if (bcActiveBuff && bcActiveBuff.type === 'click_frenzy') {
+        // Banana Frenzy buff: multiplies Click Power by 7x!
+        if (isBcBuffActive('frenzy')) {
             power *= bcActiveBuff.multiplier;
         }
 
-        return Math.max(1, power);
+        // Click Frenzy buff: multiplies Click Power by 777x!
+        if (isBcBuffActive('click_frenzy')) {
+            power *= bcActiveBuff.multiplier;
+        }
+
+        return Math.max(1, Math.floor(power));
     }
 
     function initBcStore() {
@@ -8560,18 +8681,13 @@
 
     function updateBcBuffUI() {
         const banner = document.getElementById("bc-buff-banner");
-        if (!bcActiveBuff) {
+        if (!bcActiveBuff || Date.now() >= bcActiveBuff.expiresAt) {
+            bcActiveBuff = null;
             if (banner && !banner.classList.contains("hidden")) banner.classList.add("hidden");
             return;
         }
-        const remainingMs = bcActiveBuff.expiresAt - Date.now();
-        if (remainingMs <= 0) {
-            bcActiveBuff = null;
-            if (banner) banner.classList.add("hidden");
-            updateBcUI();
-            return;
-        }
         if (banner && banner.classList.contains("hidden")) banner.classList.remove("hidden");
+        const remainingMs = Math.max(0, bcActiveBuff.expiresAt - Date.now());
         const timerEl = document.getElementById("bc-buff-timer");
         const barEl = document.getElementById("bc-buff-bar");
         if (timerEl) timerEl.innerText = `${Math.ceil(remainingMs / 1000)}s`;
@@ -8594,6 +8710,7 @@
         if (banner) banner.classList.remove("hidden");
         if (titleEl) titleEl.innerText = title;
         playSound('win');
+        updateBcUI();
     }
 
     function updateBcUI() {
@@ -8603,7 +8720,10 @@
         const empireCountEl = document.getElementById("bc-empire-count");
 
         if (scoreEl) scoreEl.innerText = formatNumber(Math.floor(bcScore));
-        if (cpsEl) cpsEl.innerText = getBcCps().toFixed(1);
+        if (cpsEl) {
+            const currCps = getBcCps();
+            cpsEl.innerText = currCps >= 1000 ? formatNumber(currCps) : currCps.toFixed(1);
+        }
         if (clickPowerEl) clickPowerEl.innerText = `+${formatNumber(getBcClickPower())} 🍌`;
         if (empireCountEl) {
             const totalEntities = bcUpgrades.reduce((sum, u) => (u.cps > 0 ? sum + u.count : sum), 0);
@@ -8703,8 +8823,9 @@
         }
 
         if (e && e.clientX) {
-            const isFrenzy = bcActiveBuff && bcActiveBuff.type === 'click_frenzy';
-            const txt = isFrenzy ? `+${formatNumber(power)} ⚡` : `+${formatNumber(power)}`;
+            const isClickFrenzy = isBcBuffActive('click_frenzy');
+            const isFrenzy = isBcBuffActive('frenzy');
+            const txt = isClickFrenzy ? `+${formatNumber(power)} ⚡` : (isFrenzy ? `+${formatNumber(power)} 🔥` : `+${formatNumber(power)}`);
             spawnFloatingText(e.clientX, e.clientY, txt);
         }
     }
@@ -8901,6 +9022,7 @@
     }
 
     function openBananaClicker() {
+        isBananaClickerOpen = true;
         loadBananaClicker();
         const modal = document.getElementById("banana-clicker-modal");
         if (modal) {
@@ -8916,13 +9038,12 @@
         if (goldenBananaNextSpawnTimer) clearTimeout(goldenBananaNextSpawnTimer);
         
         bcInterval = setInterval(() => {
+            updateBcBuffUI();
             const cps = getBcCps();
             if (cps > 0) {
                 bcScore += cps / 10;
-                updateBcUI();
-            } else {
-                updateBcBuffUI();
             }
+            updateBcUI();
             if (Math.random() < 0.05) saveBananaClicker();
         }, 100);
 
@@ -8933,6 +9054,7 @@
     }
 
     function closeBananaClicker() {
+        isBananaClickerOpen = false;
         saveBananaClicker();
         stopSmoothieCanvas();
         if (bcToastTimer) {
@@ -8970,7 +9092,7 @@
         closeHistoryModal, closeTreeModal, upgradeTree, handleSellTree, setView,
         enterCasino: () => {}, // Deprecated but kept for safety
         handleBuyTree, setSidebarView, toggleMute, openHistoryModal,
-        toggleMobileOptions,
+        toggleMobileOptions, openGamemodeModal, updateGamemodeModalVisibility,
         openRoyalPass, closeRoyalPass, claimRoyalReward,
         setGameMode, setBetColor, setMaxBet, toggleAutoBet, handleMainAction,
         claimInsurance, bjHit, bjStand, bjDoubleDown, bjSplit, copyUserId, handleTreeClick, buyGadget,
