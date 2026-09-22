@@ -295,6 +295,12 @@
           <p class="text-sm text-slate-400">Open premium cases to unlock ultra-rare and legendary skins.</p>
         </div>
 
+        <div onclick="setGameMode('mines'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">💣</div>
+          <h3 class="text-xl font-bold text-white mb-2">Banana Mines</h3>
+          <p class="text-sm text-slate-400">Uncover golden bananas on a 5x5 grid and multiply your bet. Cash out before you hit a mine!</p>
+        </div>
+
         <div id="gamemode-card-banana-clicker" onclick="tryOpenBananaClickerFromGamemode()" class="bg-slate-800 hover:bg-orange-950/80 border-2 border-slate-700 hover:border-orange-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center hidden">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🍌</div>
           <h3 class="text-xl font-bold text-white mb-2">Banana Clicker</h3>
@@ -1811,6 +1817,62 @@
               <div id="poker-actions" class="flex gap-4 mt-6 hidden">
                 <button onclick="pokerDraw()" class="px-8 py-3 bg-blue-500 hover:bg-blue-400 text-white font-black rounded-xl border-b-4 border-blue-700 shadow-xl text-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
                   DRAW <span class="text-2xl">🔄</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Game: MINES -->
+          <div id="area-mines" class="w-full h-full flex flex-col items-center justify-center hidden py-3 px-2 md:px-6">
+            <div class="relative w-full max-w-md bg-slate-900/95 p-4 rounded-3xl border-2 border-emerald-700/60 shadow-2xl flex flex-col items-center">
+              
+              <!-- Mines Header Controls -->
+              <div class="w-full flex items-center justify-between gap-2 mb-3 bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
+                <div class="flex items-center gap-2">
+                  <span class="text-2xl">💣</span>
+                  <div>
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Mines Count</div>
+                    <div class="flex items-center gap-1 mt-0.5">
+                      <select id="mines-count-select" onchange="setMinesCount(this.value)" class="bg-slate-800 text-yellow-400 font-black text-xs px-2 py-1 rounded-lg border border-slate-700 outline-none cursor-pointer hover:border-yellow-500 transition-colors">
+                        <option value="1">1 Mine</option>
+                        <option value="3" selected>3 Mines</option>
+                        <option value="5">5 Mines</option>
+                        <option value="10">10 Mines</option>
+                        <option value="15">15 Mines</option>
+                        <option value="20">20 Mines</option>
+                        <option value="24">24 Mines</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col items-center">
+                  <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Multiplier</span>
+                  <span id="mines-multiplier-badge" class="text-emerald-400 font-mono font-black text-base md:text-lg">1.00x</span>
+                </div>
+
+                <div class="flex flex-col items-end">
+                  <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Next Tile</span>
+                  <span id="mines-next-badge" class="text-yellow-400 font-mono font-black text-xs md:text-sm">1.10x</span>
+                </div>
+              </div>
+
+              <!-- Status Banner -->
+              <div id="mines-status-banner" class="w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-emerald-950/60 text-emerald-300 border border-emerald-800/50">
+                Choose bet & click START MINES to play
+              </div>
+
+              <!-- 5x5 Mines Grid -->
+              <div id="mines-grid" class="grid grid-cols-5 gap-2 p-3 bg-slate-950/95 rounded-2xl border border-slate-800 shadow-inner w-full max-w-[340px] md:max-w-[370px] aspect-square">
+                <!-- 25 tiles rendered dynamically -->
+              </div>
+
+              <!-- Cashout Action -->
+              <div class="w-full mt-3 flex gap-3 items-center">
+                <button id="mines-cashout-btn" onclick="cashOutMines()" disabled class="w-full py-3 px-4 rounded-xl font-black text-base md:text-lg shadow-xl transition-all flex items-center justify-center gap-2 bg-slate-800 text-slate-500 cursor-not-allowed border-b-4 border-slate-900">
+                  <span>💰 CASHOUT</span>
+                  <span id="mines-cashout-val" class="font-mono text-sm">(+0 🍌)</span>
                 </button>
               </div>
 
@@ -5657,10 +5719,17 @@
     // --- GAME MODES ---
     
     function setGameMode(mode) {
-      if (isPlaying || bjState === 'playing' || bjState === 'dealerTurn') return; 
+      if (isPlaying || bjState === 'playing' || bjState === 'dealerTurn' || (gameMode === 'mines' && minesState === 'playing')) return; 
       gameMode = mode;
-      spinResultMsg = mode === 'cases' ? "Choose a case to open!" : `Ready to play ${mode.toUpperCase()}`;
+      spinResultMsg = mode === 'cases' ? "Choose a case to open!" : mode === 'mines' ? "Select mines count and start digging!" : `Ready to play ${mode.toUpperCase()}`;
       if (mode === 'blackjack') bjState = 'betting';
+      if (mode === 'mines') {
+          if (minesState !== 'playing') {
+              minesState = 'betting';
+              renderMinesGrid();
+              updateMinesMultipliers();
+          }
+      }
       
       if (mode === 'cases') {
           const buyView = document.getElementById('case-buy-view');
@@ -5750,6 +5819,11 @@
         if (pokerState === 'betting' || pokerState === 'gameOver') {
             playPoker();
             playSound('card');
+        }
+      } else if (gameMode === 'mines') {
+        if (minesState === 'betting' || minesState === 'gameOver') {
+            startMines();
+            playSound('click');
         }
       }
     }
@@ -6189,6 +6263,299 @@
         
         if (pendingSync) syncData(bananas, trees);
         updateGameUI();
+    }
+
+    // --- BANANA MINES LOGIC ---
+    let minesCount = 3;
+    let minesState = 'betting'; // 'betting', 'playing', 'gameOver'
+    let minesMultiplier = 1.0;
+    let minesNextMultiplier = 1.10;
+    let minesRevealed = [];
+    let isMinesPicking = false;
+
+    function setMinesCount(val) {
+        if (minesState === 'playing') return;
+        minesCount = Math.max(1, Math.min(24, parseInt(val) || 3));
+        const select = document.getElementById('mines-count-select');
+        if (select) select.value = String(minesCount);
+        updateMinesMultipliers();
+    }
+
+    function calcMinesMultiplier(count, k) {
+        if (k <= 0) return 1.0;
+        const safeTiles = 25 - count;
+        if (k > safeTiles) return 0;
+        let prob = 1.0;
+        for (let i = 0; i < k; i++) {
+            prob *= (safeTiles - i) / (25 - i);
+        }
+        return Math.max(1.01, parseFloat((0.97 / prob).toFixed(2)));
+    }
+
+    function updateMinesMultipliers() {
+        const k = minesRevealed.length;
+        minesMultiplier = k > 0 ? calcMinesMultiplier(minesCount, k) : 1.0;
+        const safeTiles = 25 - minesCount;
+        minesNextMultiplier = k < safeTiles ? calcMinesMultiplier(minesCount, k + 1) : minesMultiplier;
+
+        const multEl = document.getElementById('mines-multiplier-badge');
+        const nextEl = document.getElementById('mines-next-badge');
+        const cashoutVal = document.getElementById('mines-cashout-val');
+        const cashoutBtn = document.getElementById('mines-cashout-btn');
+
+        if (multEl) multEl.innerText = `${minesMultiplier.toFixed(2)}x`;
+        if (nextEl) nextEl.innerText = k < safeTiles ? `${minesNextMultiplier.toFixed(2)}x` : 'MAX!';
+
+        const winAmount = Math.round(betAmount * minesMultiplier);
+        if (cashoutVal) cashoutVal.innerText = `(+${formatNumber(winAmount)} 🍌) [${minesMultiplier.toFixed(2)}x]`;
+
+        if (cashoutBtn) {
+            if (minesState === 'playing' && k > 0 && !isMinesPicking) {
+                cashoutBtn.disabled = false;
+                cashoutBtn.className = "w-full py-3 px-4 rounded-xl font-black text-base md:text-lg shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white cursor-pointer active:scale-95 border-b-4 border-emerald-700 animate-pulse";
+            } else {
+                cashoutBtn.disabled = true;
+                cashoutBtn.className = "w-full py-3 px-4 rounded-xl font-black text-base md:text-lg shadow-xl transition-all flex items-center justify-center gap-2 bg-slate-800 text-slate-500 cursor-not-allowed border-b-4 border-slate-900";
+            }
+        }
+    }
+
+    function renderMinesGrid(allMines = null, hitIdx = -1) {
+        const grid = document.getElementById('mines-grid');
+        if (!grid) return;
+        let html = '';
+        for (let i = 0; i < 25; i++) {
+            const isRev = minesRevealed.includes(i);
+            const isHit = hitIdx === i;
+            const isMine = allMines && allMines.includes(i);
+
+            let content = '';
+            let classes = 'relative flex items-center justify-center rounded-xl font-black text-xl select-none transition-all duration-200 aspect-square ';
+
+            if (isRev) {
+                classes += 'bg-gradient-to-br from-amber-500/20 to-yellow-500/30 border-2 border-yellow-400 shadow-md shadow-yellow-500/20 text-yellow-300';
+                content = '<span class="animate-bounce">🍌</span>';
+            } else if (allMines) {
+                if (isHit) {
+                    classes += 'bg-red-950 border-2 border-red-500 shadow-lg shadow-red-500/40 text-2xl';
+                    content = '💥';
+                } else if (isMine) {
+                    classes += 'bg-slate-900/80 border border-red-800/70 opacity-70 text-xl';
+                    content = '💣';
+                } else {
+                    classes += 'bg-slate-900/60 border border-slate-800 opacity-40 text-base';
+                    content = '🍌';
+                }
+            } else if (minesState === 'playing') {
+                classes += 'bg-slate-800 hover:bg-slate-700 border-2 border-slate-700 hover:border-yellow-400 cursor-pointer shadow-md hover:scale-105 active:scale-95 text-slate-400';
+                content = '❓';
+            } else {
+                classes += 'bg-slate-900/80 border border-slate-800 text-slate-600 cursor-default';
+                content = '';
+            }
+
+            const clickAttr = (minesState === 'playing' && !isRev && !isMinesPicking) ? `onclick="pickMinesTile(${i})"` : '';
+            html += `<button type="button" ${clickAttr} class="${classes}">${content}</button>`;
+        }
+        grid.innerHTML = html;
+    }
+
+    async function startMines() {
+        if (isPlaying || isSyncing || balanceDirty || bananas < betAmount || betAmount <= 0) return;
+        
+        minesState = 'playing';
+        isPlaying = true;
+        minesRevealed = [];
+        minesMultiplier = 1.0;
+        isMinesPicking = false;
+
+        isInternalUpdate = true;
+        updateBananas(bananas - betAmount);
+        isInternalUpdate = false;
+
+        const banner = document.getElementById('mines-status-banner');
+        if (banner) {
+            banner.innerText = "Finding mines... Click any tile to reveal!";
+            banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 animate-pulse";
+        }
+
+        updateMinesMultipliers();
+        renderMinesGrid();
+        updateGameUI();
+
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    taxPenalty: activeBoosts.tax_penalty > Date.now(),
+                    clientScore: bananas,
+                    gameMode: 'mines_start',
+                    betAmount,
+                    mineCount: minesCount,
+                    activeGadgets
+                })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Failed to start mines game");
+            
+            if (banner) {
+                banner.innerText = `Game active! ${25 - minesCount} Bananas & ${minesCount} Mines hidden. Pick a tile!`;
+                banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-emerald-950/60 text-emerald-300 border border-emerald-600/50";
+            }
+            renderMinesGrid();
+        } catch (err) {
+            console.error("Mines start error:", err);
+            isPlaying = false;
+            minesState = 'gameOver';
+            isInternalUpdate = true;
+            updateBananas(bananas + betAmount);
+            isInternalUpdate = false;
+            if (banner) banner.innerText = "Error: " + parseError(err);
+            updateGameUI();
+        }
+    }
+
+    async function pickMinesTile(index) {
+        if (minesState !== 'playing' || minesRevealed.includes(index) || isMinesPicking) return;
+        isMinesPicking = true;
+        playSound('click');
+
+        const banner = document.getElementById('mines-status-banner');
+        if (banner) banner.innerText = "Uncovering tile...";
+
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    taxPenalty: activeBoosts.tax_penalty > Date.now(),
+                    clientScore: bananas,
+                    gameMode: 'mines_pick',
+                    tileIndex: index,
+                    activeGadgets
+                })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Pick error");
+
+            isMinesPicking = false;
+
+            if (data.result.status === 'bomb') {
+                minesState = 'gameOver';
+                isPlaying = false;
+                playSound('loss');
+                renderMinesGrid(data.result.mines, index);
+                if (banner) {
+                    banner.innerText = `💥 BOOM! You hit a mine! Lost ${formatNumber(betAmount)} 🍌`;
+                    banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-red-950 text-red-300 border border-red-600 shadow-lg shadow-red-900/50";
+                }
+                spinResultMsg = processLoss(betAmount, betAmount, `Hit a mine! Lost ${formatNumber(betAmount)} 🍌`, data.result);
+                addLog('loss', betAmount, bananas, `Mines: Detonated (${minesCount} mines)`);
+                updateMinesMultipliers();
+                updateGameUI();
+            } else if (data.result.status === 'safe') {
+                minesRevealed.push(index);
+                minesMultiplier = data.result.currentMultiplier;
+                minesNextMultiplier = data.result.nextMultiplier;
+                playSound('win');
+                renderMinesGrid();
+                updateMinesMultipliers();
+                if (banner) {
+                    const winVal = Math.round(betAmount * minesMultiplier);
+                    banner.innerText = `🍌 Safe! Multiplier: ${minesMultiplier.toFixed(2)}x (+${formatNumber(winVal)} 🍌) - Cash out or keep picking!`;
+                    banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-yellow-950/80 text-yellow-300 border border-yellow-500/60";
+                }
+                updateGameUI();
+            } else if (data.result.status === 'cleared') {
+                minesRevealed.push(index);
+                minesState = 'gameOver';
+                isPlaying = false;
+                playSound('win');
+                renderMinesGrid(data.result.mines);
+                const winAmount = Number(data.winAmount);
+                isInternalUpdate = true;
+                updateBananas(Number(data.newBalance));
+                expectedDbBananas = Number(data.newBalance);
+                isInternalUpdate = false;
+                if (data.winStreak !== undefined) winStreak = data.winStreak;
+                handleMegaBetEffect(data);
+                if (banner) {
+                    banner.innerText = `🏆 BOARD CLEARED! Won ${formatNumber(winAmount)} 🍌 (${minesMultiplier.toFixed(2)}x)!`;
+                    banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-emerald-950 text-emerald-300 border-2 border-emerald-400 shadow-xl shadow-emerald-950";
+                }
+                spinResultMsg = `Board Cleared! Won ${formatNumber(winAmount)} 🍌!`;
+                addLog('win', winAmount, bananas, `Mines Clear (${minesCount} mines)`);
+                updateMinesMultipliers();
+                updateGameUI();
+            }
+        } catch (err) {
+            isMinesPicking = false;
+            console.error("Mines pick error:", err);
+            if (banner) banner.innerText = "Error: " + parseError(err);
+        }
+    }
+
+    async function cashOutMines() {
+        if (minesState !== 'playing' || minesRevealed.length === 0 || isMinesPicking) return;
+        isMinesPicking = true;
+        minesState = 'gameOver';
+        isPlaying = false;
+
+        const banner = document.getElementById('mines-status-banner');
+        if (banner) banner.innerText = "Cashing out...";
+
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    taxPenalty: activeBoosts.tax_penalty > Date.now(),
+                    clientScore: bananas,
+                    gameMode: 'mines_cashout',
+                    betAmount: 0,
+                    activeGadgets
+                })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Cashout error");
+
+            isMinesPicking = false;
+            playSound('win');
+
+            const winAmount = Number(data.winAmount);
+            isInternalUpdate = true;
+            updateBananas(Number(data.newBalance));
+            expectedDbBananas = Number(data.newBalance);
+            isInternalUpdate = false;
+
+            if (data.winStreak !== undefined) winStreak = data.winStreak;
+            handleMegaBetEffect(data);
+
+            renderMinesGrid(data.result.mines);
+            updateMinesMultipliers();
+
+            if (banner) {
+                banner.innerText = `💰 Cashed out at ${data.result.finalMultiplier.toFixed(2)}x! Won +${formatNumber(winAmount)} 🍌!`;
+                banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-emerald-950 text-emerald-300 border border-emerald-400 shadow-lg";
+            }
+            spinResultMsg = `Cashed out at ${data.result.finalMultiplier.toFixed(2)}x! Won ${formatNumber(winAmount)} 🍌!`;
+            addLog('win', winAmount, bananas, `Mines Cashout (${minesCount} mines)`);
+            updateGameUI();
+        } catch (err) {
+            isMinesPicking = false;
+            console.error("Mines cashout error:", err);
+            if (banner) banner.innerText = "Error: " + parseError(err);
+        }
     }
 
     // --- ROULETTE LOGIC ---
@@ -7514,6 +7881,8 @@
       areaHilo?.classList.toggle('hidden', gameMode !== 'hilo');
       areaPoker?.classList.toggle('hidden', gameMode !== 'poker');
       areaCases.classList.toggle('hidden', gameMode !== 'cases');
+      const areaMines = document.getElementById('area-mines');
+      if (areaMines) areaMines.classList.toggle('hidden', gameMode !== 'mines');
 
       const elBettingControls = document.getElementById('betting-controls-container');
       if (elBettingControls) {
@@ -7575,6 +7944,7 @@
       if (gameMode === 'blackjack' && bjState === 'playing') canAction = false; 
       if (gameMode === 'hilo' && (hiloState === 'guessing' || hiloState === 'resolving')) canAction = false;
       if (gameMode === 'crash' && crashState === 'flying') canAction = false;
+      if (gameMode === 'mines' && minesState === 'playing') canAction = false;
       if (gameMode === 'slots' && isBonusBet && (betAmount + currentBonusBet) > bananas) canAction = false;
 
       elMainActionBtn.disabled = !canAction;
@@ -7586,6 +7956,7 @@
       else if (gameMode === 'hilo') { elMainActionBtn.innerText = (hiloState === 'gameOver') ? "PLAY AGAIN" : "PLAY HI-LO"; }
       else if (gameMode === 'poker') { elMainActionBtn.innerText = (pokerState === 'gameOver') ? "DEAL AGAIN" : "DEAL POKER"; }
       else if (gameMode === 'crash') { elMainActionBtn.innerText = "START FLIGHT"; }
+      else if (gameMode === 'mines') { elMainActionBtn.innerText = (minesState === 'gameOver') ? "START NEW ROUND" : "START MINES"; }
       else { elMainActionBtn.innerText = "SPIN"; }
 
       // Blackjack specifics logic
@@ -9093,6 +9464,8 @@
         updateBcUI();
     }
 
+    let lastShelfRenderKey = "";
+
     function renderBcUpgradesShelf() {
         const shelfEl = document.getElementById("bc-upgrades-shelf");
         if (!shelfEl) return;
@@ -9103,7 +9476,15 @@
             return b && b.count >= upg.req;
         });
 
+        const counterEl = document.getElementById("bc-upgrades-counter");
+        if (counterEl) {
+            counterEl.innerText = `${availableUpgrades.length} AVAILABLE`;
+        }
+
+        const renderKey = availableUpgrades.slice(0, 8).map(u => u.id).join(",");
+
         if (availableUpgrades.length === 0) {
+            lastShelfRenderKey = "";
             shelfEl.innerHTML = `
                 <div class="col-span-4 text-center py-2 text-gray-500 text-[11px] italic">
                     ${bcTieredUpgrades.length > 0 ? "All unlocked shelf upgrades acquired! ⭐" : "Purchase buildings to discover upgrades"}
@@ -9112,23 +9493,50 @@
             return;
         }
 
-        let html = '';
-        availableUpgrades.slice(0, 8).forEach(upg => {
-            const canAfford = bcScore >= upg.cost;
-            html += `
-                <button onclick="buyBcTieredUpgrade('${upg.id}')" title="${upg.name} (${formatNumber(upg.cost)} 🍌) - ${upg.desc}" class="group relative flex items-center justify-center p-2 rounded-xl border transition-all ${
-                    canAfford 
-                    ? "bg-amber-950/60 border-amber-600/70 hover:border-amber-400 hover:scale-105 shadow-md shadow-amber-950/40" 
-                    : "bg-gray-900/60 border-gray-800 opacity-60 cursor-not-allowed"
-                }">
-                    <span class="text-xl group-hover:scale-110 transition-transform">${upg.icon}</span>
-                    <span class="absolute -bottom-1.5 -right-1 bg-black/90 text-orange-400 text-[9px] font-mono font-black px-1 rounded border border-gray-800">
-                        ${formatNumber(upg.cost)}
-                    </span>
-                </button>
-            `;
-        });
-        shelfEl.innerHTML = html;
+        // Only rebuild DOM when upgrade list changed
+        if (renderKey !== lastShelfRenderKey) {
+            lastShelfRenderKey = renderKey;
+            let html = '';
+            availableUpgrades.slice(0, 8).forEach(upg => {
+                const canAfford = bcScore >= upg.cost;
+                html += `
+                    <button type="button" data-upg-id="${upg.id}" data-cost="${upg.cost}" onclick="buyBcTieredUpgrade('${upg.id}')" title="${upg.name} (${formatNumber(upg.cost)} 🍌) - ${upg.desc}" class="group relative flex items-center justify-center p-2 rounded-xl border transition-all select-none cursor-pointer active:scale-95 ${
+                        canAfford 
+                        ? "bg-amber-950/70 border-amber-500/80 hover:border-amber-300 hover:scale-105 shadow-md shadow-amber-950/50" 
+                        : "bg-gray-900/60 border-gray-800 opacity-60"
+                    }">
+                        <span class="text-xl group-hover:scale-110 transition-transform pointer-events-none">${upg.icon}</span>
+                        <span class="absolute -bottom-1.5 -right-1 bg-black/95 text-orange-400 text-[9px] font-mono font-black px-1 rounded border border-gray-800 pointer-events-none">
+                            ${formatNumber(upg.cost)}
+                        </span>
+                    </button>
+                `;
+            });
+            shelfEl.innerHTML = html;
+
+            // Direct click delegation backup
+            shelfEl.onclick = (e) => {
+                const btn = e.target.closest('button[data-upg-id]');
+                if (btn) {
+                    const id = btn.getAttribute('data-upg-id');
+                    if (id) buyBcTieredUpgrade(id);
+                }
+            };
+        } else {
+            // Update affordability classes without destroying buttons
+            const btns = shelfEl.querySelectorAll('button[data-upg-id]');
+            btns.forEach(btn => {
+                const cost = Number(btn.getAttribute('data-cost') || 0);
+                const canAfford = bcScore >= cost;
+                if (canAfford) {
+                    btn.classList.remove("bg-gray-900/60", "border-gray-800", "opacity-60");
+                    btn.classList.add("bg-amber-950/70", "border-amber-500/80", "hover:border-amber-300", "hover:scale-105", "shadow-md", "shadow-amber-950/50");
+                } else {
+                    btn.classList.add("bg-gray-900/60", "border-gray-800", "opacity-60");
+                    btn.classList.remove("bg-amber-950/70", "border-amber-500/80", "hover:border-amber-300", "hover:scale-105", "shadow-md", "shadow-amber-950/50");
+                }
+            });
+        }
     }
 
     function buyBcTieredUpgrade(upgId) {
@@ -9137,6 +9545,7 @@
         if (bcScore >= upg.cost) {
             bcScore -= upg.cost;
             bcTieredUpgrades.push(upgId);
+            lastShelfRenderKey = ""; // Force rebuild next render
             playSound('win');
             checkBcAchievements();
             renderBcUpgradesShelf();
@@ -9901,7 +10310,8 @@
         openBcLegacyModal, closeBcLegacyModal, buyHeavenlyUpgrade, executeAscension,
         openBcStatsModal, closeBcStatsModal,
         openBcAchievementsModal, closeBcAchievementsModal,
-        setBcBulkBuyMode, buyBcTieredUpgrade
+        setBcBulkBuyMode, buyBcTieredUpgrade,
+        setMinesCount, pickMinesTile, cashOutMines, startMines
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
