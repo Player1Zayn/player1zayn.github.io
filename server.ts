@@ -43,6 +43,7 @@ function getSupabase() {
 const JWT_SECRET = process.env.JWT_SECRET || "banana_secret_monkey_business";
 const activeCrashGames = new Map<string, { betAmount: bigint, crashPoint: number }>();
 const activeHiloGames = new Map<string, { betAmount: bigint, firstCard: { rank: string, suit: string, value: number } }>();
+const activeMinesGames = new Map<string, { betAmount: bigint, mineCount: number, mines: number[], revealed: number[], currentMultiplier: number }>();
 
 // Middleware to verify JWT
 const authenticateToken = (req: any, res: any, next: any) => {
@@ -655,7 +656,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             currentBananas = BigInt(clientScore) + totalBet + caseCost;
         }
 
-        if (gameMode !== 'cases' && gameMode !== 'crash_cashout' && gameMode !== 'hilo_guess' && currentBananas < totalBet) {
+        if (gameMode !== 'cases' && gameMode !== 'crash_cashout' && gameMode !== 'hilo_guess' && gameMode !== 'mines_pick' && gameMode !== 'mines_cashout' && currentBananas < totalBet) {
             // RELAXED DETECTION: Instead of banning, we return a 400 error. 
             // This prevents false bans due to client-side tree harvesting not being synced yet.
             // Only ban if the discrepancy is absurdly high (e.g. betting 1M+ over balance) 
@@ -941,6 +942,122 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             resultData.winAmount = winAmount.toString();
             resultData.secondCard = cardObj;
             totalBet = 0n; // Bet was already deducted
+        } else if (gameMode === 'mines_start') {
+            const rawMines = Number(req.body.mineCount) || 3;
+            const mineCount = Math.max(1, Math.min(24, rawMines));
+            
+            // Pick unique random mine positions from 0 to 24
+            const allIndices = Array.from({ length: 25 }, (_, i) => i);
+            for (let i = allIndices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allIndices[i], allIndices[j]] = [allIndices[j], allIndices[i]];
+            }
+            const mines = allIndices.slice(0, mineCount);
+            
+            activeMinesGames.set(user.id, {
+                betAmount: totalBet,
+                mineCount,
+                mines,
+                revealed: [],
+                currentMultiplier: 1.0
+            });
+            
+            winAmount = 0n;
+            resultData = {
+                status: 'started',
+                mineCount,
+                totalTiles: 25
+            };
+        } else if (gameMode === 'mines_pick') {
+            const activeGame = activeMinesGames.get(user.id);
+            if (!activeGame) return res.status(400).json({ error: "No active mines game" });
+            
+            const tileIndex = Number(req.body.tileIndex);
+            if (isNaN(tileIndex) || tileIndex < 0 || tileIndex >= 25) {
+                return res.status(400).json({ error: "Invalid tile index" });
+            }
+            if (activeGame.revealed.includes(tileIndex)) {
+                return res.status(400).json({ error: "Tile already revealed" });
+            }
+            
+            const totalTiles = 25;
+            const safeTiles = totalTiles - activeGame.mineCount;
+            
+            if (activeGame.mines.includes(tileIndex)) {
+                // Hit a mine!
+                activeMinesGames.delete(user.id);
+                winAmount = 0n;
+                resultData = {
+                    status: 'bomb',
+                    hitIndex: tileIndex,
+                    mines: activeGame.mines,
+                    revealed: activeGame.revealed,
+                    winAmount: "0"
+                };
+                totalBet = 0n; // Bet was already deducted at start
+            } else {
+                // Safe tile!
+                activeGame.revealed.push(tileIndex);
+                const k = activeGame.revealed.length;
+                
+                // Multiplier calculation with 97% RTP
+                let prob = 1.0;
+                for (let i = 0; i < k; i++) {
+                    prob *= (safeTiles - i) / (totalTiles - i);
+                }
+                const mult = Math.max(1.01, parseFloat((0.97 / prob).toFixed(2)));
+                activeGame.currentMultiplier = mult;
+                
+                // Next tile multiplier
+                let nextMult = mult;
+                if (k < safeTiles) {
+                    let nextProb = 1.0;
+                    for (let i = 0; i < k + 1; i++) {
+                        nextProb *= (safeTiles - i) / (totalTiles - i);
+                    }
+                    nextMult = Math.max(1.02, parseFloat((0.97 / nextProb).toFixed(2)));
+                }
+                
+                const isCleared = activeGame.revealed.length >= safeTiles;
+                if (isCleared) {
+                    winAmount = BigInt(Math.round(Number(activeGame.betAmount) * mult));
+                    activeMinesGames.delete(user.id);
+                    resultData = {
+                        status: 'cleared',
+                        tileIndex,
+                        mines: activeGame.mines,
+                        revealed: activeGame.revealed,
+                        currentMultiplier: mult,
+                        winAmount: winAmount.toString()
+                    };
+                } else {
+                    winAmount = 0n;
+                    resultData = {
+                        status: 'safe',
+                        tileIndex,
+                        revealedCount: k,
+                        currentMultiplier: mult,
+                        nextMultiplier: nextMult,
+                        potentialWin: (BigInt(Math.round(Number(activeGame.betAmount) * mult))).toString()
+                    };
+                }
+                totalBet = 0n;
+            }
+        } else if (gameMode === 'mines_cashout') {
+            const activeGame = activeMinesGames.get(user.id);
+            if (!activeGame) return res.status(400).json({ error: "No active mines game" });
+            if (activeGame.revealed.length === 0) return res.status(400).json({ error: "Cannot cashout without uncovering a tile" });
+            
+            activeMinesGames.delete(user.id);
+            winAmount = BigInt(Math.round(Number(activeGame.betAmount) * activeGame.currentMultiplier));
+            resultData = {
+                status: 'cashout',
+                mines: activeGame.mines,
+                revealed: activeGame.revealed,
+                finalMultiplier: activeGame.currentMultiplier,
+                winAmount: winAmount.toString()
+            };
+            totalBet = 0n;
         } else if (gameMode === 'cases') {
             const caseType = req.body.caseType; 
             const cost = CASE_COSTS[caseType] || 0n;
