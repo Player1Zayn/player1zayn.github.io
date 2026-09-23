@@ -448,7 +448,7 @@
         </div>
         <div class="flex justify-end gap-2">
           <button onclick="toggleTexasHoldemCreateForm()" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Cancel</button>
-          <button onclick="submitCreateTexasHoldemTable()" class="px-5 py-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-md border-b-2 border-yellow-700">
+          <button id="btn-confirm-create-table" onclick="submitCreateTexasHoldemTable()" class="px-5 py-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-md border-b-2 border-yellow-700 active:scale-95 transition-all">
             CONFIRM & SIT 🍌
           </button>
         </div>
@@ -7178,22 +7178,44 @@
     // Track initial buy-in for session profit/loss calculation
     let thInitialBuyin = 1000;
 
+    // Toast helper for user notifications
+    function showToast(msg, type = 'info') {
+        if (typeof showNotification === 'function') {
+            showNotification(msg, type);
+        } else {
+            console.log(msg);
+        }
+    }
+    window.showToast = showToast;
+
     // Create table submit
     window.submitCreateTexasHoldemTable = async function() {
+        if (!authToken) {
+            showToast("Please log in or register your monkey account to create online tables!", "error");
+            if (typeof showAuthStep === 'function') showAuthStep('login');
+            return;
+        }
+
         const nameInput = document.getElementById('poker-new-table-name');
         const buyInInput = document.getElementById('poker-new-table-buyin');
         const sbInput = document.getElementById('poker-new-table-sb');
         const bbInput = document.getElementById('poker-new-table-bb');
+        const btn = document.getElementById('btn-confirm-create-table');
 
-        const name = (nameInput?.value || `${playerName}'s Table`).trim();
+        const name = (nameInput?.value || `${playerName || 'Monkey'}'s Table`).trim();
         const buyIn = Math.max(10, Math.floor(Number(buyInInput?.value)) || 1000);
         const defaultSb = Math.max(5, Math.floor(buyIn / 100));
         const sb = Math.max(1, Math.floor(Number(sbInput?.value)) || defaultSb);
         const bb = Math.max(sb * 2, Math.floor(Number(bbInput?.value)) || (sb * 2));
 
-        if (bananas < buyIn) {
-            showToast(`Not enough bananas! You have ${formatNumber(bananas)} 🍌 but buy-in requires ${formatNumber(buyIn)} 🍌.`);
+        if (Number(bananas || 0) < buyIn) {
+            showToast(`Not enough bananas! You have ${formatNumber(bananas)} 🍌 but buy-in requires ${formatNumber(buyIn)} 🍌.`, "error");
             return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = "CREATING...";
         }
 
         try {
@@ -7224,13 +7246,25 @@
             startOnlinePolling();
             playSound('win');
             renderTexasHoldemTable();
+            showToast(`Table "${data.table.name}" created!`, "success");
         } catch (err) {
-            showToast("Create Table Error: " + parseError(err));
+            showToast("Create Table Error: " + parseError(err), "error");
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = "CONFIRM & SIT 🍌";
+            }
         }
     };
 
     // Join online table
     window.joinTexasHoldemTable = async function(tableId) {
+        if (!authToken) {
+            showToast("Please log in or register your monkey account to join online tables!", "error");
+            if (typeof showAuthStep === 'function') showAuthStep('login');
+            return;
+        }
+
         try {
             const res = await fetch(API_BASE + '/api/poker/tables/join', {
                 method: 'POST',
@@ -7259,8 +7293,9 @@
             startOnlinePolling();
             playSound('click');
             renderTexasHoldemTable();
+            showToast(`Joined table "${data.table.name}"!`, "success");
         } catch (err) {
-            showToast("Join Table Error: " + parseError(err));
+            showToast("Join Table Error: " + parseError(err), "error");
         }
     };
 
