@@ -301,11 +301,203 @@
           <p class="text-sm text-slate-400">Uncover golden bananas on a 5x5 grid and multiply your bet. Cash out before you hit a mine!</p>
         </div>
 
+        <div onclick="openTexasHoldemSelector(); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-800 hover:from-emerald-900 hover:to-slate-800 border-2 border-emerald-500/80 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-emerald-950/60 hover:scale-[1.03]">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🃏</div>
+          <div class="flex items-center gap-1.5 mb-1">
+            <h3 class="text-xl font-bold text-white">Texas Hold'em</h3>
+            <span class="bg-yellow-500/20 text-yellow-300 text-[10px] font-black px-1.5 py-0.5 rounded border border-yellow-500/40">ONLINE & BOTS</span>
+          </div>
+          <p class="text-sm text-slate-300">Play live online multiplayer with real players or challenge 5 AI bots at a full 6-player poker table!</p>
+        </div>
+
         <div id="gamemode-card-banana-clicker" onclick="tryOpenBananaClickerFromGamemode()" class="bg-slate-800 hover:bg-orange-950/80 border-2 border-slate-700 hover:border-orange-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center hidden">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🍌</div>
           <h3 class="text-xl font-bold text-white mb-2">Banana Clicker</h3>
           <p class="text-sm text-slate-400">Click the giant banana, build an idle empire, and catch golden bananas!</p>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Texas Hold'em Mode Selection Modal -->
+  <div id="texasholdem-mode-modal" class="fixed inset-0 bg-slate-950/90 z-[12500] hidden flex flex-col items-center justify-center p-4 backdrop-blur-xl animate-in fade-in duration-300">
+    <div class="bg-slate-900 border-2 border-emerald-700 p-6 md:p-8 rounded-3xl max-w-2xl w-full relative shadow-[0_0_50px_rgba(6,78,59,0.7)] text-center">
+      <button onclick="closeTexasHoldemSelector()" class="absolute top-4 right-4 text-emerald-500 hover:text-white bg-emerald-900/50 hover:bg-emerald-800 p-2 rounded-xl transition-all font-bold">
+        ✕
+      </button>
+      
+      <div class="text-5xl mb-2">🃏</div>
+      <h2 class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-yellow-300 to-yellow-500 mb-2 uppercase tracking-wider">Texas Hold'em Poker</h2>
+      <p class="text-slate-400 text-sm mb-6">Choose how you want to play: Instant action against 5 monkey bots or live online multiplayer tables!</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left mb-2">
+        <!-- Card 1: VS Bots -->
+        <div class="bg-slate-800/90 hover:bg-slate-800 border-2 border-slate-700 hover:border-emerald-400 rounded-2xl p-5 flex flex-col justify-between transition-all group">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-3xl">🤖</span>
+              <span class="bg-emerald-500/20 text-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-500/30">INSTANT PLAY</span>
+            </div>
+            <h3 class="text-lg font-black text-white mb-1">VS Bots (5 Monkeys)</h3>
+            <p class="text-xs text-slate-400 mb-3">Sit at a 6-player table against 5 smart AI opponents (Gorilla Gus, Chimp Champ, Baboon Bob...). Instant deal, zero wait time.</p>
+            
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Buy-In Chips (🍌):</label>
+            <div class="relative mb-2">
+              <input type="number" id="poker-bots-buyin" value="1000" min="10" class="w-full bg-slate-900 text-yellow-400 font-mono font-bold text-sm p-2.5 rounded-xl border border-slate-700 focus:border-yellow-400 outline-none pr-8" oninput="updateBotsBlindsPreview()" />
+              <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-bold">🍌</span>
+            </div>
+            <!-- Quick Chips for any balance up to Billions -->
+            <div class="flex flex-wrap gap-1 mb-2">
+              <button type="button" onclick="setPokerBotsBuyin(1000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">1K</button>
+              <button type="button" onclick="setPokerBotsBuyin(10000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">10K</button>
+              <button type="button" onclick="setPokerBotsBuyin(100000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">100K</button>
+              <button type="button" onclick="setPokerBotsBuyin(1000000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">1M</button>
+              <button type="button" onclick="setPokerBotsBuyin(10000000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">10M</button>
+              <button type="button" onclick="setPokerBotsBuyin(100000000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">100M</button>
+              <button type="button" onclick="setPokerBotsBuyin(1000000000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-300 font-bold text-[10px] rounded border border-yellow-500/40">1B</button>
+              <button type="button" onclick="setPokerBotsBuyin(10000000000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-300 font-bold text-[10px] rounded border border-yellow-500/40">10B</button>
+              <button type="button" onclick="setPokerBotsBuyinPercent(0.1)" class="px-2 py-0.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 font-bold text-[10px] rounded border border-emerald-700/60">10%</button>
+              <button type="button" onclick="setPokerBotsBuyinPercent(0.5)" class="px-2 py-0.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 font-bold text-[10px] rounded border border-emerald-700/60">50%</button>
+              <button type="button" onclick="setPokerBotsBuyinPercent(1)" class="px-2 py-0.5 bg-amber-950 hover:bg-amber-900 text-yellow-400 font-bold text-[10px] rounded border border-yellow-600/60">MAX</button>
+            </div>
+            <div id="poker-bots-blinds-preview" class="text-[11px] text-emerald-400 font-mono font-bold mb-4">
+              Blinds: 10 / 20 🍌 (1% / 2%)
+            </div>
+          </div>
+          
+          <button onclick="startTexasHoldemVsBots()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-sm rounded-xl shadow-lg border-b-4 border-emerald-700 active:scale-95 transition-all">
+            PLAY VS 5 BOTS 🍌
+          </button>
+        </div>
+
+        <!-- Card 2: VS Players -->
+        <div class="bg-slate-800/90 hover:bg-slate-800 border-2 border-slate-700 hover:border-yellow-400 rounded-2xl p-5 flex flex-col justify-between transition-all group">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-3xl">🌐</span>
+              <span class="bg-yellow-500/20 text-yellow-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-yellow-500/30">SUPABASE LIVE</span>
+            </div>
+            <h3 class="text-lg font-black text-white mb-1">VS Players (Online)</h3>
+            <p class="text-xs text-slate-400 mb-3">Create or join online multiplayer tables. Minimum 5 players per table: empty seats are automatically filled by bots!</p>
+            <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/60 text-[11px] text-yellow-300/90 mb-4">
+              💡 Host client generates all 5 community cards. Every action (Fold, Check, Call, Raise) is synchronized in real-time.
+            </div>
+          </div>
+
+          <button onclick="openTexasHoldemLobby()" class="w-full py-3 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-black text-sm rounded-xl shadow-lg border-b-4 border-amber-700 active:scale-95 transition-all">
+            ONLINE TABLES LOBBY 🌐
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Texas Hold'em Online Lobby Modal -->
+  <div id="texasholdem-lobby-modal" class="fixed inset-0 bg-slate-950/90 z-[12600] hidden flex flex-col items-center justify-center p-4 backdrop-blur-xl animate-in fade-in duration-300">
+    <div class="bg-slate-900 border-2 border-emerald-700 p-6 md:p-8 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto custom-scroll relative shadow-[0_0_50px_rgba(6,78,59,0.7)] flex flex-col">
+      <button onclick="closeTexasHoldemLobby()" class="absolute top-4 right-4 text-emerald-500 hover:text-white bg-emerald-900/50 hover:bg-emerald-800 p-2 rounded-xl transition-all font-bold">
+        ✕
+      </button>
+      
+      <div class="flex items-center justify-between gap-4 mb-4 flex-wrap">
+        <div>
+          <h2 class="text-2xl font-black text-white flex items-center gap-2">
+            <span>🌐</span> Online Poker Tables
+          </h2>
+          <p class="text-xs text-slate-400">Join a table or create your own. Tables start with 5+ players (bots fill missing slots automatically).</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="refreshTexasHoldemTables()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-bold rounded-xl border border-slate-700 flex items-center gap-1.5 transition-all">
+            🔄 Refresh
+          </button>
+          <button onclick="toggleTexasHoldemCreateForm()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl border-b-2 border-emerald-800 flex items-center gap-1.5 transition-all">
+            ➕ Create Table
+          </button>
+        </div>
+      </div>
+
+      <!-- Create Table Form (collapsible) -->
+      <div id="poker-create-form" class="bg-slate-950/90 border border-emerald-600/50 p-4 rounded-2xl mb-4 hidden animate-in fade-in">
+        <h4 class="text-sm font-black text-emerald-400 uppercase tracking-wider mb-3">Create New Poker Table</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Table Name</label>
+            <input type="text" id="poker-new-table-name" placeholder="Banana High Roller" maxlength="25" class="w-full bg-slate-900 text-white text-xs p-2 rounded-lg border border-slate-700 focus:border-yellow-400 outline-none" />
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Buy-In Chips (🍌)</label>
+            <input type="number" id="poker-new-table-buyin" value="1000" min="10" class="w-full bg-slate-900 text-yellow-400 font-mono font-bold text-xs p-2 rounded-lg border border-slate-700 focus:border-yellow-400 outline-none mb-1" oninput="updateCreatePokerBlindsPreview()" />
+            <div class="flex flex-wrap gap-1">
+              <button type="button" onclick="setPokerCreateBuyin(1000)" class="px-1.5 py-0.5 bg-slate-800 text-[9px] font-bold text-yellow-400 rounded">1K</button>
+              <button type="button" onclick="setPokerCreateBuyin(100000)" class="px-1.5 py-0.5 bg-slate-800 text-[9px] font-bold text-yellow-400 rounded">100K</button>
+              <button type="button" onclick="setPokerCreateBuyin(1000000)" class="px-1.5 py-0.5 bg-slate-800 text-[9px] font-bold text-yellow-400 rounded">1M</button>
+              <button type="button" onclick="setPokerCreateBuyin(100000000)" class="px-1.5 py-0.5 bg-slate-800 text-[9px] font-bold text-yellow-400 rounded">100M</button>
+              <button type="button" onclick="setPokerCreateBuyin(1000000000)" class="px-1.5 py-0.5 bg-slate-800 text-[9px] font-bold text-yellow-300 rounded border border-yellow-500/30">1B</button>
+              <button type="button" onclick="setPokerCreateBuyinPercent(0.5)" class="px-1.5 py-0.5 bg-emerald-950 text-[9px] font-bold text-emerald-300 rounded">50%</button>
+              <button type="button" onclick="setPokerCreateBuyinPercent(1)" class="px-1.5 py-0.5 bg-amber-950 text-[9px] font-bold text-yellow-300 rounded">MAX</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Blinds (SB / BB)</label>
+            <div class="flex gap-1 items-center">
+              <input type="number" id="poker-new-table-sb" value="10" min="1" placeholder="SB" class="w-1/2 bg-slate-900 text-emerald-400 font-mono font-bold text-xs p-2 rounded-lg border border-slate-700 outline-none" />
+              <input type="number" id="poker-new-table-bb" value="20" min="2" placeholder="BB" class="w-1/2 bg-slate-900 text-emerald-400 font-mono font-bold text-xs p-2 rounded-lg border border-slate-700 outline-none" />
+            </div>
+            <div class="text-[9px] text-slate-500 mt-1">Auto-scales to 1% / 2% of buy-in if left default</div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button onclick="toggleTexasHoldemCreateForm()" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Cancel</button>
+          <button onclick="submitCreateTexasHoldemTable()" class="px-5 py-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-md border-b-2 border-yellow-700">
+            CONFIRM & SIT 🍌
+          </button>
+        </div>
+      </div>
+
+      <!-- Tables List Container -->
+      <div id="poker-tables-container" class="space-y-2.5 flex-1 min-h-[220px]">
+        <!-- Tables will render here -->
+        <div class="text-center py-10 text-slate-500 text-sm italic">Loading tables...</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Texas Hold'em Leave & Cashout In-Game Modal -->
+  <div id="poker-leave-confirm-modal" class="fixed inset-0 bg-slate-950/90 z-[12700] hidden flex flex-col items-center justify-center p-4 backdrop-blur-xl animate-in fade-in duration-300">
+    <div class="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-yellow-500/80 p-6 md:p-8 rounded-3xl max-w-md w-full relative shadow-[0_0_60px_rgba(234,179,8,0.3)] text-center">
+      <div class="text-5xl mb-2 animate-bounce">💰</div>
+      <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-500 mb-1 uppercase tracking-wider">Cash Out & Leave Table</h2>
+      <p class="text-slate-400 text-xs mb-5">Your chips will be safely converted and credited back to your banana balance instantly!</p>
+
+      <!-- Chip Stack Card -->
+      <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 mb-5 text-left space-y-2.5">
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-slate-400 font-bold uppercase">Table Chips to Cash Out:</span>
+          <span id="poker-leave-chip-count" class="font-black font-mono text-yellow-400 text-sm">0 🍌</span>
+        </div>
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-slate-400 font-bold uppercase">Initial Buy-in:</span>
+          <span id="poker-leave-initial-buyin" class="font-mono text-slate-300">0 🍌</span>
+        </div>
+        <div class="border-t border-slate-800/80 pt-2 flex justify-between items-center text-xs">
+          <span class="text-slate-400 font-bold uppercase">Session Result:</span>
+          <span id="poker-leave-session-result" class="font-black font-mono text-emerald-400">+0 🍌</span>
+        </div>
+        <div class="border-t border-slate-800/80 pt-2 flex justify-between items-center text-xs">
+          <span class="text-slate-400 font-bold uppercase">New Account Balance:</span>
+          <span id="poker-leave-new-balance" class="font-black font-mono text-yellow-300 text-sm">0 🍌</span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex gap-3">
+        <button onclick="closePokerLeaveModal()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 active:scale-95 transition-all">
+          KEEP PLAYING
+        </button>
+        <button onclick="confirmPokerLeaveAndCashout()" class="flex-1 py-3 bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg border-b-4 border-amber-700 active:scale-95 transition-all flex items-center justify-center gap-1.5">
+          <span>💰 CASHOUT & LEAVE</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1876,6 +2068,127 @@
                 </button>
               </div>
 
+            </div>
+          </div>
+
+          <!-- Game: TEXAS HOLD'EM -->
+          <div id="area-texasholdem" class="w-full h-full flex flex-col items-center justify-between hidden p-2 md:p-3 select-none relative overflow-y-auto custom-scrollbar">
+            <!-- Top Bar: Info & Actions -->
+            <div class="w-full max-w-4xl flex items-center justify-between gap-2 bg-slate-900/95 border border-emerald-800/80 px-3 md:px-4 py-2 rounded-2xl shadow-lg shrink-0">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">🃏</span>
+                <div>
+                  <div id="th-table-title" class="font-black text-white text-xs md:text-sm tracking-wide">Texas Hold'em Table</div>
+                  <div id="th-table-blinds" class="text-[10px] text-slate-400 font-mono">Blinds: 10 / 20 🍌</div>
+                </div>
+              </div>
+
+              <!-- Center Pot and Stage -->
+              <div class="flex items-center gap-2 md:gap-4">
+                <div class="flex flex-col items-center">
+                  <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Total Pot</span>
+                  <span id="th-pot-val" class="font-black font-mono text-yellow-400 text-sm md:text-base flex items-center gap-1">
+                    🍌 <span id="th-pot-amount">0</span>
+                  </span>
+                </div>
+                <div id="th-stage-badge" class="bg-emerald-950 border border-emerald-500/60 text-emerald-300 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                  WAITING
+                </div>
+              </div>
+
+              <!-- Table Control Buttons -->
+              <div class="flex items-center gap-1.5 md:gap-2">
+                <button id="th-start-match-btn" onclick="startTexasHoldemHostMatch()" class="hidden px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-xs rounded-xl shadow-md border-b-2 border-emerald-700 active:scale-95 transition-all">
+                  DEAL CARDS 🃏
+                </button>
+                <button onclick="leaveTexasHoldemTable()" class="px-3 py-1.5 bg-red-950/80 hover:bg-red-900 text-red-300 font-bold text-xs rounded-xl border border-red-700/60 active:scale-95 transition-all">
+                  LEAVE TABLE
+                </button>
+              </div>
+            </div>
+
+            <!-- Last Action Ticker / Showdown Notification -->
+            <div id="th-action-ticker" class="w-full max-w-4xl text-center py-1.5 px-3 mt-1.5 rounded-xl text-xs font-black tracking-wide uppercase bg-slate-950/80 text-yellow-400 border border-slate-800 shadow-sm shrink-0">
+              Welcome to the table!
+            </div>
+
+            <!-- Poker Felt Table (Oval) -->
+            <div class="relative w-full max-w-4xl aspect-[16/10] md:aspect-[16/9] min-h-[320px] max-h-[460px] my-auto bg-gradient-to-b from-emerald-900 to-emerald-950 rounded-[100px] md:rounded-[140px] border-8 md:border-[12px] border-amber-950 shadow-[inset_0_0_80px_rgba(0,0,0,0.8),0_15px_35px_rgba(0,0,0,0.9)] flex flex-col items-center justify-center p-3 relative overflow-visible">
+              <!-- Table Felt Inset Ring -->
+              <div class="absolute inset-4 rounded-[80px] md:rounded-[120px] border border-emerald-600/30 pointer-events-none flex items-center justify-center">
+                <span class="text-emerald-800/20 font-black tracking-widest text-xl md:text-2xl uppercase italic pointer-events-none select-none">BANANA CASINO TEXAS HOLD'EM</span>
+              </div>
+
+              <!-- Community Cards & Center Board -->
+              <div class="relative z-10 flex flex-col items-center justify-center">
+                <div class="text-[10px] uppercase font-black tracking-widest text-emerald-300/80 mb-1">Community Cards</div>
+                <div id="th-community-cards" class="flex items-center gap-1.5 md:gap-2.5 h-16 md:h-20 min-h-[64px]">
+                  <!-- 5 Cards rendered here -->
+                </div>
+                <div id="th-board-status" class="mt-2 text-[11px] md:text-xs font-black text-yellow-300 bg-black/70 px-3 py-0.5 rounded-full border border-yellow-500/40">
+                  Pre-Flop
+                </div>
+              </div>
+
+              <!-- 6 Seats Around the Oval Table -->
+              <!-- Seat 0: Bottom Center (Hero / You) -->
+              <div id="th-seat-0" class="absolute -bottom-2 md:bottom-1 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"></div>
+
+              <!-- Seat 1: Bottom Left -->
+              <div id="th-seat-1" class="absolute bottom-6 md:bottom-8 left-2 md:left-6 z-20 flex flex-col items-center"></div>
+
+              <!-- Seat 2: Top Left -->
+              <div id="th-seat-2" class="absolute top-4 md:top-6 left-4 md:left-10 z-20 flex flex-col items-center"></div>
+
+              <!-- Seat 3: Top Center -->
+              <div id="th-seat-3" class="absolute -top-2 md:top-1 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"></div>
+
+              <!-- Seat 4: Top Right -->
+              <div id="th-seat-4" class="absolute top-4 md:top-6 right-4 md:right-10 z-20 flex flex-col items-center"></div>
+
+              <!-- Seat 5: Bottom Right -->
+              <div id="th-seat-5" class="absolute bottom-6 md:bottom-8 right-2 md:right-6 z-20 flex flex-col items-center"></div>
+            </div>
+
+            <!-- Player Action Dock (Controls when it is your turn) -->
+            <div id="th-action-dock" class="w-full max-w-4xl bg-slate-900/95 border-2 border-emerald-600/70 p-3 rounded-2xl shadow-2xl flex flex-col gap-2 shrink-0 mt-1">
+              <!-- Active Turn Notice or Controls -->
+              <div id="th-action-controls" class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <!-- Left: Hand strength & Hole cards indicator -->
+                <div class="flex items-center gap-2">
+                  <span class="text-xs uppercase font-bold text-slate-400">Your Hand:</span>
+                  <span id="th-hero-hand-eval" class="text-xs font-black text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/50">High Card</span>
+                </div>
+
+                <!-- Right: Fold, Check/Call, Raise buttons -->
+                <div id="th-buttons-row" class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button id="th-btn-fold" onclick="takeTexasHoldemAction('fold')" class="flex-1 sm:flex-none px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-black text-xs md:text-sm rounded-xl border-b-4 border-red-800 shadow-md active:scale-95 transition-all">
+                    FOLD
+                  </button>
+
+                  <button id="th-btn-check-call" onclick="takeTexasHoldemCheckCall()" class="flex-1 sm:flex-none px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs md:text-sm rounded-xl border-b-4 border-blue-800 shadow-md active:scale-95 transition-all">
+                    CHECK
+                  </button>
+
+                  <div class="flex items-center gap-1.5 flex-1 sm:flex-none">
+                    <button id="th-btn-raise" onclick="takeTexasHoldemRaise()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs md:text-sm rounded-xl border-b-4 border-emerald-800 shadow-md active:scale-95 transition-all">
+                      RAISE
+                    </button>
+                    <input type="number" id="th-raise-input" class="w-20 bg-slate-800 text-yellow-400 font-mono font-bold text-xs p-2 rounded-xl border border-slate-700 outline-none text-center" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Raise Presets Bar (Min, 2x, 3x, Half Pot, Pot, All-in) -->
+              <div id="th-raise-presets" class="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-800 flex-wrap">
+                <span class="text-[10px] text-slate-400 font-bold uppercase mr-1">Presets:</span>
+                <button onclick="setThRaisePreset('min')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded border border-slate-700">Min</button>
+                <button onclick="setThRaisePreset('2x')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded border border-slate-700">2x</button>
+                <button onclick="setThRaisePreset('3x')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded border border-slate-700">3x</button>
+                <button onclick="setThRaisePreset('half_pot')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-yellow-400 text-[10px] font-bold rounded border border-slate-700">1/2 Pot</button>
+                <button onclick="setThRaisePreset('pot')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-yellow-400 text-[10px] font-bold rounded border border-slate-700">Pot</button>
+                <button onclick="setThRaisePreset('allin')" class="px-2 py-0.5 bg-red-900/60 hover:bg-red-800 text-red-300 text-[10px] font-bold rounded border border-red-700">All-In</button>
+              </div>
             </div>
           </div>
 
@@ -5745,6 +6058,11 @@
           if (resultView) resultView.classList.add('hidden');
       }
 
+      if (mode === 'texasholdem') {
+          spinResultMsg = "Texas Hold'em Poker Table";
+          if (typeof renderTexasHoldemTable === 'function') renderTexasHoldemTable();
+      }
+
       updateGameUI();
       playSound('click');
     }
@@ -6555,6 +6873,1165 @@
             isMinesPicking = false;
             console.error("Mines cashout error:", err);
             if (banner) banner.innerText = "Error: " + parseError(err);
+        }
+    }
+
+    // =================================================================
+    // 🃏 TEXAS HOLD'EM POKER ENGINE (VS BOTS & ONLINE MULTIPLAYER)
+    // =================================================================
+
+    let thMode = 'none'; // 'none', 'bots', 'online'
+    let thCurrentTableId = null;
+    let thTable = null;
+    let thPollTimer = null;
+    let thHeroCards = [];
+    let thVsBotsDeck = [];
+
+    const TH_BOT_NAMES = ["Gorilla Gus", "Chimp Champ", "Baboon Bob", "Professor Primate", "King Kong"];
+
+    function getThRankValue(r) {
+        if (r === 'A') return 14;
+        if (r === 'K') return 13;
+        if (r === 'Q') return 12;
+        if (r === 'J') return 11;
+        return parseInt(r, 10) || 2;
+    }
+
+    function createShuffledPokerDeck() {
+        const suits = ['H', 'D', 'C', 'S'];
+        const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+        const deck = [];
+        suits.forEach(s => ranks.forEach(r => {
+            deck.push({ rank: r, suit: s, value: getThRankValue(r) });
+        }));
+        for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+        return deck;
+    }
+
+    // 5-Card hand evaluator for client
+    function eval5CardsClient(cards) {
+        const sorted = [...cards].sort((a, b) => b.value - a.value);
+        const suits = {};
+        const ranks = {};
+        sorted.forEach(c => {
+            suits[c.suit] = (suits[c.suit] || 0) + 1;
+            ranks[c.value] = (ranks[c.value] || 0) + 1;
+        });
+
+        const isFlush = Object.values(suits).some(c => c === 5);
+        let isStraight = false;
+        let highStraight = 0;
+        const uniq = Array.from(new Set(sorted.map(c => c.value))).sort((a, b) => b - a);
+
+        if (uniq.length === 5) {
+            if (uniq[0] - uniq[4] === 4) {
+                isStraight = true;
+                highStraight = uniq[0];
+            } else if (uniq[0] === 14 && uniq[1] === 5 && uniq[2] === 4 && uniq[3] === 3 && uniq[4] === 2) {
+                isStraight = true;
+                highStraight = 5;
+            }
+        }
+
+        const rankCounts = Object.entries(ranks)
+            .map(([val, count]) => ({ val: Number(val), count }))
+            .sort((a, b) => b.count - a.count || b.val - a.val);
+
+        const rankName = (v) => {
+            if (v === 14) return 'Aces';
+            if (v === 13) return 'Kings';
+            if (v === 12) return 'Queens';
+            if (v === 11) return 'Jacks';
+            return v + 's';
+        };
+
+        let cat = 0;
+        let desc = `High Card (${rankName(sorted[0].value)})`;
+
+        if (isFlush && isStraight) {
+            if (highStraight === 14) { cat = 9; desc = "Royal Flush!"; }
+            else { cat = 8; desc = `Straight Flush (${highStraight} High)`; }
+        } else if (rankCounts[0].count === 4) {
+            cat = 7; desc = `Four of a Kind (${rankName(rankCounts[0].val)})`;
+        } else if (rankCounts[0].count === 3 && rankCounts[1].count === 2) {
+            cat = 6; desc = `Full House (${rankName(rankCounts[0].val)} full of ${rankName(rankCounts[1].val)})`;
+        } else if (isFlush) {
+            cat = 5; desc = "Flush";
+        } else if (isStraight) {
+            cat = 4; desc = `Straight (${highStraight} High)`;
+        } else if (rankCounts[0].count === 3) {
+            cat = 3; desc = `Three of a Kind (${rankName(rankCounts[0].val)})`;
+        } else if (rankCounts[0].count === 2 && rankCounts[1].count === 2) {
+            cat = 2; desc = `Two Pair (${rankName(rankCounts[0].val)} & ${rankName(rankCounts[1].val)})`;
+        } else if (rankCounts[0].count === 2) {
+            cat = 1; desc = `One Pair (${rankName(rankCounts[0].val)})`;
+        }
+
+        let score = cat * 1e10;
+        let mult = 1e8;
+        rankCounts.forEach(r => { score += r.val * mult; mult /= 100; });
+        return { score, desc };
+    }
+
+    // 7-Card hand evaluator for client
+    function eval7CardsClient(cards) {
+        if (!cards || cards.length < 5) {
+            if (cards && cards.length === 2) {
+                if (cards[0].value === cards[1].value) {
+                    const r = cards[0].value;
+                    const rName = r === 14 ? 'Aces' : r === 13 ? 'Kings' : r === 12 ? 'Queens' : r === 11 ? 'Jacks' : r + 's';
+                    return `Pocket Pair of ${rName}`;
+                }
+                const high = Math.max(cards[0].value, cards[1].value);
+                const highName = high === 14 ? 'Ace' : high === 13 ? 'King' : high === 12 ? 'Queen' : high === 11 ? 'Jack' : String(high);
+                return `High Card (${highName})`;
+            }
+            return "Evaluating...";
+        }
+
+        let bestScore = -1;
+        let bestDesc = "";
+        const n = cards.length;
+        for (let i = 0; i < n - 4; i++) {
+            for (let j = i + 1; j < n - 3; j++) {
+                for (let k = j + 1; k < n - 2; k++) {
+                    for (let l = k + 1; l < n - 1; l++) {
+                        for (let m = l + 1; m < n; m++) {
+                            const res = eval5CardsClient([cards[i], cards[j], cards[k], cards[l], cards[m]]);
+                            if (res.score > bestScore) {
+                                bestScore = res.score;
+                                bestDesc = res.desc;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return bestDesc;
+    }
+
+    function renderThCard(card, isHidden = false, small = false) {
+        const sizeClass = small ? 'w-8 h-12 md:w-9 md:h-13' : 'w-11 h-16 md:w-13 md:h-18';
+        if (!card || isHidden || card.rank === '?') {
+            return `<div class="${sizeClass} bg-gradient-to-br from-red-700 to-red-950 rounded-lg border-2 border-amber-300/80 shadow-lg flex items-center justify-center text-xs shrink-0 select-none">
+                <span class="text-amber-300 font-black opacity-80">🍌</span>
+            </div>`;
+        }
+        const isRed = card.suit === 'H' || card.suit === 'D';
+        const colorClass = isRed ? 'text-red-600' : 'text-slate-900';
+        const suitIcon = {'H':'♥️', 'D':'♦️', 'C':'♣️', 'S':'♠️'}[card.suit] || '🍌';
+        return `<div class="${sizeClass} bg-white rounded-lg border border-slate-300 shadow-xl flex flex-col items-center justify-center ${colorClass} font-black shrink-0 select-none">
+            <div class="${small ? 'text-[10px]' : 'text-xs md:text-sm'} leading-none">${card.rank}</div>
+            <div class="${small ? 'text-xs' : 'text-base md:text-lg'} leading-none">${suitIcon}</div>
+        </div>`;
+    }
+
+    // Modal navigation
+    window.openTexasHoldemSelector = function() {
+        const modal = document.getElementById('texasholdem-mode-modal');
+        if (modal) modal.classList.remove('hidden');
+        const input = document.getElementById('poker-bots-buyin');
+        if (input && (!input.value || Number(input.value) <= 1000)) {
+            // Suggest smart buyin based on wealth (up to billions)
+            const suggested = Math.max(1000, Math.min(100000000000, Math.floor((bananas || 0) * 0.05)) || 1000);
+            input.value = suggested;
+            updateBotsBlindsPreview();
+        }
+    };
+
+    window.closeTexasHoldemSelector = function() {
+        const modal = document.getElementById('texasholdem-mode-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.setPokerBotsBuyin = function(val) {
+        const input = document.getElementById('poker-bots-buyin');
+        if (input) {
+            input.value = val;
+            updateBotsBlindsPreview();
+        }
+    };
+
+    window.setPokerBotsBuyinPercent = function(pct) {
+        const amt = Math.max(10, Math.floor((bananas || 0) * pct));
+        setPokerBotsBuyin(amt);
+    };
+
+    window.updateBotsBlindsPreview = function() {
+        const input = document.getElementById('poker-bots-buyin');
+        const preview = document.getElementById('poker-bots-blinds-preview');
+        const buyIn = Math.max(10, Math.floor(Number(input?.value)) || 1000);
+        const sb = Math.max(5, Math.floor(buyIn / 100));
+        const bb = sb * 2;
+        if (preview) {
+            preview.innerText = `Blinds: ${formatNumber(sb)} / ${formatNumber(bb)} 🍌 (1% / 2%)`;
+        }
+    };
+
+    window.setPokerCreateBuyin = function(val) {
+        const input = document.getElementById('poker-new-table-buyin');
+        if (input) {
+            input.value = val;
+            updateCreatePokerBlindsPreview();
+        }
+    };
+
+    window.setPokerCreateBuyinPercent = function(pct) {
+        const amt = Math.max(10, Math.floor((bananas || 0) * pct));
+        setPokerCreateBuyin(amt);
+    };
+
+    window.updateCreatePokerBlindsPreview = function() {
+        const input = document.getElementById('poker-new-table-buyin');
+        const sbInput = document.getElementById('poker-new-table-sb');
+        const bbInput = document.getElementById('poker-new-table-bb');
+        const buyIn = Math.max(10, Math.floor(Number(input?.value)) || 1000);
+        const sb = Math.max(5, Math.floor(buyIn / 100));
+        const bb = sb * 2;
+        if (sbInput) sbInput.value = sb;
+        if (bbInput) bbInput.value = bb;
+    };
+
+    window.openTexasHoldemLobby = function() {
+        closeTexasHoldemSelector();
+        const lobby = document.getElementById('texasholdem-lobby-modal');
+        if (lobby) lobby.classList.remove('hidden');
+        const input = document.getElementById('poker-new-table-buyin');
+        if (input && (!input.value || Number(input.value) <= 1000)) {
+            const suggested = Math.max(1000, Math.min(100000000000, Math.floor((bananas || 0) * 0.05)) || 1000);
+            input.value = suggested;
+            updateCreatePokerBlindsPreview();
+        }
+        refreshTexasHoldemTables();
+    };
+
+    window.closeTexasHoldemLobby = function() {
+        const lobby = document.getElementById('texasholdem-lobby-modal');
+        if (lobby) lobby.classList.add('hidden');
+    };
+
+    window.toggleTexasHoldemCreateForm = function() {
+        const form = document.getElementById('poker-create-form');
+        if (form) form.classList.toggle('hidden');
+    };
+
+    // Online Tables Fetcher
+    window.refreshTexasHoldemTables = async function() {
+        const container = document.getElementById('poker-tables-container');
+        if (!container) return;
+        container.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs italic">Loading available tables...</div>`;
+
+        try {
+            const res = await fetch(API_BASE + '/api/poker/tables');
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || "Failed to load tables");
+
+            const tables = data.tables || [];
+            if (tables.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 bg-slate-950/60 rounded-2xl border border-slate-800 p-6">
+                        <div class="text-3xl mb-2">🌴</div>
+                        <div class="text-white font-bold text-sm mb-1">No active tables right now</div>
+                        <div class="text-slate-400 text-xs mb-4">Be the table host! Create a table and invite other players or let bots fill the seats.</div>
+                        <button onclick="toggleTexasHoldemCreateForm()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md">
+                            ➕ Create Table Now
+                        </button>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = tables.map(t => {
+                const isFull = t.playerCount >= t.max_players;
+                const statusBadge = t.status === 'in_progress'
+                    ? `<span class="bg-blue-500/20 text-blue-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-500/30">IN PROGRESS (${t.stage.toUpperCase()})</span>`
+                    : `<span class="bg-emerald-500/20 text-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-500/30">WAITING FOR PLAYERS</span>`;
+
+                return `
+                    <div class="bg-slate-950/80 border border-slate-800 hover:border-emerald-500/60 p-3.5 rounded-2xl flex items-center justify-between gap-3 transition-all">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="font-black text-white text-sm tracking-wide">${t.name}</h4>
+                                ${statusBadge}
+                            </div>
+                            <div class="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
+                                <span>👑 Host: <strong class="text-slate-200">${t.host_name}</strong></span>
+                                <span>💰 Buy-in: <strong class="text-yellow-400 font-mono">${formatNumber(t.buy_in)} 🍌</strong></span>
+                                <span>🪙 Blinds: <strong class="text-emerald-400 font-mono">${t.small_blind}/${t.big_blind}</strong></span>
+                                <span>👥 Players: <strong class="text-white">${t.playerCount}/${t.max_players}</strong></span>
+                            </div>
+                        </div>
+                        <div>
+                            <button onclick="joinTexasHoldemTable('${t.id}')" ${isFull ? 'disabled' : ''} class="px-4 py-2 ${isFull ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white'} font-black text-xs rounded-xl shadow-md active:scale-95 transition-all">
+                                ${isFull ? 'FULL' : 'JOIN TABLE 🍌'}
+                            </button>
+                        </div>
+                    </div>`;
+            }).join('');
+        } catch (err) {
+            container.innerHTML = `<div class="text-center py-6 text-red-400 text-xs">Error loading tables: ${parseError(err)}</div>`;
+        }
+    };
+
+    // Track initial buy-in for session profit/loss calculation
+    let thInitialBuyin = 1000;
+
+    // Create table submit
+    window.submitCreateTexasHoldemTable = async function() {
+        const nameInput = document.getElementById('poker-new-table-name');
+        const buyInInput = document.getElementById('poker-new-table-buyin');
+        const sbInput = document.getElementById('poker-new-table-sb');
+        const bbInput = document.getElementById('poker-new-table-bb');
+
+        const name = (nameInput?.value || `${playerName}'s Table`).trim();
+        const buyIn = Math.max(10, Math.floor(Number(buyInInput?.value)) || 1000);
+        const defaultSb = Math.max(5, Math.floor(buyIn / 100));
+        const sb = Math.max(1, Math.floor(Number(sbInput?.value)) || defaultSb);
+        const bb = Math.max(sb * 2, Math.floor(Number(bbInput?.value)) || (sb * 2));
+
+        if (bananas < buyIn) {
+            showToast(`Not enough bananas! You have ${formatNumber(bananas)} 🍌 but buy-in requires ${formatNumber(buyIn)} 🍌.`);
+            return;
+        }
+
+        try {
+            const res = await fetch(API_BASE + '/api/poker/tables/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ name, buyIn, smallBlind: sb, bigBlind: bb })
+            });
+
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || "Failed to create table");
+
+            if (data.newBalance !== undefined) {
+                bananas = data.newBalance;
+                updateBananas(bananas);
+            }
+
+            thInitialBuyin = buyIn;
+            thMode = 'online';
+            thCurrentTableId = data.table.id;
+            thTable = data.table;
+
+            closeTexasHoldemLobby();
+            setGameMode('texasholdem');
+            startOnlinePolling();
+            playSound('win');
+            renderTexasHoldemTable();
+        } catch (err) {
+            showToast("Create Table Error: " + parseError(err));
+        }
+    };
+
+    // Join online table
+    window.joinTexasHoldemTable = async function(tableId) {
+        try {
+            const res = await fetch(API_BASE + '/api/poker/tables/join', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ tableId })
+            });
+
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || "Failed to join table");
+
+            if (data.newBalance !== undefined) {
+                bananas = data.newBalance;
+                updateBananas(bananas);
+            }
+
+            thInitialBuyin = data.table.buy_in || 1000;
+            thMode = 'online';
+            thCurrentTableId = data.table.id;
+            thTable = data.table;
+
+            closeTexasHoldemLobby();
+            setGameMode('texasholdem');
+            startOnlinePolling();
+            playSound('click');
+            renderTexasHoldemTable();
+        } catch (err) {
+            showToast("Join Table Error: " + parseError(err));
+        }
+    };
+
+    // Leave current table - Sleek In-Game Modal (No popups)
+    window.leaveTexasHoldemTable = function() {
+        const modal = document.getElementById('poker-leave-confirm-modal');
+        if (!modal) {
+            confirmPokerLeaveAndCashout();
+            return;
+        }
+
+        let chips = 0;
+        if (thMode === 'online' && thTable) {
+            const myPlayer = thTable.players.find(p => p.id === userId);
+            chips = myPlayer ? (myPlayer.chips || 0) : 0;
+        } else if (thMode === 'bots' && thTable) {
+            const hero = thTable.players.find(p => p.id === 'hero');
+            chips = hero ? (hero.chips || 0) : 0;
+        }
+
+        const delta = chips - thInitialBuyin;
+        const newBal = (bananas || 0) + chips;
+
+        const countEl = document.getElementById('poker-leave-chip-count');
+        const initEl = document.getElementById('poker-leave-initial-buyin');
+        const deltaEl = document.getElementById('poker-leave-session-result');
+        const balEl = document.getElementById('poker-leave-new-balance');
+
+        if (countEl) countEl.innerText = `${formatNumber(chips)} 🍌`;
+        if (initEl) initEl.innerText = `${formatNumber(thInitialBuyin)} 🍌`;
+        if (deltaEl) {
+            if (delta >= 0) {
+                deltaEl.innerText = `+${formatNumber(delta)} 🍌 (PROFIT)`;
+                deltaEl.className = "font-black font-mono text-emerald-400";
+            } else {
+                deltaEl.innerText = `${formatNumber(delta)} 🍌 (LOSS)`;
+                deltaEl.className = "font-black font-mono text-red-400";
+            }
+        }
+        if (balEl) balEl.innerText = `${formatNumber(newBal)} 🍌`;
+
+        modal.classList.remove('hidden');
+    };
+
+    window.closePokerLeaveModal = function() {
+        const modal = document.getElementById('poker-leave-confirm-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.confirmPokerLeaveAndCashout = async function() {
+        closePokerLeaveModal();
+        let refundedChips = 0;
+
+        if (thMode === 'online' && thCurrentTableId) {
+            try {
+                const res = await fetch(API_BASE + '/api/poker/tables/leave', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ tableId: thCurrentTableId })
+                });
+                const data = await res.json();
+                if (data.refunded !== undefined) {
+                    refundedChips = data.refunded;
+                }
+                if (data.newBalance !== undefined) {
+                    bananas = data.newBalance;
+                    updateBananas(bananas);
+                }
+            } catch (e) {
+                console.error("Leave error:", e);
+            }
+        } else if (thMode === 'bots' && thTable) {
+            const hero = thTable.players.find(p => p.id === 'hero');
+            if (hero && hero.chips > 0) {
+                refundedChips = hero.chips;
+                bananas += hero.chips;
+                updateBananas(bananas);
+                syncData(bananas, trees);
+            }
+        }
+
+        stopOnlinePolling();
+        thMode = 'none';
+        thCurrentTableId = null;
+        thTable = null;
+        setGameMode('roulette');
+
+        // Play sound and display stylish in-game toast message
+        playSound('win');
+        if (refundedChips > 0) {
+            showToast(`💰 Cashed out +${formatNumber(refundedChips)} 🍌 chips! Balance: ${formatNumber(bananas)} 🍌`);
+        } else {
+            showToast(`Left table. Remaining chips converted back to balance.`);
+        }
+    };
+
+    function startOnlinePolling() {
+        stopOnlinePolling();
+        thPollTimer = setInterval(async () => {
+            if (thMode !== 'online' || !thCurrentTableId) return;
+            try {
+                const res = await fetch(API_BASE + `/api/poker/tables/${thCurrentTableId}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                if (data.success && data.table) {
+                    const prevStage = thTable?.stage;
+                    const prevAction = thTable?.last_action?.timestamp;
+                    thTable = data.table;
+
+                    if (prevStage !== thTable.stage) {
+                        playSound('card');
+                    } else if (prevAction !== thTable?.last_action?.timestamp) {
+                        playSound('click');
+                    }
+
+                    renderTexasHoldemTable();
+                }
+            } catch (err) {
+                // Ignore transient network errors
+            }
+        }, 900);
+    }
+
+    function stopOnlinePolling() {
+        if (thPollTimer) {
+            clearInterval(thPollTimer);
+            thPollTimer = null;
+        }
+    }
+
+    // Host starts online match:
+    // Host generates the 5 community cards + player cards and sends to backend!
+    window.startTexasHoldemHostMatch = async function() {
+        if (thMode !== 'online' || !thTable || thTable.host_id !== userId) return;
+
+        const deck = createShuffledPokerDeck();
+        const hostCommunityCards = deck.splice(0, 5);
+        const hostPlayerCards = {};
+        thTable.players.forEach(p => {
+            hostPlayerCards[p.id] = [deck.pop(), deck.pop()];
+        });
+
+        try {
+            const res = await fetch(API_BASE + '/api/poker/tables/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    tableId: thCurrentTableId,
+                    hostCommunityCards,
+                    hostPlayerCards
+                })
+            });
+
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || "Failed to start match");
+
+            thTable = data.table;
+            playSound('card');
+            renderTexasHoldemTable();
+        } catch (err) {
+            alert("Start Match Error: " + parseError(err));
+        }
+    };
+
+    // Player action in online or vs bot table
+    window.takeTexasHoldemAction = async function(action, amount = 0) {
+        if (thMode === 'online') {
+            try {
+                const res = await fetch(API_BASE + '/api/poker/tables/action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        tableId: thCurrentTableId,
+                        action,
+                        amount: Number(amount) || 0
+                    })
+                });
+
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || "Action failed");
+
+                thTable = data.table;
+                playSound('click');
+                renderTexasHoldemTable();
+            } catch (err) {
+                alert("Action error: " + parseError(err));
+            }
+        } else if (thMode === 'bots') {
+            applyVsBotsPlayerAction(action, Number(amount) || 0);
+        }
+    };
+
+    window.takeTexasHoldemCheckCall = function() {
+        if (!thTable) return;
+        const hero = thTable.players.find(p => p.id === (thMode === 'online' ? userId : 'hero'));
+        if (!hero) return;
+        const toCall = (thTable.current_bet || 0) - (hero.currentBet || 0);
+        if (toCall <= 0) {
+            takeTexasHoldemAction('check');
+        } else {
+            takeTexasHoldemAction('call');
+        }
+    };
+
+    window.takeTexasHoldemRaise = function() {
+        const input = document.getElementById('th-raise-input');
+        const amt = Math.floor(Number(input?.value)) || ((thTable?.current_bet || 0) + (thTable?.big_blind || 20));
+        takeTexasHoldemAction('raise', amt);
+    };
+
+    window.setThRaisePreset = function(type) {
+        if (!thTable) return;
+        const hero = thTable.players.find(p => p.id === (thMode === 'online' ? userId : 'hero'));
+        if (!hero) return;
+
+        const curBet = thTable.current_bet || 0;
+        const bb = thTable.big_blind || 20;
+        const pot = thTable.pot || 0;
+        let target = curBet + bb;
+
+        if (type === 'min') target = curBet + bb;
+        else if (type === '2x') target = Math.max(curBet * 2, curBet + bb);
+        else if (type === '3x') target = Math.max(curBet * 3, curBet + bb);
+        else if (type === 'half_pot') target = Math.max(curBet + Math.floor(pot / 2), curBet + bb);
+        else if (type === 'pot') target = Math.max(curBet + pot, curBet + bb);
+        else if (type === 'allin') target = hero.currentBet + hero.chips;
+
+        target = Math.min(hero.currentBet + hero.chips, Math.max(curBet + bb, target));
+        const input = document.getElementById('th-raise-input');
+        if (input) input.value = target;
+    };
+
+    // =================================================================
+    // 🤖 VS BOTS FULL TEXAS HOLD'EM IMPLEMENTATION
+    // =================================================================
+    window.startTexasHoldemVsBots = function() {
+        const buyInInput = document.getElementById('poker-bots-buyin');
+        const buyIn = Math.max(10, Math.floor(Number(buyInInput?.value)) || 1000);
+
+        if (bananas < buyIn) {
+            showToast(`Not enough bananas! You have ${formatNumber(bananas)} 🍌 but need ${formatNumber(buyIn)} 🍌.`);
+            return;
+        }
+
+        // Deduct buy-in
+        bananas -= buyIn;
+        updateBananas(bananas);
+        syncData(bananas, trees);
+
+        thInitialBuyin = buyIn;
+        closeTexasHoldemSelector();
+        thMode = 'bots';
+        thCurrentTableId = 'bot_table';
+
+        // 6-player table (Hero + 5 smart monkey bots)
+        const sb = Math.max(5, Math.floor(buyIn / 100));
+        const bb = sb * 2;
+
+        const players = [
+            { id: 'hero', name: playerName, isHost: true, isBot: false, seat: 0, chips: buyIn, currentBet: 0, folded: false, isAllIn: false, cards: [] },
+            { id: 'bot_1', name: 'Gorilla Gus', isHost: false, isBot: true, seat: 1, chips: buyIn, currentBet: 0, folded: false, isAllIn: false, cards: [] },
+            { id: 'bot_2', name: 'Chimp Champ', isHost: false, isBot: true, seat: 2, chips: buyIn, currentBet: 0, folded: false, isAllIn: false, cards: [] },
+            { id: 'bot_3', name: 'Baboon Bob', isHost: false, isBot: true, seat: 3, chips: buyIn, currentBet: 0, folded: false, isAllIn: false, cards: [] },
+            { id: 'bot_4', name: 'Prof. Primate', isHost: false, isBot: true, seat: 4, chips: buyIn, currentBet: 0, folded: false, isAllIn: false, cards: [] },
+            { id: 'bot_5', name: 'King Kong', isHost: false, isBot: true, seat: 5, chips: buyIn, currentBet: 0, folded: false, isAllIn: false, cards: [] }
+        ];
+
+        thTable = {
+            id: 'bot_table',
+            name: "Jungle Poker Table (VS 5 Bots)",
+            host_id: 'hero',
+            host_name: playerName,
+            small_blind: sb,
+            big_blind: bb,
+            buy_in: buyIn,
+            max_players: 6,
+            status: 'waiting',
+            stage: 'waiting',
+            community_cards: [],
+            pot: 0,
+            current_bet: 0,
+            active_turn_player_id: null,
+            dealer_seat: 0,
+            last_action: null,
+            players,
+            acted_in_round: [],
+            winners: []
+        };
+
+        setGameMode('texasholdem');
+        dealVsBotsHand();
+    };
+
+    function dealVsBotsHand() {
+        if (!thTable) return;
+        const deck = createShuffledPokerDeck();
+        thTable.community_cards = deck.splice(0, 5);
+
+        thTable.players.forEach(p => {
+            p.cards = [deck.pop(), deck.pop()];
+            p.folded = false;
+            p.isAllIn = false;
+            p.currentBet = 0;
+            // Top up bots if broke
+            if (p.isBot && p.chips <= thTable.big_blind) p.chips = thTable.buy_in;
+        });
+
+        thTable.status = 'in_progress';
+        thTable.stage = 'preflop';
+        thTable.pot = 0;
+        thTable.acted_in_round = [];
+        thTable.winners = [];
+
+        // Rotate dealer button
+        thTable.dealer_seat = (thTable.dealer_seat + 1) % thTable.players.length;
+
+        // Blinds
+        const sbP = thTable.players[(thTable.dealer_seat + 1) % thTable.players.length];
+        const bbP = thTable.players[(thTable.dealer_seat + 2) % thTable.players.length];
+
+        const sbPay = Math.min(sbP.chips, thTable.small_blind);
+        sbP.chips -= sbPay;
+        sbP.currentBet = sbPay;
+        thTable.pot += sbPay;
+
+        const bbPay = Math.min(bbP.chips, thTable.big_blind);
+        bbP.chips -= bbPay;
+        bbP.currentBet = bbPay;
+        thTable.pot += bbPay;
+
+        thTable.current_bet = thTable.big_blind;
+
+        // First to act: player after BB (UTG)
+        const utgP = thTable.players[(thTable.dealer_seat + 3) % thTable.players.length];
+        thTable.active_turn_player_id = utgP.id;
+
+        thTable.last_action = {
+            playerId: bbP.id,
+            playerName: bbP.name,
+            action: 'raise',
+            amount: thTable.big_blind,
+            message: `Blinds posted (${thTable.small_blind}/${thTable.big_blind} 🍌). Game started!`,
+            timestamp: Date.now()
+        };
+
+        playSound('card');
+        renderTexasHoldemTable();
+        runVsBotsLoop();
+    }
+
+    function applyVsBotsPlayerAction(action, raiseAmt = 0) {
+        if (!thTable || thTable.status !== 'in_progress') return;
+        const curPlayer = thTable.players.find(p => p.id === thTable.active_turn_player_id);
+        if (!curPlayer) return;
+
+        const toCall = thTable.current_bet - curPlayer.currentBet;
+
+        if (action === 'fold') {
+            curPlayer.folded = true;
+            thTable.last_action = {
+                playerId: curPlayer.id,
+                playerName: curPlayer.name,
+                action: 'fold',
+                message: `${curPlayer.name} folded`,
+                timestamp: Date.now()
+            };
+        } else if (action === 'check') {
+            thTable.last_action = {
+                playerId: curPlayer.id,
+                playerName: curPlayer.name,
+                action: 'check',
+                message: `${curPlayer.name} checked`,
+                timestamp: Date.now()
+            };
+        } else if (action === 'call') {
+            const pay = Math.min(curPlayer.chips, toCall);
+            curPlayer.chips -= pay;
+            curPlayer.currentBet += pay;
+            thTable.pot += pay;
+            if (curPlayer.chips === 0) curPlayer.isAllIn = true;
+            thTable.last_action = {
+                playerId: curPlayer.id,
+                playerName: curPlayer.name,
+                action: 'call',
+                amount: pay,
+                message: `${curPlayer.name} called ${pay} 🍌`,
+                timestamp: Date.now()
+            };
+        } else if (action === 'raise') {
+            const target = Math.max(thTable.current_bet + thTable.big_blind, raiseAmt);
+            const needed = target - curPlayer.currentBet;
+            const pay = Math.min(curPlayer.chips, needed);
+            curPlayer.chips -= pay;
+            curPlayer.currentBet += pay;
+            thTable.pot += pay;
+            thTable.current_bet = curPlayer.currentBet;
+            if (curPlayer.chips === 0) curPlayer.isAllIn = true;
+
+            thTable.acted_in_round = [curPlayer.id];
+            thTable.last_action = {
+                playerId: curPlayer.id,
+                playerName: curPlayer.name,
+                action: 'raise',
+                amount: thTable.current_bet,
+                message: `${curPlayer.name} raised to ${thTable.current_bet} 🍌`,
+                timestamp: Date.now()
+            };
+        }
+
+        if (!thTable.acted_in_round.includes(curPlayer.id)) {
+            thTable.acted_in_round.push(curPlayer.id);
+        }
+
+        advanceVsBotsTurnOrRound(curPlayer);
+        renderTexasHoldemTable();
+        runVsBotsLoop();
+    }
+
+    function advanceVsBotsTurnOrRound(curPlayer) {
+        const remainingUnfolded = thTable.players.filter(p => !p.folded);
+        if (remainingUnfolded.length <= 1) {
+            advanceVsBotsRound();
+            return;
+        }
+
+        const eligible = thTable.players.filter(p => !p.folded && !p.isAllIn);
+        const roundDone = eligible.every(p => thTable.acted_in_round.includes(p.id) && p.currentBet === thTable.current_bet);
+
+        if (roundDone || eligible.length <= 1) {
+            advanceVsBotsRound();
+        } else {
+            const num = thTable.players.length;
+            let curIdx = thTable.players.findIndex(p => p.id === curPlayer.id);
+            let nextIdx = (curIdx + 1) % num;
+            for (let i = 0; i < num; i++) {
+                const candidate = thTable.players[nextIdx];
+                if (!candidate.folded && !candidate.isAllIn) {
+                    thTable.active_turn_player_id = candidate.id;
+                    break;
+                }
+                nextIdx = (nextIdx + 1) % num;
+            }
+        }
+    }
+
+    function advanceVsBotsRound() {
+        thTable.acted_in_round = [];
+        thTable.players.forEach(p => { p.currentBet = 0; });
+        thTable.current_bet = 0;
+
+        if (thTable.stage === 'preflop') {
+            thTable.stage = 'flop';
+            playSound('card');
+        } else if (thTable.stage === 'flop') {
+            thTable.stage = 'turn';
+            playSound('card');
+        } else if (thTable.stage === 'turn') {
+            thTable.stage = 'river';
+            playSound('card');
+        } else if (thTable.stage === 'river') {
+            // Showdown!
+            thTable.stage = 'showdown';
+            thTable.status = 'finished';
+            thTable.active_turn_player_id = null;
+
+            const active = thTable.players.filter(p => !p.folded);
+            if (active.length === 1) {
+                const winner = active[0];
+                winner.chips += thTable.pot;
+                thTable.winners = [{ id: winner.id, name: winner.name, handName: "Last Player Standing", winAmount: thTable.pot }];
+                thTable.last_action = {
+                    playerId: winner.id,
+                    playerName: winner.name,
+                    action: 'call',
+                    message: `🏆 ${winner.name} won the pot of ${formatNumber(thTable.pot)} 🍌!`,
+                    timestamp: Date.now()
+                };
+                if (winner.id === 'hero') playSound('win');
+                else playSound('loss');
+            } else {
+                const results = active.map(p => {
+                    const evalRes = eval5CardsClient([...p.cards, ...thTable.community_cards].slice(0, 7));
+                    return { player: p, score: evalRes.score, handName: evalRes.desc };
+                }).sort((a, b) => b.score - a.score);
+
+                const topScore = results[0].score;
+                const winners = results.filter(r => r.score === topScore);
+                const share = Math.floor(thTable.pot / winners.length);
+
+                winners.forEach(w => { w.player.chips += share; });
+                thTable.winners = winners.map(w => ({ id: w.player.id, name: w.player.name, handName: w.handName, winAmount: share }));
+
+                const heroWon = winners.some(w => w.player.id === 'hero');
+                const winNames = winners.map(w => `${w.player.name} (${w.handName})`).join(' & ');
+                thTable.last_action = {
+                    playerId: winners[0].player.id,
+                    playerName: winners[0].player.name,
+                    action: 'call',
+                    message: `🏆 Showdown: ${winNames} won ${formatNumber(thTable.pot)} 🍌!`,
+                    timestamp: Date.now()
+                };
+
+                if (heroWon) playSound('win');
+                else playSound('loss');
+            }
+            return;
+        }
+
+        // Active turn to first non-folded player after dealer
+        const num = thTable.players.length;
+        let nextIdx = (thTable.dealer_seat + 1) % num;
+        for (let i = 0; i < num; i++) {
+            const candidate = thTable.players[nextIdx];
+            if (!candidate.folded && !candidate.isAllIn) {
+                thTable.active_turn_player_id = candidate.id;
+                break;
+            }
+            nextIdx = (nextIdx + 1) % num;
+        }
+    }
+
+    function runVsBotsLoop() {
+        if (!thTable || thTable.status !== 'in_progress' || thTable.stage === 'showdown') return;
+        const curPlayer = thTable.players.find(p => p.id === thTable.active_turn_player_id);
+        if (!curPlayer || !curPlayer.isBot || curPlayer.folded || curPlayer.isAllIn) return;
+
+        setTimeout(() => {
+            if (!thTable || thTable.status !== 'in_progress' || thTable.active_turn_player_id !== curPlayer.id) return;
+            const toCall = thTable.current_bet - curPlayer.currentBet;
+            let action = 'check';
+            let raiseAmt = 0;
+
+            if (toCall <= 0) {
+                if (Math.random() < 0.25) {
+                    action = 'raise';
+                    raiseAmt = thTable.current_bet + thTable.big_blind;
+                } else {
+                    action = 'check';
+                }
+            } else {
+                if (toCall <= thTable.big_blind * 2 || Math.random() < 0.55) {
+                    action = 'call';
+                } else {
+                    action = 'fold';
+                }
+            }
+
+            applyVsBotsPlayerAction(action, raiseAmt);
+        }, 500 + Math.random() * 400);
+    }
+
+    // =================================================================
+    // 🎨 RENDER TABLE FELT, SEATS & ACTION DOCK
+    // =================================================================
+    function renderTexasHoldemTable() {
+        if (!thTable) return;
+        const isOnline = thMode === 'online';
+        const heroId = isOnline ? userId : 'hero';
+        const hero = thTable.players.find(p => p.id === heroId);
+
+        // 1. Header Info
+        const titleEl = document.getElementById('th-table-title');
+        const blindsEl = document.getElementById('th-table-blinds');
+        const potEl = document.getElementById('th-pot-amount');
+        const stageBadgeEl = document.getElementById('th-stage-badge');
+        const startBtn = document.getElementById('th-start-match-btn');
+        const tickerEl = document.getElementById('th-action-ticker');
+        const boardStatusEl = document.getElementById('th-board-status');
+
+        if (titleEl) titleEl.innerText = thTable.name;
+        if (blindsEl) blindsEl.innerText = `Blinds: ${thTable.small_blind} / ${thTable.big_blind} 🍌 (Buy-in: ${formatNumber(thTable.buy_in)} 🍌)`;
+        if (potEl) potEl.innerText = formatNumber(thTable.pot || 0);
+
+        if (stageBadgeEl) {
+            stageBadgeEl.innerText = (thTable.stage || 'WAITING').toUpperCase();
+            if (thTable.stage === 'showdown') {
+                stageBadgeEl.className = "bg-yellow-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm animate-pulse";
+            } else {
+                stageBadgeEl.className = "bg-emerald-950 border border-emerald-500/60 text-emerald-300 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm";
+            }
+        }
+
+        // Host Start Button (deal cards)
+        if (startBtn) {
+            const isHost = isOnline ? (thTable.host_id === userId) : true;
+            const canStart = isHost && (thTable.status === 'waiting' || thTable.status === 'finished');
+            startBtn.classList.toggle('hidden', !canStart);
+            startBtn.innerText = thTable.status === 'finished' ? "DEAL NEXT HAND 🃏" : "DEAL CARDS 🃏";
+            if (!isOnline && canStart) {
+                startBtn.onclick = dealVsBotsHand;
+            } else if (isOnline && canStart) {
+                startBtn.onclick = startTexasHoldemHostMatch;
+            }
+        }
+
+        // Ticker & Board Status
+        if (tickerEl) {
+            if (thTable.last_action) {
+                tickerEl.innerText = thTable.last_action.message;
+            } else if (thTable.status === 'waiting') {
+                const count = thTable.players.length;
+                const needed = Math.max(0, 5 - count);
+                tickerEl.innerText = needed > 0
+                    ? `Waiting for host to deal cards (${count} players joined - ${needed} bots will fill seats)`
+                    : `Table ready with ${count} players! Host can start anytime.`;
+            }
+        }
+
+        if (boardStatusEl) {
+            boardStatusEl.innerText = thTable.stage === 'preflop' ? "Pre-Flop Betting"
+                : thTable.stage === 'flop' ? "The Flop (3 Cards)"
+                : thTable.stage === 'turn' ? "The Turn (4th Card)"
+                : thTable.stage === 'river' ? "The River (5th Card)"
+                : thTable.stage === 'showdown' ? "Showdown! Revealing Hands" : "Waiting for deal";
+        }
+
+        // 2. Community Cards (5 slots)
+        // preflop: 0 visible, flop: 3 visible, turn: 4 visible, river & showdown: 5 visible
+        const commContainer = document.getElementById('th-community-cards');
+        if (commContainer) {
+            let revealedCount = 0;
+            if (thTable.stage === 'flop') revealedCount = 3;
+            else if (thTable.stage === 'turn') revealedCount = 4;
+            else if (thTable.stage === 'river' || thTable.stage === 'showdown') revealedCount = 5;
+
+            const cards = thTable.community_cards || [];
+            let html = '';
+            for (let i = 0; i < 5; i++) {
+                if (i < revealedCount && cards[i]) {
+                    html += renderThCard(cards[i], false, false);
+                } else {
+                    html += `<div class="w-11 h-16 md:w-13 md:h-18 rounded-lg border-2 border-dashed border-emerald-600/40 bg-black/30 flex items-center justify-center text-emerald-600/50 text-xs font-bold shrink-0">
+                        ${i < 3 ? 'FLOP' : i === 3 ? 'TURN' : 'RIVER'}
+                    </div>`;
+                }
+            }
+            commContainer.innerHTML = html;
+        }
+
+        // 3. Seats (6 Seats around table)
+        // Seat 0: Hero (Bottom Center)
+        // Seats 1-5: Other players positioned clockwise
+        for (let i = 0; i < 6; i++) {
+            const seatEl = document.getElementById(`th-seat-${i}`);
+            if (!seatEl) continue;
+
+            // Map player to seat
+            // Hero is always seat 0!
+            let p = null;
+            if (i === 0) {
+                p = hero;
+            } else {
+                const opponents = thTable.players.filter(pl => pl.id !== heroId);
+                p = opponents[i - 1] || null;
+            }
+
+            if (!p) {
+                seatEl.innerHTML = `
+                    <div class="px-2.5 py-1 rounded-xl bg-black/40 border border-emerald-800/40 text-[10px] text-emerald-600/70 font-bold select-none">
+                        Empty Seat
+                    </div>`;
+                continue;
+            }
+
+            const isTurn = thTable.active_turn_player_id === p.id && thTable.status === 'in_progress';
+            const isDealer = thTable.dealer_seat === p.seat;
+            const isFolded = p.folded;
+            const isShowdown = thTable.stage === 'showdown';
+            const isWinner = (thTable.winners || []).some(w => w.id === p.id);
+
+            // Last action bubble
+            let actionBubble = '';
+            if (thTable.last_action && thTable.last_action.playerId === p.id) {
+                const a = thTable.last_action.action;
+                const bubbleColor = a === 'fold' ? 'bg-red-600 text-white'
+                    : a === 'raise' ? 'bg-emerald-600 text-white'
+                    : a === 'call' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200';
+                actionBubble = `<div class="absolute -top-6 px-2 py-0.5 rounded-full text-[9px] font-black uppercase shadow-md ${bubbleColor} animate-bounce">
+                    ${thTable.last_action.action.toUpperCase()} ${thTable.last_action.amount ? formatNumber(thTable.last_action.amount) : ''}
+                </div>`;
+            }
+
+            // Cards display
+            let cardsHtml = '';
+            if (p.cards && p.cards.length === 2) {
+                const hideCards = !isShowdown && p.id !== heroId;
+                cardsHtml = `
+                    <div class="flex items-center gap-1 -mb-1 z-10">
+                        ${renderThCard(p.cards[0], hideCards, true)}
+                        ${renderThCard(p.cards[1], hideCards, true)}
+                    </div>`;
+            }
+
+            const avatarEmoji = p.id === heroId ? '🐵' : p.isBot ? '🤖' : '👤';
+            const turnRing = isTurn ? 'ring-4 ring-yellow-400 animate-pulse' : '';
+            const winnerRing = isWinner ? 'ring-4 ring-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.9)]' : '';
+
+            seatEl.innerHTML = `
+                <div class="relative flex flex-col items-center ${isFolded ? 'opacity-40 grayscale' : ''}">
+                    ${actionBubble}
+                    ${cardsHtml}
+                    <div class="bg-slate-900/95 border ${isWinner ? 'border-yellow-400 bg-yellow-950/80' : 'border-slate-700'} px-2.5 py-1 rounded-2xl shadow-xl flex items-center gap-1.5 ${turnRing} ${winnerRing} min-w-[90px] justify-center text-center">
+                        <span class="text-sm">${avatarEmoji}</span>
+                        <div class="text-left">
+                            <div class="flex items-center gap-1">
+                                <span class="text-[11px] font-black text-white truncate max-w-[70px]">${p.name}</span>
+                                ${isDealer ? '<span class="bg-yellow-400 text-slate-950 font-black text-[8px] px-1 rounded-full">D</span>' : ''}
+                                ${p.isHost ? '<span class="text-[9px]">👑</span>' : ''}
+                            </div>
+                            <div class="text-[10px] font-mono font-bold text-yellow-400 leading-none">
+                                ${formatNumber(p.chips)} 🍌
+                            </div>
+                        </div>
+                    </div>
+                    ${p.currentBet > 0 ? `
+                        <div class="mt-0.5 bg-yellow-400 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full shadow border border-yellow-200">
+                            🪙 ${formatNumber(p.currentBet)}
+                        </div>` : ''}
+                    ${isFolded ? '<div class="absolute inset-0 flex items-center justify-center font-black text-red-500 text-xs tracking-wider uppercase bg-black/60 rounded-xl">FOLD</div>' : ''}
+                </div>`;
+        }
+
+        // 4. Hero Action Dock
+        const isHeroTurn = hero && thTable.active_turn_player_id === hero.id && thTable.status === 'in_progress' && !hero.folded && !hero.isAllIn;
+        const handEvalEl = document.getElementById('th-hero-hand-eval');
+        const btnFold = document.getElementById('th-btn-fold');
+        const btnCheckCall = document.getElementById('th-btn-check-call');
+        const btnRaise = document.getElementById('th-btn-raise');
+        const raiseInput = document.getElementById('th-raise-input');
+        const raisePresets = document.getElementById('th-raise-presets');
+
+        // Evaluate Hero Hand
+        if (handEvalEl && hero && hero.cards && hero.cards.length === 2) {
+            let revealedCount = 0;
+            if (thTable.stage === 'flop') revealedCount = 3;
+            else if (thTable.stage === 'turn') revealedCount = 4;
+            else if (thTable.stage === 'river' || thTable.stage === 'showdown') revealedCount = 5;
+
+            const curComm = (thTable.community_cards || []).slice(0, revealedCount);
+            const evalStr = eval7CardsClient([...hero.cards, ...curComm]);
+            handEvalEl.innerText = evalStr;
+        }
+
+        if (btnFold) btnFold.disabled = !isHeroTurn;
+        if (btnCheckCall) {
+            btnCheckCall.disabled = !isHeroTurn;
+            const toCall = (thTable.current_bet || 0) - (hero?.currentBet || 0);
+            if (toCall <= 0) {
+                btnCheckCall.innerText = "CHECK";
+                btnCheckCall.className = "flex-1 sm:flex-none px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs md:text-sm rounded-xl border-b-4 border-blue-800 shadow-md active:scale-95 transition-all";
+            } else {
+                btnCheckCall.innerText = `CALL ${formatNumber(toCall)} 🍌`;
+                btnCheckCall.className = "flex-1 sm:flex-none px-5 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-xs md:text-sm rounded-xl border-b-4 border-yellow-700 shadow-md active:scale-95 transition-all";
+            }
+        }
+        if (btnRaise) btnRaise.disabled = !isHeroTurn;
+        if (raiseInput) {
+            raiseInput.disabled = !isHeroTurn;
+            if (isHeroTurn && (!raiseInput.value || Math.floor(Number(raiseInput.value)) < (thTable.current_bet || 0) + (thTable.big_blind || 20))) {
+                raiseInput.value = (thTable.current_bet || 0) + (thTable.big_blind || 20);
+            }
         }
     }
 
@@ -7883,10 +9360,12 @@
       areaCases.classList.toggle('hidden', gameMode !== 'cases');
       const areaMines = document.getElementById('area-mines');
       if (areaMines) areaMines.classList.toggle('hidden', gameMode !== 'mines');
+      const areaTexasHoldem = document.getElementById('area-texasholdem');
+      if (areaTexasHoldem) areaTexasHoldem.classList.toggle('hidden', gameMode !== 'texasholdem');
 
       const elBettingControls = document.getElementById('betting-controls-container');
       if (elBettingControls) {
-          elBettingControls.classList.toggle('hidden', gameMode === 'cases');
+          elBettingControls.classList.toggle('hidden', gameMode === 'cases' || gameMode === 'texasholdem');
       }
 
       controlColors.classList.toggle('hidden', gameMode !== 'roulette');
