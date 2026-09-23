@@ -2695,24 +2695,24 @@ app.post("/api/poker/tables/create", authenticateToken, async (req: any, res) =>
 
     try {
         const supabase = getSupabase();
-        const { data: user } = await supabase.from('database').select('id, name, bananas').eq('id', userId).single();
-        if (!user) return res.status(404).json({ error: "User not found" });
+        const { data: user, error: userError } = await supabase.from('database').select('id, name, score').eq('id', userId).maybeSingle();
+        if (userError || !user) return res.status(404).json({ error: "User not found. Please log in again." });
 
         const buyInNum = Math.max(10, Math.floor(Number(buyIn)) || 1000);
-        const userBananas = Number(user.bananas || 0);
+        const userBananas = Number(user.score || 0);
 
         if (userBananas < buyInNum) {
             return res.status(400).json({ error: `Not enough bananas! You have ${userBananas} 🍌 but need ${buyInNum} 🍌.` });
         }
 
-        // Deduct buy-in
+        // Deduct buy-in from score
         const newBalance = userBananas - buyInNum;
-        await supabase.from('database').update({ bananas: newBalance }).eq('id', userId);
+        await supabase.from('database').update({ score: newBalance }).eq('id', userId);
 
         const tableId = "table_" + Math.random().toString(36).substring(2, 9);
         const hostSeat: PokerPlayerSeat = {
             id: userId,
-            name: user.name || "Host Monkey",
+            name: user.name || req.user.name || "Host Monkey",
             isHost: true,
             isBot: false,
             seat: 0,
@@ -2729,9 +2729,9 @@ app.post("/api/poker/tables/create", authenticateToken, async (req: any, res) =>
 
         const table: PokerTableState = {
             id: tableId,
-            name: (name || `${user.name}'s Table`).substring(0, 30),
+            name: (name || `${user.name || 'Monkey'}'s Table`).substring(0, 30),
             host_id: userId,
-            host_name: user.name || "Host Monkey",
+            host_name: user.name || req.user.name || "Host Monkey",
             small_blind: sb,
             big_blind: bb,
             buy_in: buyInNum,
@@ -2747,17 +2747,18 @@ app.post("/api/poker/tables/create", authenticateToken, async (req: any, res) =>
             players: [hostSeat],
             acted_in_round: [],
             winners: [],
-            round_history: [`Table created by ${user.name}`],
+            round_history: [`Table created by ${user.name || 'Host'}`],
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
 
         activePokerTables.set(tableId, table);
-        await syncPokerTableDb(table);
+        syncPokerTableDb(table).catch(() => {});
 
         res.json({ success: true, table, newBalance });
     } catch (e: any) {
-        res.status(500).json({ error: e.message });
+        console.error("Poker table create error:", e);
+        res.status(500).json({ error: e.message || "Failed to create table" });
     }
 });
 
@@ -2777,21 +2778,21 @@ app.post("/api/poker/tables/join", authenticateToken, async (req: any, res) => {
         }
 
         const supabase = getSupabase();
-        const { data: user } = await supabase.from('database').select('id, name, bananas').eq('id', userId).single();
-        if (!user) return res.status(404).json({ error: "User not found" });
+        const { data: user, error: userError } = await supabase.from('database').select('id, name, score').eq('id', userId).maybeSingle();
+        if (userError || !user) return res.status(404).json({ error: "User not found" });
 
-        const userBananas = Number(user.bananas || 0);
+        const userBananas = Number(user.score || 0);
         if (userBananas < table.buy_in) {
             return res.status(400).json({ error: `Not enough bananas to buy in! Requires ${table.buy_in} 🍌.` });
         }
 
-        // Deduct buy-in
+        // Deduct buy-in from score
         const newBalance = userBananas - table.buy_in;
-        await supabase.from('database').update({ bananas: newBalance }).eq('id', userId);
+        await supabase.from('database').update({ score: newBalance }).eq('id', userId);
 
         const newSeat: PokerPlayerSeat = {
             id: userId,
-            name: user.name,
+            name: user.name || req.user.name || "Guest Monkey",
             isHost: false,
             isBot: false,
             seat: table.players.length,
@@ -2803,13 +2804,14 @@ app.post("/api/poker/tables/join", authenticateToken, async (req: any, res) => {
         };
 
         table.players.push(newSeat);
-        table.round_history.push(`${user.name} joined the table`);
+        table.round_history.push(`${newSeat.name} joined the table`);
         table.updated_at = new Date().toISOString();
 
-        await syncPokerTableDb(table);
+        syncPokerTableDb(table).catch(() => {});
         res.json({ success: true, table, newBalance });
     } catch (e: any) {
-        res.status(500).json({ error: e.message });
+        console.error("Poker table join error:", e);
+        res.status(500).json({ error: e.message || "Failed to join table" });
     }
 });
 
@@ -2828,13 +2830,13 @@ app.post("/api/poker/tables/leave", authenticateToken, async (req: any, res) => 
         const leavingPlayer = table.players[playerIdx];
         const refundChips = leavingPlayer.chips;
 
-        // Refund remaining chips to bananas
+        // Refund remaining chips to score
         const supabase = getSupabase();
-        const { data: user } = await supabase.from('database').select('bananas').eq('id', userId).single();
-        let newBalance = Number(user?.bananas || 0);
+        const { data: user } = await supabase.from('database').select('score').eq('id', userId).maybeSingle();
+        let newBalance = Number(user?.score || 0);
         if (refundChips > 0) {
             newBalance += refundChips;
-            await supabase.from('database').update({ bananas: newBalance }).eq('id', userId);
+            await supabase.from('database').update({ score: newBalance }).eq('id', userId);
         }
 
         table.players.splice(playerIdx, 1);
@@ -2843,6 +2845,9 @@ app.post("/api/poker/tables/leave", authenticateToken, async (req: any, res) => 
         if (table.players.filter(p => !p.isBot).length === 0) {
             // No humans left, destroy table
             activePokerTables.delete(tableId);
+            try {
+                await supabase.from('poker_tables').delete().eq('id', tableId);
+            } catch (err) {}
         } else {
             if (leavingPlayer.isHost && table.players.length > 0) {
                 // Pass host to next human
@@ -2851,12 +2856,13 @@ app.post("/api/poker/tables/leave", authenticateToken, async (req: any, res) => 
                 table.host_id = nextHuman.id;
                 table.host_name = nextHuman.name;
             }
-            await syncPokerTableDb(table);
+            syncPokerTableDb(table).catch(() => {});
         }
 
         res.json({ success: true, refunded: refundChips, newBalance });
     } catch (e: any) {
-        res.status(500).json({ error: e.message });
+        console.error("Poker table leave error:", e);
+        res.status(500).json({ error: e.message || "Failed to leave table" });
     }
 });
 
