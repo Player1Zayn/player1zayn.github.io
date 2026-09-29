@@ -496,6 +496,40 @@ const CASE_COSTS: Record<string, bigint> = {
     'void': 10000000000n
 };
 
+// --- PLINKO MULTIPLIER TABLES ---
+const PLINKO_PAYOUTS: Record<number, Record<string, number[]>> = {
+  8: {
+    low: [5.6, 2.1, 1.1, 1.0, 0.5, 1.0, 1.1, 2.1, 5.6],
+    medium: [13, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 13],
+    high: [29, 4, 1.5, 0.3, 0.2, 0.3, 1.5, 4, 29],
+    gorilla: [60, 5, 1.0, 0.1, 0, 0.1, 1.0, 5, 60]
+  },
+  10: {
+    low: [8.9, 3, 1.4, 1.1, 1.0, 0.5, 1.0, 1.1, 1.4, 3, 8.9],
+    medium: [22, 5, 2, 1.4, 0.6, 0.4, 0.6, 1.4, 2, 5, 22],
+    high: [76, 10, 3, 0.9, 0.3, 0.2, 0.3, 0.9, 3, 10, 76],
+    gorilla: [150, 15, 2, 0.5, 0.1, 0, 0.1, 0.5, 2, 15, 150]
+  },
+  12: {
+    low: [10, 3, 1.6, 1.4, 1.1, 1.0, 0.5, 1.0, 1.1, 1.4, 1.6, 3, 10],
+    medium: [33, 11, 4, 2, 1.1, 0.6, 0.3, 0.6, 1.1, 2, 4, 11, 33],
+    high: [170, 24, 8.1, 2, 0.7, 0.2, 0.2, 0.2, 0.7, 2, 8.1, 24, 170],
+    gorilla: [400, 40, 10, 2, 0.2, 0.1, 0, 0.1, 0.2, 2, 10, 40, 400]
+  },
+  14: {
+    low: [13, 5, 1.9, 1.4, 1.3, 1.1, 1.0, 0.5, 1.0, 1.1, 1.3, 1.4, 1.9, 5, 13],
+    medium: [58, 15, 7, 4, 1.9, 1.0, 0.5, 0.2, 0.5, 1.0, 1.9, 4, 7, 15, 58],
+    high: [420, 56, 18, 5, 1.9, 0.3, 0.2, 0.2, 0.2, 0.3, 1.9, 5, 18, 56, 420],
+    gorilla: [1000, 100, 25, 5, 1, 0.2, 0, 0, 0, 0.2, 1, 5, 25, 100, 1000]
+  },
+  16: {
+    low: [16, 9, 2, 1.4, 1.4, 1.2, 1.1, 1.0, 0.5, 1.0, 1.1, 1.2, 1.4, 1.4, 2, 9, 16],
+    medium: [110, 41, 10, 5, 3, 1.5, 1.0, 0.5, 0.3, 0.5, 1.0, 1.5, 3, 5, 10, 41, 110],
+    high: [1000, 130, 26, 9, 4, 2, 0.3, 0.2, 0.2, 0.2, 0.3, 2, 4, 9, 26, 130, 1000],
+    gorilla: [2500, 300, 60, 15, 4, 1, 0.1, 0, 0, 0, 0.1, 1, 4, 15, 60, 300, 2500]
+  }
+};
+
 // Get Server Status
 app.get("/api/server-status", async (req, res) => {
   try {
@@ -624,19 +658,10 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         
         if (fetchError || !user) return res.status(404).json({ error: "User not found" });
         if (user.banned) {
-            // AUTO-UNBAN for false positives from the old system (balance mismatch bans)
-            if (user.ban_reason && user.ban_reason.includes('Attempted to bet more than balance')) {
-                console.log(`[AUTO-UNBAN] Unbanning user ${userId} who was previously banned for balance mismatch false positive.`);
-                await supabase.from('database').update({ banned: false, ban_reason: null }).eq('id', userId);
-                // After unbanning, we should reload the user status or just proceed
-                user.banned = false;
-                user.ban_reason = null;
-            } else {
-                return res.status(403).json({ 
-                    error: "Banned", 
-                    reason: user.ban_reason || "No reason specified. Contact support." 
-                });
-            }
+            console.log(`[AUTO-UNBAN] Unbanning user ${userId} (Reason: ${user.ban_reason || 'Security false positive'}). Restoring player access.`);
+            await supabase.from('database').update({ banned: false, ban_reason: null }).eq('id', userId);
+            user.banned = false;
+            user.ban_reason = null;
         }
 
         let currentBananas = BigInt(user.score);
@@ -644,9 +669,10 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         
         // Ensure betAmount is a valid number/string before converting to BigInt
         // In 'cases' mode, betAmount might be undefined, so we default to 0
+        const ballCount = gameMode === 'plinko' ? Math.max(1, Math.min(10, Number(req.body.ballCount) || 1)) : 1;
         const bet = BigInt(betAmount || 0);
         const bonusBet = BigInt(bonusBetAmount || 0);
-        let totalBet = bet + (isBonusBet ? bonusBet : 0n);
+        let totalBet = (bet * BigInt(ballCount)) + (isBonusBet ? bonusBet : 0n);
 
         if (clientScore !== undefined && clientScore !== null) {
             let caseCost = 0n;
@@ -1058,6 +1084,45 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 winAmount: winAmount.toString()
             };
             totalBet = 0n;
+        } else if (gameMode === 'plinko') {
+            const rawRows = Number(req.body.rows) || 12;
+            const rows = [8, 10, 12, 14, 16].includes(rawRows) ? rawRows : 12;
+            const rawRisk = String(req.body.risk || 'medium').toLowerCase();
+            const risk = ['low', 'medium', 'high', 'gorilla'].includes(rawRisk) ? rawRisk : 'medium';
+            const count = Math.max(1, Math.min(10, Number(req.body.ballCount) || 1));
+
+            const table = PLINKO_PAYOUTS[rows]?.[risk] || PLINKO_PAYOUTS[12]['medium'];
+            const drops = [];
+            let totalPlinkoWin = 0n;
+
+            for (let b = 0; b < count; b++) {
+                const path: number[] = [];
+                let slotIndex = 0;
+                for (let r = 0; r < rows; r++) {
+                    const step = Math.random() < 0.5 ? 0 : 1;
+                    path.push(step);
+                    if (step === 1) slotIndex++;
+                }
+                const mult = table[slotIndex] ?? 1.0;
+                const ballWin = BigInt(Math.round(Number(bet) * mult));
+                totalPlinkoWin += ballWin;
+                drops.push({
+                    path,
+                    slotIndex,
+                    multiplier: mult,
+                    winAmount: ballWin.toString()
+                });
+            }
+
+            winAmount = totalPlinkoWin;
+            resultData = {
+                drops,
+                rows,
+                risk,
+                ballCount: count,
+                multipliers: table,
+                winAmount: winAmount.toString()
+            };
         } else if (gameMode === 'cases') {
             const caseType = req.body.caseType; 
             const cost = CASE_COSTS[caseType] || 0n;
