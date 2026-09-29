@@ -301,6 +301,15 @@
           <p class="text-sm text-slate-400">Uncover golden bananas on a 5x5 grid and multiply your bet. Cash out before you hit a mine!</p>
         </div>
 
+        <div onclick="setGameMode('plinko'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-gradient-to-br from-amber-950 via-slate-900 to-slate-800 hover:from-amber-900 hover:to-slate-800 border-2 border-yellow-500/80 hover:border-yellow-300 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-yellow-950/60 hover:scale-[1.03]">
+          <div class="text-5xl mb-4 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300">🎯</div>
+          <div class="flex items-center gap-1.5 mb-1">
+            <h3 class="text-xl font-bold text-white">Banana Plinko</h3>
+            <span class="bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">NEW & VIRAL 🔥</span>
+          </div>
+          <p class="text-sm text-slate-300">Drop bouncing golden banana chips down gleaming pins! Win up to 2,500x and cascade multi-drops!</p>
+        </div>
+
         <div onclick="openTexasHoldemSelector(); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-800 hover:from-emerald-900 hover:to-slate-800 border-2 border-emerald-500/80 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-emerald-950/60 hover:scale-[1.03]">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🃏</div>
           <div class="flex items-center gap-1.5 mb-1">
@@ -1756,9 +1765,13 @@
         </div>
         
         <!-- Upgrades Tabs -->
-        <div class="flex w-full bg-emerald-950 border-b border-emerald-800 text-[10px] md:text-xs font-bold uppercase select-none shrink-0">
+        <div class="flex w-full bg-emerald-950 border-b border-emerald-800 text-[9px] md:text-xs font-bold uppercase select-none shrink-0">
             <button onclick="setSidebarView('trees')" id="tab-sb-trees" class="flex-1 py-2 md:py-3 text-emerald-400 border-b-2 border-emerald-400 bg-emerald-900 transition-all shadow-inner">TREES</button>
             <button onclick="setSidebarView('gadgets')" id="tab-sb-gadgets" class="flex-1 py-2 md:py-3 text-emerald-600 border-b-2 border-transparent hover:bg-emerald-900/50 transition-all">GADGETS</button>
+            <button onclick="setSidebarView('quests')" id="tab-sb-quests" class="flex-1 py-2 md:py-3 text-emerald-600 border-b-2 border-transparent hover:bg-emerald-900/50 transition-all relative flex items-center justify-center gap-1">
+              <span>QUESTS</span>
+              <span id="tab-quests-badge" class="hidden px-1.5 py-0.2 rounded-full text-[8px] font-black bg-yellow-400 text-slate-950 animate-bounce">!</span>
+            </button>
             <button onclick="setView('shop')" class="flex-1 py-2 md:py-3 text-yellow-500 border-b-2 border-transparent hover:bg-yellow-500/10 transition-all flex items-center justify-center gap-1">
               <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
               SHOP
@@ -1818,6 +1831,31 @@
             </h3>
           </div>
           <div id="gadgets-list" class="space-y-2 pb-4"></div>
+        </div>
+
+        <!-- Quests Content -->
+        <div id="sidebar-quests" class="hidden p-3 md:p-6 flex-1 overflow-y-auto custom-scroll flex flex-col">
+          <!-- Quests Header -->
+          <div class="flex flex-col gap-1.5 mb-3 shrink-0 bg-slate-950/80 p-3 rounded-2xl border border-emerald-800/80 shadow-md">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xl">📜</span>
+                <h3 class="font-black text-emerald-100 text-xs md:text-sm uppercase tracking-wide">Daily Quests</h3>
+              </div>
+              <div class="flex items-center gap-1 bg-slate-900 border border-emerald-700/60 px-2 py-0.5 rounded-full">
+                <span class="text-[9px] text-slate-400 font-bold uppercase">Resets in:</span>
+                <span id="quest-countdown-timer" class="text-[10px] text-amber-400 font-mono font-black animate-pulse">60:00</span>
+              </div>
+            </div>
+            <p class="text-[9.5px] text-slate-400 leading-tight">
+              Complete 5 client quests every hour for whole player level rewards! Incomplete quests reset when the timer runs out.
+            </p>
+          </div>
+
+          <!-- Active Quests Container -->
+          <div id="quests-container" class="space-y-2.5 pb-4 flex-1">
+            <!-- Rendered dynamically -->
+          </div>
         </div>
       </div>
 
@@ -2068,6 +2106,126 @@
                 </button>
               </div>
 
+            </div>
+          </div>
+
+          <!-- Game: PLINKO -->
+          <div id="area-plinko" class="w-full h-full flex flex-col items-center justify-between hidden p-2 md:p-3 relative overflow-hidden select-none">
+            <!-- Plinko Top Stats & History Bar -->
+            <div class="w-full max-w-xl bg-slate-900/90 border border-yellow-500/40 rounded-2xl p-2 px-3 flex items-center justify-between gap-2 shadow-lg shrink-0 z-20 backdrop-blur-md">
+              <div class="flex items-center gap-2">
+                <span class="text-xl md:text-2xl animate-bounce">🎯</span>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs md:text-sm font-black text-yellow-400 uppercase tracking-wide">Plinko</span>
+                    <span id="plinko-risk-badge" class="bg-yellow-500/20 text-yellow-300 text-[9px] font-black px-1.5 py-0.5 rounded-full border border-yellow-500/40 uppercase">MED</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 font-mono">
+                    <span id="plinko-rows-display" class="text-white font-bold">12</span> Rows • Max: <span id="plinko-max-mult-display" class="text-yellow-400 font-black">33x</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recent Multipliers History Ribbon -->
+              <div class="flex items-center gap-1 overflow-x-auto custom-scroll max-w-[210px] md:max-w-xs py-0.5" id="plinko-history-ribbon">
+                <span class="text-[10px] text-slate-500 italic">Drop to see multipliers</span>
+              </div>
+            </div>
+
+            <!-- Plinko Board Canvas with Buckets Bar -->
+            <div class="relative w-full max-w-xl flex-1 flex flex-col items-center justify-center min-h-[280px] max-h-[460px] my-1 overflow-hidden">
+              <canvas id="plinko-canvas" width="540" height="420" class="w-full h-full rounded-2xl bg-gradient-to-b from-slate-950 via-emerald-950/80 to-slate-950 border-2 border-emerald-700/60 shadow-[inset_0_0_60px_rgba(0,0,0,0.8),0_10px_30px_rgba(6,78,59,0.5)]"></canvas>
+
+              <!-- Dynamic Multiplier Slots / Buckets Bar at bottom of canvas -->
+              <div id="plinko-buckets-container" class="absolute bottom-1.5 left-0 right-0 h-8 pointer-events-none">
+                <!-- Bucket pills rendered dynamically with absolute positions matching slot coordinates -->
+              </div>
+
+              <!-- High win celebration banner -->
+              <div id="plinko-celebration" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none hidden z-30 animate-in zoom-in-75 duration-300">
+                <div class="bg-black/90 border-4 border-yellow-400 rounded-3xl p-5 text-center shadow-[0_0_80px_rgba(234,179,8,0.9)] backdrop-blur-md">
+                  <div class="text-4xl mb-1 animate-bounce">🍌💥🎉</div>
+                  <div id="plinko-celebration-title" class="text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-500 uppercase tracking-tight">1000x JACKPOT!</div>
+                  <div id="plinko-celebration-amount" class="text-lg md:text-xl font-black text-white mt-1 font-mono">+1,000,000 🍌</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Plinko Multi-Drop / Round Total Win Square -->
+            <div id="plinko-round-summary" class="w-full max-w-xl bg-slate-900/95 border-2 border-yellow-500/40 rounded-2xl p-2 px-3 shadow-xl flex flex-col gap-1.5 shrink-0 z-20 backdrop-blur-md transition-all">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                <div class="flex items-center gap-2">
+                  <span id="plinko-summary-icon" class="text-xl">🎯</span>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-black text-white uppercase tracking-wide">Total Win Square</span>
+                      <span id="plinko-summary-badge" class="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Ready</span>
+                    </div>
+                    <div class="text-[9.5px] text-slate-400 font-mono flex items-center gap-2 mt-0.5">
+                      <span>Cost: <span id="plinko-summary-cost" class="text-white font-bold">0 🍌</span></span>
+                      <span class="text-slate-600">•</span>
+                      <span>Won: <span id="plinko-summary-won" class="text-yellow-400 font-bold">+0 🍌</span></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex flex-col items-end font-mono">
+                  <span id="plinko-summary-profit-badge" class="text-xs font-black text-slate-400 px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800">0.00x</span>
+                </div>
+              </div>
+              <!-- Multi-ball individual landed multipliers chips -->
+              <div class="flex items-center justify-between gap-2 pt-0.5">
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                  <span>🍌 Ball Multipliers:</span>
+                </span>
+                <div id="plinko-summary-chips" class="flex flex-wrap items-center justify-end gap-1 max-h-12 overflow-y-auto custom-scroll flex-1">
+                  <span class="text-[10px] text-slate-500 italic font-mono">Drop 1, 5, or 10 balls to see each ball's win</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Plinko Settings & Multi-Drop Dock -->
+            <div class="w-full max-w-xl bg-slate-900/95 border-2 border-emerald-600/70 p-2.5 rounded-2xl shadow-xl flex flex-col gap-2 shrink-0 z-20">
+              <!-- Top Row: Risk Level & Rows Selection -->
+              <div class="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-800 pb-1.5">
+                <!-- Risk Level -->
+                <div class="flex items-center gap-1">
+                  <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Risk:</span>
+                  <div class="flex rounded-xl bg-slate-950 p-0.5 border border-slate-800 text-[10px] font-black">
+                    <button type="button" onclick="setPlinkoRisk('low')" id="plinko-risk-low" class="px-2 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">LOW</button>
+                    <button type="button" onclick="setPlinkoRisk('medium')" id="plinko-risk-medium" class="px-2 py-0.5 rounded-lg transition-all bg-yellow-500 text-slate-950 font-black shadow">MED</button>
+                    <button type="button" onclick="setPlinkoRisk('high')" id="plinko-risk-high" class="px-2 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">HIGH</button>
+                    <button type="button" onclick="setPlinkoRisk('gorilla')" id="plinko-risk-gorilla" class="px-2 py-0.5 rounded-lg transition-all text-red-400 hover:text-white flex items-center gap-0.5"><span>🦍</span><span>DEGEN</span></button>
+                  </div>
+                </div>
+
+                <!-- Rows Selection -->
+                <div class="flex items-center gap-1">
+                  <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Rows:</span>
+                  <div class="flex rounded-xl bg-slate-950 p-0.5 border border-slate-800 text-[10px] font-mono font-bold">
+                    <button type="button" onclick="setPlinkoRows(8)" id="plinko-row-8" class="px-1.5 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">8</button>
+                    <button type="button" onclick="setPlinkoRows(10)" id="plinko-row-10" class="px-1.5 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">10</button>
+                    <button type="button" onclick="setPlinkoRows(12)" id="plinko-row-12" class="px-1.5 py-0.5 rounded-lg transition-all bg-emerald-600 text-white font-black shadow">12</button>
+                    <button type="button" onclick="setPlinkoRows(14)" id="plinko-row-14" class="px-1.5 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">14</button>
+                    <button type="button" onclick="setPlinkoRows(16)" id="plinko-row-16" class="px-1.5 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">16</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bottom Row: Drop Action Buttons -->
+              <div class="flex items-center gap-1.5 pt-0.5">
+                <button type="button" onclick="dropPlinkoBalls(1)" id="plinko-drop-1-btn" class="flex-1 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg border-b-4 border-amber-700 active:scale-95 transition-all flex items-center justify-center gap-1">
+                  <span>DROP 1 🍌</span>
+                </button>
+                <button type="button" onclick="dropPlinkoBalls(5)" id="plinko-drop-5-btn" class="px-3 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-black text-xs rounded-xl shadow-lg border-b-4 border-emerald-800 active:scale-95 transition-all flex items-center justify-center gap-1" title="Drop 5 balls cascading together!">
+                  <span>5x 💥</span>
+                </button>
+                <button type="button" onclick="dropPlinkoBalls(10)" id="plinko-drop-10-btn" class="px-3 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs rounded-xl shadow-lg border-b-4 border-purple-800 active:scale-95 transition-all flex items-center justify-center gap-1" title="Drop 10 balls storm!">
+                  <span>10x 🌪️</span>
+                </button>
+                <button type="button" onclick="togglePlinkoAuto()" id="plinko-auto-btn" class="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-xs rounded-xl border border-slate-700 active:scale-95 transition-all flex items-center justify-center gap-1" title="Continuous stream drop">
+                  <span id="plinko-auto-text">AUTO ♾️</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2817,6 +2975,7 @@
         }
         await setupSupabaseListeners();
         if (typeof updateGamemodeModalVisibility === 'function') updateGamemodeModalVisibility();
+        if (typeof initQuestSystem === 'function') initQuestSystem();
 
         if (isMobile()) {
             document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
@@ -2879,7 +3038,7 @@
     }
 
     function updateXp(newVal) {
-        if (!isInternalUpdate && newVal !== xp && !isPlaying && bjState !== 'playing' && bjState !== 'dealerTurn') {
+        if (!isInternalUpdate && newVal !== xp && !isPlaying && gameMode !== 'plinko' && !isPlinkoDropping && bjState !== 'playing' && bjState !== 'dealerTurn') {
             banUser();
         }
         xp = newVal;
@@ -2965,6 +3124,7 @@
         'veteran': { id: 'veteran', name: 'Veteran', color: 'text-purple-500', group: 'Epic' },
         'banana_billionaire': { id: 'banana_billionaire', name: 'Banana Billionaire', color: 'text-purple-500', group: 'Epic' },
         'tree_god': { id: 'tree_god', name: 'Tree God', color: 'text-red-500', group: 'Mythic' },
+        'plinko_master': { id: 'plinko_master', name: 'Plinko Master 🎯', color: 'text-amber-400', group: 'Epic' },
         'the_myth_the_legend': { id: 'the_myth_the_legend', name: 'The Myth The Legend', color: 'text-yellow-400', group: 'Legendary' },
         // Limited Edition Titles
         'the_hacker': { id: 'the_hacker', name: 'The Hacker', color: 'text-red-500', group: 'Mythic', limited: true },
@@ -3831,7 +3991,7 @@
 
       // CRITICAL: Block sync while a game is in progress to prevent balance leaks 
       // where the server result is fetched before the animation finishes.
-      if (isPlaying || (typeof bjState !== 'undefined' && (bjState === 'playing' || bjState === 'dealerTurn'))) {
+      if (isPlaying || (gameMode === 'plinko' && typeof plinkoBalls !== 'undefined' && plinkoBalls.some(b => !b.arrived)) || (typeof bjState !== 'undefined' && (bjState === 'playing' || bjState === 'dealerTurn'))) {
           // If we are playing, just queue a sync for after the game is over
           if (!pendingSync) {
               pendingSync = true;
@@ -5689,46 +5849,871 @@
 
     function stopGameLoop() { if (gameLoopInterval) clearInterval(gameLoopInterval); gameLoopInterval = null; }
 
+    // =================================================================
+    // 📜 DAILY QUESTS SYSTEM (5 CLIENT-BASED QUESTS PER HOUR)
+    // =================================================================
+
+    const QUEST_STORAGE_KEY = 'banana_daily_quests_v1';
+    let activeQuests = [];
+    let questRefreshTimestamp = 0;
+    let questTimerInterval = null;
+
+    const QUEST_POOL = [
+        // === EASY QUESTS (22) - Reward: 2 Whole Levels ===
+        {
+            id: 'easy_bj_play',
+            tier: 'easy',
+            reward: 2,
+            icon: '🃏',
+            title: 'Table Warmup',
+            desc: 'Play 5 hands of Blackjack',
+            target: 5,
+            evalProgress: (evt, amt) => evt === 'bj_play' ? amt : 0
+        },
+        {
+            id: 'easy_bj_win',
+            tier: 'easy',
+            reward: 2,
+            icon: '🃏',
+            title: 'Dealer Bust',
+            desc: 'Win 2 hands of Blackjack',
+            target: 2,
+            evalProgress: (evt, amt) => evt === 'bj_win' ? amt : 0
+        },
+        {
+            id: 'easy_cases_open',
+            tier: 'easy',
+            reward: 2,
+            icon: '📦',
+            title: 'Unboxer Novice',
+            desc: 'Open 3 Cases of any type',
+            target: 3,
+            evalProgress: (evt, amt) => evt === 'case_open' ? amt : 0
+        },
+        {
+            id: 'easy_cases_rare',
+            tier: 'easy',
+            reward: 2,
+            icon: '📦',
+            title: 'Rare Catch',
+            desc: 'Unbox a Rare or better Skin',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'case_open' && ['Rare', 'Epic', 'Legendary', 'Mythic', 'Ominous'].includes(meta.highestRarity)) ? 1 : 0
+        },
+        {
+            id: 'easy_roulette_spin',
+            tier: 'easy',
+            reward: 2,
+            icon: '🎡',
+            title: 'Wheel Roller',
+            desc: 'Spin Roulette 5 times',
+            target: 5,
+            evalProgress: (evt, amt) => evt === 'roulette_spin' ? amt : 0
+        },
+        {
+            id: 'easy_roulette_win',
+            tier: 'easy',
+            reward: 2,
+            icon: '🎡',
+            title: 'Color Catcher',
+            desc: 'Win 2 Roulette spins',
+            target: 2,
+            evalProgress: (evt, amt) => evt === 'roulette_win' ? amt : 0
+        },
+        {
+            id: 'easy_slots_spin',
+            tier: 'easy',
+            reward: 2,
+            icon: '🎰',
+            title: 'Slot Puller',
+            desc: 'Spin Slots 6 times',
+            target: 6,
+            evalProgress: (evt, amt) => evt === 'slots_spin' ? amt : 0
+        },
+        {
+            id: 'easy_slots_win',
+            tier: 'easy',
+            reward: 2,
+            icon: '🎰',
+            title: 'Fruity Win',
+            desc: 'Hit any winning spin on Slots',
+            target: 1,
+            evalProgress: (evt, amt) => evt === 'slots_win' ? amt : 0
+        },
+        {
+            id: 'easy_mines_cashout',
+            tier: 'easy',
+            reward: 2,
+            icon: '💎',
+            title: 'Cautious Miner',
+            desc: 'Cash out in Mines with 2+ gems',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'mines_cashout' && (meta.gems >= 2)) ? 1 : 0
+        },
+        {
+            id: 'easy_mines_win',
+            tier: 'easy',
+            reward: 2,
+            icon: '💎',
+            title: 'Mine Sweeper',
+            desc: 'Win 2 rounds of Mines',
+            target: 2,
+            evalProgress: (evt, amt) => evt === 'mines_cashout' ? amt : 0
+        },
+        {
+            id: 'easy_plinko_drop',
+            tier: 'easy',
+            reward: 2,
+            icon: '🎯',
+            title: 'Peg Hopper',
+            desc: 'Drop 5 balls in Plinko',
+            target: 5,
+            evalProgress: (evt, amt) => evt === 'plinko_drop' ? amt : 0
+        },
+        {
+            id: 'easy_plinko_mult',
+            tier: 'easy',
+            reward: 2,
+            icon: '🎯',
+            title: 'Lucky Bounce',
+            desc: 'Hit a 1.5x or higher in Plinko',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'plinko_mult' && meta.mult >= 1.5) ? 1 : 0
+        },
+        {
+            id: 'easy_crash_play',
+            tier: 'easy',
+            reward: 2,
+            icon: '🚀',
+            title: 'Astronaut',
+            desc: 'Play 3 rounds of Crash',
+            target: 3,
+            evalProgress: (evt, amt) => evt === 'crash_play' ? amt : 0
+        },
+        {
+            id: 'easy_crash_cashout',
+            tier: 'easy',
+            reward: 2,
+            icon: '🚀',
+            title: 'Safe Landing',
+            desc: 'Cash out at 1.5x or higher in Crash',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'crash_cashout' && meta.mult >= 1.5) ? 1 : 0
+        },
+        {
+            id: 'easy_hilo_correct',
+            tier: 'easy',
+            reward: 2,
+            icon: '📈',
+            title: 'Card Reader',
+            desc: 'Guess 3 Hi-Lo cards correctly',
+            target: 3,
+            evalProgress: (evt, amt) => evt === 'hilo_correct' ? amt : 0
+        },
+        {
+            id: 'easy_hilo_win',
+            tier: 'easy',
+            reward: 2,
+            icon: '📈',
+            title: 'Hi-Lo Profit',
+            desc: 'Cash out in 1 round of Hi-Lo',
+            target: 1,
+            evalProgress: (evt, amt) => evt === 'hilo_win' ? amt : 0
+        },
+        {
+            id: 'easy_poker_play',
+            tier: 'easy',
+            reward: 2,
+            icon: '🎴',
+            title: 'Poker Hand',
+            desc: 'Play 2 hands of Video Poker',
+            target: 2,
+            evalProgress: (evt, amt) => evt === 'poker_play' ? amt : 0
+        },
+        {
+            id: 'easy_banana_box',
+            tier: 'easy',
+            reward: 2,
+            icon: '📦',
+            title: 'Box Collector',
+            desc: 'Claim from the Banana Box 2 times',
+            target: 2,
+            evalProgress: (evt, amt) => evt === 'banana_box_claim' ? amt : 0
+        },
+        {
+            id: 'easy_harvest_click',
+            tier: 'easy',
+            reward: 2,
+            icon: '🌴',
+            title: 'Tree Harvester',
+            desc: 'Harvest bananas by clicking trees 15 times',
+            target: 15,
+            evalProgress: (evt, amt) => evt === 'tree_harvest_click' ? amt : 0
+        },
+        {
+            id: 'easy_win_streak',
+            tier: 'easy',
+            reward: 2,
+            icon: '🔥',
+            title: 'Double Streak',
+            desc: 'Achieve a 2-game win streak in casino',
+            target: 2,
+            evalProgress: (evt, amt, meta) => (evt === 'win_streak' && (amt >= 2 || (meta && (meta >= 2 || meta.streak >= 2)))) ? 2 : 0
+        },
+        {
+            id: 'easy_bc_click',
+            tier: 'easy',
+            reward: 2,
+            icon: '🍌',
+            title: 'Banana Clicker',
+            desc: 'Click the Big Banana 50 times',
+            target: 50,
+            evalProgress: (evt, amt) => evt === 'bc_click' ? amt : 0
+        },
+        {
+            id: 'easy_bets_placed',
+            tier: 'easy',
+            reward: 2,
+            icon: '🎲',
+            title: 'Active Gambler',
+            desc: 'Place 10 bets of any kind',
+            target: 10,
+            evalProgress: (evt, amt) => evt === 'bets_placed' ? amt : 0
+        },
+
+        // === MEDIUM QUESTS (22) - Reward: 4 Whole Levels ===
+        {
+            id: 'med_bj_win',
+            tier: 'medium',
+            reward: 4,
+            icon: '🃏',
+            title: 'Blackjack Ace',
+            desc: 'Win 5 hands of Blackjack',
+            target: 5,
+            evalProgress: (evt, amt) => evt === 'bj_win' ? amt : 0
+        },
+        {
+            id: 'med_bj_natural',
+            tier: 'medium',
+            reward: 4,
+            icon: '🃏',
+            title: 'Natural 21',
+            desc: 'Get a Natural Blackjack (21 on deal)',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'bj_win' && meta.isNatural) ? 1 : 0
+        },
+        {
+            id: 'med_bj_double',
+            tier: 'medium',
+            reward: 4,
+            icon: '🃏',
+            title: 'Double or Nothing',
+            desc: 'Win a Double Down in Blackjack',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'bj_win' && meta.isDouble) ? 1 : 0
+        },
+        {
+            id: 'med_cases_open',
+            tier: 'medium',
+            reward: 4,
+            icon: '📦',
+            title: 'Crate Fiend',
+            desc: 'Open 10 Cases',
+            target: 10,
+            evalProgress: (evt, amt) => evt === 'case_open' ? amt : 0
+        },
+        {
+            id: 'med_cases_epic',
+            tier: 'medium',
+            reward: 4,
+            icon: '📦',
+            title: 'Epic Discovery',
+            desc: 'Unbox an Epic or better Skin',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'case_open' && ['Epic', 'Legendary', 'Mythic', 'Ominous'].includes(meta.highestRarity)) ? 1 : 0
+        },
+        {
+            id: 'med_roulette_green',
+            tier: 'medium',
+            reward: 4,
+            icon: '🎡',
+            title: 'Green Seeker',
+            desc: 'Win on Green (14x) in Roulette',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'roulette_win' && meta.isGreen) ? 1 : 0
+        },
+        {
+            id: 'med_roulette_streak',
+            tier: 'medium',
+            reward: 4,
+            icon: '🎡',
+            title: 'Wheel Master',
+            desc: 'Win 3 Roulette spins in a row',
+            target: 3,
+            evalProgress: (evt, amt, meta) => (evt === 'win_streak' && (amt >= 3 || (meta && (meta >= 3 || meta.streak >= 3)))) ? 3 : 0
+        },
+        {
+            id: 'med_slots_spin',
+            tier: 'medium',
+            reward: 4,
+            icon: '🎰',
+            title: 'Slot Enthusiast',
+            desc: 'Spin Slots 20 times',
+            target: 20,
+            evalProgress: (evt, amt) => evt === 'slots_spin' ? amt : 0
+        },
+        {
+            id: 'med_slots_triple',
+            tier: 'medium',
+            reward: 4,
+            icon: '🎰',
+            title: 'Triple Trouble',
+            desc: 'Hit 3 matching icons in Slots',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'slots_win' && (meta.isTriple || meta.isJackpot)) ? 1 : 0
+        },
+        {
+            id: 'med_mines_diamonds',
+            tier: 'medium',
+            reward: 4,
+            icon: '💎',
+            title: 'Deep Excavator',
+            desc: 'Find 4 Diamonds in a single Mines round',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'mines_cashout' && meta.gems >= 4) ? 1 : 0
+        },
+        {
+            id: 'med_mines_mult',
+            tier: 'medium',
+            reward: 4,
+            icon: '💎',
+            title: 'Diamond Hands',
+            desc: 'Cash out at 3.0x or higher in Mines',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'mines_cashout' && meta.mult >= 3.0) ? 1 : 0
+        },
+        {
+            id: 'med_plinko_drop',
+            tier: 'medium',
+            reward: 4,
+            icon: '🎯',
+            title: 'Plinko Rain',
+            desc: 'Drop 25 balls in Plinko',
+            target: 25,
+            evalProgress: (evt, amt) => evt === 'plinko_drop' ? amt : 0
+        },
+        {
+            id: 'med_plinko_mult',
+            tier: 'medium',
+            reward: 4,
+            icon: '🎯',
+            title: 'Corner Aim',
+            desc: 'Hit a 5x or higher in Plinko',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'plinko_mult' && meta.mult >= 5) ? 1 : 0
+        },
+        {
+            id: 'med_crash_mult',
+            tier: 'medium',
+            reward: 4,
+            icon: '🚀',
+            title: 'To the Moon',
+            desc: 'Cash out at 3.0x or higher in Crash',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'crash_cashout' && meta.mult >= 3.0) ? 1 : 0
+        },
+        {
+            id: 'med_crash_streak',
+            tier: 'medium',
+            reward: 4,
+            icon: '🚀',
+            title: 'Streak Pilot',
+            desc: 'Cash out in 3 Crash games in a row',
+            target: 3,
+            evalProgress: (evt, amt, meta) => (evt === 'win_streak' && (amt >= 3 || (meta && (meta >= 3 || meta.streak >= 3)))) ? 3 : 0
+        },
+        {
+            id: 'med_hilo_streak',
+            tier: 'medium',
+            reward: 4,
+            icon: '📈',
+            title: 'Oracle',
+            desc: 'Get a 4-card guess streak in Hi-Lo',
+            target: 4,
+            evalProgress: (evt, amt, meta) => (evt === 'hilo_correct' && meta && meta.streak >= 4) ? 4 : 0
+        },
+        {
+            id: 'med_hilo_mult',
+            tier: 'medium',
+            reward: 4,
+            icon: '📈',
+            title: 'Card Whisperer',
+            desc: 'Cash out at 3.0x or higher in Hi-Lo',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'hilo_win' && meta && meta.mult >= 3.0) ? 1 : 0
+        },
+        {
+            id: 'med_poker_win',
+            tier: 'medium',
+            reward: 4,
+            icon: '🎴',
+            title: 'Poker Regular',
+            desc: 'Win 3 hands of Video Poker',
+            target: 3,
+            evalProgress: (evt, amt) => evt === 'poker_win' ? amt : 0
+        },
+        {
+            id: 'med_poker_twopair',
+            tier: 'medium',
+            reward: 4,
+            icon: '🎴',
+            title: 'Two Pair+',
+            desc: 'Get Two Pair or better in Video Poker',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'poker_win' && meta && meta.rank && !['JACKS OR BETTER', 'ONE PAIR', 'NO PAIR'].includes(meta.rank.toUpperCase())) ? 1 : 0
+        },
+        {
+            id: 'med_tree_manage',
+            tier: 'medium',
+            reward: 4,
+            icon: '🌴',
+            title: 'Arborist',
+            desc: 'Buy or upgrade 2 Trees in your grove',
+            target: 2,
+            evalProgress: (evt, amt) => evt === 'tree_buy_upgrade' ? amt : 0
+        },
+        {
+            id: 'med_win_amount',
+            tier: 'medium',
+            reward: 4,
+            icon: '💰',
+            title: 'Heavy Pockets',
+            desc: 'Win 50,000+ 🍌 in a single bet',
+            target: 1,
+            evalProgress: (evt, amt) => (evt === 'win_amount' && amt >= 50000) ? 1 : 0
+        },
+        {
+            id: 'med_win_streak',
+            tier: 'medium',
+            reward: 4,
+            icon: '🔥',
+            title: 'Hot Hand',
+            desc: 'Achieve a 4-game win streak in casino',
+            target: 4,
+            evalProgress: (evt, amt, meta) => (evt === 'win_streak' && (amt >= 4 || (meta && (meta >= 4 || meta.streak >= 4)))) ? 4 : 0
+        },
+
+        // === HARD QUESTS (12) - Reward: 6 Whole Levels ===
+        {
+            id: 'hard_bj_streak',
+            tier: 'hard',
+            reward: 6,
+            icon: '🃏',
+            title: 'Casino Shark',
+            desc: 'Win 4 hands of Blackjack in a row',
+            target: 4,
+            evalProgress: (evt, amt, meta) => (evt === 'win_streak' && (amt >= 4 || (meta && (meta >= 4 || meta.streak >= 4)))) ? 4 : 0
+        },
+        {
+            id: 'hard_cases_legendary',
+            tier: 'hard',
+            reward: 6,
+            icon: '📦',
+            title: 'Mythical Find',
+            desc: 'Unbox a Legendary, Mythic or Ominous Skin',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'case_open' && ['Legendary', 'Mythic', 'Ominous'].includes(meta.highestRarity)) ? 1 : 0
+        },
+        {
+            id: 'hard_cases_mass',
+            tier: 'hard',
+            reward: 6,
+            icon: '📦',
+            title: 'Case Tycoon',
+            desc: 'Open 30 Cases',
+            target: 30,
+            evalProgress: (evt, amt) => evt === 'case_open' ? amt : 0
+        },
+        {
+            id: 'hard_roulette_green2',
+            tier: 'hard',
+            reward: 6,
+            icon: '🎡',
+            title: 'Green Fortune',
+            desc: 'Hit Green in Roulette 2 times',
+            target: 2,
+            evalProgress: (evt, amt, meta) => (evt === 'roulette_win' && meta.isGreen) ? 1 : 0
+        },
+        {
+            id: 'hard_slots_jackpot',
+            tier: 'hard',
+            reward: 6,
+            icon: '🎰',
+            title: 'Mega Jackpot',
+            desc: 'Hit a Jackpot win on Slots',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'slots_win' && meta.isJackpot) ? 1 : 0
+        },
+        {
+            id: 'hard_mines_mult',
+            tier: 'hard',
+            reward: 6,
+            icon: '💎',
+            title: 'Mine Conqueror',
+            desc: 'Cash out at 8.0x or higher in Mines',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'mines_cashout' && meta.mult >= 8.0) ? 1 : 0
+        },
+        {
+            id: 'hard_mines_diamonds',
+            tier: 'hard',
+            reward: 6,
+            icon: '💎',
+            title: 'Greed is Good',
+            desc: 'Uncover 6 Diamonds safely in Mines',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'mines_cashout' && meta.gems >= 6) ? 1 : 0
+        },
+        {
+            id: 'hard_plinko_high',
+            tier: 'hard',
+            reward: 6,
+            icon: '🎯',
+            title: 'Plinko Legend',
+            desc: 'Hit a 20x or higher in Plinko',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'plinko_mult' && meta.mult >= 20) ? 1 : 0
+        },
+        {
+            id: 'hard_crash_rocket',
+            tier: 'hard',
+            reward: 6,
+            icon: '🚀',
+            title: 'Deep Orbit',
+            desc: 'Cash out at 7.0x or higher in Crash',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'crash_cashout' && meta.mult >= 7.0) ? 1 : 0
+        },
+        {
+            id: 'hard_hilo_master',
+            tier: 'hard',
+            reward: 6,
+            icon: '📈',
+            title: 'Clairvoyant',
+            desc: 'Reach a 6-card streak in Hi-Lo',
+            target: 6,
+            evalProgress: (evt, amt, meta) => (evt === 'hilo_correct' && meta && meta.streak >= 6) ? 6 : 0
+        },
+        {
+            id: 'hard_poker_flush',
+            tier: 'hard',
+            reward: 6,
+            icon: '🎴',
+            title: 'High Roller Hand',
+            desc: 'Get a Flush, Full House or higher in Poker',
+            target: 1,
+            evalProgress: (evt, amt, meta) => (evt === 'poker_win' && meta && meta.rank && ['FLUSH', 'FULL HOUSE', 'FOUR OF A KIND', 'STRAIGHT FLUSH', 'ROYAL FLUSH'].includes(meta.rank.toUpperCase())) ? 1 : 0
+        },
+        {
+            id: 'hard_mega_win',
+            tier: 'hard',
+            reward: 6,
+            icon: '👑',
+            title: 'Jungle Kingpin',
+            desc: 'Win 500,000+ 🍌 in a single bet',
+            target: 1,
+            evalProgress: (evt, amt) => (evt === 'win_amount' && amt >= 500000) ? 1 : 0
+        }
+    ];
+
+    function loadQuestsFromStorage() {
+        try {
+            const raw = localStorage.getItem(QUEST_STORAGE_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                questRefreshTimestamp = data.refreshTimestamp || 0;
+                activeQuests = data.quests || [];
+            }
+        } catch(e) {
+            console.error("Failed to load quests:", e);
+        }
+    }
+
+    function saveQuestsToStorage() {
+        try {
+            localStorage.setItem(QUEST_STORAGE_KEY, JSON.stringify({
+                refreshTimestamp: questRefreshTimestamp,
+                quests: activeQuests
+            }));
+        } catch(e) {}
+    }
+
+    function generateNewHourlyQuests() {
+        const easyPool = QUEST_POOL.filter(q => q.tier === 'easy');
+        const medPool = QUEST_POOL.filter(q => q.tier === 'medium');
+        const hardPool = QUEST_POOL.filter(q => q.tier === 'hard');
+
+        const pickRandomDistinct = (pool, count) => {
+            const copy = [...pool];
+            const selected = [];
+            for (let i = 0; i < count && copy.length > 0; i++) {
+                const idx = Math.floor(Math.random() * copy.length);
+                selected.push(copy.splice(idx, 1)[0]);
+            }
+            return selected;
+        };
+
+        const chosen = [
+            ...pickRandomDistinct(easyPool, 2),
+            ...pickRandomDistinct(medPool, 2),
+            ...pickRandomDistinct(hardPool, 1)
+        ];
+
+        activeQuests = chosen.map(def => ({
+            id: def.id,
+            tier: def.tier,
+            reward: def.reward,
+            icon: def.icon,
+            title: def.title,
+            desc: def.desc,
+            target: def.target,
+            progress: 0,
+            completed: false,
+            claimed: false
+        }));
+
+        questRefreshTimestamp = Date.now() + 3600000;
+        saveQuestsToStorage();
+        updateQuestsBadge();
+        renderQuestsUI();
+    }
+
+    function checkQuestHourlyExpiry() {
+        const now = Date.now();
+        if (!questRefreshTimestamp || now >= questRefreshTimestamp || !Array.isArray(activeQuests) || activeQuests.length < 5) {
+            generateNewHourlyQuests();
+        }
+    }
+
+    function startQuestTimerLoop() {
+        if (questTimerInterval) clearInterval(questTimerInterval);
+        questTimerInterval = setInterval(() => {
+            const now = Date.now();
+            const diff = questRefreshTimestamp - now;
+            if (diff <= 0) {
+                generateNewHourlyQuests();
+                showNotification("📜 Hourly Quests have refreshed! Incomplete quests reset.", "info");
+            } else {
+                const minutes = Math.floor(diff / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+                const timerEl = document.getElementById('quest-countdown-timer');
+                if (timerEl) {
+                    timerEl.innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+            }
+        }, 1000);
+    }
+
+    function triggerQuestProgress(eventType, amount = 1, metadata = {}) {
+        if (!activeQuests || activeQuests.length === 0) return;
+        let changed = false;
+        activeQuests.forEach(q => {
+            if (q.completed) return;
+            const def = QUEST_POOL.find(p => p.id === q.id);
+            if (def && typeof def.evalProgress === 'function') {
+                const added = def.evalProgress(eventType, amount, metadata);
+                if (added > 0) {
+                    q.progress = Math.min(q.target, q.progress + added);
+                    changed = true;
+                    if (q.progress >= q.target) {
+                        q.completed = true;
+                        showNotification(`🎉 Quest Complete: "${q.title}"! Claim +${q.reward} Whole Levels in Quests!`, 'success');
+                        playSound('win');
+                    }
+                }
+            }
+        });
+        if (changed) {
+            saveQuestsToStorage();
+            updateQuestsBadge();
+            renderQuestsUI();
+        }
+    }
+
+    function claimQuestReward(questIndex) {
+        const q = activeQuests[questIndex];
+        if (!q || !q.completed || q.claimed) return;
+
+        q.claimed = true;
+        const wholeLevels = q.reward; // 2, 4, or 6
+        level += wholeLevels;
+
+        playSound('win');
+        showNotification(`🎉 Quest Claimed! Gained +${wholeLevels} Whole Levels! You are now Level ${level}!`, 'success');
+
+        updateGameUI();
+        syncData(bananas, trees);
+        saveQuestsToStorage();
+        updateQuestsBadge();
+        renderQuestsUI();
+    }
+
+    function updateQuestsBadge() {
+        const badge = document.getElementById('tab-quests-badge');
+        if (!badge) return;
+        const unclaimedCount = (activeQuests || []).filter(q => q.completed && !q.claimed).length;
+        if (unclaimedCount > 0) {
+            badge.classList.remove('hidden');
+            badge.innerText = unclaimedCount;
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    function renderQuestsUI() {
+        const container = document.getElementById('quests-container');
+        if (!container) return;
+
+        if (!activeQuests || activeQuests.length === 0) {
+            container.innerHTML = '<div class="text-center py-6 text-slate-500 font-mono text-xs">Loading quests...</div>';
+            return;
+        }
+
+        let html = '';
+        activeQuests.forEach((q, idx) => {
+            const percent = Math.min(100, Math.floor((q.progress / q.target) * 100));
+            
+            let tierStyle = {
+                border: 'border-emerald-700/60',
+                bg: 'from-slate-950 via-emerald-950/20 to-slate-950',
+                badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                barBg: 'bg-gradient-to-r from-emerald-500 to-green-400',
+                label: 'EASY • +2 LEVELS'
+            };
+            if (q.tier === 'medium') {
+                tierStyle = {
+                    border: 'border-amber-700/60',
+                    bg: 'from-slate-950 via-amber-950/20 to-slate-950',
+                    badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                    barBg: 'bg-gradient-to-r from-yellow-500 to-amber-400',
+                    label: 'MEDIUM • +4 LEVELS'
+                };
+            } else if (q.tier === 'hard') {
+                tierStyle = {
+                    border: 'border-purple-600/70',
+                    bg: 'from-slate-950 via-purple-950/30 to-slate-950',
+                    badgeBg: 'bg-purple-500/25 text-purple-300 border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]',
+                    barBg: 'bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400',
+                    label: 'HARD • +6 LEVELS'
+                };
+            }
+
+            html += `
+            <div class="bg-gradient-to-b ${tierStyle.bg} border-2 ${tierStyle.border} rounded-2xl p-3 shadow-md flex flex-col gap-2 transition-all">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl md:text-2xl">${q.icon}</span>
+                  <div>
+                    <h4 class="text-xs md:text-sm font-black text-white leading-tight">${q.title}</h4>
+                    <p class="text-[9.5px] text-slate-300 leading-tight mt-0.5">${q.desc}</p>
+                  </div>
+                </div>
+                <span class="text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full border ${tierStyle.badgeBg} shrink-0">
+                  ${tierStyle.label}
+                </span>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="w-full bg-slate-900 rounded-full h-3 border border-slate-800 overflow-hidden relative shadow-inner flex items-center">
+                <div class="${tierStyle.barBg} h-full transition-all duration-300 rounded-full" style="width: ${percent}%;"></div>
+                <span class="absolute inset-0 flex items-center justify-center text-[8.5px] font-mono font-black text-white drop-shadow">
+                  ${formatNumber(q.progress)} / ${formatNumber(q.target)} (${percent}%)
+                </span>
+              </div>
+
+              <!-- Action Button / Claim State -->
+              <div>
+                ${q.claimed 
+                  ? `<div class="w-full py-1.5 rounded-xl bg-slate-900 border border-emerald-900/50 text-center font-black text-[10px] text-emerald-400 flex items-center justify-center gap-1">
+                       <span>CLAIMED</span> <span>✓</span>
+                     </div>`
+                  : q.completed
+                  ? `<button onclick="claimQuestReward(${idx})" class="w-full py-2 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs rounded-xl shadow-[0_0_15px_rgba(250,204,21,0.5)] active:scale-95 transition-all flex items-center justify-center gap-1.5 animate-bounce">
+                       <span>CLAIM +${q.reward} LEVELS!</span> <span>🎉</span>
+                     </button>`
+                  : `<div class="text-right text-[9px] text-slate-400 font-mono">
+                       In Progress • ${q.target - q.progress} remaining
+                     </div>`
+                }
+              </div>
+            </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function initQuestSystem() {
+        loadQuestsFromStorage();
+        checkQuestHourlyExpiry();
+        startQuestTimerLoop();
+        updateQuestsBadge();
+        renderQuestsUI();
+    }
+
     // --- RIGHT SIDEBAR VIEW TABS ---
     function setSidebarView(newView) {
         sidebarView = newView;
         
         const tabTrees = document.getElementById('tab-sb-trees');
         const tabGadgets = document.getElementById('tab-sb-gadgets');
+        const tabQuests = document.getElementById('tab-sb-quests');
         const viewTrees = document.getElementById('sidebar-trees');
         const viewGadgets = document.getElementById('sidebar-gadgets');
+        const viewQuests = document.getElementById('sidebar-quests');
         const btnTreeMobile = document.getElementById('buy-tree-btn-mobile');
 
+        // Reset all tabs
+        [tabTrees, tabGadgets, tabQuests].forEach(t => {
+            if (t) {
+                t.classList.replace('text-emerald-400', 'text-emerald-600');
+                t.classList.replace('border-emerald-400', 'border-transparent');
+                t.classList.remove('bg-emerald-900', 'shadow-inner');
+                t.classList.add('hover:bg-emerald-900/50');
+            }
+        });
+        [viewTrees, viewGadgets, viewQuests].forEach(v => {
+            if (v) v.classList.add('hidden');
+        });
+
         if (sidebarView === 'trees') {
-            tabTrees.classList.replace('text-emerald-600', 'text-emerald-400');
-            tabTrees.classList.replace('border-transparent', 'border-emerald-400');
-            tabTrees.classList.add('bg-emerald-900', 'shadow-inner');
-            tabTrees.classList.remove('hover:bg-emerald-900/50');
-            
-            tabGadgets.classList.replace('text-emerald-400', 'text-emerald-600');
-            tabGadgets.classList.replace('border-emerald-400', 'border-transparent');
-            tabGadgets.classList.remove('bg-emerald-900', 'shadow-inner');
-            tabGadgets.classList.add('hover:bg-emerald-900/50');
-
-            viewTrees.classList.remove('hidden');
-            viewGadgets.classList.add('hidden');
-            
-            btnTreeMobile.style.display = ''; 
-        } else {
-            tabGadgets.classList.replace('text-emerald-600', 'text-emerald-400');
-            tabGadgets.classList.replace('border-transparent', 'border-emerald-400');
-            tabGadgets.classList.add('bg-emerald-900', 'shadow-inner');
-            tabGadgets.classList.remove('hover:bg-emerald-900/50');
-            
-            tabTrees.classList.replace('text-emerald-400', 'text-emerald-600');
-            tabTrees.classList.replace('border-emerald-400', 'border-transparent');
-            tabTrees.classList.remove('bg-emerald-900', 'shadow-inner');
-            tabTrees.classList.add('hover:bg-emerald-900/50');
-
-            viewGadgets.classList.remove('hidden');
-            viewTrees.classList.add('hidden');
-            
-            btnTreeMobile.style.display = 'none';
+            if (tabTrees) {
+                tabTrees.classList.replace('text-emerald-600', 'text-emerald-400');
+                tabTrees.classList.replace('border-transparent', 'border-emerald-400');
+                tabTrees.classList.add('bg-emerald-900', 'shadow-inner');
+                tabTrees.classList.remove('hover:bg-emerald-900/50');
+            }
+            if (viewTrees) viewTrees.classList.remove('hidden');
+            if (btnTreeMobile) btnTreeMobile.style.display = ''; 
+        } else if (sidebarView === 'gadgets') {
+            if (tabGadgets) {
+                tabGadgets.classList.replace('text-emerald-600', 'text-emerald-400');
+                tabGadgets.classList.replace('border-transparent', 'border-emerald-400');
+                tabGadgets.classList.add('bg-emerald-900', 'shadow-inner');
+                tabGadgets.classList.remove('hover:bg-emerald-900/50');
+            }
+            if (viewGadgets) viewGadgets.classList.remove('hidden');
+            if (btnTreeMobile) btnTreeMobile.style.display = 'none'; 
+        } else if (sidebarView === 'quests') {
+            if (tabQuests) {
+                tabQuests.classList.replace('text-emerald-600', 'text-emerald-400');
+                tabQuests.classList.replace('border-transparent', 'border-emerald-400');
+                tabQuests.classList.add('bg-emerald-900', 'shadow-inner');
+                tabQuests.classList.remove('hover:bg-emerald-900/50');
+            }
+            if (viewQuests) viewQuests.classList.remove('hidden');
+            if (btnTreeMobile) btnTreeMobile.style.display = 'none'; 
+            renderQuestsUI();
         }
     }
 
@@ -5893,6 +6878,7 @@
         trees[firstEmpty] = 1;
         syncData(bananas, trees);
         updateGameUI();
+        triggerQuestProgress('tree_buy_upgrade', 1);
         addLog('purchase', finalCost, bananas, 'Buy New Tree');
         playSound('purchase');
       }
@@ -5905,6 +6891,7 @@
         }
         const level = trees[index];
         playSound('click');
+        triggerQuestProgress('tree_harvest_click', 1);
         if (level === 0) {
             const firstEmpty = trees.indexOf(0);
             if (index === firstEmpty) handleBuyTree();
@@ -5990,6 +6977,7 @@
             updateBananas(bananas - finalCost);
             isInternalUpdate = false;
             trees[selectedTreeIndex]++;
+            triggerQuestProgress('tree_buy_upgrade', 1);
             
             const totalTreeLevel = trees.reduce((a, b) => a + b, 0);
             if (totalTreeLevel >= 10) unlockTitle('tree_planter');
@@ -6061,6 +7049,11 @@
       if (mode === 'texasholdem') {
           spinResultMsg = "Texas Hold'em Poker Table";
           if (typeof renderTexasHoldemTable === 'function') renderTexasHoldemTable();
+      }
+
+      if (mode === 'plinko') {
+          spinResultMsg = "Choose risk & rows, then drop banana balls!";
+          initPlinkoGame();
       }
 
       updateGameUI();
@@ -6143,6 +7136,8 @@
             startMines();
             playSound('click');
         }
+      } else if (gameMode === 'plinko') {
+        dropPlinkoBalls(1);
       }
     }
 
@@ -6237,9 +7232,15 @@
             } else if (data.result.status === 'push') {
                 spinResultMsg = `Push! The card was the same. Bet refunded!`;
                 addLog('push', 0, bananas, `Hi-Lo: Push`);
+                triggerQuestProgress('bets_placed', 1);
             } else if (won) {
                 spinResultMsg = `Correct! Won ${formatNumber(winVal)} 🍌!`;
                 addLog('win', winVal, bananas, `Hi-Lo: 2x`);
+                triggerQuestProgress('hilo_correct', 1, { streak: hiloCards.length, mult: 2.0 });
+                triggerQuestProgress('hilo_win', 1, { mult: 2.0 });
+                triggerQuestProgress('win_amount', winVal);
+                triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+                triggerQuestProgress('bets_placed', 1);
                 
                 isInternalUpdate = true;
                 const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
@@ -6255,6 +7256,7 @@
             } else {
                 spinResultMsg = processLoss(betAmount, betAmount, `Wrong! Lost ${formatNumber(betAmount)} 🍌.`, data.result);
                 addLog('loss', betAmount, bananas, `Hi-Lo: Loss`);
+                triggerQuestProgress('bets_placed', 1);
             }
             
             hiloState = 'gameOver';
@@ -6350,6 +7352,9 @@
 
             
             const winVal = Number(data.winAmount);
+            triggerQuestProgress('poker_play', 1);
+            triggerQuestProgress('bets_placed', 1);
+
             if (data.result.megaBet === 'taxes') {
                 spinResultMsg = "TAXES! The jungle government took your entire win!";
                 addLog('loss', pokerOriginalBet, bananas, "Poker: Mega Bet Taxes");
@@ -6358,6 +7363,9 @@
                 spinResultMsg = `Got ${data.result.handName}! Won ${formatNumber(winVal)} 🍌!`;
                 addLog('win', winVal - pokerOriginalBet, bananas, `Poker: ${data.result.handName}`);
                 playSound('win');
+                triggerQuestProgress('poker_win', 1, { rank: data.result.handName });
+                triggerQuestProgress('win_amount', winVal);
+                triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
             } else {
                 if (pokerOriginalBet > 100000) unlockTitle('unlucky');
                 spinResultMsg = processLoss(pokerOriginalBet, pokerOriginalBet, `No winning hand. Lost ${formatNumber(pokerOriginalBet)} 🍌.`, data.result);
@@ -6422,6 +7430,8 @@
             crashStartTime = performance.now();
             elStatus.innerText = "Flying...";
             document.getElementById('crash-cashout-btn').classList.remove('hidden');
+            triggerQuestProgress('crash_play', 1);
+            triggerQuestProgress('bets_placed', 1);
             
             // Start local animation loop
             function updateCrash() {
@@ -6558,6 +7568,9 @@
                     spinResultMsg = `Cashed out at ${savedMultiplier.toFixed(2)}x! Won ${formatNumber(winAmount)} 🍌`;
                     addLog('win', winAmount, bananas, `Crash Cashout: ${savedMultiplier.toFixed(2)}x`);
                     elStatus.innerText = "SUCCESS!";
+                    triggerQuestProgress('crash_cashout', 1, { mult: savedMultiplier });
+                    triggerQuestProgress('win_amount', winAmount);
+                    triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
                 }
                 
                 // XP Gain
@@ -6686,6 +7699,7 @@
         minesRevealed = [];
         minesMultiplier = 1.0;
         isMinesPicking = false;
+        triggerQuestProgress('bets_placed', 1);
 
         isInternalUpdate = true;
         updateBananas(bananas - betAmount);
@@ -6810,6 +7824,9 @@
                 }
                 spinResultMsg = `Board Cleared! Won ${formatNumber(winAmount)} 🍌!`;
                 addLog('win', winAmount, bananas, `Mines Clear (${minesCount} mines)`);
+                triggerQuestProgress('mines_cashout', 1, { gems: minesRevealed.length, mult: minesMultiplier });
+                triggerQuestProgress('win_amount', winAmount);
+                triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
                 updateMinesMultipliers();
                 updateGameUI();
             }
@@ -6868,6 +7885,9 @@
             }
             spinResultMsg = `Cashed out at ${data.result.finalMultiplier.toFixed(2)}x! Won ${formatNumber(winAmount)} 🍌!`;
             addLog('win', winAmount, bananas, `Mines Cashout (${minesCount} mines)`);
+            triggerQuestProgress('mines_cashout', 1, { gems: minesRevealed.length, mult: data.result.finalMultiplier });
+            triggerQuestProgress('win_amount', winAmount);
+            triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
             updateGameUI();
         } catch (err) {
             isMinesPicking = false;
@@ -6875,6 +7895,856 @@
             if (banner) banner.innerText = "Error: " + parseError(err);
         }
     }
+
+    // =================================================================
+    // 🎯 GOLDEN BANANA PLINKO ENGINE (CANVAS PHYSICS & MULTI-DROPS)
+    // =================================================================
+
+    const PLINKO_PAYOUTS = {
+      8: {
+        low: [5.6, 2.1, 1.1, 1.0, 0.5, 1.0, 1.1, 2.1, 5.6],
+        medium: [13, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 13],
+        high: [29, 4, 1.5, 0.3, 0.2, 0.3, 1.5, 4, 29],
+        gorilla: [60, 5, 1.0, 0.1, 0, 0.1, 1.0, 5, 60]
+      },
+      10: {
+        low: [8.9, 3, 1.4, 1.1, 1.0, 0.5, 1.0, 1.1, 1.4, 3, 8.9],
+        medium: [22, 5, 2, 1.4, 0.6, 0.4, 0.6, 1.4, 2, 5, 22],
+        high: [76, 10, 3, 0.9, 0.3, 0.2, 0.3, 0.9, 3, 10, 76],
+        gorilla: [150, 15, 2, 0.5, 0.1, 0, 0.1, 0.5, 2, 15, 150]
+      },
+      12: {
+        low: [10, 3, 1.6, 1.4, 1.1, 1.0, 0.5, 1.0, 1.1, 1.4, 1.6, 3, 10],
+        medium: [33, 11, 4, 2, 1.1, 0.6, 0.3, 0.6, 1.1, 2, 4, 11, 33],
+        high: [170, 24, 8.1, 2, 0.7, 0.2, 0.2, 0.2, 0.7, 2, 8.1, 24, 170],
+        gorilla: [400, 40, 10, 2, 0.2, 0.1, 0, 0.1, 0.2, 2, 10, 40, 400]
+      },
+      14: {
+        low: [13, 5, 1.9, 1.4, 1.3, 1.1, 1.0, 0.5, 1.0, 1.1, 1.3, 1.4, 1.9, 5, 13],
+        medium: [58, 15, 7, 4, 1.9, 1.0, 0.5, 0.2, 0.5, 1.0, 1.9, 4, 7, 15, 58],
+        high: [420, 56, 18, 5, 1.9, 0.3, 0.2, 0.2, 0.2, 0.3, 1.9, 5, 18, 56, 420],
+        gorilla: [1000, 100, 25, 5, 1, 0.2, 0, 0, 0, 0.2, 1, 5, 25, 100, 1000]
+      },
+      16: {
+        low: [16, 9, 2, 1.4, 1.4, 1.2, 1.1, 1.0, 0.5, 1.0, 1.1, 1.2, 1.4, 1.4, 2, 9, 16],
+        medium: [110, 41, 10, 5, 3, 1.5, 1.0, 0.5, 0.3, 0.5, 1.0, 1.5, 3, 5, 10, 41, 110],
+        high: [1000, 130, 26, 9, 4, 2, 0.3, 0.2, 0.2, 0.2, 0.3, 2, 4, 9, 26, 130, 1000],
+        gorilla: [2500, 300, 60, 15, 4, 1, 0.1, 0, 0, 0, 0.1, 1, 4, 15, 60, 300, 2500]
+      }
+    };
+
+    let plinkoRows = 12;
+    let plinkoRisk = 'medium';
+    let plinkoBallCounter = 0;
+    let plinkoBalls = [];
+    let plinkoPegs = []; // array of { x, y, r, hitTimer }
+    let plinkoBuckets = []; // array of { x, y, w, h, mult, hitTimer }
+    let plinkoParticles = []; // celebration / spark particles
+    let plinkoHistory = [];
+    let plinkoAutoActive = false;
+    let plinkoAutoTimer = null;
+    let plinkoAnimFrame = null;
+    let plinkoAudioCtx = null;
+    let isPlinkoDropping = false;
+
+    function playPlinkoTone(freq, type = 'sine', duration = 0.08, gainVal = 0.15) {
+        if (isMuted) return;
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!plinkoAudioCtx && AudioContext) {
+                plinkoAudioCtx = new AudioContext();
+            }
+            if (plinkoAudioCtx && plinkoAudioCtx.state === 'suspended') {
+                plinkoAudioCtx.resume();
+            }
+            if (!plinkoAudioCtx) return;
+
+            const osc = plinkoAudioCtx.createOscillator();
+            const gain = plinkoAudioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, plinkoAudioCtx.currentTime);
+            gain.gain.setValueAtTime(gainVal, plinkoAudioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, plinkoAudioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(plinkoAudioCtx.destination);
+            osc.start();
+            osc.stop(plinkoAudioCtx.currentTime + duration);
+        } catch(e) {}
+    }
+
+    function playPlinkoPegBounce(row) {
+        const baseFreq = 380;
+        const freq = baseFreq + (row * 35);
+        playPlinkoTone(freq, 'triangle', 0.05, 0.12);
+    }
+
+    function playPlinkoSlotHit(mult) {
+        if (mult >= 100) {
+            // Massive jackpot fanfare
+            [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, idx) => {
+                setTimeout(() => playPlinkoTone(f, 'sine', 0.25, 0.25), idx * 80);
+            });
+        } else if (mult >= 10) {
+            [440, 554.37, 659.25, 880].forEach((f, idx) => {
+                setTimeout(() => playPlinkoTone(f, 'triangle', 0.14, 0.18), idx * 60);
+            });
+        } else if (mult >= 2) {
+            playPlinkoTone(587.33, 'sine', 0.1, 0.15);
+            setTimeout(() => playPlinkoTone(880, 'sine', 0.12, 0.15), 60);
+        } else {
+            playPlinkoTone(240, 'sine', 0.08, 0.08);
+        }
+    }
+
+    function getPlinkoMultiplierColor(mult) {
+        if (mult >= 500) return { bg: 'from-purple-600 via-pink-600 to-rose-600', text: 'text-amber-300', border: 'border-yellow-400', badge: 'bg-purple-600 text-yellow-300' };
+        if (mult >= 50) return { bg: 'from-red-600 to-rose-700', text: 'text-yellow-200', border: 'border-rose-400', badge: 'bg-red-600 text-white' };
+        if (mult >= 10) return { bg: 'from-amber-500 to-orange-600', text: 'text-yellow-950 font-black', border: 'border-amber-300', badge: 'bg-amber-500 text-slate-950 font-black' };
+        if (mult >= 2) return { bg: 'from-emerald-600 to-green-700', text: 'text-white', border: 'border-emerald-400', badge: 'bg-emerald-600 text-white' };
+        if (mult >= 1) return { bg: 'from-teal-800 to-slate-800', text: 'text-teal-200', border: 'border-teal-600', badge: 'bg-teal-900 text-teal-300' };
+        return { bg: 'from-slate-900 to-zinc-900', text: 'text-slate-400', border: 'border-slate-700', badge: 'bg-slate-900 text-slate-400' };
+    }
+
+    window.setPlinkoRows = function(r) {
+        if (isPlinkoDropping) return;
+        plinkoRows = [8, 10, 12, 14, 16].includes(r) ? r : 12;
+        [8, 10, 12, 14, 16].forEach(val => {
+            const btn = document.getElementById(`plinko-row-${val}`);
+            if (btn) {
+                if (val === plinkoRows) {
+                    btn.className = "px-1.5 py-0.5 rounded-lg transition-all bg-emerald-600 text-white font-black shadow";
+                } else {
+                    btn.className = "px-1.5 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white";
+                }
+            }
+        });
+        const disp = document.getElementById('plinko-rows-display');
+        if (disp) disp.innerText = plinkoRows;
+        rebuildPlinkoBoard();
+    };
+
+    window.setPlinkoRisk = function(risk) {
+        if (isPlinkoDropping) return;
+        plinkoRisk = ['low', 'medium', 'high', 'gorilla'].includes(risk) ? risk : 'medium';
+        const badge = document.getElementById('plinko-risk-badge');
+        if (badge) {
+            badge.innerText = plinkoRisk === 'gorilla' ? '🦍 DEGEN' : plinkoRisk.toUpperCase();
+            badge.className = plinkoRisk === 'gorilla' 
+                ? "bg-red-600/30 text-red-300 text-[9px] font-black px-1.5 py-0.5 rounded-full border border-red-500/50 uppercase animate-pulse"
+                : plinkoRisk === 'high'
+                ? "bg-orange-500/20 text-orange-300 text-[9px] font-black px-1.5 py-0.5 rounded-full border border-orange-500/40 uppercase"
+                : plinkoRisk === 'low'
+                ? "bg-emerald-500/20 text-emerald-300 text-[9px] font-black px-1.5 py-0.5 rounded-full border border-emerald-500/40 uppercase"
+                : "bg-yellow-500/20 text-yellow-300 text-[9px] font-black px-1.5 py-0.5 rounded-full border border-yellow-500/40 uppercase";
+        }
+        ['low', 'medium', 'high', 'gorilla'].forEach(val => {
+            const btn = document.getElementById(`plinko-risk-${val}`);
+            if (btn) {
+                if (val === plinkoRisk) {
+                    btn.className = val === 'gorilla' 
+                        ? "px-2 py-0.5 rounded-lg transition-all bg-red-600 text-white font-black shadow flex items-center gap-0.5"
+                        : val === 'high'
+                        ? "px-2 py-0.5 rounded-lg transition-all bg-orange-500 text-slate-950 font-black shadow"
+                        : val === 'low'
+                        ? "px-2 py-0.5 rounded-lg transition-all bg-emerald-600 text-white font-black shadow"
+                        : "px-2 py-0.5 rounded-lg transition-all bg-yellow-500 text-slate-950 font-black shadow";
+                } else {
+                    btn.className = val === 'gorilla'
+                        ? "px-2 py-0.5 rounded-lg transition-all text-red-400 hover:text-white flex items-center gap-0.5"
+                        : "px-2 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white";
+                }
+            }
+        });
+        rebuildPlinkoBoard();
+    };
+
+    let plinkoPegGrid = [];
+    let plinkoSlotCenters = [];
+    let currentPlinkoRound = {
+        totalCost: 0,
+        totalWin: 0,
+        totalBalls: 0,
+        landedBalls: 0,
+        ballResults: [],
+        inProgress: false
+    };
+
+    function updatePlinkoSummaryUI() {
+        const iconEl = document.getElementById('plinko-summary-icon');
+        const badgeEl = document.getElementById('plinko-summary-badge');
+        const costEl = document.getElementById('plinko-summary-cost');
+        const wonEl = document.getElementById('plinko-summary-won');
+        const profitBadgeEl = document.getElementById('plinko-summary-profit-badge');
+        const chipsEl = document.getElementById('plinko-summary-chips');
+
+        if (!badgeEl || !costEl || !wonEl || !profitBadgeEl || !chipsEl) return;
+
+        costEl.innerText = `${formatNumber(currentPlinkoRound.totalCost)} 🍌`;
+        wonEl.innerText = `+${formatNumber(currentPlinkoRound.totalWin)} 🍌`;
+
+        if (currentPlinkoRound.ballResults.length === 0) {
+            chipsEl.innerHTML = `<span class="text-[10px] text-slate-500 italic font-mono">Drop balls to see each ball's multiplier</span>`;
+        } else {
+            chipsEl.innerHTML = currentPlinkoRound.ballResults.map((b, idx) => {
+                const style = getPlinkoMultiplierColor(b.mult);
+                return `<span class="px-1.5 py-0.5 rounded text-[9.5px] font-mono font-black ${style.badge} border ${style.border} shadow-sm animate-in zoom-in-75 duration-150" title="Ball #${idx + 1}: ${b.mult}x (+${formatNumber(b.win)} 🍌)">#${idx + 1}: ${b.mult}x</span>`;
+            }).join('');
+        }
+
+        const cost = currentPlinkoRound.totalCost;
+        const win = currentPlinkoRound.totalWin;
+
+        if (currentPlinkoRound.inProgress && currentPlinkoRound.landedBalls < currentPlinkoRound.totalBalls) {
+            if (iconEl) iconEl.innerText = '🎲';
+            badgeEl.innerText = `DROPPING (${currentPlinkoRound.landedBalls}/${currentPlinkoRound.totalBalls})`;
+            badgeEl.className = 'text-[9px] font-black uppercase px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 animate-pulse';
+            const curMult = cost > 0 ? (win / cost).toFixed(2) : '0.00';
+            profitBadgeEl.innerText = `(${curMult}x)`;
+            profitBadgeEl.className = 'text-xs font-black text-yellow-400 font-mono px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800';
+        } else if (currentPlinkoRound.totalBalls > 0) {
+            const ratio = cost > 0 ? win / cost : 0;
+            const diff = win - cost;
+            if (diff > 0) {
+                if (iconEl) iconEl.innerText = '🎉';
+                badgeEl.innerText = `PROFIT (+${formatNumber(diff)} 🍌)`;
+                badgeEl.className = 'text-[9px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.35)]';
+                profitBadgeEl.innerText = `+${ratio.toFixed(2)}x PROFIT`;
+                profitBadgeEl.className = 'text-xs font-black text-emerald-400 font-mono px-2 py-0.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40';
+                wonEl.className = 'text-sm md:text-base font-black text-emerald-400 font-mono';
+            } else if (diff === 0) {
+                if (iconEl) iconEl.innerText = '⚖️';
+                badgeEl.innerText = 'BREAK EVEN';
+                badgeEl.className = 'text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700';
+                profitBadgeEl.innerText = `(1.00x)`;
+                profitBadgeEl.className = 'text-xs font-black text-slate-300 font-mono px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800';
+                wonEl.className = 'text-sm md:text-base font-black text-white font-mono';
+            } else {
+                if (iconEl) iconEl.innerText = '📉';
+                badgeEl.innerText = `LOSS (-${formatNumber(cost - win)} 🍌)`;
+                badgeEl.className = 'text-[9px] font-black uppercase px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40';
+                profitBadgeEl.innerText = `(${ratio.toFixed(2)}x)`;
+                profitBadgeEl.className = 'text-xs font-black text-rose-400 font-mono px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800';
+                wonEl.className = 'text-sm md:text-base font-black text-slate-300 font-mono';
+            }
+        }
+    }
+
+    function rebuildPlinkoBoard() {
+        const table = PLINKO_PAYOUTS[plinkoRows]?.[plinkoRisk] || PLINKO_PAYOUTS[12]['medium'];
+        const maxMult = Math.max(...table);
+        const maxDisp = document.getElementById('plinko-max-mult-display');
+        if (maxDisp) maxDisp.innerText = `${maxMult}x`;
+
+        // Initialize Canvas Peg Positions and Bucket Bar
+        initPlinkoCanvas();
+    }
+
+    function initPlinkoCanvas() {
+        const canvas = document.getElementById('plinko-canvas');
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const w = rect.width || 540;
+        const h = rect.height || 420;
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+
+        plinkoPegs = [];
+        plinkoPegGrid = [];
+        plinkoSlotCenters = [];
+        const rows = plinkoRows;
+        const startY = 34 * dpr;
+        const bottomY = (h - 48) * dpr;
+        const dy = (bottomY - startY) / (rows + 0.5);
+        const maxPegsInRow = rows + 2;
+        const pegSpacing = Math.min((canvas.width * 0.88) / maxPegsInRow, 32 * dpr);
+        const centerX = canvas.width / 2;
+
+        for (let r = 0; r < rows; r++) {
+            const pegsInRow = r + 3;
+            const rowY = startY + r * dy;
+            const startX = centerX - ((pegsInRow - 1) / 2) * pegSpacing;
+            plinkoPegGrid[r] = [];
+            for (let c = 0; c < pegsInRow; c++) {
+                const pegX = startX + c * pegSpacing;
+                const pegObj = {
+                    row: r,
+                    col: c,
+                    x: pegX,
+                    y: rowY,
+                    r: Math.max(2.5, 3.2 * dpr),
+                    hitTimer: 0
+                };
+                plinkoPegs.push(pegObj);
+                plinkoPegGrid[r][c] = pegObj;
+            }
+        }
+
+        // Calculate bottom slot centers
+        const lastRowPegs = rows + 2;
+        const lastRowStartX = centerX - ((lastRowPegs - 1) / 2) * pegSpacing;
+        const totalSlots = rows + 1;
+        const slotY = bottomY + dy * 0.45;
+
+        for (let s = 0; s < totalSlots; s++) {
+            const slotX = lastRowStartX + (s + 0.5) * pegSpacing;
+            plinkoSlotCenters[s] = {
+                x: slotX,
+                y: slotY,
+                width: pegSpacing * 0.92
+            };
+        }
+
+        // Render HTML bucket pills aligned EXACTLY to slot centers
+        const table = PLINKO_PAYOUTS[plinkoRows]?.[plinkoRisk] || PLINKO_PAYOUTS[12]['medium'];
+        const bucketContainer = document.getElementById('plinko-buckets-container');
+        if (bucketContainer) {
+            let html = '';
+            table.forEach((m, idx) => {
+                const style = getPlinkoMultiplierColor(m);
+                const slot = plinkoSlotCenters[idx];
+                if (slot) {
+                    const leftPx = (slot.x / dpr) - ((slot.width * 0.5) / dpr);
+                    const widthPx = slot.width / dpr;
+                    html += `
+                        <div id="plinko-bucket-${idx}" 
+                             style="position: absolute; left: ${leftPx}px; width: ${widthPx}px; bottom: 3px;"
+                             class="py-1 px-0.5 bg-gradient-to-b ${style.bg} ${style.border} border rounded-lg text-center shadow-md transition-all duration-150 transform flex items-center justify-center">
+                            <span class="text-[7.5px] sm:text-[9px] font-black ${style.text} leading-none block font-mono truncate">${m}x</span>
+                        </div>`;
+                }
+            });
+            bucketContainer.innerHTML = html;
+        }
+    }
+
+    function startPlinkoAnimationLoop() {
+        if (plinkoAnimFrame) cancelAnimationFrame(plinkoAnimFrame);
+
+        const canvas = document.getElementById('plinko-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        function loop() {
+            if (gameMode !== 'plinko') {
+                plinkoAnimFrame = requestAnimationFrame(loop);
+                return;
+            }
+
+            const dpr = window.devicePixelRatio || 1;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Draw glowing top funnel
+            const centerX = canvas.width / 2;
+            const topY = 18 * dpr;
+            ctx.save();
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.4)';
+            ctx.beginPath();
+            ctx.arc(centerX, topY, 14 * dpr, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#facc15';
+            ctx.font = `${14 * dpr}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🍌', centerX, topY);
+            ctx.restore();
+
+            // 2. Draw pegs with hit glow
+            plinkoPegs.forEach(peg => {
+                ctx.save();
+                if (peg.hitTimer > 0) {
+                    peg.hitTimer = Math.max(0, peg.hitTimer - 0.05);
+                    ctx.beginPath();
+                    ctx.arc(peg.x, peg.y, (peg.r * 1.5) + (peg.hitTimer * 8 * dpr), 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(250, 204, 21, ${peg.hitTimer * 0.6})`;
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(peg.x, peg.y, peg.r + (peg.hitTimer * 2 * dpr), 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = '#facc15';
+                    ctx.shadowBlur = 15;
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(peg.x, peg.y, peg.r, 0, Math.PI * 2);
+                    const grad = ctx.createRadialGradient(peg.x - 1, peg.y - 1, 0, peg.x, peg.y, peg.r);
+                    grad.addColorStop(0, '#fef08a');
+                    grad.addColorStop(0.7, '#eab308');
+                    grad.addColorStop(1, '#854d0e');
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+
+            // 3. Update & Draw Balls
+            for (let i = plinkoBalls.length - 1; i >= 0; i--) {
+                const b = plinkoBalls[i];
+                if (b.arrived) {
+                    b.fadeTimer -= 0.02;
+                    if (b.fadeTimer <= 0) {
+                        plinkoBalls.splice(i, 1);
+                        continue;
+                    }
+                } else {
+                    const wp0 = b.waypoints[b.currentWpIndex];
+                    const wp1 = b.waypoints[b.currentWpIndex + 1];
+
+                    if (wp0 && wp1) {
+                        b.wpProgress += b.wpSpeed;
+                        const p = Math.min(1, b.wpProgress);
+
+                        // Horizontal position: smooth interpolation
+                        b.x = wp0.x + (wp1.x - wp0.x) * p;
+
+                        // Vertical position: parabolic bounce curve
+                        const linY = wp0.y + (wp1.y - wp0.y) * p;
+                        const arc = -Math.sin(p * Math.PI) * (9 * dpr);
+                        b.y = linY + arc;
+
+                        // Trail tracking
+                        b.trail.push({ x: b.x, y: b.y, alpha: 0.75 });
+                        if (b.trail.length > 6) b.trail.shift();
+
+                        if (b.wpProgress >= 1) {
+                            b.currentWpIndex++;
+                            b.wpProgress = 0;
+
+                            // Peg bounce event
+                            if (wp1.peg) {
+                                wp1.peg.hitTimer = 1.0;
+                                playPlinkoPegBounce(wp1.row || 0);
+
+                                for (let sp = 0; sp < 4; sp++) {
+                                    plinkoParticles.push({
+                                        x: wp1.peg.x,
+                                        y: wp1.peg.y,
+                                        vx: (Math.random() - 0.5) * 4 * dpr,
+                                        vy: (Math.random() - 0.5) * 4 * dpr,
+                                        r: Math.random() * 2 + 1,
+                                        color: '#facc15',
+                                        life: 1.0
+                                    });
+                                }
+                            }
+
+                            // Final slot arrival
+                            if (wp1.isSlot) {
+                                b.arrived = true;
+                                b.x = wp1.x;
+                                b.y = wp1.y;
+                                handlePlinkoBallLanded(b);
+
+                                for (let sp = 0; sp < 8; sp++) {
+                                    plinkoParticles.push({
+                                        x: wp1.x,
+                                        y: wp1.y,
+                                        vx: (Math.random() - 0.5) * 5 * dpr,
+                                        vy: -Math.random() * 4 * dpr,
+                                        r: Math.random() * 2.5 + 1,
+                                        color: b.multiplier >= 2 ? '#22c55e' : '#facc15',
+                                        life: 1.0
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        // Safety fallback
+                        b.arrived = true;
+                        handlePlinkoBallLanded(b);
+                    }
+                }
+
+                // Draw luminous trail
+                ctx.save();
+                b.trail.forEach(t => {
+                    t.alpha *= 0.85;
+                    ctx.beginPath();
+                    ctx.arc(t.x, t.y, b.r * 0.7, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(250, 204, 21, ${t.alpha * 0.5})`;
+                    ctx.fill();
+                });
+
+                // Draw ball
+                const alpha = b.arrived ? (b.fadeTimer || 1) : 1;
+                ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                const ballGrad = ctx.createRadialGradient(b.x - 2, b.y - 2, 0, b.x, b.y, b.r);
+                ballGrad.addColorStop(0, '#ffffff');
+                ballGrad.addColorStop(0.3, '#fde047');
+                ballGrad.addColorStop(0.8, '#eab308');
+                ballGrad.addColorStop(1, '#ca8a04');
+                ctx.fillStyle = ballGrad;
+                ctx.shadowColor = '#facc15';
+                ctx.shadowBlur = 10;
+                ctx.fill();
+
+                // Ball icon
+                ctx.fillStyle = '#713f12';
+                ctx.font = `${b.r * 1.2}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🍌', b.x, b.y + 0.5);
+                ctx.restore();
+            }
+
+            // 4. Update & Draw Particles
+            for (let i = plinkoParticles.length - 1; i >= 0; i--) {
+                const p = plinkoParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.035;
+                if (p.life <= 0) {
+                    plinkoParticles.splice(i, 1);
+                    continue;
+                }
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            plinkoAnimFrame = requestAnimationFrame(loop);
+        }
+
+        plinkoAnimFrame = requestAnimationFrame(loop);
+    }
+
+    function spawnPlinkoBall(dropData, bet, serverResponse) {
+        const canvas = document.getElementById('plinko-canvas');
+        if (!canvas) return;
+        const dpr = window.devicePixelRatio || 1;
+        const centerX = canvas.width / 2;
+        const startY = 18 * dpr;
+
+        // Construct waypoints for this ball
+        const waypoints = [];
+        waypoints.push({ x: centerX, y: startY, peg: null });
+
+        // Row 0: apex peg is col 1
+        if (plinkoPegGrid[0] && plinkoPegGrid[0][1]) {
+            waypoints.push({
+                x: plinkoPegGrid[0][1].x,
+                y: plinkoPegGrid[0][1].y,
+                peg: plinkoPegGrid[0][1],
+                row: 0
+            });
+        }
+
+        // Rows 1 to rows - 1
+        let curCol = 1;
+        for (let r = 1; r < plinkoRows; r++) {
+            const step = dropData.path[r - 1]; // 0 (left) or 1 (right)
+            if (step === 1) curCol += 1;
+            const peg = plinkoPegGrid[r]?.[curCol] || plinkoPegGrid[r]?.[0];
+            if (peg) {
+                waypoints.push({
+                    x: peg.x,
+                    y: peg.y,
+                    peg: peg,
+                    row: r
+                });
+            }
+        }
+
+        // Final Slot Waypoint
+        const targetSlot = dropData.slotIndex;
+        const slotInfo = plinkoSlotCenters[targetSlot];
+        const finalSlotX = slotInfo ? slotInfo.x : centerX;
+        const finalSlotY = slotInfo ? slotInfo.y : (canvas.height - 28 * dpr);
+
+        waypoints.push({
+            x: finalSlotX,
+            y: finalSlotY,
+            peg: null,
+            isSlot: true,
+            slotIndex: targetSlot
+        });
+
+        plinkoBalls.push({
+            id: ++plinkoBallCounter,
+            x: waypoints[0].x,
+            y: waypoints[0].y,
+            r: Math.max(4.5, 5.8 * dpr),
+            waypoints: waypoints,
+            currentWpIndex: 0,
+            wpProgress: 0,
+            wpSpeed: 0.11, // crisp bounce speed (~9 frames per peg)
+            slotIndex: dropData.slotIndex,
+            multiplier: dropData.multiplier,
+            winAmount: Number(dropData.winAmount || 0),
+            bet: bet,
+            serverResponse: serverResponse,
+            trail: [],
+            arrived: false,
+            fadeTimer: 1.0
+        });
+    }
+
+    function handlePlinkoBallLanded(ball) {
+        const slotIdx = ball.slotIndex;
+        const mult = ball.multiplier;
+        const win = ball.winAmount;
+
+        // Flash bucket
+        const bucketEl = document.getElementById(`plinko-bucket-${slotIdx}`);
+        if (bucketEl) {
+            bucketEl.classList.add('scale-125', 'bg-yellow-400', 'text-slate-950', 'ring-2', 'ring-white', 'z-20');
+            setTimeout(() => {
+                bucketEl.classList.remove('scale-125', 'bg-yellow-400', 'text-slate-950', 'ring-2', 'ring-white', 'z-20');
+            }, 300);
+        }
+
+        // Sound
+        playPlinkoSlotHit(mult);
+
+        // Add to history ribbon
+        addPlinkoHistory(mult);
+
+        // Update Round Summary
+        currentPlinkoRound.landedBalls++;
+        currentPlinkoRound.totalWin += win;
+        currentPlinkoRound.ballResults.push({ mult: mult, win: win });
+        updatePlinkoSummaryUI();
+
+        triggerQuestProgress('plinko_drop', 1);
+        triggerQuestProgress('plinko_mult', 1, { mult: mult });
+        triggerQuestProgress('bets_placed', 1);
+        if (win > 0) {
+            triggerQuestProgress('win_amount', win);
+        }
+
+        // Balance & XP
+        if (win > 0) {
+            isInternalUpdate = true;
+            updateBananas(bananas + win);
+            const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
+            const xpGain = baseGain + (level * 5);
+            updateXp(xp + xpGain);
+            while (xp >= getXpForLevel(level)) {
+                updateXp(xp - getXpForLevel(level));
+                level++;
+            }
+            isInternalUpdate = false;
+        }
+
+        // Master title check
+        if (mult >= 100) {
+            unlockTitle('plinko_master');
+            showPlinkoCelebration(mult, win);
+        }
+
+        // Check if all balls in round finished
+        if (currentPlinkoRound.landedBalls >= currentPlinkoRound.totalBalls) {
+            currentPlinkoRound.inProgress = false;
+            updatePlinkoSummaryUI();
+
+            const totalCost = currentPlinkoRound.totalCost;
+            const totalWin = currentPlinkoRound.totalWin;
+            const totalBalls = currentPlinkoRound.totalBalls;
+
+            if (totalBalls > 1) {
+                if (totalWin > totalCost) {
+                    playSound('win');
+                    spinResultMsg = `Plinko ${totalBalls}x Drop: Net +${formatNumber(totalWin - totalCost)} 🍌 profit (${(totalWin/totalCost).toFixed(2)}x)!`;
+                    addLog('win', totalWin - totalCost, bananas, `Plinko ${totalBalls}x Drop (${plinkoRows} rows, ${plinkoRisk}): Won ${formatNumber(totalWin)} 🍌`);
+                } else if (totalWin === totalCost) {
+                    spinResultMsg = `Plinko ${totalBalls}x Drop: Broke even (${formatNumber(totalWin)} 🍌)`;
+                    addLog('win', 0, bananas, `Plinko ${totalBalls}x Drop: Even`);
+                } else {
+                    playSound('loss');
+                    spinResultMsg = `Plinko ${totalBalls}x Drop: Won ${formatNumber(totalWin)} 🍌 (Lost ${formatNumber(totalCost - totalWin)} 🍌)`;
+                    addLog('loss', totalCost - totalWin, bananas, `Plinko ${totalBalls}x Drop: Net loss ${formatNumber(totalCost - totalWin)} 🍌`);
+                }
+            } else {
+                if (win > 0) {
+                    playSound('win');
+                    spinResultMsg = `Plinko hit ${mult}x! Won +${formatNumber(win)} 🍌!`;
+                    addLog('win', win, bananas, `Plinko (${plinkoRows} rows, ${plinkoRisk}): ${mult}x`);
+                } else {
+                    playSound('loss');
+                    spinResultMsg = `Plinko hit ${mult}x (Lost ${formatNumber(ball.bet)} 🍌)`;
+                    addLog('loss', ball.bet, bananas, `Plinko: ${mult}x`);
+                }
+            }
+
+            isPlaying = false;
+            if (ball.serverResponse && ball.serverResponse.newBalance !== undefined) {
+                expectedDbBananas = Number(ball.serverResponse.newBalance);
+            }
+            if (pendingSync) {
+                pendingSync = false;
+                syncData(bananas, trees);
+            }
+        }
+
+        updateGameUI();
+    }
+
+    function showPlinkoCelebration(mult, amount) {
+        const overlay = document.getElementById('plinko-celebration');
+        const titleEl = document.getElementById('plinko-celebration-title');
+        const amtEl = document.getElementById('plinko-celebration-amount');
+        if (!overlay) return;
+
+        if (titleEl) titleEl.innerText = `${mult}x ULTRA JACKPOT!`;
+        if (amtEl) amtEl.innerText = `+${formatNumber(amount)} 🍌`;
+
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 3500);
+    }
+
+    function addPlinkoHistory(mult) {
+        plinkoHistory.unshift(mult);
+        if (plinkoHistory.length > 8) plinkoHistory.pop();
+        const ribbon = document.getElementById('plinko-history-ribbon');
+        if (!ribbon) return;
+
+        ribbon.innerHTML = plinkoHistory.map(m => {
+            const style = getPlinkoMultiplierColor(m);
+            return `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-black ${style.badge} shadow-sm shrink-0 border ${style.border}">${m}x</span>`;
+        }).join('');
+    }
+
+    window.dropPlinkoBalls = async function(count = 1) {
+        if (isPlinkoDropping) return;
+        const actualBet = betAmount;
+        if (actualBet <= 0) {
+            showNotification("Please set a bet amount first!", "error");
+            return;
+        }
+        const totalDropCost = actualBet * count;
+        if (bananas < totalDropCost) {
+            showNotification(`Not enough bananas! Need ${formatNumber(totalDropCost)} 🍌 for ${count} ball${count > 1 ? 's' : ''}.`, "error");
+            if (plinkoAutoActive) togglePlinkoAuto();
+            return;
+        }
+
+        isPlaying = true;
+        isPlinkoDropping = true;
+
+        // Initialize Round Summary
+        currentPlinkoRound = {
+            totalCost: totalDropCost,
+            totalWin: 0,
+            totalBalls: count,
+            landedBalls: 0,
+            ballResults: [],
+            inProgress: true
+        };
+        updatePlinkoSummaryUI();
+
+        // Subtract immediately for instant feedback
+        isInternalUpdate = true;
+        updateBananas(bananas - totalDropCost);
+        isInternalUpdate = false;
+        updateGameUI();
+
+        const currentRows = plinkoRows;
+        const currentRisk = plinkoRisk;
+
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    gameMode: 'plinko',
+                    clientScore: bananas,
+                    betAmount: actualBet,
+                    ballCount: count,
+                    rows: currentRows,
+                    risk: currentRisk,
+                    activeGadgets,
+                    taxPenalty: activeBoosts.tax_penalty > Date.now()
+                })
+            });
+
+            const data = await response.json();
+            if (!data.success) {
+                isPlaying = false;
+                isPlinkoDropping = false;
+                currentPlinkoRound.inProgress = false;
+                updatePlinkoSummaryUI();
+                // Restore balance
+                isInternalUpdate = true;
+                updateBananas(bananas + totalDropCost);
+                isInternalUpdate = false;
+                updateGameUI();
+                throw new Error(data.error || "Server error dropping Plinko ball");
+            }
+
+            isPlinkoDropping = false;
+            const drops = data.result.drops || [];
+            
+            if (data.newBalance !== undefined) {
+                expectedDbBananas = Number(data.newBalance);
+            }
+
+            // Launch balls staggered by 130ms for thrilling cascade!
+            drops.forEach((drop, idx) => {
+                setTimeout(() => {
+                    spawnPlinkoBall(drop, actualBet, data);
+                }, idx * 130);
+            });
+
+        } catch (err) {
+            isPlaying = false;
+            isPlinkoDropping = false;
+            currentPlinkoRound.inProgress = false;
+            updatePlinkoSummaryUI();
+            console.error("Plinko drop error:", err);
+            showNotification(err.message, "error");
+            if (plinkoAutoActive) togglePlinkoAuto();
+        }
+    };
+
+    window.togglePlinkoAuto = function() {
+        plinkoAutoActive = !plinkoAutoActive;
+        const btn = document.getElementById('plinko-auto-btn');
+        const text = document.getElementById('plinko-auto-text');
+        if (plinkoAutoActive) {
+            if (btn) btn.className = "px-3 py-2.5 bg-red-600 hover:bg-red-500 text-white font-black text-xs rounded-xl shadow-lg border-b-4 border-red-800 active:scale-95 transition-all flex items-center justify-center gap-1 animate-pulse";
+            if (text) text.innerText = "STOP ⏹️";
+            runPlinkoAutoLoop();
+        } else {
+            if (btn) btn.className = "px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-xs rounded-xl border border-slate-700 active:scale-95 transition-all flex items-center justify-center gap-1";
+            if (text) text.innerText = "AUTO ♾️";
+            if (plinkoAutoTimer) clearTimeout(plinkoAutoTimer);
+        }
+    };
+
+    function runPlinkoAutoLoop() {
+        if (!plinkoAutoActive || gameMode !== 'plinko') return;
+        if (bananas < betAmount || betAmount <= 0) {
+            togglePlinkoAuto();
+            return;
+        }
+        if (!isPlinkoDropping) {
+            dropPlinkoBalls(1);
+        }
+        plinkoAutoTimer = setTimeout(runPlinkoAutoLoop, 450);
+    }
+
+    function initPlinkoGame() {
+        rebuildPlinkoBoard();
+        startPlinkoAnimationLoop();
+    }
+
+    window.addEventListener('resize', () => {
+        if (gameMode === 'plinko') {
+            rebuildPlinkoBoard();
+        }
+    });
 
     // =================================================================
     // 🃏 TEXAS HOLD'EM POKER ENGINE (VS BOTS & ONLINE MULTIPLAYER)
@@ -8157,6 +10027,9 @@
                 showNotification("+1 Royal XP! Check the pass in Ludvig's shop.", "success");
             }
 
+            triggerQuestProgress('roulette_spin', 1);
+            triggerQuestProgress('bets_placed', 1);
+
             if (betColor === winningColor) {
               if (winningColor === 'green') {
                 consecutiveGreens++;
@@ -8172,6 +10045,9 @@
                   const winVal = Number(data.winAmount);
                   spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${formatNumber(winVal)} 🍌!`;
                   addLog('win', winVal, bananas, `Roulette ${winningColor.toUpperCase()}`);
+                  triggerQuestProgress('roulette_win', 1, { isGreen: winningColor === 'green' });
+                  triggerQuestProgress('win_amount', winVal);
+                  triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
                   
                   // XP Gain
                   const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
@@ -8370,6 +10246,9 @@
               showNotification("+1 Royal XP! Check the pass in Ludvig's shop.", "success");
           }
 
+          triggerQuestProgress('slots_spin', 1);
+          triggerQuestProgress('bets_placed', 1);
+
           const winVal = Number(data.winAmount);
           if (winVal > 0) {
               if (data.result.megaBet === 'taxes') {
@@ -8386,6 +10265,12 @@
                       spinResultMsg = `You won ${formatNumber(winVal)} 🍌!`;
                   }
                   addLog('win', winVal, bananas, 'Slots Win');
+                  triggerQuestProgress('slots_win', 1, { 
+                      isJackpot: data.result.winType === 'jackpot', 
+                      isTriple: data.result.winType === 'triple' || data.result.winType === 'jackpot' 
+                  });
+                  triggerQuestProgress('win_amount', winVal);
+                  triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
                   
                   // XP Gain
                   const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
@@ -8518,6 +10403,7 @@
             }
 
             const winningSkin = data.result.skin;
+            triggerQuestProgress('case_open', 1, { highestRarity: winningSkin.rarity });
             await runCaseOpeningAnimation(winningSkin, data.newBalance);
 
             // Show result
@@ -8607,6 +10493,7 @@
                 if (!data.success) throw new Error(data.error || "Server error");
 
                 const winningSkin = data.result.skin;
+                triggerQuestProgress('case_open', 1, { highestRarity: winningSkin.rarity });
                 // Skip internal balance update during mass opening to prevent visual jumping
                 await runCaseOpeningAnimation(winningSkin, data.newBalance, true);
                 
@@ -8995,11 +10882,15 @@
       </div>`;
     }
     let bjOriginalBet = 0;
+    let bjIsDoubleDownBet = false;
     function playBlackjack() { bjOriginalBet = betAmount;
+      bjIsDoubleDownBet = false;
       if (bananas < betAmount) {
          showNotification("Not enough bananas!", "error");
          return;
       }
+      triggerQuestProgress('bj_play', 1);
+      triggerQuestProgress('bets_placed', 1);
       isInternalUpdate = true;
       updateBananas(bananas - betAmount);
       isInternalUpdate = false;
@@ -9090,6 +10981,7 @@
       updateBananas(bananas - betAmount);
       isInternalUpdate = false;
       betAmount *= 2;
+      bjIsDoubleDownBet = true;
       
       bjPlayer.push(drawCard());
       playSound('card');
@@ -9188,6 +11080,13 @@
           
           const winVal = Number(data.winAmount);
           const profit = winVal - betAmount;
+
+          const isBjWin = (reason === 'dealerBust' || reason === 'win' || reason === 'blackjack') || (Array.isArray(reason) && profit > 0);
+          if (isBjWin && data.result.megaBet !== 'taxes') {
+              triggerQuestProgress('bj_win', 1, { isNatural: reason === 'blackjack', isDouble: bjIsDoubleDownBet });
+              triggerQuestProgress('win_amount', winVal);
+              triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+          }
           
           if (data.result.megaBet === 'taxes') {
               spinResultMsg = "TAXES! The jungle government took your entire win!";
@@ -9257,6 +11156,7 @@
       
       addLog('income', amount, bananas, 'Banana Box Claim');
       playSound('win');
+      triggerQuestProgress('banana_box_claim', 1);
       updateGameUI();
       
       clearTimeout(syncTimeout);
@@ -9397,6 +11297,8 @@
       if (areaMines) areaMines.classList.toggle('hidden', gameMode !== 'mines');
       const areaTexasHoldem = document.getElementById('area-texasholdem');
       if (areaTexasHoldem) areaTexasHoldem.classList.toggle('hidden', gameMode !== 'texasholdem');
+      const areaPlinko = document.getElementById('area-plinko');
+      if (areaPlinko) areaPlinko.classList.toggle('hidden', gameMode !== 'plinko');
 
       const elBettingControls = document.getElementById('betting-controls-container');
       if (elBettingControls) {
@@ -9459,18 +11361,20 @@
       if (gameMode === 'hilo' && (hiloState === 'guessing' || hiloState === 'resolving')) canAction = false;
       if (gameMode === 'crash' && crashState === 'flying') canAction = false;
       if (gameMode === 'mines' && minesState === 'playing') canAction = false;
+      if (gameMode === 'plinko') canAction = !isPlinkoDropping && !isSyncing && bananas >= betAmount && betAmount > 0;
       if (gameMode === 'slots' && isBonusBet && (betAmount + currentBonusBet) > bananas) canAction = false;
 
       elMainActionBtn.disabled = !canAction;
       elMainActionBtn.className = canAction ? "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl transition-all active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-b-4 border-yellow-600" : "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl bg-emerald-800 text-emerald-900 cursor-not-allowed opacity-80 border-b-4 border-emerald-900";
       
-      if (isPlaying) { elMainActionBtn.innerText = "PLAYING..."; }
+      if (isPlaying && gameMode !== 'plinko') { elMainActionBtn.innerText = "PLAYING..."; }
       else if (isSyncing || balanceDirty) { elMainActionBtn.innerText = "SYNCING..."; }
       else if (gameMode === 'blackjack') { elMainActionBtn.innerText = (bjState === 'gameOver') ? "DEAL AGAIN" : "DEAL"; }
       else if (gameMode === 'hilo') { elMainActionBtn.innerText = (hiloState === 'gameOver') ? "PLAY AGAIN" : "PLAY HI-LO"; }
       else if (gameMode === 'poker') { elMainActionBtn.innerText = (pokerState === 'gameOver') ? "DEAL AGAIN" : "DEAL POKER"; }
       else if (gameMode === 'crash') { elMainActionBtn.innerText = "START FLIGHT"; }
       else if (gameMode === 'mines') { elMainActionBtn.innerText = (minesState === 'gameOver') ? "START NEW ROUND" : "START MINES"; }
+      else if (gameMode === 'plinko') { elMainActionBtn.innerText = isPlinkoDropping ? "DROPPING..." : "DROP BALL 🍌"; }
       else { elMainActionBtn.innerText = "SPIN"; }
 
       // Blackjack specifics logic
@@ -11530,6 +13434,7 @@
         bcAllTimeBananas += power;
         bcTotalClicks++;
         playSound("click");
+        triggerQuestProgress('bc_click', 1);
         checkBcAchievements();
         updateBcUI();
 
@@ -11825,7 +13730,8 @@
         openBcStatsModal, closeBcStatsModal,
         openBcAchievementsModal, closeBcAchievementsModal,
         setBcBulkBuyMode, buyBcTieredUpgrade,
-        setMinesCount, pickMinesTile, cashOutMines, startMines
+        setMinesCount, pickMinesTile, cashOutMines, startMines,
+        claimQuestReward
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
