@@ -230,6 +230,12 @@
           </div>
           <p id="tree-modal-warning" class="text-red-400 text-xs font-bold mt-2 hidden bg-red-950/50 p-2 rounded border border-red-900/50">Requires all 20 tree slots unlocked!</p>
         </div>
+
+        <!-- Max Level Badge -->
+        <div id="tree-modal-max-badge" class="hidden bg-gradient-to-r from-amber-500/20 via-yellow-500/30 to-amber-500/20 p-4 rounded-xl border-2 border-yellow-400 text-center shadow-lg">
+          <p class="text-yellow-300 text-xs font-black uppercase tracking-wider">🌟 MAX LEVEL 10 ACHIEVED 🌟</p>
+          <p class="text-white text-xs mt-1">This Primordial God-Tree is producing bananas at maximum power!</p>
+        </div>
       </div>
 
       <button id="tree-modal-btn" onclick="upgradeTree()" class="w-full mt-6 py-4 rounded-xl font-black text-xl shadow-xl transition-transform active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-b-4 border-yellow-600">
@@ -3095,11 +3101,16 @@
     let selectedTreeIndex = -1;
 
     const TREE_DATA = {
-        1: { cost: 100,    reward: 1,     ticks: 5,   reqAllTrees: false }, 
-        2: { cost: 500,    reward: 10,    ticks: 5,   reqAllTrees: false },
-        3: { cost: 1000,   reward: 100,   ticks: 10,  reqAllTrees: true  },
-        4: { cost: 10000,  reward: 670,  ticks: 60,  reqAllTrees: true  }, 
-        5: { cost: 1000000, reward: 2000, ticks: 100, reqAllTrees: true  }
+        1:  { cost: 100,      reward: 2,     ticks: 5,  name: 'Common Sapling', reqAllTrees: false }, 
+        2:  { cost: 500,      reward: 8,     ticks: 4,  name: 'Bronze Palm',    reqAllTrees: false },
+        3:  { cost: 2500,     reward: 25,    ticks: 5,  name: 'Silver Grove',   reqAllTrees: false },
+        4:  { cost: 10000,    reward: 70,    ticks: 7,  name: 'Gold Plantation',reqAllTrees: true  }, 
+        5:  { cost: 40000,    reward: 160,   ticks: 8,  name: 'Jade Canopy',    reqAllTrees: true  },
+        6:  { cost: 150000,   reward: 360,   ticks: 9,  name: 'Sapphire Oasis', reqAllTrees: true  },
+        7:  { cost: 500000,   reward: 700,   ticks: 10, name: 'Amethyst Ancient',reqAllTrees: true },
+        8:  { cost: 1500000,  reward: 1320,  ticks: 12, name: 'Ruby Colossus',  reqAllTrees: true  },
+        9:  { cost: 4000000,  reward: 2400,  ticks: 15, name: 'Celestial Tree', reqAllTrees: true  },
+        10: { cost: 10000000, reward: 4800,  ticks: 20, name: 'Primordial God-Tree', reqAllTrees: true }
     };
 
     // Gadgets Data Structure
@@ -3240,7 +3251,9 @@
         { title: 'Dealer Peek', cost: 250000, desc: 'Blackjack: Dealer busting pays out 2.5x instead of 2.0x.' },
         { title: 'Mega Bet', cost: 500000, desc: 'All-in risk: 5% chance for 10x win, 25% chance to lose all (Taxes).' },
         { title: 'Instant Cases', cost: 75000, desc: 'Skips the animation for cases and gives your win almost instantly.' },
-        ...Array(3).fill({ title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true })
+        { title: 'Sonar Radar', cost: 175000, desc: 'Mines: Your very first tile pick in every round is guaranteed to be safe.' },
+        { title: 'Bumper Cushion', cost: 250000, desc: 'Plinko: Low multipliers below 0.6x receive a +0.2x cushion bonus.' },
+        { title: 'Coming Soon', cost: 0, desc: 'Locked for future updates.', locked: true }
     ];
 
     let leaderboard = [];
@@ -6743,7 +6756,7 @@
             const unlockedCount = unlockedGadgets.filter(g => g).length;
             if (unlockedCount >= availableGadgetsCount) unlockTitle('extra_hand');
             updateGameUI();
-            addLog('purchase', gadget.cost, bananas, `Buy Gadget: ${gadget.name}`);
+            addLog('purchase', gadget.cost, bananas, `Buy Gadget: ${gadget.title || gadget.name}`);
             playSound('purchase');
         }
     }
@@ -6767,6 +6780,9 @@
         }
         syncData(bananas, trees);
         updateGameUI();
+        if (gameMode === 'plinko' && typeof rebuildPlinkoBoard === 'function') {
+            rebuildPlinkoBoard();
+        }
     }
 
     let lastInsuranceUseTime = 0;
@@ -6902,14 +6918,16 @@
         const currentData = TREE_DATA[level];
         const nextData = TREE_DATA[level + 1];
         const treesOwned = trees.filter(l => l > 0).length;
+        const treeName = currentData.name || `Tree Level ${level}`;
         
-        document.getElementById('tree-modal-title').innerHTML = `🌴 Tree Level ${level}`;
-        document.getElementById('tree-modal-current').innerHTML = `${currentData.reward.toLocaleString()} 🍌 <span class="text-sm text-emerald-300">/ ${currentData.ticks}s</span>`;
+        document.getElementById('tree-modal-title').innerHTML = `🌴 ${treeName} (Level ${level}/10)`;
+        document.getElementById('tree-modal-current').innerHTML = `${currentData.reward.toLocaleString()} 🍌 <span class="text-sm text-emerald-300">/ ${currentData.ticks}s</span> <span class="text-xs text-emerald-400 font-bold ml-2">(${(currentData.reward / currentData.ticks).toFixed(1)} 🍌/s)</span>`;
         
         const btn = document.getElementById('tree-modal-btn');
         const sellBtn = document.getElementById('tree-modal-sell-btn');
         const nextContainer = document.getElementById('tree-modal-next-container');
         const warningEl = document.getElementById('tree-modal-warning');
+        const maxBadge = document.getElementById('tree-modal-max-badge');
         
         // Sell Logic
         if (index === 0) {
@@ -6923,10 +6941,12 @@
         if (!nextData) {
             nextContainer.classList.add('hidden');
             btn.classList.add('hidden');
+            if (maxBadge) maxBadge.classList.remove('hidden');
         } else {
+            if (maxBadge) maxBadge.classList.add('hidden');
             nextContainer.classList.remove('hidden');
             btn.classList.remove('hidden');
-            document.getElementById('tree-modal-next').innerHTML = `${nextData.reward.toLocaleString()} 🍌 <span class="text-sm text-yellow-200/50">/ ${nextData.ticks}s</span>`;
+            document.getElementById('tree-modal-next').innerHTML = `${nextData.reward.toLocaleString()} 🍌 <span class="text-sm text-yellow-200/50">/ ${nextData.ticks}s</span> <span class="text-xs text-yellow-300 font-bold ml-2">(${(nextData.reward / nextData.ticks).toFixed(1)} 🍌/s)</span>`;
             const discount = activeBoosts.discount > Date.now() ? 0.75 : 1;
             const finalCost = Math.floor(nextData.cost * discount);
             document.getElementById('tree-modal-cost').innerText = `Cost: ${finalCost.toLocaleString()} 🍌`;
@@ -7705,10 +7725,15 @@
         updateBananas(bananas - betAmount);
         isInternalUpdate = false;
 
+        const isSonarActive = activeGadgets[7];
         const banner = document.getElementById('mines-status-banner');
         if (banner) {
-            banner.innerText = "Finding mines... Click any tile to reveal!";
-            banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 animate-pulse";
+            banner.innerText = isSonarActive 
+                ? "📡 Sonar Radar Active: 1st pick is guaranteed safe! Click any tile!"
+                : "Finding mines... Click any tile to reveal!";
+            banner.className = isSonarActive
+                ? "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-cyan-950/90 text-cyan-300 border border-cyan-400 shadow-md animate-pulse"
+                : "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 animate-pulse";
         }
 
         updateMinesMultipliers();
@@ -7799,9 +7824,13 @@
                 playSound('win');
                 renderMinesGrid();
                 updateMinesMultipliers();
+                if (data.result.sonarProtected) {
+                    showNotification("📡 Sonar Radar detected a mine on your first pick and safely relocated it!", "success");
+                }
                 if (banner) {
                     const winVal = Math.round(betAmount * minesMultiplier);
-                    banner.innerText = `🍌 Safe! Multiplier: ${minesMultiplier.toFixed(2)}x (+${formatNumber(winVal)} 🍌) - Cash out or keep picking!`;
+                    const sonarNote = data.result.sonarProtected ? ' [📡 SONAR DEFLECTED MINE!]' : '';
+                    banner.innerText = `🍌 Safe!${sonarNote} Multiplier: ${minesMultiplier.toFixed(2)}x (+${formatNumber(winVal)} 🍌) - Cash out or keep picking!`;
                     banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-yellow-950/80 text-yellow-300 border border-yellow-500/60";
                 }
                 updateGameUI();
@@ -8197,10 +8226,13 @@
 
         // Render HTML bucket pills aligned EXACTLY to slot centers
         const table = PLINKO_PAYOUTS[plinkoRows]?.[plinkoRisk] || PLINKO_PAYOUTS[12]['medium'];
+        const isBumperActive = activeGadgets[8];
         const bucketContainer = document.getElementById('plinko-buckets-container');
         if (bucketContainer) {
             let html = '';
-            table.forEach((m, idx) => {
+            table.forEach((rawM, idx) => {
+                const isCushioned = isBumperActive && rawM < 0.6;
+                const m = isCushioned ? Number((rawM + 0.2).toFixed(2)) : rawM;
                 const style = getPlinkoMultiplierColor(m);
                 const slot = plinkoSlotCenters[idx];
                 if (slot) {
@@ -8209,7 +8241,7 @@
                     html += `
                         <div id="plinko-bucket-${idx}" 
                              style="position: absolute; left: ${leftPx}px; width: ${widthPx}px; bottom: 3px;"
-                             class="py-1 px-0.5 bg-gradient-to-b ${style.bg} ${style.border} border rounded-lg text-center shadow-md transition-all duration-150 transform flex items-center justify-center">
+                             class="py-1 px-0.5 bg-gradient-to-b ${style.bg} ${style.border} ${isCushioned ? 'ring-1 ring-emerald-400/80 shadow-[0_0_8px_rgba(52,211,153,0.4)]' : ''} border rounded-lg text-center shadow-md transition-all duration-150 transform flex items-center justify-center">
                             <span class="text-[7.5px] sm:text-[9px] font-black ${style.text} leading-none block font-mono truncate">${m}x</span>
                         </div>`;
                 }
@@ -11486,12 +11518,19 @@
         
         if (level > 0) {
             cursor = "cursor-pointer hover:scale-105 active:scale-95 hover:z-10 shadow-sm";
-            if (level === 1) bgClass = "bg-emerald-800 border-emerald-400 text-emerald-400";
-            if (level === 2) bgClass = "bg-yellow-900/80 border-yellow-400 text-yellow-400";
-            if (level === 3) bgClass = "bg-blue-900/80 border-blue-400 text-blue-400";
-            if (level === 4) bgClass = "bg-purple-900/80 border-purple-400 text-purple-400";
-            if (level === 5) {
-                bgClass = "bg-red-900/80 border-red-400 text-red-400 shadow-[0_0_15px_rgba(248,113,113,0.6)] z-0";
+            if (level === 1) bgClass = "bg-emerald-950/80 border-emerald-600 text-emerald-400";
+            else if (level === 2) bgClass = "bg-amber-950/80 border-amber-600 text-amber-400";
+            else if (level === 3) bgClass = "bg-slate-800/90 border-slate-300 text-slate-200";
+            else if (level === 4) bgClass = "bg-yellow-950/80 border-yellow-400 text-yellow-300";
+            else if (level === 5) bgClass = "bg-teal-950/80 border-teal-400 text-teal-300 shadow-[0_0_10px_rgba(45,212,191,0.3)]";
+            else if (level === 6) bgClass = "bg-blue-950/80 border-blue-400 text-blue-300 shadow-[0_0_12px_rgba(96,165,250,0.4)]";
+            else if (level === 7) bgClass = "bg-purple-950/80 border-purple-400 text-purple-300 shadow-[0_0_15px_rgba(192,132,252,0.5)]";
+            else if (level === 8) bgClass = "bg-rose-950/80 border-rose-400 text-rose-300 shadow-[0_0_18px_rgba(251,113,133,0.6)]";
+            else if (level === 9) {
+                bgClass = "bg-indigo-950/90 border-cyan-400 text-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.7)]";
+                animation = "animate-pulse";
+            } else if (level >= 10) {
+                bgClass = "bg-gradient-to-br from-amber-950 via-purple-950 to-rose-950 border-amber-300 text-amber-200 shadow-[0_0_25px_rgba(250,204,21,0.85)] ring-2 ring-amber-400";
                 animation = "animate-pulse";
             }
             content = `<div class="relative flex items-center justify-center w-full h-full">
@@ -11557,7 +11596,7 @@
             if (g.locked) {
                 btnHtml = `<button disabled class="px-3 py-1.5 rounded bg-slate-800/50 text-slate-500 font-bold text-[10px] cursor-not-allowed border-b-2 border-slate-900/50">LOCKED</button>`;
             } else if (!isOwned) {
-                btnHtml = `<button onclick="buyGadget(${i})" class="px-3 py-1.5 rounded font-bold text-[10px] transition-transform active:scale-95 border-b-2 ${canAfford ? 'bg-yellow-400 text-yellow-900 border-yellow-600 hover:bg-yellow-300' : 'bg-emerald-800/50 text-emerald-700 border-emerald-900 cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>BUY (${g.cost} 🍌)</button>`;
+                btnHtml = `<button onclick="buyGadget(${i})" class="px-3 py-1.5 rounded font-bold text-[10px] transition-transform active:scale-95 border-b-2 ${canAfford ? 'bg-yellow-400 text-yellow-900 border-yellow-600 hover:bg-yellow-300' : 'bg-emerald-800/50 text-emerald-700 border-emerald-900 cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>BUY (${formatNumber(g.cost)} 🍌)</button>`;
             } else if (isActive) {
                 btnHtml = `<button onclick="toggleGadget(${i})" class="px-3 py-1.5 rounded bg-emerald-500 text-emerald-950 font-bold text-[10px] border-b-2 border-emerald-700 hover:bg-emerald-400">UNEQUIP</button>`;
             } else {
