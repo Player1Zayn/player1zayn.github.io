@@ -44,6 +44,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "banana_secret_monkey_business";
 const activeCrashGames = new Map<string, { betAmount: bigint, crashPoint: number }>();
 const activeHiloGames = new Map<string, { betAmount: bigint, firstCard: { rank: string, suit: string, value: number } }>();
 const activeMinesGames = new Map<string, { betAmount: bigint, mineCount: number, mines: number[], revealed: number[], currentMultiplier: number }>();
+const userSonarCooldowns = new Map<string, number>();
 
 // Middleware to verify JWT
 const authenticateToken = (req: any, res: any, next: any) => {
@@ -188,6 +189,22 @@ app.post("/api/login", async (req, res) => {
     
     // Don't send password back to client
     const { password: _, ...userData } = user;
+    let userTheme = 0;
+    let unlockedThemes = [0];
+    try {
+      const inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : user.inventory;
+      if (inv && inv._theme !== undefined) userTheme = Number(inv._theme);
+      if (inv && Array.isArray(inv._unlocked_themes)) unlockedThemes = inv._unlocked_themes;
+    } catch (e) {}
+    if (user.theme !== undefined && user.theme !== null) userTheme = Number(user.theme);
+    if (user.unlocked_themes) {
+      try {
+        const dbThemes = typeof user.unlocked_themes === 'string' ? JSON.parse(user.unlocked_themes) : user.unlocked_themes;
+        if (Array.isArray(dbThemes)) unlockedThemes = dbThemes;
+      } catch (e) {}
+    }
+    userData.theme = userTheme;
+    userData.unlocked_themes = unlockedThemes;
     res.json({ token, ...userData });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -255,7 +272,19 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
 
     // 4. Perform Upsert
     console.log(`[UPSERT START] User: ${userId}`);
-    const { error: upsertError } = await supabase.from('database').upsert({
+    const theme = req.body.theme !== undefined ? Number(req.body.theme) : 0;
+    const unlockedThemes = Array.isArray(req.body.unlocked_themes) ? req.body.unlocked_themes : [0];
+
+    let inventoryObj: any = {};
+    try {
+      inventoryObj = typeof inventory === 'string' ? JSON.parse(inventory) : (inventory || {});
+    } catch (e) {
+      inventoryObj = {};
+    }
+    inventoryObj._theme = theme;
+    inventoryObj._unlocked_themes = unlockedThemes;
+
+    const basePayload: any = {
       id: userId,
       name,
       score: String(score), 
@@ -267,10 +296,32 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
       xp: String(xp || 0),
       unlocked_titles: JSON.stringify(finalUnlockedTitles),
       equipped_title: equipped_title || null,
-      inventory: inventory ? JSON.stringify(inventory) : JSON.stringify({}),
+      inventory: JSON.stringify(inventoryObj),
       active_gadgets: req.body.active_gadgets ? JSON.stringify(req.body.active_gadgets) : JSON.stringify(Array(10).fill(false)),
       updated_at: new Date().toISOString()
+    };
+
+    // Attempt direct theme and unlocked_themes column upsert first
+    let { error: upsertError } = await supabase.from('database').upsert({
+      ...basePayload,
+      theme,
+      unlocked_themes: JSON.stringify(unlockedThemes)
     });
+
+    if (upsertError && upsertError.code === 'PGRST204') {
+      // If unlocked_themes or theme not in schema cache, try with just theme
+      const retryResult = await supabase.from('database').upsert({
+        ...basePayload,
+        theme
+      });
+      if (retryResult.error && retryResult.error.code === 'PGRST204') {
+        // Fallback to base payload with theme stored in inventory JSON
+        const fallbackResult = await supabase.from('database').upsert(basePayload);
+        upsertError = fallbackResult.error;
+      } else {
+        upsertError = retryResult.error;
+      }
+    }
 
     if (upsertError) {
         console.error(`[SAVE ERROR] Upsert failed for ${userId}:`, upsertError);
@@ -287,6 +338,10 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
         userData.coins = String(userData.coins);
         userData.xp = String(userData.xp);
         userData.banana_box = String(userData.banana_box);
+        userData.theme = updatedUser.theme !== undefined && updatedUser.theme !== null 
+          ? Number(updatedUser.theme) 
+          : (inventoryObj._theme !== undefined ? Number(inventoryObj._theme) : theme);
+        userData.unlocked_themes = updatedUser.unlocked_themes || inventoryObj._unlocked_themes || unlockedThemes;
         return res.json({ success: true, user: userData });
     }
     
@@ -988,11 +1043,16 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 currentMultiplier: 1.0
             });
             
+            const lastSonar = userSonarCooldowns.get(user.id) || 0;
+            const sonarCooldownLeft = Math.max(0, 60000 - (Date.now() - lastSonar));
+
             winAmount = 0n;
             resultData = {
                 status: 'started',
                 mineCount,
-                totalTiles: 25
+                totalTiles: 25,
+                sonarCooldownLeft,
+                sonarEligible: mineCount <= 15 && sonarCooldownLeft === 0
             };
         } else if (gameMode === 'mines_pick') {
             const activeGame = activeMinesGames.get(user.id);
@@ -1010,13 +1070,20 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             const safeTiles = totalTiles - activeGame.mineCount;
             
             // Gadget 7 (Sonar Radar): Guaranteed safe first tile pick
+            // NERF: Only works when there are up to 15 mines, and only once every 1 minute (60s)
             let sonarTriggered = false;
-            if (activeGadgets[7] && activeGame.revealed.length === 0 && activeGame.mines.includes(tileIndex)) {
+            const now = Date.now();
+            const lastSonar = userSonarCooldowns.get(user.id) || 0;
+            const isSonarOnCooldown = (now - lastSonar) < 60000;
+            const isEligibleMineCount = activeGame.mineCount <= 15;
+
+            if (activeGadgets[7] && activeGame.revealed.length === 0 && isEligibleMineCount && !isSonarOnCooldown && activeGame.mines.includes(tileIndex)) {
                 const safeCandidates = Array.from({ length: 25 }, (_, i) => i).filter(idx => idx !== tileIndex && !activeGame.mines.includes(idx));
                 if (safeCandidates.length > 0) {
                     const newMine = safeCandidates[Math.floor(Math.random() * safeCandidates.length)];
                     activeGame.mines = activeGame.mines.map((m: number) => m === tileIndex ? newMine : m);
                     sonarTriggered = true;
+                    userSonarCooldowns.set(user.id, now);
                 }
             }
 
@@ -1029,7 +1096,9 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                     hitIndex: tileIndex,
                     mines: activeGame.mines,
                     revealed: activeGame.revealed,
-                    winAmount: "0"
+                    winAmount: "0",
+                    sonarProtected: false,
+                    sonarCooldownLeft: Math.max(0, 60000 - (Date.now() - (userSonarCooldowns.get(user.id) || 0)))
                 };
                 totalBet = 0n; // Bet was already deducted at start
             } else {
@@ -1056,6 +1125,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 }
                 
                 const isCleared = activeGame.revealed.length >= safeTiles;
+                const cooldownLeft = sonarTriggered ? 60000 : Math.max(0, 60000 - (Date.now() - (userSonarCooldowns.get(user.id) || 0)));
                 if (isCleared) {
                     winAmount = BigInt(Math.round(Number(activeGame.betAmount) * mult));
                     activeMinesGames.delete(user.id);
@@ -1066,7 +1136,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                         revealed: activeGame.revealed,
                         currentMultiplier: mult,
                         winAmount: winAmount.toString(),
-                        sonarProtected: sonarTriggered
+                        sonarProtected: sonarTriggered,
+                        sonarCooldownLeft: cooldownLeft
                     };
                 } else {
                     winAmount = 0n;
@@ -1077,7 +1148,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                         currentMultiplier: mult,
                         nextMultiplier: nextMult,
                         potentialWin: (BigInt(Math.round(Number(activeGame.betAmount) * mult))).toString(),
-                        sonarProtected: sonarTriggered
+                        sonarProtected: sonarTriggered,
+                        sonarCooldownLeft: cooldownLeft
                     };
                 }
                 totalBet = 0n;
@@ -1330,6 +1402,22 @@ app.get("/api/me", authenticateToken, async (req: any, res) => {
 
     // Don't send password back to client
     const { password: _, ...userData } = user;
+    let userTheme = 0;
+    let unlockedThemes = [0];
+    try {
+      const inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : user.inventory;
+      if (inv && inv._theme !== undefined) userTheme = Number(inv._theme);
+      if (inv && Array.isArray(inv._unlocked_themes)) unlockedThemes = inv._unlocked_themes;
+    } catch (e) {}
+    if (user.theme !== undefined && user.theme !== null) userTheme = Number(user.theme);
+    if (user.unlocked_themes) {
+      try {
+        const dbThemes = typeof user.unlocked_themes === 'string' ? JSON.parse(user.unlocked_themes) : user.unlocked_themes;
+        if (Array.isArray(dbThemes)) unlockedThemes = dbThemes;
+      } catch (e) {}
+    }
+    userData.theme = userTheme;
+    userData.unlocked_themes = unlockedThemes;
     res.json(userData);
   } catch (error: any) {
     console.error("/api/me API error:", error);
