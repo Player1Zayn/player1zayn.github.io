@@ -1009,6 +1009,17 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             const totalTiles = 25;
             const safeTiles = totalTiles - activeGame.mineCount;
             
+            // Gadget 7 (Sonar Radar): Guaranteed safe first tile pick
+            let sonarTriggered = false;
+            if (activeGadgets[7] && activeGame.revealed.length === 0 && activeGame.mines.includes(tileIndex)) {
+                const safeCandidates = Array.from({ length: 25 }, (_, i) => i).filter(idx => idx !== tileIndex && !activeGame.mines.includes(idx));
+                if (safeCandidates.length > 0) {
+                    const newMine = safeCandidates[Math.floor(Math.random() * safeCandidates.length)];
+                    activeGame.mines = activeGame.mines.map((m: number) => m === tileIndex ? newMine : m);
+                    sonarTriggered = true;
+                }
+            }
+
             if (activeGame.mines.includes(tileIndex)) {
                 // Hit a mine!
                 activeMinesGames.delete(user.id);
@@ -1054,7 +1065,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                         mines: activeGame.mines,
                         revealed: activeGame.revealed,
                         currentMultiplier: mult,
-                        winAmount: winAmount.toString()
+                        winAmount: winAmount.toString(),
+                        sonarProtected: sonarTriggered
                     };
                 } else {
                     winAmount = 0n;
@@ -1064,7 +1076,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                         revealedCount: k,
                         currentMultiplier: mult,
                         nextMultiplier: nextMult,
-                        potentialWin: (BigInt(Math.round(Number(activeGame.betAmount) * mult))).toString()
+                        potentialWin: (BigInt(Math.round(Number(activeGame.betAmount) * mult))).toString(),
+                        sonarProtected: sonarTriggered
                     };
                 }
                 totalBet = 0n;
@@ -1103,13 +1116,18 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                     path.push(step);
                     if (step === 1) slotIndex++;
                 }
-                const mult = table[slotIndex] ?? 1.0;
+                let mult = table[slotIndex] ?? 1.0;
+                // Gadget 8 (Bumper Cushion): Low multipliers below 0.6x receive a +0.2x cushion
+                if (activeGadgets[8] && mult < 0.6) {
+                    mult = Number((mult + 0.2).toFixed(2));
+                }
                 const ballWin = BigInt(Math.round(Number(bet) * mult));
                 totalPlinkoWin += ballWin;
                 drops.push({
                     path,
                     slotIndex,
                     multiplier: mult,
+                    cushioned: activeGadgets[8] && (table[slotIndex] < 0.6),
                     winAmount: ballWin.toString()
                 });
             }
