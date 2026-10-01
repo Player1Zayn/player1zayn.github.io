@@ -138,13 +138,13 @@
     .animate-slide-in { animation: slide-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     .animate-slide-out { animation: slide-out 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     .slot-machine-body {
-      background: linear-gradient(135deg, #444 0%, #222 50%, #111 100%);
-      border: 4px solid #555;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,255,255,0.1);
+      background: linear-gradient(135deg, #064e3b 0%, #022c22 50%, #011910 100%);
+      border: 4px solid #eab308;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 30px rgba(234,179,8,0.25), 0 0 30px rgba(6,78,59,0.6);
     }
     .slot-reel-container {
-      background: #000;
-      border: 2px solid #333;
+      background: #011910;
+      border: 2px solid #065f46;
       box-shadow: inset 0 0 30px rgba(0,0,0,1);
     }
     .slot-light {
@@ -163,9 +163,36 @@
     /* 🎨 CUSTOM CASINO THEMES & ATMOSPHERES */
     /* ======================================================== */
 
+    /* ======================================================== */
+    /* 🎨 CUSTOM CASINO THEMES & ATMOSPHERES */
+    /* ======================================================== */
+
+    /* Slots and Plinko ALWAYS use the Original Casino Theme */
+    .slot-machine-body {
+      background: linear-gradient(135deg, #064e3b 0%, #022c22 50%, #011910 100%) !important;
+      border-color: #eab308 !important;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 30px rgba(234,179,8,0.25), 0 0 30px rgba(6,78,59,0.6) !important;
+    }
+    #area-plinko canvas {
+      background: radial-gradient(circle at 50% 20%, #064e3b 0%, #022c22 60%, #011910 100%) !important;
+      border-color: #10b981 !important;
+      box-shadow: inset 0 0 60px rgba(0,0,0,0.8), 0 10px 30px rgba(6,78,59,0.5) !important;
+    }
+
+    /* Select Gamemode modal and Quests view ALWAYS use the Original Casino Theme */
+    #gamemode-modal > div {
+      background: linear-gradient(to bottom, #064e3b 0%, #022c22 60%, #011910 100%) !important;
+      border-color: rgba(16, 185, 129, 0.8) !important;
+    }
+    #sidebar-quests {
+      background: #022c22 !important;
+      border-color: #059669 !important;
+    }
+
     /* Theme 0: Classic Tropical (Default) */
     [data-theme="0"] #app,
-    #app:not([data-theme]) {
+    #app:not([data-theme]),
+    body[data-theme="0"] {
       background: radial-gradient(circle at 50% 20%, #064e3b 0%, #022c22 60%, #011910 100%);
     }
 
@@ -181,10 +208,6 @@
       background: #09090b !important;
       border-color: #64748b !important;
       box-shadow: inset 0 0 20px rgba(100, 116, 139, 0.15) !important;
-    }
-    [data-theme="1"] .slot-machine-body {
-      background: linear-gradient(135deg, #3f3f46 0%, #18181b 50%, #09090b 100%) !important;
-      border-color: #71717a !important;
     }
 
     /* Theme 2: Cyber Futuristic (Neon dark & light colors, cyan & magenta laser vibes) */
@@ -204,11 +227,6 @@
       border-color: #d946ef !important;
       box-shadow: 0 0 20px rgba(217, 70, 239, 0.2), inset 0 0 25px rgba(217, 70, 239, 0.12) !important;
     }
-    [data-theme="2"] .slot-machine-body {
-      background: linear-gradient(135deg, #1e1035 0%, #0a0418 60%, #000 100%) !important;
-      border-color: #06b6d4 !important;
-      box-shadow: 0 0 30px rgba(6, 182, 212, 0.4) !important;
-    }
 
     /* Theme 3: Abyssal Ocean (Deep ocean blue, watery, fishes, seagrass, coral) */
     [data-theme="3"] #app {
@@ -227,11 +245,6 @@
       border-color: #0d9488 !important;
       box-shadow: 0 0 25px rgba(20, 184, 166, 0.2), inset 0 0 25px rgba(20, 184, 166, 0.15) !important;
     }
-    [data-theme="3"] .slot-machine-body {
-      background: linear-gradient(135deg, #075985 0%, #021526 60%, #010a13 100%) !important;
-      border-color: #0284c7 !important;
-      box-shadow: 0 0 30px rgba(14, 165, 233, 0.35) !important;
-    }
 
     /* Theme 4: Extreme Tropical (Hyper-vivid radiant jungle, solar sunburst, exotic floral) */
     [data-theme="4"] #app {
@@ -249,11 +262,6 @@
       background: #022c22 !important;
       border-color: #fbbf24 !important;
       box-shadow: 0 0 30px rgba(251, 191, 36, 0.25), inset 0 0 30px rgba(16, 185, 129, 0.2) !important;
-    }
-    [data-theme="4"] .slot-machine-body {
-      background: linear-gradient(135deg, #065f46 0%, #022c22 50%, #1c1404 100%) !important;
-      border-color: #facc15 !important;
-      box-shadow: 0 0 35px rgba(250, 204, 21, 0.5) !important;
     }
   </style>
 </head>
@@ -345,129 +353,129 @@
     </div>
   </div>
 
-  <!-- Gamemode Choose Modal -->
-  <div id="gamemode-modal" class="fixed inset-0 bg-slate-950/90 z-[12000] hidden flex flex-col items-center justify-center p-4 backdrop-blur-xl animate-in fade-in duration-300">
-    <div class="bg-slate-900 border-2 border-emerald-800 p-6 md:p-8 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scroll relative shadow-[0_0_50px_rgba(6,78,59,0.5)]">
-      <button onclick="document.getElementById('gamemode-modal').classList.add('hidden')" class="absolute top-4 right-4 text-emerald-500 hover:text-white bg-emerald-900/50 hover:bg-emerald-800 p-2 rounded-xl transition-all">
+  <!-- Gamemode Choose Modal (Original Casino Tropical Green & Gold Theme) -->
+  <div id="gamemode-modal" class="fixed inset-0 bg-black/85 z-[12000] hidden flex flex-col items-center justify-center p-4 backdrop-blur-xl animate-in fade-in duration-300">
+    <div class="bg-gradient-to-b from-[#064e3b] via-[#022c22] to-[#011910] border-2 border-emerald-500/80 p-6 md:p-8 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scroll relative shadow-[0_0_60px_rgba(16,185,129,0.35)] ring-1 ring-yellow-400/30">
+      <button onclick="document.getElementById('gamemode-modal').classList.add('hidden')" class="absolute top-4 right-4 text-yellow-400 hover:text-white bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-600/70 p-2 rounded-xl transition-all shadow-md">
         <i data-lucide="x"></i>
       </button>
       
-      <h2 class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-yellow-400 mb-2 text-center uppercase tracking-widest">Select Gamemode</h2>
-      <p class="text-slate-400 text-center mb-8 font-medium">Choose your preferred way to multiply your bananas!</p>
+      <h2 class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-400 mb-2 text-center uppercase tracking-widest drop-shadow">Select Gamemode</h2>
+      <p class="text-emerald-200/90 text-center mb-8 font-semibold text-sm">Choose your preferred way to multiply your bananas!</p>
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div onclick="setGameMode('roulette'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+        <div onclick="setGameMode('roulette'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-700/70 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-black/40 hover:scale-[1.03] hover:shadow-emerald-500/20">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🎡</div>
-          <h3 class="text-xl font-bold text-white mb-2">Roulette</h3>
-          <p class="text-sm text-slate-400">Classic wheel of fortune. Bet on colors for massive multipliers.</p>
+          <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors mb-2">Roulette</h3>
+          <p class="text-xs text-emerald-100/80 group-hover:text-emerald-50 leading-relaxed">Classic wheel of fortune. Bet on colors for massive multipliers.</p>
         </div>
         
-        <div onclick="setGameMode('slots'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+        <div onclick="setGameMode('slots'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-700/70 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-black/40 hover:scale-[1.03] hover:shadow-emerald-500/20">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🎰</div>
-          <h3 class="text-xl font-bold text-white mb-2">Slots</h3>
-          <p class="text-sm text-slate-400">Spin the reels and hit the jackpot with special bonus bets.</p>
+          <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors mb-2">Slots</h3>
+          <p class="text-xs text-emerald-100/80 group-hover:text-emerald-50 leading-relaxed">Spin the reels and hit the jackpot with special bonus bets.</p>
         </div>
         
-        <div onclick="setGameMode('blackjack'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+        <div onclick="setGameMode('blackjack'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-700/70 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-black/40 hover:scale-[1.03] hover:shadow-emerald-500/20">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🃏</div>
-          <h3 class="text-xl font-bold text-white mb-2">Blackjack</h3>
-          <p class="text-sm text-slate-400">Beat the dealer to 21. Features splits, double downs & insurance.</p>
+          <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors mb-2">Blackjack</h3>
+          <p class="text-xs text-emerald-100/80 group-hover:text-emerald-50 leading-relaxed">Beat the dealer to 21. Features splits, double downs & insurance.</p>
         </div>
 
-        <div onclick="setGameMode('crash'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+        <div onclick="setGameMode('crash'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-700/70 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-black/40 hover:scale-[1.03] hover:shadow-emerald-500/20">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🚀</div>
-          <h3 class="text-xl font-bold text-white mb-2">Crash</h3>
-          <p class="text-sm text-slate-400">Watch the multiplier rise, but cash out before the rocket crashes!</p>
+          <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors mb-2">Crash</h3>
+          <p class="text-xs text-emerald-100/80 group-hover:text-emerald-50 leading-relaxed">Watch the multiplier rise, but cash out before the rocket crashes!</p>
         </div>
 
-        <div onclick="setGameMode('hilo'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+        <div onclick="setGameMode('hilo'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-700/70 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-black/40 hover:scale-[1.03] hover:shadow-emerald-500/20">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🎴</div>
-          <h3 class="text-xl font-bold text-white mb-2">Hi-Lo</h3>
-          <p class="text-sm text-slate-400">Guess if the next card is higher or lower. Simple but thrilling.</p>
+          <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors mb-2">Hi-Lo</h3>
+          <p class="text-xs text-emerald-100/80 group-hover:text-emerald-50 leading-relaxed">Guess if the next card is higher or lower. Simple but thrilling.</p>
         </div>
 
-        <div onclick="setGameMode('poker'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+        <div onclick="setGameMode('poker'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-700/70 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-black/40 hover:scale-[1.03] hover:shadow-emerald-500/20">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">♠️</div>
-          <h3 class="text-xl font-bold text-white mb-2">Video Poker</h3>
-          <p class="text-sm text-slate-400">Hold the best cards and aim for a Royal Flush to win big.</p>
+          <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors mb-2">Video Poker</h3>
+          <p class="text-xs text-emerald-100/80 group-hover:text-emerald-50 leading-relaxed">Hold the best cards and aim for a Royal Flush to win big.</p>
         </div>
 
-        <div onclick="setGameMode('cases'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+        <div onclick="setGameMode('cases'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-700/70 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-black/40 hover:scale-[1.03] hover:shadow-emerald-500/20">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">📦</div>
-          <h3 class="text-xl font-bold text-white mb-2">Cases</h3>
-          <p class="text-sm text-slate-400">Open premium cases to unlock ultra-rare and legendary skins.</p>
+          <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors mb-2">Cases</h3>
+          <p class="text-xs text-emerald-100/80 group-hover:text-emerald-50 leading-relaxed">Open premium cases to unlock ultra-rare and legendary skins.</p>
         </div>
 
-        <div onclick="setGameMode('mines'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-slate-800 hover:bg-emerald-900/80 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center">
+        <div onclick="setGameMode('mines'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-700/70 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-black/40 hover:scale-[1.03] hover:shadow-emerald-500/20">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">💣</div>
-          <h3 class="text-xl font-bold text-white mb-2">Banana Mines</h3>
-          <p class="text-sm text-slate-400">Uncover golden bananas on a 5x5 grid and multiply your bet. Cash out before you hit a mine!</p>
+          <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors mb-2">Banana Mines</h3>
+          <p class="text-xs text-emerald-100/80 group-hover:text-emerald-50 leading-relaxed">Uncover golden bananas on a 5x5 grid and multiply your bet. Cash out before you hit a mine!</p>
         </div>
 
-        <div onclick="setGameMode('plinko'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-gradient-to-br from-amber-950 via-slate-900 to-slate-800 hover:from-amber-900 hover:to-slate-800 border-2 border-yellow-500/80 hover:border-yellow-300 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-yellow-950/60 hover:scale-[1.03]">
+        <div onclick="setGameMode('plinko'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-gradient-to-br from-emerald-950 via-[#033425] to-[#011f15] hover:from-emerald-900 hover:to-[#022c22] border-2 border-yellow-500 hover:border-yellow-300 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-emerald-950/60 hover:scale-[1.03]">
           <div class="text-5xl mb-4 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300">🎯</div>
           <div class="flex items-center gap-1.5 mb-1">
-            <h3 class="text-xl font-bold text-white">Banana Plinko</h3>
+            <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors">Banana Plinko</h3>
             <span class="bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">NEW & VIRAL 🔥</span>
           </div>
-          <p class="text-sm text-slate-300">Drop bouncing golden banana chips down gleaming pins! Win up to 2,500x and cascade multi-drops!</p>
+          <p class="text-xs text-emerald-100/90 leading-relaxed">Drop bouncing golden banana chips down gleaming pins! Win up to 2,500x and cascade multi-drops!</p>
         </div>
 
-        <div onclick="openTexasHoldemSelector(); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-800 hover:from-emerald-900 hover:to-slate-800 border-2 border-emerald-500/80 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-emerald-950/60 hover:scale-[1.03]">
+        <div onclick="openTexasHoldemSelector(); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-gradient-to-br from-emerald-950 via-[#033425] to-[#011f15] hover:from-emerald-900 hover:to-[#022c22] border-2 border-emerald-500 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-emerald-950/60 hover:scale-[1.03]">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🃏</div>
           <div class="flex items-center gap-1.5 mb-1">
-            <h3 class="text-xl font-bold text-white">Texas Hold'em</h3>
+            <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors">Texas Hold'em</h3>
             <span class="bg-yellow-500/20 text-yellow-300 text-[10px] font-black px-1.5 py-0.5 rounded border border-yellow-500/40">ONLINE & BOTS</span>
           </div>
-          <p class="text-sm text-slate-300">Play live online multiplayer with real players or challenge 5 AI bots at a full 6-player poker table!</p>
+          <p class="text-xs text-emerald-100/90 leading-relaxed">Play live online multiplayer with real players or challenge 5 AI bots at a full 6-player poker table!</p>
         </div>
 
-        <div id="gamemode-card-banana-clicker" onclick="tryOpenBananaClickerFromGamemode()" class="bg-slate-800 hover:bg-orange-950/80 border-2 border-slate-700 hover:border-orange-500 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center hidden">
+        <div id="gamemode-card-banana-clicker" onclick="tryOpenBananaClickerFromGamemode()" class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-yellow-500/70 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg hover:scale-[1.03] hidden">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🍌</div>
-          <h3 class="text-xl font-bold text-white mb-2">Banana Clicker</h3>
-          <p class="text-sm text-slate-400">Click the giant banana, build an idle empire, and catch golden bananas!</p>
+          <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors mb-2">Banana Clicker</h3>
+          <p class="text-xs text-emerald-100/80 leading-relaxed">Click the giant banana, build an idle empire, and catch golden bananas!</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Texas Hold'em Mode Selection Modal -->
-  <div id="texasholdem-mode-modal" class="fixed inset-0 bg-slate-950/90 z-[12500] hidden flex flex-col items-center justify-center p-4 backdrop-blur-xl animate-in fade-in duration-300">
-    <div class="bg-slate-900 border-2 border-emerald-700 p-6 md:p-8 rounded-3xl max-w-2xl w-full relative shadow-[0_0_50px_rgba(6,78,59,0.7)] text-center">
-      <button onclick="closeTexasHoldemSelector()" class="absolute top-4 right-4 text-emerald-500 hover:text-white bg-emerald-900/50 hover:bg-emerald-800 p-2 rounded-xl transition-all font-bold">
+  <!-- Texas Hold'em Mode Selection Modal (Original Casino Theme) -->
+  <div id="texasholdem-mode-modal" class="fixed inset-0 bg-black/85 z-[12500] hidden flex flex-col items-center justify-center p-4 backdrop-blur-xl animate-in fade-in duration-300">
+    <div class="bg-gradient-to-b from-[#064e3b] via-[#022c22] to-[#011910] border-2 border-emerald-500/80 p-6 md:p-8 rounded-3xl max-w-2xl w-full relative shadow-[0_0_60px_rgba(16,185,129,0.35)] text-center ring-1 ring-yellow-400/30">
+      <button onclick="closeTexasHoldemSelector()" class="absolute top-4 right-4 text-yellow-400 hover:text-white bg-emerald-950/90 hover:bg-emerald-800 border border-emerald-600/70 p-2 rounded-xl transition-all font-bold">
         ✕
       </button>
       
       <div class="text-5xl mb-2">🃏</div>
-      <h2 class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-yellow-300 to-yellow-500 mb-2 uppercase tracking-wider">Texas Hold'em Poker</h2>
-      <p class="text-slate-400 text-sm mb-6">Choose how you want to play: Instant action against 5 monkey bots or live online multiplayer tables!</p>
+      <h2 class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-500 mb-2 uppercase tracking-wider drop-shadow">Texas Hold'em Poker</h2>
+      <p class="text-emerald-200/90 text-sm mb-6 font-semibold">Choose how you want to play: Instant action against 5 monkey bots or live online multiplayer tables!</p>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left mb-2">
         <!-- Card 1: VS Bots -->
-        <div class="bg-slate-800/90 hover:bg-slate-800 border-2 border-slate-700 hover:border-emerald-400 rounded-2xl p-5 flex flex-col justify-between transition-all group">
+        <div class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-700/70 hover:border-yellow-400 rounded-2xl p-5 flex flex-col justify-between transition-all group shadow-lg">
           <div>
             <div class="flex items-center justify-between mb-3">
               <span class="text-3xl">🤖</span>
-              <span class="bg-emerald-500/20 text-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-500/30">INSTANT PLAY</span>
+              <span class="bg-yellow-500/20 text-yellow-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-yellow-500/30">INSTANT PLAY</span>
             </div>
-            <h3 class="text-lg font-black text-white mb-1">VS Bots (5 Monkeys)</h3>
-            <p class="text-xs text-slate-400 mb-3">Sit at a 6-player table against 5 smart AI opponents (Gorilla Gus, Chimp Champ, Baboon Bob...). Instant deal, zero wait time.</p>
+            <h3 class="text-lg font-black text-white group-hover:text-yellow-300 transition-colors mb-1">VS Bots (5 Monkeys)</h3>
+            <p class="text-xs text-emerald-100/80 mb-3 leading-relaxed">Sit at a 6-player table against 5 smart AI opponents (Gorilla Gus, Chimp Champ, Baboon Bob...). Instant deal, zero wait time.</p>
             
-            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Buy-In Chips (🍌):</label>
+            <label class="block text-[10px] uppercase font-bold text-emerald-300 mb-1">Buy-In Chips (🍌):</label>
             <div class="relative mb-2">
-              <input type="number" id="poker-bots-buyin" value="1000" min="10" class="w-full bg-slate-900 text-yellow-400 font-mono font-bold text-sm p-2.5 rounded-xl border border-slate-700 focus:border-yellow-400 outline-none pr-8" oninput="updateBotsBlindsPreview()" />
-              <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-bold">🍌</span>
+              <input type="number" id="poker-bots-buyin" value="1000" min="10" class="w-full bg-emerald-950 text-yellow-400 font-mono font-bold text-sm p-2.5 rounded-xl border border-emerald-700/80 focus:border-yellow-400 outline-none pr-8" oninput="updateBotsBlindsPreview()" />
+              <span class="absolute right-3 top-2.5 text-xs text-emerald-400 font-bold">🍌</span>
             </div>
             <!-- Quick Chips for any balance up to Billions -->
             <div class="flex flex-wrap gap-1 mb-2">
-              <button type="button" onclick="setPokerBotsBuyin(1000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">1K</button>
-              <button type="button" onclick="setPokerBotsBuyin(10000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">10K</button>
-              <button type="button" onclick="setPokerBotsBuyin(100000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">100K</button>
-              <button type="button" onclick="setPokerBotsBuyin(1000000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">1M</button>
-              <button type="button" onclick="setPokerBotsBuyin(10000000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">10M</button>
-              <button type="button" onclick="setPokerBotsBuyin(100000000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-400 font-bold text-[10px] rounded border border-slate-700">100M</button>
-              <button type="button" onclick="setPokerBotsBuyin(1000000000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-300 font-bold text-[10px] rounded border border-yellow-500/40">1B</button>
-              <button type="button" onclick="setPokerBotsBuyin(10000000000)" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-700 text-yellow-300 font-bold text-[10px] rounded border border-yellow-500/40">10B</button>
+              <button type="button" onclick="setPokerBotsBuyin(1000)" class="px-2 py-0.5 bg-emerald-900 hover:bg-emerald-800 text-yellow-300 font-bold text-[10px] rounded border border-emerald-700">1K</button>
+              <button type="button" onclick="setPokerBotsBuyin(10000)" class="px-2 py-0.5 bg-emerald-900 hover:bg-emerald-800 text-yellow-300 font-bold text-[10px] rounded border border-emerald-700">10K</button>
+              <button type="button" onclick="setPokerBotsBuyin(100000)" class="px-2 py-0.5 bg-emerald-900 hover:bg-emerald-800 text-yellow-300 font-bold text-[10px] rounded border border-emerald-700">100K</button>
+              <button type="button" onclick="setPokerBotsBuyin(1000000)" class="px-2 py-0.5 bg-emerald-900 hover:bg-emerald-800 text-yellow-300 font-bold text-[10px] rounded border border-emerald-700">1M</button>
+              <button type="button" onclick="setPokerBotsBuyin(10000000)" class="px-2 py-0.5 bg-emerald-900 hover:bg-emerald-800 text-yellow-300 font-bold text-[10px] rounded border border-emerald-700">10M</button>
+              <button type="button" onclick="setPokerBotsBuyin(100000000)" class="px-2 py-0.5 bg-emerald-900 hover:bg-emerald-800 text-yellow-300 font-bold text-[10px] rounded border border-emerald-700">100M</button>
+              <button type="button" onclick="setPokerBotsBuyin(1000000000)" class="px-2 py-0.5 bg-emerald-900 hover:bg-emerald-800 text-yellow-300 font-bold text-[10px] rounded border border-emerald-700">1B</button>
+              <button type="button" onclick="setPokerBotsBuyin(10000000000)" class="px-2 py-0.5 bg-emerald-900 hover:bg-emerald-800 text-yellow-300 font-bold text-[10px] rounded border border-emerald-700">10B</button>
               <button type="button" onclick="setPokerBotsBuyinPercent(0.1)" class="px-2 py-0.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 font-bold text-[10px] rounded border border-emerald-700/60">10%</button>
               <button type="button" onclick="setPokerBotsBuyinPercent(0.5)" class="px-2 py-0.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 font-bold text-[10px] rounded border border-emerald-700/60">50%</button>
               <button type="button" onclick="setPokerBotsBuyinPercent(1)" class="px-2 py-0.5 bg-amber-950 hover:bg-amber-900 text-yellow-400 font-bold text-[10px] rounded border border-yellow-600/60">MAX</button>
@@ -933,6 +941,321 @@
     </div>
   </div>
 
+  <!-- ======================================================== -->
+  <!-- 🚗 BANANA BANK: RIDE ANIMATION OVERLAY -->
+  <!-- ======================================================== -->
+  <div id="bank-ride-overlay" class="fixed inset-0 z-[700] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 hidden">
+    <div class="text-center max-w-lg w-full bg-emerald-950/90 border-4 border-yellow-500 rounded-[2.5rem] p-8 shadow-[0_0_100px_rgba(234,179,8,0.4)] relative overflow-hidden">
+      <div class="relative w-40 h-24 mx-auto mb-4 flex items-center justify-center">
+        <div class="text-6xl animate-bounce">🚗</div>
+        <div class="absolute -right-2 top-3 text-3xl animate-pulse">💨</div>
+        <div class="absolute -right-8 top-7 text-xl animate-pulse">💨</div>
+      </div>
+      <div class="inline-block bg-yellow-400 text-yellow-950 font-black text-[10px] md:text-xs px-3 py-1 rounded-full uppercase tracking-widest mb-3">Ludvig's Armored Jungle Wagon</div>
+      <h2 class="text-2xl md:text-4xl font-black text-yellow-400 italic uppercase tracking-tighter mb-2">Taking a Ride to the Bank...</h2>
+      <p class="text-emerald-300 text-xs md:text-sm mb-6 font-medium">Ludvig is speeding along the secret jungle tracks to the impenetrable Banana Central Bank Vault!</p>
+      
+      <!-- Progress Bar -->
+      <div class="w-full bg-emerald-900 rounded-full h-3 overflow-hidden border border-yellow-500/50 p-0.5 mb-6">
+        <div id="bank-ride-progress" class="bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-300 h-full rounded-full transition-all duration-1000 ease-out" style="width: 5%"></div>
+      </div>
+
+      <div class="flex items-center justify-center gap-3">
+        <button onclick="finishRideToBank()" class="text-xs text-yellow-400/80 hover:text-yellow-300 font-bold uppercase tracking-wider py-1 px-4 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 transition-all">
+          Skip Ride →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 🏦 BANANA BANK: MAIN VAULT MODAL -->
+  <!-- ======================================================== -->
+  <div id="banana-bank-modal" class="fixed inset-0 bg-black/95 z-[650] items-center justify-center hidden backdrop-blur-md p-2 sm:p-4 md:p-6 overflow-y-auto">
+    <div class="bg-gradient-to-b from-emerald-950 via-[#022c22] to-emerald-950 border-4 border-yellow-500 w-full max-w-5xl rounded-[2.5rem] shadow-[0_0_120px_rgba(234,179,8,0.35)] overflow-hidden flex flex-col max-h-[92vh]">
+      
+      <!-- Bank Header -->
+      <div class="p-4 sm:p-6 bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-900 border-b-2 border-yellow-500/50 flex flex-wrap justify-between items-center gap-3 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 md:w-14 md:h-14 bg-yellow-500/20 rounded-2xl flex items-center justify-center text-3xl md:text-4xl border-2 border-yellow-400/50 shadow-inner">
+            🏦
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl sm:text-2xl md:text-3xl font-black text-yellow-400 uppercase tracking-tighter italic">Banana Central Bank</h2>
+              <span class="bg-yellow-500/20 border border-yellow-400/40 text-yellow-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">33-Columns Vault</span>
+            </div>
+            <p class="text-emerald-300 text-xs font-medium">Ludvig's Ultra High-Capacity Multi-Denomination Storage</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="openBankSqlModal()" class="px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 font-bold text-xs rounded-xl border border-yellow-400/40 active:scale-95 transition-all flex items-center gap-1.5" title="View Supabase Table SQL Code">
+            <span>📋</span> <span class="hidden sm:inline">Supabase SQL Code</span>
+          </button>
+          <button onclick="closeBananaBank()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-amber-950 font-black text-xs md:text-sm rounded-xl border-b-2 border-amber-800 active:scale-95 transition-all flex items-center gap-1.5" title="Ride back to Ludvig's Grove">
+            <span>🚗</span> <span>Ride Back</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bank Body Content -->
+      <div class="p-4 sm:p-6 overflow-y-auto custom-scroll flex-1 flex flex-col gap-6">
+        
+        <!-- Balance Top Showcase -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Main Vault Balance (Spans 2 cols on md) -->
+          <div class="md:col-span-2 bg-gradient-to-r from-yellow-500/10 via-amber-500/15 to-yellow-500/10 border-2 border-yellow-500/40 rounded-3xl p-5 md:p-6 relative overflow-hidden flex flex-col justify-between">
+            <div class="absolute -right-8 -bottom-8 text-8xl opacity-10 pointer-events-none">🏛️</div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-black text-yellow-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
+                  TOTAL BANK VAULT BALANCE
+                </span>
+                <span class="text-[10px] text-emerald-300/80 font-mono">Multi-Denomination BigInt</span>
+              </div>
+              <div class="flex items-baseline gap-2 flex-wrap">
+                <div id="bank-display-balance" class="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-300 drop-shadow tabular-nums">
+                  0 🍌
+                </div>
+              </div>
+              <div id="bank-exact-balance" class="text-xs text-yellow-200/70 font-mono tracking-wider break-all mt-1">
+                Exact: 0 🍌
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-yellow-500/20 flex flex-wrap items-center justify-between gap-2 text-[11px] text-emerald-300 font-medium">
+              <span>🛡️ Unlimited storage capacity across 33 denomination columns</span>
+              <button onclick="copyBankExactBalance()" class="text-yellow-400 hover:text-yellow-300 underline font-bold flex items-center gap-1">
+                <span>Copy Raw Number</span> 📋
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Wallet (Pocket) Balance -->
+          <div class="bg-black/40 border-2 border-emerald-700/60 rounded-3xl p-5 md:p-6 flex flex-col justify-between">
+            <div>
+              <span class="text-[11px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                👛 In Your Pocket (Wallet)
+              </span>
+              <div id="bank-pocket-balance" class="text-2xl sm:text-3xl font-black text-white tabular-nums">
+                0 🍌
+              </div>
+              <p class="text-emerald-400/70 text-xs mt-1">Ready to deposit or use in games.</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-emerald-800/40 text-[11px] text-yellow-400/80">
+              💡 Deposit to protect from high-stake spins or store giant wins!
+            </div>
+          </div>
+        </div>
+
+        <!-- Deposit & Withdraw Action Cards (2 Columns) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- Deposit Panel -->
+          <div class="bg-emerald-950/70 border-2 border-emerald-600/80 rounded-3xl p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-lg font-black text-emerald-300 uppercase tracking-tight flex items-center gap-2">
+                  <span>📥</span> DEPOSIT INTO VAULT
+                </h3>
+                <span class="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/40">Unlimited Amount</span>
+              </div>
+              <p class="text-emerald-400 text-xs mb-3">Insert whatever amount you want. It distributes automatically across the columns!</p>
+              
+              <!-- Quick Preset Buttons -->
+              <div class="grid grid-cols-4 gap-1.5 mb-3">
+                <button onclick="setBankDepositInput('1000000')" class="py-1 px-2 bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-bold rounded-lg border border-emerald-700 transition-all">+1M</button>
+                <button onclick="setBankDepositInput('10000000')" class="py-1 px-2 bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-bold rounded-lg border border-emerald-700 transition-all">+10M</button>
+                <button onclick="setBankDepositInput('100000000')" class="py-1 px-2 bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-bold rounded-lg border border-emerald-700 transition-all">+100M</button>
+                <button onclick="setBankDepositInput('1000000000')" class="py-1 px-2 bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-bold rounded-lg border border-emerald-700 transition-all">+1B</button>
+                <button onclick="setBankDepositInput('10000000000')" class="py-1 px-2 bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-bold rounded-lg border border-emerald-700 transition-all">+10B</button>
+                <button onclick="setBankDepositInput('100000000000')" class="py-1 px-2 bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-bold rounded-lg border border-emerald-700 transition-all">+100B</button>
+                <button onclick="setBankDepositInput('1000000000000')" class="py-1 px-2 bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-bold rounded-lg border border-emerald-700 transition-all">+1T</button>
+                <button onclick="setBankDepositInput('ALL')" class="py-1 px-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 text-xs font-black rounded-lg border border-yellow-500/40 transition-all">ALL</button>
+              </div>
+
+              <!-- Input -->
+              <div class="relative mb-3">
+                <input 
+                  type="text" 
+                  id="bank-deposit-input" 
+                  placeholder="Amount or shorthand (e.g. 50M, 2B, 100T)..." 
+                  class="w-full bg-emerald-900/90 border-2 border-emerald-700 text-white p-3 pr-12 rounded-xl text-base font-bold focus:border-yellow-400 outline-none transition-colors"
+                />
+                <button onclick="setBankDepositInput('ALL')" class="absolute right-2 top-2 px-2.5 py-1 bg-emerald-800 hover:bg-emerald-700 text-yellow-300 font-bold text-xs rounded-lg">MAX</button>
+              </div>
+            </div>
+
+            <button 
+              onclick="handleBankDeposit()" 
+              class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-black text-base md:text-lg rounded-2xl shadow-[0_5px_0_rgb(6,78,59)] active:translate-y-1 active:shadow-none transition-all uppercase flex items-center justify-center gap-2"
+            >
+              <span>📥</span> <span>DEPOSIT BANANAS</span>
+            </button>
+          </div>
+
+          <!-- Withdraw Panel -->
+          <div class="bg-amber-950/40 border-2 border-yellow-600/80 rounded-3xl p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-lg font-black text-yellow-400 uppercase tracking-tight flex items-center gap-2">
+                  <span>📤</span> WITHDRAW TO POCKET
+                </h3>
+                <span class="text-[10px] bg-yellow-500/20 text-yellow-300 font-black px-2 py-0.5 rounded-full border border-yellow-500/40">Max 1T Per Ride</span>
+              </div>
+              
+              <!-- Strict Limit Warning Notice -->
+              <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-2.5 mb-3 flex items-start gap-2">
+                <span class="text-base shrink-0">⚠️</span>
+                <p class="text-yellow-200 text-xs font-semibold leading-snug">
+                  Safety Limit: You can take out at most <strong class="text-yellow-400">1T (1,000,000,000,000 🍌)</strong> at a time!
+                </p>
+              </div>
+
+              <!-- Quick Withdraw Preset Buttons (Capped at 1T) -->
+              <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5 mb-3">
+                <button onclick="setBankWithdrawInput('100000000')" class="py-1 px-1.5 bg-yellow-900/60 hover:bg-yellow-800 text-yellow-200 text-xs font-bold rounded-lg border border-yellow-700/60 transition-all">100M</button>
+                <button onclick="setBankWithdrawInput('1000000000')" class="py-1 px-1.5 bg-yellow-900/60 hover:bg-yellow-800 text-yellow-200 text-xs font-bold rounded-lg border border-yellow-700/60 transition-all">1B</button>
+                <button onclick="setBankWithdrawInput('10000000000')" class="py-1 px-1.5 bg-yellow-900/60 hover:bg-yellow-800 text-yellow-200 text-xs font-bold rounded-lg border border-yellow-700/60 transition-all">10B</button>
+                <button onclick="setBankWithdrawInput('100000000000')" class="py-1 px-1.5 bg-yellow-900/60 hover:bg-yellow-800 text-yellow-200 text-xs font-bold rounded-lg border border-yellow-700/60 transition-all">100B</button>
+                <button onclick="setBankWithdrawInput('500000000000')" class="py-1 px-1.5 bg-yellow-900/60 hover:bg-yellow-800 text-yellow-200 text-xs font-bold rounded-lg border border-yellow-700/60 transition-all">500B</button>
+                <button onclick="setBankWithdrawInput('1000000000000')" class="py-1 px-1.5 bg-yellow-500/30 hover:bg-yellow-500/40 text-yellow-300 text-xs font-black rounded-lg border border-yellow-400 transition-all">1T (MAX)</button>
+              </div>
+
+              <!-- Input -->
+              <div class="relative mb-3">
+                <input 
+                  type="text" 
+                  id="bank-withdraw-input" 
+                  placeholder="Amount (Max 1T, e.g. 50B, 1T)..." 
+                  class="w-full bg-yellow-950/70 border-2 border-yellow-700/80 text-white p-3 pr-16 rounded-xl text-base font-bold focus:border-yellow-400 outline-none transition-colors"
+                />
+                <button onclick="setBankWithdrawInput('1000000000000')" class="absolute right-2 top-2 px-2.5 py-1 bg-yellow-800 hover:bg-yellow-700 text-yellow-200 font-bold text-xs rounded-lg">MAX 1T</button>
+              </div>
+            </div>
+
+            <button 
+              onclick="handleBankWithdraw()" 
+              class="w-full py-3.5 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-yellow-950 font-black text-base md:text-lg rounded-2xl shadow-[0_5px_0_rgb(180,83,9)] active:translate-y-1 active:shadow-none transition-all uppercase flex items-center justify-center gap-2"
+            >
+              <span>📤</span> <span>WITHDRAW (MAX 1T)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Multi-Denomination 33-Column Vault Grid -->
+        <div class="bg-black/50 border-2 border-emerald-700/50 rounded-3xl p-5 md:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xl">🔒</span>
+                <h3 class="text-lg md:text-xl font-black text-white uppercase italic tracking-tight">33 Multi-Denomination Vault Stacks</h3>
+              </div>
+              <p class="text-emerald-400 text-xs mt-0.5">Your balance divided into 33 discrete columns in Supabase (1 to 100 Nonillion) for limitless safe storage.</p>
+            </div>
+            <div class="text-[10px] text-yellow-400 font-bold bg-yellow-500/10 border border-yellow-500/20 px-3 py-1 rounded-full self-start sm:self-auto">
+              Real-time Vault Decomposition
+            </div>
+          </div>
+
+          <!-- Stacks Grid -->
+          <div id="bank-denominations-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 max-h-72 overflow-y-auto custom-scroll p-1">
+            <!-- Rendered by renderBankDenominationsGrid() -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 📋 SUPABASE SQL CODE MODAL -->
+  <!-- ======================================================== -->
+  <div id="bank-sql-modal" class="fixed inset-0 bg-black/95 z-[750] items-center justify-center hidden backdrop-blur-md p-4 overflow-y-auto">
+    <div class="bg-emerald-950 border-4 border-yellow-500 w-full max-w-2xl rounded-[2.5rem] shadow-[0_0_100px_rgba(234,179,8,0.4)] overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-5 bg-emerald-900 border-b border-emerald-700 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">⚡</span>
+          <h2 class="text-xl md:text-2xl font-black text-yellow-400 uppercase tracking-tighter italic">Supabase SQL Code for Banana Bank</h2>
+        </div>
+        <button onclick="closeBankSqlModal()" class="w-9 h-9 flex items-center justify-center bg-red-500/20 hover:bg-red-500/40 text-red-500 rounded-full transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto custom-scroll flex-1 flex flex-col gap-4 text-xs">
+        <p class="text-emerald-300">
+          This SQL creates the <strong class="text-yellow-400">banana_bank</strong> table with 33 individual BIGINT columns (from <code class="bg-black/40 px-1 py-0.5 rounded text-yellow-300">c_1</code> up to <code class="bg-black/40 px-1 py-0.5 rounded text-yellow-300">c_100no</code>) so players can store arbitrarily massive balances without precision loss.
+        </p>
+
+        <div class="bg-black/80 border border-emerald-800 rounded-2xl p-4 font-mono text-[11px] text-emerald-200 overflow-x-auto relative">
+          <button onclick="copyBankSqlCode()" id="btn-copy-sql" class="absolute top-2 right-2 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-black rounded-lg text-xs transition-all shadow flex items-center gap-1">
+            <span>📋</span> <span id="copy-sql-text">COPY SQL</span>
+          </button>
+          <pre id="bank-sql-code-block" class="pt-8">-- BANANA BANK 33-DENOMINATION SUPABASE SQL CODE
+CREATE TABLE IF NOT EXISTS banana_bank (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    c_1 BIGINT DEFAULT 0,
+    c_10 BIGINT DEFAULT 0,
+    c_100 BIGINT DEFAULT 0,
+    c_1k BIGINT DEFAULT 0,
+    c_10k BIGINT DEFAULT 0,
+    c_100k BIGINT DEFAULT 0,
+    c_1m BIGINT DEFAULT 0,
+    c_10m BIGINT DEFAULT 0,
+    c_100m BIGINT DEFAULT 0,
+    c_1b BIGINT DEFAULT 0,
+    c_10b BIGINT DEFAULT 0,
+    c_100b BIGINT DEFAULT 0,
+    c_1t BIGINT DEFAULT 0,
+    c_10t BIGINT DEFAULT 0,
+    c_100t BIGINT DEFAULT 0,
+    c_1qa BIGINT DEFAULT 0,
+    c_10qa BIGINT DEFAULT 0,
+    c_100qa BIGINT DEFAULT 0,
+    c_1qi BIGINT DEFAULT 0,
+    c_10qi BIGINT DEFAULT 0,
+    c_100qi BIGINT DEFAULT 0,
+    c_1sx BIGINT DEFAULT 0,
+    c_10sx BIGINT DEFAULT 0,
+    c_100sx BIGINT DEFAULT 0,
+    c_1sp BIGINT DEFAULT 0,
+    c_10sp BIGINT DEFAULT 0,
+    c_100sp BIGINT DEFAULT 0,
+    c_1oc BIGINT DEFAULT 0,
+    c_10oc BIGINT DEFAULT 0,
+    c_100oc BIGINT DEFAULT 0,
+    c_1no BIGINT DEFAULT 0,
+    c_10no BIGINT DEFAULT 0,
+    c_100no BIGINT DEFAULT 0,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_banana_bank_user_id ON banana_bank(user_id);
+
+ALTER TABLE banana_bank ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public all access on banana_bank" ON banana_bank;
+CREATE POLICY "Allow public all access on banana_bank" 
+ON banana_bank FOR ALL 
+USING (true) 
+WITH CHECK (true);</pre>
+        </div>
+
+        <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-emerald-200">
+          <h4 class="font-bold text-yellow-300 mb-1">Quick Setup Steps:</h4>
+          <ol class="list-decimal list-inside space-y-1 text-[11px]">
+            <li>Click <strong>COPY SQL</strong> above.</li>
+            <li>Go to your <strong>Supabase Dashboard → SQL Editor</strong>.</li>
+            <li>Paste and click <strong>RUN</strong>. Done! Banana Bank is live.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Skin Values Modal -->
   <div id="skin-values-modal" class="fixed inset-0 bg-black/95 z-[600] items-center justify-center hidden backdrop-blur-md p-4 overflow-y-auto">
     <div class="bg-emerald-950 border-4 border-yellow-500 w-full max-w-4xl rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh]">
@@ -1022,7 +1345,7 @@
           <div class="col-span-2 bg-emerald-900/50 p-6 rounded-3xl border border-emerald-800">
             <h3 class="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">🕹️ SWITCH GAME</h3>
             <div class="grid grid-cols-1 gap-3">
-              <button onclick="openGamemodeModal(); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all shadow-[0_4px_0_rgb(6,78,59)] flex items-center justify-center gap-2">🕹️ CHOOSE GAMEMODE</button>
+              <button onclick="openGamemodeModal(); toggleMobileOptions();" class="py-4 rounded-xl bg-emerald-800 text-white font-black text-sm border-2 border-transparent transition-all shadow-[0_4px_0_rgb(6,78,59)] flex items-center justify-center gap-2">🕹️ SELECT GAMEMODE</button>
             </div>
           </div>
 
@@ -1691,6 +2014,9 @@
           <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
           LEAVE GROVE
         </button>
+        <button onclick="takeRideToBank()" class="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-yellow-950 font-black px-4 py-2.5 rounded-xl text-xs md:text-sm flex items-center gap-1.5 shadow-[0_4px_0_rgb(180,83,9)] active:translate-y-0.5 active:shadow-none transition-all">
+          <span>🚗</span> <span>RIDE TO BANK</span>
+        </button>
         <div class="flex flex-col items-end">
           <div class="flex items-center gap-2 bg-black/40 px-4 py-1 rounded-full border border-yellow-500/30">
             <span class="text-yellow-400 font-black text-xl tabular-nums" id="shop-balance">0 🍌</span>
@@ -1701,23 +2027,28 @@
 
       <!-- Ludvig Dialogue Overlay -->
       <div id="shop-dialogue-overlay" class="absolute inset-0 z-50 bg-black/40 backdrop-blur-xl flex items-center justify-center p-6">
-        <div class="bg-emerald-900/90 border-4 border-amber-600 rounded-[3rem] p-10 max-w-xl w-full shadow-[0_0_100px_rgba(0,0,0,0.8)] relative flex flex-col items-center text-center">
+        <div class="bg-emerald-900/90 border-4 border-amber-600 rounded-[3rem] p-8 md:p-10 max-w-xl w-full shadow-[0_0_100px_rgba(0,0,0,0.8)] relative flex flex-col items-center text-center">
           <div class="absolute -top-16 w-32 h-32 bg-amber-600 rounded-full border-8 border-emerald-900 flex items-center justify-center text-7xl shadow-2xl animate-bounce">🐒</div>
           <div class="mt-8">
             <h2 class="text-4xl font-black text-amber-400 uppercase tracking-tighter mb-1">Ludvig Toverland</h2>
             <p class="text-emerald-400 font-bold text-xs mb-8 uppercase tracking-[0.3em]">The Jungle's Finest Merchant</p>
           </div>
           
-          <div class="bg-black/40 p-8 rounded-[2rem] border-2 border-amber-900/50 mb-10 w-full relative">
+          <div class="bg-black/40 p-6 md:p-8 rounded-[2rem] border-2 border-amber-900/50 mb-8 w-full relative">
             <div class="absolute -top-3 left-8 bg-amber-600 text-amber-950 text-[10px] font-black px-3 py-1 rounded-full uppercase">Ludvig says:</div>
-            <p class="text-emerald-50 text-2xl font-serif italic leading-relaxed">
+            <p class="text-emerald-50 text-xl md:text-2xl font-serif italic leading-relaxed">
               "<span id="ludvig-text">Welcome to my humble grove, traveler. I've got some rare goods today... for the right price.</span>"
             </p>
           </div>
 
-          <button onclick="advanceLudvig()" class="group bg-amber-500 hover:bg-amber-400 text-amber-950 font-black py-5 px-16 rounded-2xl text-2xl shadow-[0_10px_0_rgb(180,83,9)] transition-all active:translate-y-1 active:shadow-none">
-            CONTINUE <span class="group-hover:translate-x-1 inline-block transition-transform">→</span>
-          </button>
+          <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
+            <button onclick="advanceLudvig()" class="flex-1 bg-amber-500 hover:bg-amber-400 text-amber-950 font-black py-4 md:py-5 px-6 rounded-2xl text-lg md:text-xl shadow-[0_8px_0_rgb(180,83,9)] transition-all active:translate-y-1 active:shadow-none">
+              CONTINUE <span class="group-hover:translate-x-1 inline-block transition-transform">→</span>
+            </button>
+            <button onclick="takeRideToBank()" class="flex-1 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 hover:brightness-110 text-yellow-950 font-black py-4 md:py-5 px-5 rounded-2xl text-base md:text-lg shadow-[0_8px_0_rgb(180,83,9)] transition-all active:translate-y-1 active:shadow-none flex items-center justify-center gap-2">
+              <span>🚗</span> <span>TAKE A RIDE TO BANK</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1736,6 +2067,30 @@
 
           <!-- Active Boosts Bar -->
           <div id="active-boosts-container" class="mb-12 flex flex-wrap gap-4 justify-center"></div>
+
+          <!-- Take a Ride to Banana Bank Banner -->
+          <div class="mb-12 bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 p-1 rounded-[2.5rem] shadow-[0_15px_35px_rgba(234,179,8,0.35)] group hover:scale-[1.02] transition-all cursor-pointer" onclick="takeRideToBank()">
+            <div class="bg-emerald-950/95 rounded-[2.3rem] p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-10 relative overflow-hidden">
+                <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(234,179,8,0.15),transparent_70%)] pointer-events-none"></div>
+                <div class="relative w-28 h-28 md:w-36 md:h-36 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-3xl rotate-6 flex items-center justify-center text-6xl md:text-7xl shadow-2xl group-hover:rotate-0 transition-transform duration-500 border-4 border-yellow-300/60 shrink-0">
+                    🏦
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <div class="inline-block bg-yellow-400 text-yellow-950 text-[10px] font-black px-3 py-1 rounded-full uppercase mb-2">New Feature • High Security Vault</div>
+                    <h3 class="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-tight mb-2">Take a Ride to Banana Bank</h3>
+                    <p class="text-emerald-300 font-medium mb-5 max-w-xl text-xs md:text-sm">Store unlimited bananas across 33 multi-denomination columns (from 1 to 100 Nonillion)! Insert whatever amount you want, withdraw up to 1T per ride.</p>
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                        <div class="bg-black/50 px-5 py-2.5 rounded-2xl border border-yellow-500/30">
+                            <p class="text-[10px] text-yellow-400 font-black uppercase tracking-widest mb-0.5">Your Vault Balance</p>
+                            <p class="text-xl md:text-2xl font-black text-white"><span id="ludvig-bank-quick-balance">0</span> <span class="text-yellow-400 text-xs italic">🍌</span></p>
+                        </div>
+                        <button class="bg-yellow-400 hover:bg-yellow-300 text-yellow-950 font-black py-3.5 px-8 rounded-2xl text-lg shadow-[0_6px_0_rgb(180,83,9)] transition-all active:translate-y-1 active:shadow-none group-hover:scale-105 flex items-center gap-2">
+                            <span>TAKE A RIDE</span> <span>🚗💨</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+          </div>
 
           <!-- Royal Banana Pass Banner -->
           <div class="mb-12 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 p-1 rounded-[2.5rem] shadow-[0_15px_30px_rgba(245,158,11,0.3)] group hover:scale-[1.02] transition-all cursor-pointer" onclick="openRoyalPass()">
@@ -1976,18 +2331,18 @@
         <!-- Quests Content -->
         <div id="sidebar-quests" class="hidden p-3 md:p-6 flex-1 overflow-y-auto custom-scroll flex flex-col">
           <!-- Quests Header -->
-          <div class="flex flex-col gap-1.5 mb-3 shrink-0 bg-slate-950/80 p-3 rounded-2xl border border-emerald-800/80 shadow-md">
+          <div class="flex flex-col gap-1.5 mb-3 shrink-0 bg-gradient-to-b from-[#064e3b]/90 via-[#022c22]/95 to-[#011910]/95 p-3 rounded-2xl border-2 border-emerald-600/80 shadow-md ring-1 ring-yellow-400/20">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1.5">
                 <span class="text-xl">📜</span>
                 <h3 class="font-black text-emerald-100 text-xs md:text-sm uppercase tracking-wide">Daily Quests</h3>
               </div>
-              <div class="flex items-center gap-1 bg-slate-900 border border-emerald-700/60 px-2 py-0.5 rounded-full">
-                <span class="text-[9px] text-slate-400 font-bold uppercase">Resets in:</span>
-                <span id="quest-countdown-timer" class="text-[10px] text-amber-400 font-mono font-black animate-pulse">60:00</span>
+              <div class="flex items-center gap-1 bg-[#011910] border border-emerald-700/60 px-2 py-0.5 rounded-full">
+                <span class="text-[9px] text-emerald-300 font-bold uppercase">Resets in:</span>
+                <span id="quest-countdown-timer" class="text-[10px] text-yellow-400 font-mono font-black animate-pulse">60:00</span>
               </div>
             </div>
-            <p class="text-[9.5px] text-slate-400 leading-tight">
+            <p class="text-[9.5px] text-emerald-200/90 leading-tight">
               Complete 5 client quests every hour for whole player level rewards! Incomplete quests reset when the timer runs out.
             </p>
           </div>
@@ -2022,7 +2377,7 @@
               </div>
             </div>
             <div class="flex p-1.5 md:p-2 gap-1.5 md:gap-2 justify-center">
-              <button onclick="openGamemodeModal()" class="w-full max-w-sm py-2 md:py-3 rounded bg-emerald-800 hover:bg-emerald-700 text-white font-black text-xs md:text-sm border-2 border-transparent transition-all shadow-[0_4px_0_rgb(6,78,59)] active:translate-y-1 active:shadow-none flex items-center justify-center gap-2">🕹️ CHOOSE GAMEMODE</button>
+              <button onclick="openGamemodeModal()" class="w-full max-w-sm py-2 md:py-3 rounded bg-emerald-800 hover:bg-emerald-700 text-white font-black text-xs md:text-sm border-2 border-transparent transition-all shadow-[0_4px_0_rgb(6,78,59)] active:translate-y-1 active:shadow-none flex items-center justify-center gap-2">🕹️ SELECT GAMEMODE</button>
             </div>
         </div>
         
@@ -2252,7 +2607,7 @@
           <!-- Game: PLINKO -->
           <div id="area-plinko" class="w-full h-full flex flex-col items-center justify-between hidden p-2 md:p-3 relative overflow-hidden select-none">
             <!-- Plinko Top Stats & History Bar -->
-            <div class="w-full max-w-xl bg-slate-900/90 border border-yellow-500/40 rounded-2xl p-2 px-3 flex items-center justify-between gap-2 shadow-lg shrink-0 z-20 backdrop-blur-md">
+            <div class="w-full max-w-xl bg-gradient-to-b from-[#064e3b]/90 via-[#022c22]/95 to-[#011910]/95 border-2 border-emerald-600/70 rounded-2xl p-2 px-3 flex items-center justify-between gap-2 shadow-lg shrink-0 z-20 backdrop-blur-md ring-1 ring-yellow-400/20">
               <div class="flex items-center gap-2">
                 <span class="text-xl md:text-2xl animate-bounce">🎯</span>
                 <div>
@@ -2260,7 +2615,7 @@
                     <span class="text-xs md:text-sm font-black text-yellow-400 uppercase tracking-wide">Plinko</span>
                     <span id="plinko-risk-badge" class="bg-yellow-500/20 text-yellow-300 text-[9px] font-black px-1.5 py-0.5 rounded-full border border-yellow-500/40 uppercase">MED</span>
                   </div>
-                  <div class="text-[10px] text-slate-400 font-mono">
+                  <div class="text-[10px] text-emerald-200/80 font-mono">
                     <span id="plinko-rows-display" class="text-white font-bold">12</span> Rows • Max: <span id="plinko-max-mult-display" class="text-yellow-400 font-black">33x</span>
                   </div>
                 </div>
@@ -2268,13 +2623,13 @@
 
               <!-- Recent Multipliers History Ribbon -->
               <div class="flex items-center gap-1 overflow-x-auto custom-scroll max-w-[210px] md:max-w-xs py-0.5" id="plinko-history-ribbon">
-                <span class="text-[10px] text-slate-500 italic">Drop to see multipliers</span>
+                <span class="text-[10px] text-emerald-400/70 italic">Drop to see multipliers</span>
               </div>
             </div>
 
             <!-- Plinko Board Canvas with Buckets Bar -->
             <div class="relative w-full max-w-xl flex-1 flex flex-col items-center justify-center min-h-[280px] max-h-[460px] my-1 overflow-hidden">
-              <canvas id="plinko-canvas" width="540" height="420" class="w-full h-full rounded-2xl bg-gradient-to-b from-slate-950 via-emerald-950/80 to-slate-950 border-2 border-emerald-700/60 shadow-[inset_0_0_60px_rgba(0,0,0,0.8),0_10px_30px_rgba(6,78,59,0.5)]"></canvas>
+              <canvas id="plinko-canvas" width="540" height="420" class="w-full h-full rounded-2xl bg-gradient-to-b from-[#064e3b] via-[#022c22] to-[#011910] border-2 border-emerald-500/80 shadow-[inset_0_0_60px_rgba(0,0,0,0.8),0_10px_30px_rgba(6,78,59,0.5)]"></canvas>
 
               <!-- Dynamic Multiplier Slots / Buckets Bar at bottom of canvas -->
               <div id="plinko-buckets-container" class="absolute bottom-1.5 left-0 right-0 h-8 pointer-events-none">
@@ -2292,79 +2647,69 @@
             </div>
 
             <!-- Plinko Multi-Drop / Round Total Win Square -->
-            <div id="plinko-round-summary" class="w-full max-w-xl bg-slate-900/95 border-2 border-yellow-500/40 rounded-2xl p-2 px-3 shadow-xl flex flex-col gap-1.5 shrink-0 z-20 backdrop-blur-md transition-all">
-              <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+            <div id="plinko-round-summary" class="w-full max-w-xl bg-gradient-to-b from-[#064e3b]/95 via-[#022c22]/95 to-[#011910]/95 border-2 border-yellow-500/50 rounded-2xl p-2 px-3 shadow-xl flex flex-col gap-1.5 shrink-0 z-20 backdrop-blur-md transition-all ring-1 ring-yellow-400/20">
+              <div class="flex items-center justify-between border-b border-emerald-800/80 pb-1.5">
                 <div class="flex items-center gap-2">
                   <span id="plinko-summary-icon" class="text-xl">🎯</span>
                   <div>
                     <div class="flex items-center gap-1.5">
                       <span class="text-xs font-black text-white uppercase tracking-wide">Total Win Square</span>
-                      <span id="plinko-summary-badge" class="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Ready</span>
+                      <span id="plinko-summary-badge" class="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/60">Ready</span>
                     </div>
-                    <div class="text-[9.5px] text-slate-400 font-mono flex items-center gap-2 mt-0.5">
+                    <div class="text-[9.5px] text-emerald-200/80 font-mono flex items-center gap-2 mt-0.5">
                       <span>Cost: <span id="plinko-summary-cost" class="text-white font-bold">0 🍌</span></span>
-                      <span class="text-slate-600">•</span>
+                      <span class="text-emerald-600">•</span>
                       <span>Won: <span id="plinko-summary-won" class="text-yellow-400 font-bold">+0 🍌</span></span>
                     </div>
                   </div>
                 </div>
                 <div class="flex flex-col items-end font-mono">
-                  <span id="plinko-summary-profit-badge" class="text-xs font-black text-slate-400 px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800">0.00x</span>
+                  <span id="plinko-summary-profit-badge" class="text-xs font-black text-emerald-300 px-2 py-0.5 rounded-lg bg-[#011910] border border-emerald-800">0.00x</span>
                 </div>
               </div>
               <!-- Multi-ball individual landed multipliers chips -->
               <div class="flex items-center justify-between gap-2 pt-0.5">
-                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                <span class="text-[9px] font-bold text-emerald-300/80 uppercase tracking-wider shrink-0 flex items-center gap-1">
                   <span>🍌 Ball Multipliers:</span>
                 </span>
                 <div id="plinko-summary-chips" class="flex flex-wrap items-center justify-end gap-1 max-h-12 overflow-y-auto custom-scroll flex-1">
-                  <span class="text-[10px] text-slate-500 italic font-mono">Drop 1, 5, or 10 balls to see each ball's win</span>
+                  <span class="text-[10px] text-emerald-400/60 italic font-mono">Drop balls below to see multipliers</span>
                 </div>
               </div>
             </div>
 
             <!-- Plinko Settings & Multi-Drop Dock -->
-            <div class="w-full max-w-xl bg-slate-900/95 border-2 border-emerald-600/70 p-2.5 rounded-2xl shadow-xl flex flex-col gap-2 shrink-0 z-20">
+            <div class="w-full max-w-xl bg-gradient-to-b from-[#064e3b]/95 via-[#022c22]/95 to-[#011910]/95 border-2 border-emerald-600/80 p-2.5 rounded-2xl shadow-xl flex flex-col gap-2 shrink-0 z-20 ring-1 ring-yellow-400/20">
               <!-- Top Row: Risk Level & Rows Selection -->
-              <div class="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-800 pb-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-1.5 border-b border-emerald-800/80 pb-1.5">
                 <!-- Risk Level -->
                 <div class="flex items-center gap-1">
-                  <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Risk:</span>
-                  <div class="flex rounded-xl bg-slate-950 p-0.5 border border-slate-800 text-[10px] font-black">
-                    <button type="button" onclick="setPlinkoRisk('low')" id="plinko-risk-low" class="px-2 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">LOW</button>
+                  <span class="text-[9px] text-emerald-300/90 font-bold uppercase tracking-wider">Risk:</span>
+                  <div class="flex rounded-xl bg-[#011910] p-0.5 border border-emerald-800 text-[10px] font-black">
+                    <button type="button" onclick="setPlinkoRisk('low')" id="plinko-risk-low" class="px-2 py-0.5 rounded-lg transition-all text-emerald-300/70 hover:text-white">LOW</button>
                     <button type="button" onclick="setPlinkoRisk('medium')" id="plinko-risk-medium" class="px-2 py-0.5 rounded-lg transition-all bg-yellow-500 text-slate-950 font-black shadow">MED</button>
-                    <button type="button" onclick="setPlinkoRisk('high')" id="plinko-risk-high" class="px-2 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">HIGH</button>
+                    <button type="button" onclick="setPlinkoRisk('high')" id="plinko-risk-high" class="px-2 py-0.5 rounded-lg transition-all text-emerald-300/70 hover:text-white">HIGH</button>
                     <button type="button" onclick="setPlinkoRisk('gorilla')" id="plinko-risk-gorilla" class="px-2 py-0.5 rounded-lg transition-all text-red-400 hover:text-white flex items-center gap-0.5"><span>🦍</span><span>DEGEN</span></button>
                   </div>
                 </div>
 
                 <!-- Rows Selection -->
                 <div class="flex items-center gap-1">
-                  <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Rows:</span>
-                  <div class="flex rounded-xl bg-slate-950 p-0.5 border border-slate-800 text-[10px] font-mono font-bold">
-                    <button type="button" onclick="setPlinkoRows(8)" id="plinko-row-8" class="px-1.5 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">8</button>
-                    <button type="button" onclick="setPlinkoRows(10)" id="plinko-row-10" class="px-1.5 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">10</button>
+                  <span class="text-[9px] text-emerald-300/90 font-bold uppercase tracking-wider">Rows:</span>
+                  <div class="flex rounded-xl bg-[#011910] p-0.5 border border-emerald-800 text-[10px] font-mono font-bold">
+                    <button type="button" onclick="setPlinkoRows(8)" id="plinko-row-8" class="px-1.5 py-0.5 rounded-lg transition-all text-emerald-300/70 hover:text-white">8</button>
+                    <button type="button" onclick="setPlinkoRows(10)" id="plinko-row-10" class="px-1.5 py-0.5 rounded-lg transition-all text-emerald-300/70 hover:text-white">10</button>
                     <button type="button" onclick="setPlinkoRows(12)" id="plinko-row-12" class="px-1.5 py-0.5 rounded-lg transition-all bg-emerald-600 text-white font-black shadow">12</button>
-                    <button type="button" onclick="setPlinkoRows(14)" id="plinko-row-14" class="px-1.5 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">14</button>
-                    <button type="button" onclick="setPlinkoRows(16)" id="plinko-row-16" class="px-1.5 py-0.5 rounded-lg transition-all text-slate-400 hover:text-white">16</button>
+                    <button type="button" onclick="setPlinkoRows(14)" id="plinko-row-14" class="px-1.5 py-0.5 rounded-lg transition-all text-emerald-300/70 hover:text-white">14</button>
+                    <button type="button" onclick="setPlinkoRows(16)" id="plinko-row-16" class="px-1.5 py-0.5 rounded-lg transition-all text-emerald-300/70 hover:text-white">16</button>
                   </div>
                 </div>
               </div>
 
-              <!-- Bottom Row: Drop Action Buttons -->
-              <div class="flex items-center gap-1.5 pt-0.5">
-                <button type="button" onclick="dropPlinkoBalls(1)" id="plinko-drop-1-btn" class="flex-1 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg border-b-4 border-amber-700 active:scale-95 transition-all flex items-center justify-center gap-1">
-                  <span>DROP 1 🍌</span>
-                </button>
-                <button type="button" onclick="dropPlinkoBalls(5)" id="plinko-drop-5-btn" class="px-3 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-black text-xs rounded-xl shadow-lg border-b-4 border-emerald-800 active:scale-95 transition-all flex items-center justify-center gap-1" title="Drop 5 balls cascading together!">
-                  <span>5x 💥</span>
-                </button>
-                <button type="button" onclick="dropPlinkoBalls(10)" id="plinko-drop-10-btn" class="px-3 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs rounded-xl shadow-lg border-b-4 border-purple-800 active:scale-95 transition-all flex items-center justify-center gap-1" title="Drop 10 balls storm!">
-                  <span>10x 🌪️</span>
-                </button>
-                <button type="button" onclick="togglePlinkoAuto()" id="plinko-auto-btn" class="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-xs rounded-xl border border-slate-700 active:scale-95 transition-all flex items-center justify-center gap-1" title="Continuous stream drop">
-                  <span id="plinko-auto-text">AUTO ♾️</span>
-                </button>
+              <!-- Quick Drop Action Hints & Helper -->
+              <div class="flex items-center justify-between gap-1.5 pt-0.5 text-[10px] text-emerald-200/90 font-semibold px-1">
+                <span>👇 Use the massive <strong class="text-yellow-400">DROP</strong>, <strong class="text-emerald-300">5x</strong>, <strong class="text-purple-300">10x</strong> & <strong class="text-yellow-300">AUTO</strong> buttons below!</span>
+                <span class="text-yellow-400 font-mono font-black text-xs">🎯 Banana Plinko</span>
               </div>
             </div>
           </div>
@@ -2737,7 +3082,7 @@
             </div>
             
             <!-- Main Action Buttons -->
-            <div id="main-actions-container" class="relative">
+            <div id="main-actions-container" class="relative flex items-center gap-1.5 md:gap-2">
               <button 
                 onclick="handleMainAction()"
                 id="main-action-btn"
@@ -2746,6 +3091,40 @@
               >
                 SPIN
               </button>
+
+              <!-- Plinko Specific Multi-Drop & Auto Buttons alongside the massive Drop button -->
+              <div id="plinko-main-action-extras" class="hidden flex items-stretch gap-1.5 md:gap-2 shrink-0 self-stretch">
+                <button 
+                  type="button" 
+                  onclick="dropPlinkoBalls(5)" 
+                  id="plinko-extra-5-btn" 
+                  class="px-3 sm:px-4 md:px-5 py-2 md:py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-black text-xs sm:text-sm md:text-base rounded-xl md:rounded-2xl shadow-xl border-b-4 border-emerald-800 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[52px] md:min-w-[70px]"
+                  title="Drop 5 balls!"
+                >
+                  <span class="tracking-tight text-sm md:text-lg">5x</span>
+                  <span class="text-[9px] md:text-[11px]">💥</span>
+                </button>
+                <button 
+                  type="button" 
+                  onclick="dropPlinkoBalls(10)" 
+                  id="plinko-extra-10-btn" 
+                  class="px-3 sm:px-4 md:px-5 py-2 md:py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm md:text-base rounded-xl md:rounded-2xl shadow-xl border-b-4 border-purple-800 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[52px] md:min-w-[70px]"
+                  title="Drop 10 balls!"
+                >
+                  <span class="tracking-tight text-sm md:text-lg">10x</span>
+                  <span class="text-[9px] md:text-[11px]">🌪️</span>
+                </button>
+                <button 
+                  type="button" 
+                  onclick="togglePlinkoAuto()" 
+                  id="plinko-extra-auto-btn" 
+                  class="px-3 sm:px-4 md:px-5 py-2 md:py-3 bg-emerald-950 hover:bg-emerald-900 text-yellow-400 font-black text-xs sm:text-sm md:text-base rounded-xl md:rounded-2xl border-2 border-emerald-700/80 border-b-4 border-b-emerald-950 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[52px] md:min-w-[70px]"
+                  title="Auto continuous drop"
+                >
+                  <span id="plinko-extra-auto-text" class="text-xs md:text-sm">AUTO</span>
+                  <span class="text-[9px] md:text-[11px]">♾️</span>
+                </button>
+              </div>
 
               <!-- Insurance Button -->
               <button id="insurance-btn" onclick="claimInsurance()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-lg shadow-xl z-50 animate-pulse border-b-4 border-blue-800 text-[10px] md:text-xs">
@@ -3930,6 +4309,7 @@
           const data = JSON.parse(saved);
           userId = data.id || data.userId || generateId();
           playerName = data.name || '';
+          if (typeof loadBankStorage === 'function') loadBankStorage();
           isInternalUpdate = true;
           updateBananas(typeof data.bananas === 'number' ? data.bananas : 0);
           bananaBox = typeof data.bananaBox === 'number' ? data.bananaBox : 0;
@@ -5875,8 +6255,10 @@
         if (ludvigStep === 1) {
             textEl.innerText = "The jungle is dangerous, but my monkeys are fast. They bring me treasures you won't find at the wheel.";
         } else if (ludvigStep === 2) {
-            textEl.innerText = "Check out my new 'Extras' section below! I've started collecting unique titles for the most dedicated explorers.";
+            textEl.innerText = "Sitting on a massive mountain of bananas? Hop in my armored jungle wagon! Press 'TAKE A RIDE TO BANK' anytime and I'll speed you right to the Banana Bank vault.";
         } else if (ludvigStep === 3) {
+            textEl.innerText = "Check out my new 'Extras' section below! I've started collecting unique titles for the most dedicated explorers.";
+        } else if (ludvigStep === 4) {
             textEl.innerText = "Take a look at my shelves. If you have the bananas, I have the power. No refunds, monkey business only!";
         } else {
             document.getElementById('shop-dialogue-overlay').classList.add('hidden');
@@ -5927,6 +6309,11 @@
         const grid = document.getElementById('shop-items-grid');
         const balanceEl = document.getElementById('shop-balance');
         balanceEl.innerText = `${bananas.toLocaleString()} 🍌 | ${coins.toLocaleString()} 🪙`;
+
+        const quickShopEl = document.getElementById('ludvig-bank-quick-balance');
+        if (quickShopEl && typeof calculateTotalBankBigInt === 'function') {
+            quickShopEl.innerText = formatBankNumberCompact(calculateTotalBankBigInt());
+        }
 
         let html = '';
         SHOP_ITEMS.forEach((item, i) => {
@@ -6137,7 +6524,7 @@
             tier: 'easy',
             reward: 2,
             icon: '🃏',
-            title: 'Table Warmup',
+            title: 'Blackjack Warmup',
             desc: 'Play 5 hands of Blackjack',
             target: 5,
             evalProgress: (evt, amt) => evt === 'bj_play' ? amt : 0
@@ -6147,7 +6534,7 @@
             tier: 'easy',
             reward: 2,
             icon: '🃏',
-            title: 'Dealer Bust',
+            title: 'Beat the Dealer',
             desc: 'Win 2 hands of Blackjack',
             target: 2,
             evalProgress: (evt, amt) => evt === 'bj_win' ? amt : 0
@@ -6167,7 +6554,7 @@
             tier: 'easy',
             reward: 2,
             icon: '📦',
-            title: 'Rare Catch',
+            title: 'Rare Skin Catch',
             desc: 'Unbox a Rare or better Skin',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'case_open' && ['Rare', 'Epic', 'Legendary', 'Mythic', 'Ominous'].includes(meta.highestRarity)) ? 1 : 0
@@ -6177,7 +6564,7 @@
             tier: 'easy',
             reward: 2,
             icon: '🎡',
-            title: 'Wheel Roller',
+            title: 'Wheel Spinner',
             desc: 'Spin Roulette 5 times',
             target: 5,
             evalProgress: (evt, amt) => evt === 'roulette_spin' ? amt : 0
@@ -6187,7 +6574,7 @@
             tier: 'easy',
             reward: 2,
             icon: '🎡',
-            title: 'Color Catcher',
+            title: 'Roulette Winner',
             desc: 'Win 2 Roulette spins',
             target: 2,
             evalProgress: (evt, amt) => evt === 'roulette_win' ? amt : 0
@@ -6207,8 +6594,8 @@
             tier: 'easy',
             reward: 2,
             icon: '🎰',
-            title: 'Fruity Win',
-            desc: 'Hit any winning spin on Slots',
+            title: 'Slot Winner',
+            desc: 'Hit 1 winning spin on Slots',
             target: 1,
             evalProgress: (evt, amt) => evt === 'slots_win' ? amt : 0
         },
@@ -6228,7 +6615,7 @@
             reward: 2,
             icon: '💎',
             title: 'Mine Sweeper',
-            desc: 'Win 2 rounds of Mines',
+            desc: 'Cash out in 2 rounds of Mines',
             target: 2,
             evalProgress: (evt, amt) => evt === 'mines_cashout' ? amt : 0
         },
@@ -6237,7 +6624,7 @@
             tier: 'easy',
             reward: 2,
             icon: '🎯',
-            title: 'Peg Hopper',
+            title: 'Plinko Dropper',
             desc: 'Drop 5 balls in Plinko',
             target: 5,
             evalProgress: (evt, amt) => evt === 'plinko_drop' ? amt : 0
@@ -6247,7 +6634,7 @@
             tier: 'easy',
             reward: 2,
             icon: '🎯',
-            title: 'Lucky Bounce',
+            title: 'Plinko Multiplier',
             desc: 'Hit a 1.5x or higher in Plinko',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'plinko_mult' && meta.mult >= 1.5) ? 1 : 0
@@ -6257,7 +6644,7 @@
             tier: 'easy',
             reward: 2,
             icon: '🚀',
-            title: 'Astronaut',
+            title: 'Rocket Launch',
             desc: 'Play 3 rounds of Crash',
             target: 3,
             evalProgress: (evt, amt) => evt === 'crash_play' ? amt : 0
@@ -6267,7 +6654,7 @@
             tier: 'easy',
             reward: 2,
             icon: '🚀',
-            title: 'Safe Landing',
+            title: 'Safe Pilot',
             desc: 'Cash out at 1.5x or higher in Crash',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'crash_cashout' && meta.mult >= 1.5) ? 1 : 0
@@ -6278,7 +6665,7 @@
             reward: 2,
             icon: '📈',
             title: 'Card Reader',
-            desc: 'Guess 3 Hi-Lo cards correctly',
+            desc: 'Guess correctly in 3 rounds of Hi-Lo',
             target: 3,
             evalProgress: (evt, amt) => evt === 'hilo_correct' ? amt : 0
         },
@@ -6287,8 +6674,8 @@
             tier: 'easy',
             reward: 2,
             icon: '📈',
-            title: 'Hi-Lo Profit',
-            desc: 'Cash out in 1 round of Hi-Lo',
+            title: 'Hi-Lo Winner',
+            desc: 'Win 1 round of Hi-Lo',
             target: 1,
             evalProgress: (evt, amt) => evt === 'hilo_win' ? amt : 0
         },
@@ -6297,7 +6684,7 @@
             tier: 'easy',
             reward: 2,
             icon: '🎴',
-            title: 'Poker Hand',
+            title: 'Poker Deal',
             desc: 'Play 2 hands of Video Poker',
             target: 2,
             evalProgress: (evt, amt) => evt === 'poker_play' ? amt : 0
@@ -6369,7 +6756,7 @@
             tier: 'medium',
             reward: 4,
             icon: '🃏',
-            title: 'Natural 21',
+            title: 'Natural Blackjack',
             desc: 'Get a Natural Blackjack (21 on deal)',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'bj_win' && meta.isNatural) ? 1 : 0
@@ -6379,7 +6766,7 @@
             tier: 'medium',
             reward: 4,
             icon: '🃏',
-            title: 'Double or Nothing',
+            title: 'Double Down Win',
             desc: 'Win a Double Down in Blackjack',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'bj_win' && meta.isDouble) ? 1 : 0
@@ -6389,7 +6776,7 @@
             tier: 'medium',
             reward: 4,
             icon: '📦',
-            title: 'Crate Fiend',
+            title: 'Case Collector',
             desc: 'Open 10 Cases',
             target: 10,
             evalProgress: (evt, amt) => evt === 'case_open' ? amt : 0
@@ -6399,7 +6786,7 @@
             tier: 'medium',
             reward: 4,
             icon: '📦',
-            title: 'Epic Discovery',
+            title: 'Epic Skin Catch',
             desc: 'Unbox an Epic or better Skin',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'case_open' && ['Epic', 'Legendary', 'Mythic', 'Ominous'].includes(meta.highestRarity)) ? 1 : 0
@@ -6409,7 +6796,7 @@
             tier: 'medium',
             reward: 4,
             icon: '🎡',
-            title: 'Green Seeker',
+            title: 'Green Wheel Hit',
             desc: 'Win on Green (14x) in Roulette',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'roulette_win' && meta.isGreen) ? 1 : 0
@@ -6419,10 +6806,10 @@
             tier: 'medium',
             reward: 4,
             icon: '🎡',
-            title: 'Wheel Master',
-            desc: 'Win 3 Roulette spins in a row',
-            target: 3,
-            evalProgress: (evt, amt, meta) => (evt === 'win_streak' && (amt >= 3 || (meta && (meta >= 3 || meta.streak >= 3)))) ? 3 : 0
+            title: 'Roulette Master',
+            desc: 'Win 4 Roulette spins',
+            target: 4,
+            evalProgress: (evt, amt) => evt === 'roulette_win' ? amt : 0
         },
         {
             id: 'med_slots_spin',
@@ -6439,7 +6826,7 @@
             tier: 'medium',
             reward: 4,
             icon: '🎰',
-            title: 'Triple Trouble',
+            title: 'Triple Match',
             desc: 'Hit 3 matching icons in Slots',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'slots_win' && (meta.isTriple || meta.isJackpot)) ? 1 : 0
@@ -6479,7 +6866,7 @@
             tier: 'medium',
             reward: 4,
             icon: '🎯',
-            title: 'Corner Aim',
+            title: 'High Peg Bounce',
             desc: 'Hit a 5x or higher in Plinko',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'plinko_mult' && meta.mult >= 5) ? 1 : 0
@@ -6489,7 +6876,7 @@
             tier: 'medium',
             reward: 4,
             icon: '🚀',
-            title: 'To the Moon',
+            title: 'High Altitude',
             desc: 'Cash out at 3.0x or higher in Crash',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'crash_cashout' && meta.mult >= 3.0) ? 1 : 0
@@ -6499,30 +6886,30 @@
             tier: 'medium',
             reward: 4,
             icon: '🚀',
-            title: 'Streak Pilot',
-            desc: 'Cash out in 3 Crash games in a row',
-            target: 3,
-            evalProgress: (evt, amt, meta) => (evt === 'win_streak' && (amt >= 3 || (meta && (meta >= 3 || meta.streak >= 3)))) ? 3 : 0
+            title: 'Rocket Pilot',
+            desc: 'Cash out in 4 Crash flights',
+            target: 4,
+            evalProgress: (evt, amt) => evt === 'crash_cashout' ? amt : 0
         },
         {
             id: 'med_hilo_streak',
             tier: 'medium',
             reward: 4,
             icon: '📈',
-            title: 'Oracle',
-            desc: 'Get a 4-card guess streak in Hi-Lo',
-            target: 4,
-            evalProgress: (evt, amt, meta) => (evt === 'hilo_correct' && meta && meta.streak >= 4) ? 4 : 0
+            title: 'Card Predictor',
+            desc: 'Guess correctly in 5 rounds of Hi-Lo',
+            target: 5,
+            evalProgress: (evt, amt) => evt === 'hilo_correct' ? amt : 0
         },
         {
             id: 'med_hilo_mult',
             tier: 'medium',
             reward: 4,
             icon: '📈',
-            title: 'Card Whisperer',
-            desc: 'Cash out at 3.0x or higher in Hi-Lo',
-            target: 1,
-            evalProgress: (evt, amt, meta) => (evt === 'hilo_win' && meta && meta.mult >= 3.0) ? 1 : 0
+            title: 'Hi-Lo Specialist',
+            desc: 'Win 3 rounds of Hi-Lo',
+            target: 3,
+            evalProgress: (evt, amt) => evt === 'hilo_win' ? amt : 0
         },
         {
             id: 'med_poker_win',
@@ -6569,7 +6956,7 @@
             tier: 'medium',
             reward: 4,
             icon: '🔥',
-            title: 'Hot Hand',
+            title: 'Hot Streak',
             desc: 'Achieve a 4-game win streak in casino',
             target: 4,
             evalProgress: (evt, amt, meta) => (evt === 'win_streak' && (amt >= 4 || (meta && (meta >= 4 || meta.streak >= 4)))) ? 4 : 0
@@ -6581,17 +6968,17 @@
             tier: 'hard',
             reward: 6,
             icon: '🃏',
-            title: 'Casino Shark',
-            desc: 'Win 4 hands of Blackjack in a row',
-            target: 4,
-            evalProgress: (evt, amt, meta) => (evt === 'win_streak' && (amt >= 4 || (meta && (meta >= 4 || meta.streak >= 4)))) ? 4 : 0
+            title: 'Blackjack Master',
+            desc: 'Win 8 hands of Blackjack',
+            target: 8,
+            evalProgress: (evt, amt) => evt === 'bj_win' ? amt : 0
         },
         {
             id: 'hard_cases_legendary',
             tier: 'hard',
             reward: 6,
             icon: '📦',
-            title: 'Mythical Find',
+            title: 'Mythical Skin Unbox',
             desc: 'Unbox a Legendary, Mythic or Ominous Skin',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'case_open' && ['Legendary', 'Mythic', 'Ominous'].includes(meta.highestRarity)) ? 1 : 0
@@ -6621,10 +7008,10 @@
             tier: 'hard',
             reward: 6,
             icon: '🎰',
-            title: 'Mega Jackpot',
+            title: 'Mega Jackpot Hit',
             desc: 'Hit a Jackpot win on Slots',
             target: 1,
-            evalProgress: (evt, amt, meta) => (evt === 'slots_win' && meta.isJackpot) ? 1 : 0
+            evalProgress: (evt, amt) => (evt === 'slots_win' && meta.isJackpot) ? 1 : 0
         },
         {
             id: 'hard_mines_mult',
@@ -6641,7 +7028,7 @@
             tier: 'hard',
             reward: 6,
             icon: '💎',
-            title: 'Greed is Good',
+            title: 'Diamond Hoarder',
             desc: 'Uncover 6 Diamonds safely in Mines',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'mines_cashout' && meta.gems >= 6) ? 1 : 0
@@ -6661,7 +7048,7 @@
             tier: 'hard',
             reward: 6,
             icon: '🚀',
-            title: 'Deep Orbit',
+            title: 'Deep Orbit Cashout',
             desc: 'Cash out at 7.0x or higher in Crash',
             target: 1,
             evalProgress: (evt, amt, meta) => (evt === 'crash_cashout' && meta.mult >= 7.0) ? 1 : 0
@@ -6671,10 +7058,10 @@
             tier: 'hard',
             reward: 6,
             icon: '📈',
-            title: 'Clairvoyant',
-            desc: 'Reach a 6-card streak in Hi-Lo',
+            title: 'Hi-Lo Champion',
+            desc: 'Win 6 rounds of Hi-Lo',
             target: 6,
-            evalProgress: (evt, amt, meta) => (evt === 'hilo_correct' && meta && meta.streak >= 6) ? 6 : 0
+            evalProgress: (evt, amt) => evt === 'hilo_win' ? amt : 0
         },
         {
             id: 'hard_poker_flush',
@@ -6705,6 +7092,21 @@
                 const data = JSON.parse(raw);
                 questRefreshTimestamp = data.refreshTimestamp || 0;
                 activeQuests = data.quests || [];
+                // Re-sync with QUEST_POOL so task, title, description and target are always linked
+                if (Array.isArray(activeQuests)) {
+                    activeQuests.forEach(q => {
+                        const def = QUEST_POOL.find(p => p.id === q.id);
+                        if (def) {
+                            q.title = def.title;
+                            q.desc = def.desc;
+                            q.target = def.target;
+                            q.icon = def.icon;
+                            q.reward = def.reward;
+                            q.tier = def.tier;
+                            if (q.progress >= q.target) q.completed = true;
+                        }
+                    });
+                }
             }
         } catch(e) {
             console.error("Failed to load quests:", e);
@@ -6856,26 +7258,26 @@
             const percent = Math.min(100, Math.floor((q.progress / q.target) * 100));
             
             let tierStyle = {
-                border: 'border-emerald-700/60',
-                bg: 'from-slate-950 via-emerald-950/20 to-slate-950',
-                badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-                barBg: 'bg-gradient-to-r from-emerald-500 to-green-400',
+                border: 'border-emerald-600/80',
+                bg: 'from-emerald-950 via-[#022c22] to-emerald-950',
+                badgeBg: 'bg-emerald-500/25 text-emerald-300 border-emerald-500/60',
+                barBg: 'bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-300',
                 label: 'EASY • +2 LEVELS'
             };
             if (q.tier === 'medium') {
                 tierStyle = {
-                    border: 'border-amber-700/60',
-                    bg: 'from-slate-950 via-amber-950/20 to-slate-950',
-                    badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-                    barBg: 'bg-gradient-to-r from-yellow-500 to-amber-400',
+                    border: 'border-yellow-600/80',
+                    bg: 'from-emerald-950 via-[#033425] to-emerald-950',
+                    badgeBg: 'bg-yellow-500/25 text-yellow-300 border-yellow-500/60',
+                    barBg: 'bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-300',
                     label: 'MEDIUM • +4 LEVELS'
                 };
             } else if (q.tier === 'hard') {
                 tierStyle = {
-                    border: 'border-purple-600/70',
-                    bg: 'from-slate-950 via-purple-950/30 to-slate-950',
-                    badgeBg: 'bg-purple-500/25 text-purple-300 border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]',
-                    barBg: 'bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400',
+                    border: 'border-amber-400/90 shadow-[0_0_15px_rgba(251,191,36,0.25)]',
+                    bg: 'from-emerald-950 via-amber-950/40 to-emerald-950',
+                    badgeBg: 'bg-amber-400/30 text-yellow-200 border-yellow-400/80 shadow-[0_0_10px_rgba(250,204,21,0.3)]',
+                    barBg: 'bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500',
                     label: 'HARD • +6 LEVELS'
                 };
             }
@@ -6887,7 +7289,7 @@
                   <span class="text-xl md:text-2xl">${q.icon}</span>
                   <div>
                     <h4 class="text-xs md:text-sm font-black text-white leading-tight">${q.title}</h4>
-                    <p class="text-[9.5px] text-slate-300 leading-tight mt-0.5">${q.desc}</p>
+                    <p class="text-[9.5px] text-emerald-100/90 leading-tight mt-0.5">${q.desc}</p>
                   </div>
                 </div>
                 <span class="text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full border ${tierStyle.badgeBg} shrink-0">
@@ -6896,7 +7298,7 @@
               </div>
 
               <!-- Progress Bar -->
-              <div class="w-full bg-slate-900 rounded-full h-3 border border-slate-800 overflow-hidden relative shadow-inner flex items-center">
+              <div class="w-full bg-[#011910] rounded-full h-3 border border-emerald-900 overflow-hidden relative shadow-inner flex items-center">
                 <div class="${tierStyle.barBg} h-full transition-all duration-300 rounded-full" style="width: ${percent}%;"></div>
                 <span class="absolute inset-0 flex items-center justify-center text-[8.5px] font-mono font-black text-white drop-shadow">
                   ${formatNumber(q.progress)} / ${formatNumber(q.target)} (${percent}%)
@@ -6906,14 +7308,14 @@
               <!-- Action Button / Claim State -->
               <div>
                 ${q.claimed 
-                  ? `<div class="w-full py-1.5 rounded-xl bg-slate-900 border border-emerald-900/50 text-center font-black text-[10px] text-emerald-400 flex items-center justify-center gap-1">
+                  ? `<div class="w-full py-1.5 rounded-xl bg-[#011910] border border-emerald-700/60 text-center font-black text-[10px] text-emerald-400 flex items-center justify-center gap-1">
                        <span>CLAIMED</span> <span>✓</span>
                      </div>`
                   : q.completed
                   ? `<button onclick="claimQuestReward(${idx})" class="w-full py-2 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs rounded-xl shadow-[0_0_15px_rgba(250,204,21,0.5)] active:scale-95 transition-all flex items-center justify-center gap-1.5 animate-bounce">
                        <span>CLAIM +${q.reward} LEVELS!</span> <span>🎉</span>
                      </button>`
-                  : `<div class="text-right text-[9px] text-slate-400 font-mono">
+                  : `<div class="text-right text-[9px] text-emerald-300/80 font-mono">
                        In Progress • ${q.target - q.progress} remaining
                      </div>`
                 }
@@ -9061,13 +9463,19 @@
         plinkoAutoActive = !plinkoAutoActive;
         const btn = document.getElementById('plinko-auto-btn');
         const text = document.getElementById('plinko-auto-text');
+        const extraBtn = document.getElementById('plinko-extra-auto-btn');
+        const extraText = document.getElementById('plinko-extra-auto-text');
         if (plinkoAutoActive) {
             if (btn) btn.className = "px-3 py-2.5 bg-red-600 hover:bg-red-500 text-white font-black text-xs rounded-xl shadow-lg border-b-4 border-red-800 active:scale-95 transition-all flex items-center justify-center gap-1 animate-pulse";
             if (text) text.innerText = "STOP ⏹️";
+            if (extraBtn) extraBtn.className = "px-3 sm:px-4 md:px-5 py-2 md:py-3 bg-red-600 hover:bg-red-500 text-white font-black text-xs sm:text-sm md:text-base rounded-xl md:rounded-2xl border-b-4 border-red-800 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[52px] md:min-w-[70px] animate-pulse";
+            if (extraText) extraText.innerText = "STOP";
             runPlinkoAutoLoop();
         } else {
             if (btn) btn.className = "px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-xs rounded-xl border border-slate-700 active:scale-95 transition-all flex items-center justify-center gap-1";
             if (text) text.innerText = "AUTO ♾️";
+            if (extraBtn) extraBtn.className = "px-3 sm:px-4 md:px-5 py-2 md:py-3 bg-emerald-950 hover:bg-emerald-900 text-yellow-400 font-black text-xs sm:text-sm md:text-base rounded-xl md:rounded-2xl border-2 border-emerald-700/80 border-b-4 border-b-emerald-950 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[52px] md:min-w-[70px]";
+            if (extraText) extraText.innerText = "AUTO";
             if (plinkoAutoTimer) clearTimeout(plinkoAutoTimer);
         }
     };
@@ -11142,6 +11550,493 @@
         }
     }
 
+    // ========================================================
+    // 🍌 BANANA BANK MULTI-DENOMINATION ENGINE (SUPER HIGH NUMBERS)
+    // ========================================================
+
+    const BANK_DENOMINATIONS = [
+      { key: 'c_100no', name: '100 Nonillion', short: '100No', mult: BigInt("100000000000000000000000000000000"), icon: '💎' },
+      { key: 'c_10no',  name: '10 Nonillion',  short: '10No',  mult: BigInt("10000000000000000000000000000000"),  icon: '💎' },
+      { key: 'c_1no',   name: '1 Nonillion',   short: '1No',   mult: BigInt("1000000000000000000000000000000"),   icon: '💎' },
+      { key: 'c_100oc', name: '100 Octillion', short: '100Oc', mult: BigInt("100000000000000000000000000000"),    icon: '🔮' },
+      { key: 'c_10oc',  name: '10 Octillion',  short: '10Oc',  mult: BigInt("10000000000000000000000000000"),     icon: '🔮' },
+      { key: 'c_1oc',   name: '1 Octillion',   short: '1Oc',   mult: BigInt("1000000000000000000000000000"),      icon: '🔮' },
+      { key: 'c_100sp', name: '100 Septillion', short: '100Sp', mult: BigInt("100000000000000000000000000"),       icon: '🌟' },
+      { key: 'c_10sp',  name: '10 Septillion', short: '10Sp',  mult: BigInt("10000000000000000000000000"),        icon: '🌟' },
+      { key: 'c_1sp',   name: '1 Septillion',  short: '1Sp',   mult: BigInt("1000000000000000000000000"),         icon: '🌟' },
+      { key: 'c_100sx', name: '100 Sextillion', short: '100Sx', mult: BigInt("100000000000000000000000"),          icon: '💫' },
+      { key: 'c_10sx',  name: '10 Sextillion', short: '10Sx',  mult: BigInt("10000000000000000000000"),           icon: '💫' },
+      { key: 'c_1sx',   name: '1 Sextillion',  short: '1Sx',   mult: BigInt("1000000000000000000000"),            icon: '💫' },
+      { key: 'c_100qi', name: '100 Quintillion', short: '100Qi', mult: BigInt("100000000000000000000"),            icon: '👑' },
+      { key: 'c_10qi',  name: '10 Quintillion', short: '10Qi', mult: BigInt("10000000000000000000"),             icon: '👑' },
+      { key: 'c_1qi',   name: '1 Quintillion',  short: '1Qi',  mult: BigInt("1000000000000000000"),              icon: '👑' },
+      { key: 'c_100qa', name: '100 Quadrillion', short: '100Qa', mult: BigInt("100000000000000000"),               icon: '🏆' },
+      { key: 'c_10qa',  name: '10 Quadrillion', short: '10Qa', mult: BigInt("10000000000000000"),                icon: '🏆' },
+      { key: 'c_1qa',   name: '1 Quadrillion',  short: '1Qa',  mult: BigInt("1000000000000000"),                 icon: '🏆' },
+      { key: 'c_100t',  name: '100 Trillion',  short: '100T',  mult: BigInt("100000000000000"),                  icon: '🏦' },
+      { key: 'c_10t',   name: '10 Trillion',   short: '10T',   mult: BigInt("10000000000000"),                   icon: '🏦' },
+      { key: 'c_1t',    name: '1 Trillion',    short: '1T',    mult: BigInt("1000000000000"),                    icon: '🏦' },
+      { key: 'c_100b',  name: '100 Billion',   short: '100B',  mult: BigInt("100000000000"),                     icon: '💰' },
+      { key: 'c_10b',   name: '10 Billion',    short: '10B',   mult: BigInt("10000000000"),                      icon: '💰' },
+      { key: 'c_1b',    name: '1 Billion',     short: '1B',    mult: BigInt("1000000000"),                       icon: '💰' },
+      { key: 'c_100m',  name: '100 Million',   short: '100M',  mult: BigInt("100000000"),                        icon: '💵' },
+      { key: 'c_10m',   name: '10 Million',    short: '10M',   mult: BigInt("10000000"),                         icon: '💵' },
+      { key: 'c_1m',    name: '1 Million',     short: '1M',    mult: BigInt("1000000"),                          icon: '💵' },
+      { key: 'c_100k',  name: '100 Thousand',  short: '100k',  mult: BigInt("100000"),                           icon: '🪙' },
+      { key: 'c_10k',   name: '10 Thousand',   short: '10k',   mult: BigInt("10000"),                            icon: '🪙' },
+      { key: 'c_1k',    name: '1 Thousand',    short: '1k',    mult: BigInt("1000"),                             icon: '🪙' },
+      { key: 'c_100',   name: '1 Hundred',     short: '100',   mult: BigInt("100"),                              icon: '🍌' },
+      { key: 'c_10',    name: '10 Bananas',    short: '10',    mult: BigInt("10"),                               icon: '🍌' },
+      { key: 'c_1',     name: '1 Banana',      short: '1',     mult: BigInt("1"),                                icon: '🍌' }
+    ];
+
+    let userBankData = {};
+    let isBankRideInProgress = false;
+    let bankRideTimer = null;
+
+    function initBankState() {
+        const initial = {};
+        for (const d of BANK_DENOMINATIONS) {
+            initial[d.key] = 0;
+        }
+        return initial;
+    }
+
+    userBankData = initBankState();
+
+    function calculateTotalBankBigInt(bankObj = userBankData) {
+        let total = 0n;
+        for (const d of BANK_DENOMINATIONS) {
+            const count = BigInt(bankObj[d.key] || 0);
+            if (count > 0n) {
+                total += count * d.mult;
+            }
+        }
+        return total;
+    }
+
+    function decomposeBigIntToBank(totalBigInt) {
+        const result = {};
+        let rem = totalBigInt < 0n ? 0n : totalBigInt;
+        for (const d of BANK_DENOMINATIONS) {
+            if (rem <= 0n) {
+                result[d.key] = 0;
+            } else {
+                const count = rem / d.mult;
+                result[d.key] = Number(count);
+                rem = rem % d.mult;
+            }
+        }
+        return result;
+    }
+
+    function parseBankAmountString(input) {
+        if (!input) return null;
+        let str = String(input).trim().toLowerCase().replace(/,/g, '').replace(/🍌/g, '');
+        if (str === 'all' || str === 'max') {
+            return BigInt(Math.max(0, Math.floor(bananas)));
+        }
+
+        const suffixes = [
+            { s: 'no', mult: 1000000000000000000000000000000n },
+            { s: 'oc', mult: 1000000000000000000000000000n },
+            { s: 'sp', mult: 1000000000000000000000000n },
+            { s: 'sx', mult: 1000000000000000000000n },
+            { s: 'qi', mult: 1000000000000000000n },
+            { s: 'qa', mult: 1000000000000000n },
+            { s: 't',  mult: 1000000000000n },
+            { s: 'b',  mult: 1000000000n },
+            { s: 'm',  mult: 1000000n },
+            { s: 'k',  mult: 1000n }
+        ];
+
+        for (const item of suffixes) {
+            if (str.endsWith(item.s)) {
+                const numPart = str.slice(0, -item.s.length).trim();
+                const parsedFloat = parseFloat(numPart);
+                if (isNaN(parsedFloat) || parsedFloat <= 0) return null;
+                const parts = numPart.split('.');
+                if (parts.length === 1) {
+                    return BigInt(parts[0]) * item.mult;
+                } else {
+                    const intPart = BigInt(parts[0]) * item.mult;
+                    const decStr = parts[1];
+                    const decLen = BigInt(decStr.length);
+                    const decBig = BigInt(decStr) * item.mult / (10n ** decLen);
+                    return intPart + decBig;
+                }
+            }
+        }
+
+        try {
+            const clean = str.split('.')[0];
+            const val = BigInt(clean);
+            return val > 0n ? val : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function formatBankNumberCompact(val) {
+        if (typeof val !== 'bigint') {
+            try { val = BigInt(val || 0); } catch { val = 0n; }
+        }
+        if (val < 0n) val = 0n;
+
+        const units = [
+            { mult: 1000000000000000000000000000000n, name: 'Nonillion', symbol: 'No' },
+            { mult: 1000000000000000000000000000n,    name: 'Octillion', symbol: 'Oc' },
+            { mult: 1000000000000000000000000n,       name: 'Septillion', symbol: 'Sp' },
+            { mult: 1000000000000000000000n,          name: 'Sextillion', symbol: 'Sx' },
+            { mult: 1000000000000000000n,             name: 'Quintillion', symbol: 'Qi' },
+            { mult: 1000000000000000n,                name: 'Quadrillion', symbol: 'Qa' },
+            { mult: 1000000000000n,                   name: 'Trillion', symbol: 'T' },
+            { mult: 1000000000n,                      name: 'Billion', symbol: 'B' },
+            { mult: 1000000n,                         name: 'Million', symbol: 'M' },
+            { mult: 1000n,                            name: 'Thousand', symbol: 'k' }
+        ];
+
+        for (const u of units) {
+            if (val >= u.mult) {
+                const intPart = val / u.mult;
+                const rem = (val % u.mult) * 100n / u.mult;
+                if (rem > 0n) {
+                    return `${intPart}.${rem.toString().padStart(2, '0')}${u.symbol}`;
+                }
+                return `${intPart}${u.symbol}`;
+            }
+        }
+
+        return val.toLocaleString ? val.toLocaleString() : val.toString();
+    }
+
+    function formatBankNumberExactCommas(bigintVal) {
+        const s = bigintVal.toString();
+        return s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    function loadBankStorage() {
+        const storageKey = `banana_bank_${userId || 'default'}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                for (const d of BANK_DENOMINATIONS) {
+                    if (parsed[d.key] !== undefined) userBankData[d.key] = Number(parsed[d.key]);
+                }
+            } catch (e) {
+                console.warn("[BANK] Failed to parse local bank storage:", e);
+            }
+        }
+        updateBankDisplays();
+        
+        if (userId) {
+            fetch(`/api/bank/${userId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.success && data.bank) {
+                        for (const d of BANK_DENOMINATIONS) {
+                            if (data.bank[d.key] !== undefined) {
+                                userBankData[d.key] = Number(data.bank[d.key]);
+                            }
+                        }
+                        saveBankStorage();
+                        updateBankDisplays();
+                    }
+                })
+                .catch(err => console.log("[BANK] Server fetch skipped or offline"));
+        }
+    }
+
+    function saveBankStorage() {
+        const storageKey = `banana_bank_${userId || 'default'}`;
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(userBankData));
+        } catch (e) {}
+    }
+
+    function updateBankDisplays() {
+        const total = calculateTotalBankBigInt();
+        const displayEl = document.getElementById('bank-display-balance');
+        const exactEl = document.getElementById('bank-exact-balance');
+        const pocketEl = document.getElementById('bank-pocket-balance');
+        const quickShopEl = document.getElementById('ludvig-bank-quick-balance');
+
+        const compactStr = formatBankNumberCompact(total) + " 🍌";
+        const exactStr = "Exact: " + formatBankNumberExactCommas(total) + " 🍌";
+
+        if (displayEl) displayEl.innerText = compactStr;
+        if (exactEl) exactEl.innerText = exactStr;
+        if (pocketEl) pocketEl.innerText = formatNumber(bananas) + " 🍌";
+        if (quickShopEl) quickShopEl.innerText = compactStr;
+
+        renderBankDenominationsGrid();
+    }
+
+    function renderBankDenominationsGrid() {
+        const grid = document.getElementById('bank-denominations-grid');
+        if (!grid) return;
+
+        let html = '';
+        for (const d of BANK_DENOMINATIONS) {
+            const count = Number(userBankData[d.key] || 0);
+            const hasStacks = count > 0;
+            const subtotal = BigInt(count) * d.mult;
+            const subtotalStr = hasStacks ? formatBankNumberCompact(subtotal) : '0';
+
+            html += `
+              <div class="p-2.5 rounded-xl border ${hasStacks ? 'bg-yellow-500/15 border-yellow-400/80 shadow-[0_0_15px_rgba(234,179,8,0.2)]' : 'bg-black/40 border-emerald-900/60 opacity-60'} flex flex-col justify-between transition-all hover:scale-[1.02]">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                  <span class="text-sm">${d.icon}</span>
+                  <span class="text-[10px] font-mono font-bold ${hasStacks ? 'text-yellow-300' : 'text-emerald-500'}">${d.short}</span>
+                </div>
+                <div class="text-center my-0.5">
+                  <div class="text-base sm:text-lg font-black ${hasStacks ? 'text-white' : 'text-gray-400'} tabular-nums">
+                    ${count.toLocaleString()}
+                  </div>
+                  <div class="text-[9px] uppercase tracking-wider ${hasStacks ? 'text-yellow-400 font-bold' : 'text-emerald-600'}">
+                    ${count === 1 ? 'stack' : 'stacks'}
+                  </div>
+                </div>
+                <div class="mt-1 pt-1 border-t border-white/5 text-[9px] text-center font-mono ${hasStacks ? 'text-yellow-200' : 'text-gray-500'} truncate" title="${formatBankNumberExactCommas(subtotal)} 🍌">
+                  ${subtotalStr} 🍌
+                </div>
+              </div>
+            `;
+        }
+        grid.innerHTML = html;
+    }
+
+    // --- RIDE TO BANK LOGIC ---
+    function takeRideToBank() {
+        if (isBankRideInProgress) return;
+        isBankRideInProgress = true;
+        playSound('click');
+
+        const dialogue = document.getElementById('shop-dialogue-overlay');
+        if (dialogue) dialogue.classList.add('hidden');
+
+        const overlay = document.getElementById('bank-ride-overlay');
+        const progress = document.getElementById('bank-ride-progress');
+        if (overlay) {
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+        if (progress) {
+            progress.style.width = '10%';
+            setTimeout(() => { if (progress) progress.style.width = '65%'; }, 300);
+            setTimeout(() => { if (progress) progress.style.width = '100%'; }, 800);
+        }
+
+        bankRideTimer = setTimeout(() => {
+            finishRideToBank();
+        }, 1200);
+    }
+
+    function finishRideToBank() {
+        if (bankRideTimer) {
+            clearTimeout(bankRideTimer);
+            bankRideTimer = null;
+        }
+        isBankRideInProgress = false;
+
+        const overlay = document.getElementById('bank-ride-overlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }
+
+        const bankModal = document.getElementById('banana-bank-modal');
+        if (bankModal) {
+            bankModal.classList.remove('hidden');
+            bankModal.classList.add('flex');
+        }
+
+        updateBankDisplays();
+        showNotification("Welcome to Banana Central Bank! 🏦", "success");
+    }
+
+    function closeBananaBank() {
+        const bankModal = document.getElementById('banana-bank-modal');
+        if (bankModal) {
+            bankModal.classList.add('hidden');
+            bankModal.classList.remove('flex');
+        }
+
+        if (view === 'shop') {
+            const shopContent = document.getElementById('shop-main-content');
+            if (shopContent) shopContent.classList.remove('hidden');
+            renderShop();
+        }
+    }
+
+    function copyBankExactBalance() {
+        const total = calculateTotalBankBigInt();
+        const str = total.toString();
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(str).then(() => {
+                showNotification("Exact bank balance copied to clipboard! 📋", "success");
+            });
+        }
+    }
+
+    function setBankDepositInput(val) {
+        const input = document.getElementById('bank-deposit-input');
+        if (!input) return;
+        if (val === 'ALL') {
+            input.value = Math.max(0, Math.floor(bananas)).toString();
+        } else {
+            input.value = val;
+        }
+    }
+
+    function setBankWithdrawInput(val) {
+        const input = document.getElementById('bank-withdraw-input');
+        if (!input) return;
+        input.value = val;
+    }
+
+    async function handleBankDeposit() {
+        const input = document.getElementById('bank-deposit-input');
+        if (!input) return;
+        const val = input.value.trim();
+        if (!val) {
+            showNotification("Please enter an amount to deposit.", "error");
+            return;
+        }
+
+        const depAmount = parseBankAmountString(val);
+        if (!depAmount || depAmount <= 0n) {
+            showNotification("Invalid deposit amount!", "error");
+            return;
+        }
+
+        const currentPocket = BigInt(Math.max(0, Math.floor(bananas)));
+        if (depAmount > currentPocket) {
+            showNotification("You don't have enough bananas in your pocket!", "error");
+            return;
+        }
+
+        // Deduct from pocket
+        isInternalUpdate = true;
+        updateBananas(bananas - Number(depAmount));
+        isInternalUpdate = false;
+
+        // Add to bank
+        const currentTotal = calculateTotalBankBigInt();
+        const newTotal = currentTotal + depAmount;
+        userBankData = decomposeBigIntToBank(newTotal);
+        saveBankStorage();
+        updateBankDisplays();
+        if (typeof renderLeaderboard === 'function') renderLeaderboard();
+
+        input.value = '';
+        playSound('win');
+        showNotification(`Successfully deposited ${formatBankNumberCompact(depAmount)} 🍌 into vault!`, "success");
+
+        // Sync with backend API
+        try {
+            await fetch('/api/bank/deposit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, amount: depAmount.toString() })
+            });
+            if (typeof fetchLeaderboard === 'function') fetchLeaderboard();
+        } catch (e) {
+            console.log("[BANK] Background deposit sync queued.");
+        }
+    }
+
+    async function handleBankWithdraw() {
+        const input = document.getElementById('bank-withdraw-input');
+        if (!input) return;
+        const val = input.value.trim();
+        if (!val) {
+            showNotification("Please enter an amount to withdraw.", "error");
+            return;
+        }
+
+        const withAmount = parseBankAmountString(val);
+        if (!withAmount || withAmount <= 0n) {
+            showNotification("Invalid withdrawal amount!", "error");
+            return;
+        }
+
+        // STRICT USER REQUIREMENT: Max 1T at a time!
+        const MAX_WITHDRAW_1T = 1000000000000n; // 1 Trillion
+        if (withAmount > MAX_WITHDRAW_1T) {
+            showNotification("Maximum withdrawal is 1T (1,000,000,000,000 🍌) at a time!", "error");
+            input.value = '1000000000000';
+            return;
+        }
+
+        const currentTotal = calculateTotalBankBigInt();
+        if (withAmount > currentTotal) {
+            showNotification("Insufficient balance in your Banana Bank vault!", "error");
+            return;
+        }
+
+        // Deduct from bank
+        const newTotal = currentTotal - withAmount;
+        userBankData = decomposeBigIntToBank(newTotal);
+        saveBankStorage();
+
+        // Add to pocket
+        isInternalUpdate = true;
+        updateBananas(bananas + Number(withAmount));
+        isInternalUpdate = false;
+
+        updateBankDisplays();
+        if (typeof renderLeaderboard === 'function') renderLeaderboard();
+        input.value = '';
+        playSound('win');
+        showNotification(`Withdrew ${formatBankNumberCompact(withAmount)} 🍌 to your pocket!`, "success");
+
+        // Sync with backend API
+        try {
+            await fetch('/api/bank/withdraw', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, amount: withAmount.toString() })
+            });
+            if (typeof fetchLeaderboard === 'function') fetchLeaderboard();
+        } catch (e) {
+            console.log("[BANK] Background withdraw sync queued.");
+        }
+    }
+
+    function openBankSqlModal() {
+        const modal = document.getElementById('bank-sql-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function closeBankSqlModal() {
+        const modal = document.getElementById('bank-sql-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    function copyBankSqlCode() {
+        const code = document.getElementById('bank-sql-code-block');
+        if (!code) return;
+        const text = code.innerText;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+                const btnText = document.getElementById('copy-sql-text');
+                if (btnText) btnText.innerText = "COPIED! ✅";
+                showNotification("Supabase SQL code copied to clipboard!", "success");
+                setTimeout(() => {
+                    if (btnText) btnText.innerText = "COPY SQL";
+                }, 2500);
+            });
+        }
+    }
+
     function openSkinValuesModal() {
         const modal = document.getElementById('skin-values-modal');
         modal.classList.remove('hidden');
@@ -11714,7 +12609,38 @@
       if (gameMode === 'slots' && isBonusBet && (betAmount + currentBonusBet) > bananas) canAction = false;
 
       elMainActionBtn.disabled = !canAction;
-      elMainActionBtn.className = canAction ? "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl transition-all active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-b-4 border-yellow-600" : "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl bg-emerald-800 text-emerald-900 cursor-not-allowed opacity-80 border-b-4 border-emerald-900";
+      if (gameMode === 'plinko') {
+        elMainActionBtn.className = canAction 
+          ? "flex-1 py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-lg md:text-3xl shadow-xl transition-all active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-b-4 border-yellow-600" 
+          : "flex-1 py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-lg md:text-3xl shadow-xl bg-emerald-800 text-emerald-900 cursor-not-allowed opacity-80 border-b-4 border-emerald-900";
+      } else {
+        elMainActionBtn.className = canAction 
+          ? "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl transition-all active:scale-95 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-b-4 border-yellow-600" 
+          : "w-full py-3 md:py-5 rounded-xl md:rounded-2xl font-black text-xl md:text-3xl shadow-xl bg-emerald-800 text-emerald-900 cursor-not-allowed opacity-80 border-b-4 border-emerald-900";
+      }
+
+      const plinkoExtras = document.getElementById('plinko-main-action-extras');
+      if (plinkoExtras) {
+        if (gameMode === 'plinko') {
+          plinkoExtras.classList.remove('hidden');
+          const btn5 = document.getElementById('plinko-extra-5-btn');
+          const btn10 = document.getElementById('plinko-extra-10-btn');
+          const can5 = !isPlinkoDropping && !isSyncing && bananas >= (betAmount * 5) && betAmount > 0;
+          const can10 = !isPlinkoDropping && !isSyncing && bananas >= (betAmount * 10) && betAmount > 0;
+          if (btn5) {
+            btn5.disabled = !can5;
+            btn5.style.opacity = can5 ? '1' : '0.5';
+            btn5.style.cursor = can5 ? 'pointer' : 'not-allowed';
+          }
+          if (btn10) {
+            btn10.disabled = !can10;
+            btn10.style.opacity = can10 ? '1' : '0.5';
+            btn10.style.cursor = can10 ? 'pointer' : 'not-allowed';
+          }
+        } else {
+          plinkoExtras.classList.add('hidden');
+        }
+      }
       
       if (isPlaying && gameMode !== 'plinko') { elMainActionBtn.innerText = "PLAYING..."; }
       else if (isSyncing || balanceDirty) { elMainActionBtn.innerText = "SYNCING..."; }
@@ -11808,6 +12734,19 @@
       };
       handleTreeBtnUpdate(document.getElementById('buy-tree-btn'), document.getElementById('buy-tree-title'), document.getElementById('buy-tree-subtitle'), true);
       handleTreeBtnUpdate(document.getElementById('buy-tree-btn-mobile'), document.getElementById('buy-tree-title-mobile'), document.getElementById('buy-tree-subtitle-mobile'), false);
+
+      // Slots and Plinko always retain the original casino theme background
+      const viewGameEl = document.getElementById('view-game');
+      const ambientLayer = document.getElementById('theme-ambient-layer');
+      if (viewGameEl) {
+        if (gameMode === 'slots' || gameMode === 'plinko') {
+          viewGameEl.style.background = 'radial-gradient(circle at 50% 20%, #064e3b 0%, #022c22 60%, #011910 100%)';
+          if (ambientLayer) ambientLayer.style.display = 'none';
+        } else {
+          viewGameEl.style.background = '';
+          if (ambientLayer) ambientLayer.style.display = '';
+        }
+      }
     }
 
     function toggleMobileOptions() {
@@ -11971,8 +12910,20 @@
         const userLevel = lbUser.level || 1;
         const userRank = lbUser.rank || (index + 1);
         
-        // Handle BIGINT strings from Supabase
-        const score = typeof lbUser.score === 'string' ? BigInt(lbUser.score) : BigInt(lbUser.score || 0);
+        // Handle BIGINT strings from Supabase (combining ingame balance + Banana Bank balance)
+        let totalScore = typeof lbUser.score === 'string' ? BigInt(lbUser.score) : BigInt(lbUser.score || 0);
+        let bankScore = typeof lbUser.bankScore === 'string' ? BigInt(lbUser.bankScore) : 0n;
+        let pocketScore = typeof lbUser.pocketScore === 'string' ? BigInt(lbUser.pocketScore) : totalScore;
+
+        // If this is the current active player, merge real-time local bank data so it reflects immediately
+        if (isMe && typeof calculateTotalBankBigInt === 'function') {
+            const localBank = calculateTotalBankBigInt();
+            const localPocket = BigInt(Math.max(0, Math.floor(bananas)));
+            bankScore = localBank;
+            pocketScore = localPocket;
+            totalScore = localPocket + localBank;
+        }
+
         const coinsVal = typeof lbUser.coins === 'string' ? BigInt(lbUser.coins) : BigInt(lbUser.coins || 0);
         
         // If it's a tail entry (user outside top 50), show a separator
@@ -12013,10 +12964,16 @@
                     </button>
                 ` : ''}
                 <div class="flex flex-col items-end">
-                    <div class="flex items-center gap-1">
-                        <span class="text-emerald-400 font-black text-xs md:text-sm group-hover:text-emerald-300 transition-colors">${formatNumber(score)}</span>
+                    <div class="flex items-center gap-1" title="Total Wealth: ${typeof formatBankNumberExactCommas === 'function' ? formatBankNumberExactCommas(totalScore) : totalScore.toString()} 🍌 (Pocket: ${formatNumber(pocketScore)} + Bank: ${formatNumber(bankScore)})">
+                        <span class="text-emerald-400 font-black text-xs md:text-sm group-hover:text-emerald-300 transition-colors">${formatNumber(totalScore)}</span>
                         <span class="text-[10px]">🍌</span>
                     </div>
+                    ${bankScore > 0n ? `
+                    <div class="flex items-center gap-0.5 text-[8px] md:text-[9px] text-yellow-400 font-bold font-mono" title="Banana Bank Vault: ${typeof formatBankNumberExactCommas === 'function' ? formatBankNumberExactCommas(bankScore) : bankScore.toString()} 🍌">
+                        <span>🏦</span>
+                        <span>${formatNumber(bankScore)}</span>
+                    </div>
+                    ` : ''}
                     <div class="flex items-center gap-1">
                         <span class="text-yellow-500/80 font-mono text-[9px] md:text-[10px]">${formatNumber(coinsVal)}</span>
                         <span class="text-[8px]">🪙</span>
@@ -14315,7 +15272,11 @@
         setBcBulkBuyMode, buyBcTieredUpgrade,
         setMinesCount, pickMinesTile, cashOutMines, startMines,
         claimQuestReward,
-        unlockTheme, equipTheme, applyTheme, renderDungeonThemes
+        unlockTheme, equipTheme, applyTheme, renderDungeonThemes,
+        takeRideToBank, finishRideToBank, closeBananaBank,
+        handleBankDeposit, handleBankWithdraw,
+        setBankDepositInput, setBankWithdrawInput, copyBankExactBalance,
+        openBankSqlModal, closeBankSqlModal, copyBankSqlCode
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
