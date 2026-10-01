@@ -1516,58 +1516,199 @@ app.get("/api/profile/:id", async (req, res) => {
   }
 });
 
-// Get Leaderboard
+// =================================================================
+// 🍌 BANANA BANK MULTI-DENOMINATION ENGINE (SUPER HIGH BALANCES)
+// =================================================================
+
+const BANK_DENOMINATIONS: { col: string; mult: bigint }[] = [
+  { col: 'c_100no', mult: BigInt("100000000000000000000000000000000") }, // 10^32 (100 Nonillion)
+  { col: 'c_10no',  mult: BigInt("10000000000000000000000000000000") },  // 10^31 (10 Nonillion)
+  { col: 'c_1no',   mult: BigInt("1000000000000000000000000000000") },   // 10^30 (1 Nonillion)
+  { col: 'c_100oc', mult: BigInt("100000000000000000000000000000") },    // 10^29 (100 Octillion)
+  { col: 'c_10oc',  mult: BigInt("10000000000000000000000000000") },     // 10^28 (10 Octillion)
+  { col: 'c_1oc',   mult: BigInt("1000000000000000000000000000") },      // 10^27 (1 Octillion)
+  { col: 'c_100sp', mult: BigInt("100000000000000000000000000") },       // 10^26 (100 Septillion)
+  { col: 'c_10sp',  mult: BigInt("10000000000000000000000000") },        // 10^25 (10 Septillion)
+  { col: 'c_1sp',   mult: BigInt("1000000000000000000000000") },         // 10^24 (1 Septillion)
+  { col: 'c_100sx', mult: BigInt("100000000000000000000000") },          // 10^23 (100 Sextillion)
+  { col: 'c_10sx',  mult: BigInt("10000000000000000000000") },           // 10^22 (10 Sextillion)
+  { col: 'c_1sx',   mult: BigInt("1000000000000000000000") },            // 10^21 (1 Sextillion)
+  { col: 'c_100qi', mult: BigInt("100000000000000000000") },             // 10^20 (100 Quintillion)
+  { col: 'c_10qi',  mult: BigInt("10000000000000000000") },              // 10^19 (10 Quintillion)
+  { col: 'c_1qi',   mult: BigInt("1000000000000000000") },               // 10^18 (1 Quintillion)
+  { col: 'c_100qa', mult: BigInt("100000000000000000") },                // 10^17 (100 Quadrillion)
+  { col: 'c_10qa',  mult: BigInt("10000000000000000") },                 // 10^16 (10 Quadrillion)
+  { col: 'c_1qa',   mult: BigInt("1000000000000000") },                  // 10^15 (1 Quadrillion)
+  { col: 'c_100t',  mult: BigInt("100000000000000") },                   // 10^14 (100 Trillion)
+  { col: 'c_10t',   mult: BigInt("10000000000000") },                    // 10^13 (10 Trillion)
+  { col: 'c_1t',    mult: BigInt("1000000000000") },                     // 10^12 (1 Trillion)
+  { col: 'c_100b',  mult: BigInt("100000000000") },                      // 10^11 (100 Billion)
+  { col: 'c_10b',   mult: BigInt("10000000000") },                       // 10^10 (10 Billion)
+  { col: 'c_1b',    mult: BigInt("1000000000") },                        // 10^9 (1 Billion)
+  { col: 'c_100m',  mult: BigInt("100000000") },                         // 10^8 (100 Million)
+  { col: 'c_10m',   mult: BigInt("10000000") },                          // 10^7 (10 Million)
+  { col: 'c_1m',    mult: BigInt("1000000") },                           // 10^6 (1 Million)
+  { col: 'c_100k',  mult: BigInt("100000") },                            // 10^5 (100 Thousand)
+  { col: 'c_10k',   mult: BigInt("10000") },                             // 10^4 (10 Thousand)
+  { col: 'c_1k',    mult: BigInt("1000") },                              // 10^3 (1 Thousand)
+  { col: 'c_100',   mult: BigInt("100") },                               // 10^2 (1 Hundred)
+  { col: 'c_10',    mult: BigInt("10") },                                // 10^1 (10)
+  { col: 'c_1',     mult: BigInt("1") }                                  // 10^0 (1)
+];
+
+function calculateTotalFromBankRow(row: any): bigint {
+  if (!row) return BigInt(0);
+  let total = BigInt(0);
+  for (const item of BANK_DENOMINATIONS) {
+    const count = BigInt(row[item.col] || 0);
+    if (count > 0n) {
+      total += count * item.mult;
+    }
+  }
+  return total;
+}
+
+function decomposeBigIntToBankRow(total: bigint): Record<string, any> {
+  const result: Record<string, any> = {};
+  let rem = total;
+  for (const item of BANK_DENOMINATIONS) {
+    if (rem <= 0n) {
+      result[item.col] = 0;
+    } else {
+      const count = rem / item.mult;
+      result[item.col] = Number(count);
+      rem = rem % item.mult;
+    }
+  }
+  return result;
+}
+
+// In-memory fallback if Supabase table is not yet migrated
+const memoryBankStore = new Map<string, Record<string, any>>();
+
+// Get Leaderboard (Combining in-game balance + Banana Bank balance!)
 app.get("/api/leaderboard", async (req, res) => {
   try {
     const { userId } = req.query;
     const supabase = getSupabase();
     
-    // 1. Fetch Top 50
-    // We query the 'database' table directly to ensure 100% accuracy
-    const { data: top50, error: top50Error } = await supabase
+    // 1. Fetch top active users from 'database' table
+    const { data: users, error: usersError } = await supabase
       .from('database')
       .select('id, name, score, level, coins, equipped_title, updated_at')
       .or('banned.eq.false,banned.is.null')
       .order('score', { ascending: false })
-      .limit(50);
+      .limit(100);
 
-    if (top50Error) {
-      console.error("Supabase top50 error:", top50Error);
-      throw top50Error;
+    if (usersError) {
+      console.error("Supabase leaderboard users error:", usersError);
+      throw usersError;
     }
 
-    let result = top50 || [];
+    const candidateUsers = users || [];
 
-    // 2. If userId is provided, find their actual rank
+    // 2. Fetch corresponding banana_bank balances
+    const bankMap = new Map<string, bigint>();
+    try {
+      const allUserIds = candidateUsers.map(u => u.id);
+      if (userId && typeof userId === 'string' && !allUserIds.includes(userId)) {
+        allUserIds.push(userId);
+      }
+
+      if (allUserIds.length > 0) {
+        const { data: bankRows, error: bankError } = await supabase
+          .from('banana_bank')
+          .select('*')
+          .in('user_id', allUserIds);
+
+        if (bankRows && !bankError) {
+          for (const bRow of bankRows) {
+            const bTotal = calculateTotalFromBankRow(bRow);
+            bankMap.set(bRow.user_id, bTotal);
+          }
+        }
+      }
+    } catch (bankErr: any) {
+      console.warn("[LEADERBOARD] banana_bank table fetch error or unmigrated:", bankErr.message);
+    }
+
+    // Merge in-memory bank store if available
+    for (const [uid, bRow] of memoryBankStore.entries()) {
+      if (!bankMap.has(uid)) {
+        bankMap.set(uid, calculateTotalFromBankRow(bRow));
+      }
+    }
+
+    // 3. Compute combined total score (pocket + bank) for each user
+    const usersWithTotals = candidateUsers.map(u => {
+      const pocketScore = BigInt(u.score || 0);
+      const bankScore = bankMap.get(u.id) || 0n;
+      const totalScore = pocketScore + bankScore;
+      return {
+        ...u,
+        pocketScore: pocketScore.toString(),
+        bankScore: bankScore.toString(),
+        score: totalScore.toString(), // Primary score field represents Total Score
+        totalScore: totalScore.toString()
+      };
+    });
+
+    // 4. Sort descending by totalScore (using BigInt precision)
+    usersWithTotals.sort((a, b) => {
+      const diff = BigInt(b.score) - BigInt(a.score);
+      return diff > 0n ? 1 : diff < 0n ? -1 : 0;
+    });
+
+    // 5. Build final top 50 with rank
+    let result = usersWithTotals.slice(0, 50).map((u, i) => ({ ...u, rank: i + 1 }));
+
+    // 6. If userId is provided and not in top 50, fetch/include their position as tail
     if (userId && typeof userId === 'string' && userId !== '') {
       const isInTop50 = result.some(u => u.id === userId);
       
       if (!isInTop50) {
-        // Fetch user entry
-        const { data: userEntry, error: userError } = await supabase
-          .from('database')
-          .select('id, name, score, level, coins, equipped_title, updated_at')
-          .eq('id', userId)
-          .maybeSingle();
-          
-        if (userEntry && !userError) {
-          // Calculate actual rank
-          const { count, error: countError } = await supabase
+        const foundInCandidates = usersWithTotals.findIndex(u => u.id === userId);
+        if (foundInCandidates !== -1) {
+          result.push({
+            ...usersWithTotals[foundInCandidates],
+            isTail: true,
+            rank: foundInCandidates + 1
+          });
+        } else {
+          // Fetch specific user entry if not in top 100
+          const { data: userEntry, error: userError } = await supabase
             .from('database')
-            .select('*', { count: 'exact', head: true })
-            .or('banned.eq.false,banned.is.null')
-            .gt('score', userEntry.score);
+            .select('id, name, score, level, coins, equipped_title, updated_at')
+            .eq('id', userId)
+            .maybeSingle();
             
-          const rank = (count || 0) + 1;
-          result.push({ ...userEntry, isTail: true, rank });
+          if (userEntry && !userError) {
+            const pocketScore = BigInt(userEntry.score || 0);
+            let bankScore = bankMap.get(userId) || 0n;
+            if (!bankMap.has(userId)) {
+              try {
+                const { data: bRow } = await supabase
+                  .from('banana_bank')
+                  .select('*')
+                  .eq('user_id', userId)
+                  .maybeSingle();
+                if (bRow) bankScore = calculateTotalFromBankRow(bRow);
+              } catch {}
+            }
+            const totalScore = pocketScore + bankScore;
+            
+            result.push({
+              ...userEntry,
+              pocketScore: pocketScore.toString(),
+              bankScore: bankScore.toString(),
+              score: totalScore.toString(),
+              totalScore: totalScore.toString(),
+              isTail: true,
+              rank: usersWithTotals.length + 1
+            });
+          }
         }
-      } else {
-        // Add rank to the top 50 entries for consistency
-        result = result.map((u, i) => ({ ...u, rank: i + 1 }));
       }
-    } else {
-      // Add rank to the top 50 entries
-      result = result.map((u, i) => ({ ...u, rank: i + 1 }));
     }
     
     res.json(result);
@@ -2348,6 +2489,226 @@ app.post("/api/royal-pass/claim", authenticateToken, async (req: any, res) => {
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// GET /api/bank/:userId
+app.get("/api/bank/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  if (!userId) return res.status(400).json({ error: "Missing userId" });
+
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('banana_bank')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error && error.code === '42P01') {
+      // Table doesn't exist yet in Supabase
+      const mem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
+      const total = calculateTotalFromBankRow(mem);
+      return res.json({ success: true, bank: mem, total: total.toString(), unmigrated: true });
+    }
+
+    if (!data) {
+      const initial = decomposeBigIntToBankRow(0n);
+      return res.json({ success: true, bank: initial, total: "0" });
+    }
+
+    const total = calculateTotalFromBankRow(data);
+    res.json({ success: true, bank: data, total: total.toString() });
+  } catch (err: any) {
+    console.warn("[BANK API] Fetch warning, using memory store:", err.message);
+    const mem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
+    const total = calculateTotalFromBankRow(mem);
+    res.json({ success: true, bank: mem, total: total.toString() });
+  }
+});
+
+// POST /api/bank/deposit
+app.post("/api/bank/deposit", async (req, res) => {
+  const { userId, amount } = req.body;
+  if (!userId || !amount) return res.status(400).json({ error: "Missing userId or amount" });
+
+  let depAmount: bigint;
+  try {
+    depAmount = BigInt(String(amount));
+  } catch {
+    return res.status(400).json({ error: "Invalid deposit amount" });
+  }
+
+  if (depAmount <= 0n) return res.status(400).json({ error: "Deposit amount must be greater than 0" });
+
+  try {
+    const supabase = getSupabase();
+    
+    // 1. Fetch user to check current score
+    const { data: user, error: userError } = await supabase
+      .from('database')
+      .select('score')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (user && BigInt(user.score || 0) < depAmount) {
+      return res.status(400).json({ error: "You don't have enough bananas in your pocket!" });
+    }
+
+    // 2. Fetch current bank row
+    const { data: bankRow, error: bankError } = await supabase
+      .from('banana_bank')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (bankError && bankError.code === '42P01') {
+      // Fallback to memory store if table not migrated
+      const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
+      const currentTotal = calculateTotalFromBankRow(currentMem);
+      const newTotal = currentTotal + depAmount;
+      const newCols = decomposeBigIntToBankRow(newTotal);
+      memoryBankStore.set(userId, newCols);
+      return res.json({ 
+        success: true, 
+        total: newTotal.toString(), 
+        bank: newCols,
+        unmigrated: true 
+      });
+    }
+
+    const currentTotal = calculateTotalFromBankRow(bankRow);
+    const newTotal = currentTotal + depAmount;
+    const newCols = decomposeBigIntToBankRow(newTotal);
+
+    // 3. Upsert bank record
+    const upsertPayload = {
+      id: userId,
+      user_id: userId,
+      ...newCols,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error: upsertErr } = await supabase
+      .from('banana_bank')
+      .upsert(upsertPayload);
+
+    if (upsertErr) throw upsertErr;
+
+    // 4. Update user score in database
+    if (user) {
+      const newScore = Math.max(0, Number(BigInt(user.score || 0) - depAmount));
+      await supabase.from('database').update({ score: newScore }).eq('id', userId);
+    }
+
+    res.json({ success: true, total: newTotal.toString(), bank: newCols });
+  } catch (err: any) {
+    console.error("[BANK DEPOSIT ERROR]", err.message);
+    // Local memory fallback
+    const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
+    const currentTotal = calculateTotalFromBankRow(currentMem);
+    const newTotal = currentTotal + depAmount;
+    const newCols = decomposeBigIntToBankRow(newTotal);
+    memoryBankStore.set(userId, newCols);
+    res.json({ success: true, total: newTotal.toString(), bank: newCols, fallback: true });
+  }
+});
+
+// POST /api/bank/withdraw (Max 1T at a time!)
+app.post("/api/bank/withdraw", async (req, res) => {
+  const { userId, amount } = req.body;
+  if (!userId || !amount) return res.status(400).json({ error: "Missing userId or amount" });
+
+  let withAmount: bigint;
+  try {
+    withAmount = BigInt(String(amount));
+  } catch {
+    return res.status(400).json({ error: "Invalid withdrawal amount" });
+  }
+
+  if (withAmount <= 0n) return res.status(400).json({ error: "Withdrawal amount must be greater than 0" });
+
+  // STRICT REQUIREMENT: Max 1T (1,000,000,000,000) at a time
+  const MAX_WITHDRAW = BigInt("1000000000000"); // 1 Trillion
+  if (withAmount > MAX_WITHDRAW) {
+    return res.status(400).json({ 
+      error: "Maximum withdrawal limit is 1T (1,000,000,000,000 🍌) per ride!" 
+    });
+  }
+
+  try {
+    const supabase = getSupabase();
+    
+    // 1. Fetch current bank row
+    const { data: bankRow, error: bankError } = await supabase
+      .from('banana_bank')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (bankError && bankError.code === '42P01') {
+      const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
+      const currentTotal = calculateTotalFromBankRow(currentMem);
+      if (currentTotal < withAmount) {
+        return res.status(400).json({ error: "Insufficient bank balance!" });
+      }
+      const newTotal = currentTotal - withAmount;
+      const newCols = decomposeBigIntToBankRow(newTotal);
+      memoryBankStore.set(userId, newCols);
+      return res.json({ 
+        success: true, 
+        total: newTotal.toString(), 
+        bank: newCols,
+        unmigrated: true 
+      });
+    }
+
+    const currentTotal = calculateTotalFromBankRow(bankRow);
+    if (currentTotal < withAmount) {
+      return res.status(400).json({ error: "Insufficient balance in Banana Bank vault!" });
+    }
+
+    const newTotal = currentTotal - withAmount;
+    const newCols = decomposeBigIntToBankRow(newTotal);
+
+    // 2. Upsert bank record
+    const upsertPayload = {
+      id: userId,
+      user_id: userId,
+      ...newCols,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error: upsertErr } = await supabase
+      .from('banana_bank')
+      .upsert(upsertPayload);
+
+    if (upsertErr) throw upsertErr;
+
+    // 3. Update user score in database
+    const { data: user } = await supabase
+      .from('database')
+      .select('score')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (user) {
+      const newScore = Number(BigInt(user.score || 0) + withAmount);
+      await supabase.from('database').update({ score: newScore }).eq('id', userId);
+    }
+
+    res.json({ success: true, total: newTotal.toString(), bank: newCols });
+  } catch (err: any) {
+    console.error("[BANK WITHDRAW ERROR]", err.message);
+    const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
+    const currentTotal = calculateTotalFromBankRow(currentMem);
+    if (currentTotal < withAmount) {
+      return res.status(400).json({ error: "Insufficient bank balance!" });
+    }
+    const newTotal = currentTotal - withAmount;
+    const newCols = decomposeBigIntToBankRow(newTotal);
+    memoryBankStore.set(userId, newCols);
+    res.json({ success: true, total: newTotal.toString(), bank: newCols, fallback: true });
+  }
 });
 
 // =================================================================
