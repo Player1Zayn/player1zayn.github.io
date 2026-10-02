@@ -1213,6 +1213,60 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 multipliers: table,
                 winAmount: winAmount.toString()
             };
+        } else if (gameMode === 'horseracing') {
+            const selectedHorse = Math.max(0, Math.min(9, Number(req.body.selectedHorse) || 0));
+            const rawChances = req.body.horseChances;
+            const chances: number[] = Array.isArray(rawChances) && rawChances.length === 10
+                ? rawChances.map((c: any) => Math.max(1, Number(c) || 10))
+                : [10, 10, 10, 10, 10, 10, 10, 10, 10, 10];
+
+            // Pre-determine finish order using weighted sampling without replacement
+            const available = chances.map((w, idx) => ({ idx, weight: w }));
+            const finishOrder: number[] = [];
+
+            while (available.length > 0) {
+                const curTotal = available.reduce((sum, item) => sum + item.weight, 0);
+                let rnd = Math.random() * curTotal;
+                let pickedIndex = 0;
+                for (let i = 0; i < available.length; i++) {
+                    if (rnd < available[i].weight) {
+                        pickedIndex = i;
+                        break;
+                    }
+                    rnd -= available[i].weight;
+                }
+                finishOrder.push(available[pickedIndex].idx);
+                available.splice(pickedIndex, 1);
+            }
+
+            const winner = finishOrder[0];
+            const second = finishOrder[1];
+            const third = finishOrder[2];
+
+            const placement = finishOrder.indexOf(selectedHorse) + 1; // 1 to 10
+            let multiplier = 0;
+            if (placement === 1) {
+                multiplier = 3.0; // 1st place: 3x
+            } else if (placement === 2) {
+                multiplier = 2.0; // 2nd place: 2x
+            } else if (placement === 3) {
+                multiplier = 1.5; // 3rd place: 1.5x
+            } else {
+                multiplier = 0.0; // Bet lost
+            }
+
+            winAmount = BigInt(Math.floor(Number(bet) * multiplier));
+
+            resultData = {
+                finishOrder,
+                winner,
+                second,
+                third,
+                selectedHorse,
+                placement,
+                multiplier,
+                winAmount: winAmount.toString()
+            };
         } else if (gameMode === 'cases') {
             const caseType = req.body.caseType; 
             const cost = CASE_COSTS[caseType] || 0n;
