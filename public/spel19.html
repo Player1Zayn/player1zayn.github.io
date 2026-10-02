@@ -13,6 +13,16 @@
     .animate-float-up {
         animation: floatUp 1s ease-out forwards;
     }
+    @keyframes gallop {
+        0% { transform: translateY(0px) rotate(0deg); }
+        25% { transform: translateY(-2px) rotate(2deg); }
+        50% { transform: translateY(1px) rotate(0deg); }
+        75% { transform: translateY(-2px) rotate(-1deg); }
+        100% { transform: translateY(0px) rotate(0deg); }
+    }
+    .animate-gallop {
+        animation: gallop 0.3s infinite ease-in-out;
+    }
 
     #wheel {
       transition-property: transform;
@@ -430,6 +440,15 @@
           <p class="text-xs text-emerald-100/90 leading-relaxed">Play live online multiplayer with real players or challenge 5 AI bots at a full 6-player poker table!</p>
         </div>
 
+        <div onclick="setGameMode('horseracing'); document.getElementById('gamemode-modal').classList.add('hidden');" class="bg-gradient-to-br from-emerald-950 via-[#033425] to-[#011f15] hover:from-emerald-900 hover:to-[#022c22] border-2 border-yellow-500 hover:border-yellow-300 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg shadow-emerald-950/60 hover:scale-[1.03]">
+          <div class="text-5xl mb-4 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">🏇</div>
+          <div class="flex items-center gap-1.5 mb-1">
+            <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors">Horse Racing</h3>
+            <span class="bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">NEW DERBY 🏇</span>
+          </div>
+          <p class="text-xs text-emerald-100/90 leading-relaxed">The Royal Toverland Derby! Pick from 10 steeds, watch them dash across the turf, and win up to 3x! Hosted by Ludvig Toverland.</p>
+        </div>
+
         <div id="gamemode-card-banana-clicker" onclick="tryOpenBananaClickerFromGamemode()" class="bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-yellow-500/70 hover:border-yellow-400 rounded-2xl p-5 cursor-pointer transition-all group flex flex-col items-center text-center shadow-lg hover:scale-[1.03] hidden">
           <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🍌</div>
           <h3 class="text-xl font-black text-white group-hover:text-yellow-300 transition-colors mb-2">Banana Clicker</h3>
@@ -631,21 +650,21 @@
       <div class="max-w-2xl w-full bg-black/80 border-4 border-red-600 rounded-[3rem] p-10 shadow-[0_0_100px_rgba(220,38,38,0.5)] relative z-10 animate-in zoom-in-95 duration-500">
           <div class="text-7xl mb-4 animate-bounce">🚨🦍🚨</div>
           <h1 class="text-5xl font-black text-red-500 uppercase tracking-tighter mb-2">JUNGLE GOVERNMENT</h1>
-          <h2 class="text-2xl font-bold text-white uppercase tracking-widest mb-8 border-b-2 border-red-900 pb-4">Tax Evasion Detected</h2>
+          <h2 class="text-2xl font-bold text-white uppercase tracking-widest mb-8 border-b-2 border-red-900 pb-4">Gambling Cheating Detected</h2>
           <p class="text-lg text-red-200 mb-8 leading-relaxed font-medium px-4">
-              "Halt! We've been monitoring your transactions. You are accused of illicit gambling and tax evasion.<br><br>
-              You owe the Jungle Revenue Service immediately. Choose your penalty, or face permanent banishment."
+              "Halt! The Jungle Government Gaming Commission has caught you cheating in the casino! Our inspectors flagged your suspiciously high win streaks and marked cards.<br><br>
+              Pay your casino cheating settlement fine immediately, or face strict gaming sanctions!"
           </p>
           <div class="flex flex-col md:flex-row gap-4 w-full">
               <button onclick="payTaxNow()" class="flex-1 bg-red-900 hover:bg-red-800 border-2 border-red-500 rounded-2xl p-6 shadow-[0_6px_0_rgb(153,27,27)] active:shadow-none active:translate-y-[6px] transition-all group">
                   <div class="text-3xl mb-2 group-hover:scale-110 transition-transform">💰</div>
-                  <div class="font-black text-white text-xl uppercase mb-1">Pay 30% Now</div>
-                  <div class="text-red-300 text-sm font-bold">Instantly deduct 30% of your total balance.</div>
+                  <div class="font-black text-white text-xl uppercase mb-1">Pay 30% Fine</div>
+                  <div class="text-red-300 text-sm font-bold">Instantly pay 30% cheating settlement fine.</div>
               </button>
               <button onclick="acceptTaxPenalty()" class="flex-1 bg-blue-900 hover:bg-blue-800 border-2 border-blue-500 rounded-2xl p-6 shadow-[0_6px_0_rgb(30,58,138)] active:shadow-none active:translate-y-[6px] transition-all group">
                   <div class="text-3xl mb-2 group-hover:scale-110 transition-transform">📉</div>
                   <div class="font-black text-white text-xl uppercase mb-1">50% Win Cut</div>
-                  <div class="text-blue-300 text-sm font-bold">Future bets win 50% less for 10 minutes.</div>
+                  <div class="text-blue-300 text-sm font-bold">Future bets win 50% less for 10 minutes under surveillance.</div>
               </button>
           </div>
       </div>
@@ -2604,6 +2623,172 @@
                 <span class="text-yellow-400 font-mono font-black text-xs">🎯 Banana Plinko</span>
               </div>
             </div>
+          </div>
+
+          <!-- Game: HORSE RACING -->
+          <div id="area-horseracing" class="w-full h-full flex flex-col items-center justify-between hidden p-2 md:p-3 relative overflow-hidden select-none">
+            
+            <!-- PADDOCK VIEW: Choose Horse & View Stats -->
+            <div id="hr-paddock-view" class="w-full max-w-4xl flex-1 flex flex-col gap-3 overflow-y-auto custom-scrollbar p-1">
+              
+              <!-- Ludvig Toverland Race Master Banner -->
+              <div class="bg-gradient-to-r from-emerald-950 via-[#033425] to-emerald-950 border-2 border-yellow-500/70 rounded-2xl p-3 md:p-4 shadow-xl flex items-center justify-between gap-3 relative overflow-hidden shrink-0">
+                <div class="absolute -right-6 -bottom-6 text-7xl opacity-10 pointer-events-none">🏇</div>
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 md:w-14 md:h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center text-3xl border-2 border-yellow-400 shadow-inner shrink-0 animate-bounce">
+                    🐒
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm md:text-base font-black text-yellow-400 uppercase tracking-tight">Ludvig's Royal Derby</span>
+                      <span class="bg-yellow-500/20 text-yellow-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-yellow-500/40 uppercase">RACE HOST: LUDVIG TOVERLAND</span>
+                    </div>
+                    <p class="text-[11px] md:text-xs text-emerald-100/90 font-serif italic mt-0.5">
+                      "Welcome to the track, traveler! 10 spirited steeds are at the gates. Check their form, press the square next to your pick to place your bet, and let's race!"
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                  <button onclick="refreshHorseOdds()" class="text-xs bg-emerald-900/80 hover:bg-emerald-800 text-yellow-300 font-bold px-3 py-1.5 rounded-xl border border-yellow-500/40 flex items-center gap-1 active:scale-95 transition-all" title="Re-roll fresh round odds">
+                    <span>🎲</span> <span class="hidden sm:inline">Fresh Odds</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Payout Multipliers Showcase -->
+              <div class="grid grid-cols-3 gap-2 text-center text-xs shrink-0">
+                <div class="bg-gradient-to-b from-yellow-500/20 to-yellow-600/10 border border-yellow-500/40 rounded-xl p-2 flex flex-col items-center justify-center">
+                  <div class="flex items-center gap-1">
+                    <span class="text-base">🥇</span> <strong class="text-yellow-400 font-black">1st: 3x</strong>
+                  </div>
+                  <div class="text-[10px] text-yellow-200/70">Champion Payout</div>
+                </div>
+                <div class="bg-gradient-to-b from-slate-400/20 to-slate-500/10 border border-slate-400/40 rounded-xl p-2 flex flex-col items-center justify-center">
+                  <div class="flex items-center gap-1">
+                    <span class="text-base">🥈</span> <strong class="text-slate-200 font-black">2nd: 2x</strong>
+                  </div>
+                  <div class="text-[10px] text-slate-300/70">Runner-Up Payout</div>
+                </div>
+                <div class="bg-gradient-to-b from-amber-700/20 to-amber-800/10 border border-amber-600/40 rounded-xl p-2 flex flex-col items-center justify-center">
+                  <div class="flex items-center gap-1">
+                    <span class="text-base">🥉</span> <strong class="text-amber-400 font-black">3rd: 1.5x</strong>
+                  </div>
+                  <div class="text-[10px] text-amber-200/70">Podium Payout</div>
+                </div>
+              </div>
+
+              <!-- 10 Horses Selection Header -->
+              <div class="text-[11px] font-black text-emerald-400 uppercase tracking-widest flex items-center justify-between px-1 shrink-0">
+                <span>Select 1 of 10 Steeds (Click card or square):</span>
+                <span class="text-yellow-400/90 font-mono text-[10px]">100% Win Chance Total</span>
+              </div>
+              <!-- 10 Horses Selection Grid -->
+              <div id="hr-horses-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+                <!-- Dynamically rendered by renderHorsesPaddock() -->
+              </div>
+            </div>
+
+            <!-- LIVE RACE TRACK VIEW: Running Animation -->
+            <div id="hr-track-view" class="w-full max-w-4xl flex-1 flex flex-col gap-2 hidden select-none overflow-hidden justify-between">
+              
+              <!-- Track Top Bar: Commentary & Timer -->
+              <div class="bg-slate-900/95 border border-emerald-600/70 rounded-xl p-2 px-3 sm:px-4 flex items-center justify-between gap-3 shadow-lg shrink-0">
+                <div class="flex items-center gap-2 overflow-hidden flex-1">
+                  <span class="text-xl sm:text-2xl animate-pulse">🏇</span>
+                  <div class="truncate">
+                    <span id="hr-commentary-text" class="text-xs sm:text-sm font-bold text-yellow-300">And they're off! The gates fly open!</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                  <div class="bg-black/60 px-2.5 py-1 rounded-lg border border-yellow-500/40 text-xs font-mono font-bold text-yellow-400">
+                    ⏱️ <span id="hr-timer-display">00:00.0</span>
+                  </div>
+                  <button onclick="skipHorseRace()" class="px-2.5 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 text-xs font-bold rounded-lg border border-yellow-500/40 transition-all flex items-center gap-1 active:scale-95">
+                    <span>Skip</span> <span>⏩</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- The 10-Lane Turf Track -->
+              <div class="relative bg-gradient-to-b from-[#0f4023] via-[#14532d] to-[#0f4023] border-4 border-amber-800/90 rounded-2xl p-2 shadow-2xl overflow-hidden flex flex-col justify-between flex-1 min-h-[320px] md:min-h-[380px]">
+                
+                <!-- Track rails and distance markers at top -->
+                <div class="flex justify-between items-center text-[9px] font-mono text-emerald-200/70 px-2 pb-1 border-b border-emerald-400/20 z-10 shrink-0">
+                  <span>🏁 GATE</span>
+                  <span>250m</span>
+                  <span>500m</span>
+                  <span>750m</span>
+                  <span class="text-yellow-300 font-bold bg-yellow-500/20 px-1.5 py-0.5 rounded border border-yellow-500/40">FINISH 🏁</span>
+                </div>
+
+                <!-- 10 Lanes Container -->
+                <div id="hr-lanes-container" class="flex-1 flex flex-col justify-between py-1 relative">
+                  <!-- Rendered with 10 lanes -->
+                </div>
+
+                <!-- Checkered Finish Line Visual across all lanes -->
+                <div class="absolute right-[12%] top-6 bottom-2 w-3 bg-[repeating-linear-gradient(45deg,#000,#000_5px,#fff_5px,#fff_10px)] opacity-90 pointer-events-none z-10 shadow-lg border-x border-yellow-400/80"></div>
+              </div>
+
+              <!-- Selected Horse Live Tracking Footer -->
+              <div class="bg-black/60 border border-emerald-800 rounded-xl p-2 px-3 flex items-center justify-between text-xs shrink-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">Your Steed:</span>
+                  <span id="hr-live-selected-horse-name" class="font-black text-yellow-400">#1 Banana Blitz</span>
+                </div>
+                <div class="text-emerald-300/80 font-mono text-[11px]">
+                  Potential Payout: <span id="hr-live-potential-payout" class="text-yellow-400 font-bold">0 🍌</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- RESULTS / PODIUM OVERLAY -->
+            <div id="hr-results-overlay" class="absolute inset-0 bg-black/90 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-md">
+              <div class="bg-gradient-to-b from-emerald-950 via-[#033425] to-emerald-950 border-4 border-yellow-500 rounded-3xl p-5 md:p-6 max-w-lg w-full text-center shadow-[0_0_80px_rgba(234,179,8,0.4)] flex flex-col items-center">
+                <div id="hr-result-icon" class="text-5xl md:text-6xl mb-1 animate-bounce">🏆</div>
+                <h3 id="hr-result-headline" class="text-2xl md:text-3xl font-black text-yellow-400 uppercase tracking-tight italic mb-0.5">PHOTO FINISH!</h3>
+                <p id="hr-result-subline" class="text-xs md:text-sm text-emerald-200 mb-4">Official Results of the Royal Toverland Derby</p>
+
+                <!-- Podium Top 3 -->
+                <div class="w-full grid grid-cols-3 gap-2 mb-4 items-end">
+                  <!-- 2nd -->
+                  <div class="bg-slate-800/80 border-2 border-slate-400 rounded-2xl p-2 flex flex-col items-center justify-end h-28">
+                    <span class="text-2xl">🥈</span>
+                    <span class="text-[9px] text-slate-300 font-bold uppercase">2nd Place</span>
+                    <span id="hr-podium-2nd" class="text-xs font-black text-white truncate max-w-full">#2 Horse</span>
+                    <span class="text-[10px] text-yellow-400 font-black">2x Payout</span>
+                  </div>
+                  <!-- 1st -->
+                  <div class="bg-yellow-500/20 border-2 border-yellow-400 rounded-2xl p-2.5 flex flex-col items-center justify-end h-32 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
+                    <span class="text-3xl animate-pulse">👑</span>
+                    <span class="text-[10px] text-yellow-300 font-bold uppercase">1st Champion</span>
+                    <span id="hr-podium-1st" class="text-sm font-black text-yellow-400 truncate max-w-full">#1 Horse</span>
+                    <span class="text-xs text-yellow-300 font-black">3x Payout</span>
+                  </div>
+                  <!-- 3rd -->
+                  <div class="bg-amber-900/40 border-2 border-amber-600 rounded-2xl p-2 flex flex-col items-center justify-end h-24">
+                    <span class="text-xl">🥉</span>
+                    <span class="text-[9px] text-amber-300 font-bold uppercase">3rd Place</span>
+                    <span id="hr-podium-3rd" class="text-xs font-black text-white truncate max-w-full">#3 Horse</span>
+                    <span class="text-[10px] text-amber-400 font-black">1.5x Payout</span>
+                  </div>
+                </div>
+
+                <!-- Your Horse Status Card -->
+                <div id="hr-your-bet-result" class="w-full bg-black/60 border border-emerald-700/80 rounded-2xl p-3 mb-4">
+                  <!-- Rendered dynamically -->
+                </div>
+
+                <div class="flex gap-2 w-full">
+                  <button onclick="resetHorseRace()" class="flex-1 py-3.5 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-yellow-950 font-black text-base rounded-xl shadow-lg active:scale-95 transition-all uppercase flex items-center justify-center gap-2">
+                    <span>🏇</span> <span>RACE AGAIN</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <!-- Game: TEXAS HOLD'EM -->
@@ -5587,17 +5772,17 @@
         }
     }
 
-    // --- TAX SYSTEM ---
+    // --- TAX / GAMING COMMISSION SYSTEM ---
     let taxInterval = setInterval(() => {
-        if (Math.random() < 0.30) {
-            // Jungle Government CANNOT tax in Banana Clicker gamemode!
+        if (Math.random() < 0.40) {
+            // Jungle Government CANNOT appear in Banana Clicker gamemode!
             const isClickerOpen = (typeof isBananaClickerOpen !== 'undefined' && isBananaClickerOpen) || 
                 (document.getElementById('banana-clicker-modal') && !document.getElementById('banana-clicker-modal').classList.contains('hidden'));
             if (isClickerOpen) return;
 
             const isBettingMode = view === 'game' && gameMode !== 'cases';
             const isCloaked = inventory && inventory['banana_cloak_expiry'] && inventory['banana_cloak_expiry'] > Date.now();
-            if (isBettingMode && !isCloaked && !isPlaying && (typeof bjState === 'undefined' || bjState !== 'playing')) {
+            if (isBettingMode && !isCloaked && !isPlaying && (typeof bjState === 'undefined' || bjState !== 'playing') && (typeof hrState === 'undefined' || hrState !== 'racing')) {
                 if (isAutoBetting) {
                     isAutoBetting = false;
                     clearTimeout(autoBetTimer);
@@ -5610,7 +5795,7 @@
                 playSound('error');
             }
         }
-    }, 120000);
+    }, 600000);
 
     function payTaxNow() {
         const taxAmount = Math.floor(bananas * 0.30);
@@ -5619,14 +5804,14 @@
         isInternalUpdate = false;
         
         document.getElementById('tax-government-overlay').classList.add('hidden');
-        showNotification(`Paid ${formatNumber(taxAmount)} 🍌 in taxes.`, 'error');
+        showNotification(`Paid ${formatNumber(taxAmount)} 🍌 cheating settlement fine.`, 'error');
         playSound('purchase');
     }
 
     function acceptTaxPenalty() {
         activeBoosts.tax_penalty = Date.now() + 10 * 60 * 1000;
         document.getElementById('tax-government-overlay').classList.add('hidden');
-        showNotification('50% win penalty applied for 10 minutes.', 'error');
+        showNotification('50% cheating surveillance penalty applied for 10 minutes.', 'error');
         playSound('purchase');
     }
 
@@ -7596,7 +7781,7 @@
     // --- GAME MODES ---
     
     function setGameMode(mode) {
-      if (isPlaying || bjState === 'playing' || bjState === 'dealerTurn' || (gameMode === 'mines' && minesState === 'playing')) return; 
+      if (isPlaying || bjState === 'playing' || bjState === 'dealerTurn' || (gameMode === 'mines' && minesState === 'playing') || (gameMode === 'horseracing' && typeof hrState !== 'undefined' && hrState === 'racing')) return; 
       gameMode = mode;
       spinResultMsg = mode === 'cases' ? "Choose a case to open!" : mode === 'mines' ? "Select mines count and start digging!" : `Ready to play ${mode.toUpperCase()}`;
       if (mode === 'blackjack') bjState = 'betting';
@@ -7631,6 +7816,11 @@
       if (mode === 'plinko') {
           spinResultMsg = "Choose risk & rows, then drop banana balls!";
           initPlinkoGame();
+      }
+
+      if (mode === 'horseracing') {
+          spinResultMsg = "Royal Toverland Derby: Pick a steed and bet!";
+          if (typeof initHorseRacingGame === 'function') initHorseRacingGame();
       }
 
       updateGameUI();
@@ -7715,6 +7905,8 @@
         }
       } else if (gameMode === 'plinko') {
         dropPlinkoBalls(1);
+      } else if (gameMode === 'horseracing') {
+        startHorseRace();
       }
     }
 
@@ -9394,6 +9586,506 @@
             rebuildPlinkoBoard();
         }
     });
+
+    // =================================================================
+    // 🏇 HORSE RACING DERBY ENGINE (10 HORSES, ANIMATED RUN, LUDVIG HOST)
+    // =================================================================
+
+    const HORSE_ROSTER = [
+        { id: 0, number: 1, name: "Banana Blitz", emoji: "🍌", color: "#eab308", border: "#ca8a04", silkBg: "bg-yellow-500", textCol: "text-yellow-400", speed: 94, stamina: 92, form: "1-1-2" },
+        { id: 1, number: 2, name: "Jungle Thunder", emoji: "🌴", color: "#10b981", border: "#059669", silkBg: "bg-emerald-500", textCol: "text-emerald-400", speed: 92, stamina: 96, form: "2-1-3" },
+        { id: 2, number: 3, name: "Golden Stallion", emoji: "⚡", color: "#f59e0b", border: "#d97706", silkBg: "bg-amber-500", textCol: "text-amber-400", speed: 96, stamina: 89, form: "1-3-1" },
+        { id: 3, number: 4, name: "Royal Galloper", emoji: "👑", color: "#a855f7", border: "#9333ea", silkBg: "bg-purple-500", textCol: "text-purple-400", speed: 91, stamina: 95, form: "3-2-1" },
+        { id: 4, number: 5, name: "Ludvig's Comet", emoji: "🏎️", color: "#06b6d4", border: "#0891b2", silkBg: "bg-cyan-500", textCol: "text-cyan-400", speed: 95, stamina: 91, form: "1-2-2" },
+        { id: 5, number: 6, name: "Diamond Dash", emoji: "💎", color: "#38bdf8", border: "#0284c7", silkBg: "bg-sky-400", textCol: "text-sky-300", speed: 93, stamina: 93, form: "2-3-1" },
+        { id: 6, number: 7, name: "Tropical Flare", emoji: "🔥", color: "#ef4444", border: "#dc2626", silkBg: "bg-red-500", textCol: "text-red-400", speed: 92, stamina: 94, form: "3-1-2" },
+        { id: 7, number: 8, name: "Jungle Phantom", emoji: "🌪️", color: "#94a3b8", border: "#64748b", silkBg: "bg-slate-400", textCol: "text-slate-300", speed: 94, stamina: 90, form: "2-2-1" },
+        { id: 8, number: 9, name: "Lucky Penny", emoji: "🪙", color: "#f97316", border: "#ea580c", silkBg: "bg-orange-500", textCol: "text-orange-400", speed: 90, stamina: 97, form: "1-1-3" },
+        { id: 9, number: 10, name: "Midnight Rocket", emoji: "🚀", color: "#6366f1", border: "#4f46e5", silkBg: "bg-indigo-500", textCol: "text-indigo-400", speed: 95, stamina: 91, form: "1-2-1" }
+    ];
+
+    let horseOdds = [];
+    let selectedHorseIndex = null;
+    let hrState = 'paddock'; // 'paddock' | 'racing' | 'results'
+    let hrRaceStartTime = 0;
+    let hrRaceDuration = 6500; // 6.5s
+    let hrAnimFrame = null;
+    let hrPreDeterminedResult = null;
+    let hrHorsePositions = new Array(10).fill(0);
+
+    function generateHorseChances() {
+        // Divided randomly among the 10 horses every round, hovering close to 10% each (sum = exactly 100.0%)
+        const rawWeights = HORSE_ROSTER.map(() => 8.5 + (Math.random() * 3.0));
+        const total = rawWeights.reduce((a, b) => a + b, 0);
+        let normalized = rawWeights.map(w => Math.round((w / total) * 1000) / 10);
+        let curSum = normalized.reduce((a, b) => a + b, 0);
+        let diff = Math.round((100.0 - curSum) * 10) / 10;
+        normalized[0] = Math.round((normalized[0] + diff) * 10) / 10;
+        return normalized;
+    }
+
+    function initHorseRacingGame() {
+        if (!horseOdds || horseOdds.length !== 10) {
+            horseOdds = generateHorseChances();
+        }
+        if (hrState !== 'racing') {
+            hrState = 'paddock';
+            const paddockView = document.getElementById('hr-paddock-view');
+            const trackView = document.getElementById('hr-track-view');
+            const resultsOverlay = document.getElementById('hr-results-overlay');
+            if (paddockView) paddockView.classList.remove('hidden');
+            if (trackView) trackView.classList.add('hidden');
+            if (resultsOverlay) resultsOverlay.classList.add('hidden');
+            renderHorsesPaddock();
+        }
+    }
+
+    function refreshHorseOdds() {
+        if (isPlaying || hrState === 'racing') return;
+        horseOdds = generateHorseChances();
+        playSound('click');
+        renderHorsesPaddock();
+        showNotification("🎲 Fresh Derby odds generated for all 10 steeds!", "info");
+    }
+
+    function renderHorsesPaddock() {
+        const container = document.getElementById('hr-horses-list');
+        if (!container) return;
+
+        let html = '';
+        HORSE_ROSTER.forEach((h, idx) => {
+            const isSelected = selectedHorseIndex === idx;
+            const chance = horseOdds[idx] ? horseOdds[idx].toFixed(1) : '10.0';
+
+            html += `
+              <div onclick="selectHorse(${idx})" class="cursor-pointer bg-slate-900/90 hover:bg-slate-800/90 border-2 ${isSelected ? 'border-yellow-400 bg-yellow-500/10 shadow-[0_0_20px_rgba(234,179,8,0.35)] ring-2 ring-yellow-400/50' : 'border-emerald-800/60 hover:border-emerald-600'} rounded-2xl p-2.5 px-3 flex items-center justify-between gap-3 transition-all">
+                
+                <!-- Square Checkbox Next to Horse -->
+                <div class="w-6 h-6 rounded-lg border-2 ${isSelected ? 'bg-yellow-400 border-yellow-400 text-yellow-950 shadow-md' : 'bg-black/50 border-emerald-600 text-transparent'} flex items-center justify-center font-black text-xs shrink-0 transition-colors">
+                  ✓
+                </div>
+
+                <!-- Silk & Number -->
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-xs shrink-0 shadow-lg border border-white/20" style="background-color: ${h.color}">
+                  #${h.number}
+                </div>
+
+                <!-- Horse Details & Stats -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-sm font-black text-white truncate">${h.name}</span>
+                    <span class="text-xs">${h.emoji}</span>
+                    ${isSelected ? '<span class="bg-yellow-400 text-yellow-950 text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase ml-1">YOUR PICK</span>' : ''}
+                  </div>
+                  <div class="flex items-center gap-2 text-[10px] text-emerald-300/80 mt-0.5 font-medium">
+                    <span>SPD <strong class="text-white">${h.speed}</strong></span>
+                    <span>•</span>
+                    <span>STA <strong class="text-white">${h.stamina}</strong></span>
+                    <span>•</span>
+                    <span>Form: <strong class="text-yellow-300 font-mono">${h.form}</strong></span>
+                  </div>
+                </div>
+
+                <!-- Win Chance Badge -->
+                <div class="text-right shrink-0">
+                  <div class="text-sm font-mono font-black ${isSelected ? 'text-yellow-400' : 'text-emerald-300'}">
+                    ${chance}%
+                  </div>
+                  <div class="text-[9px] uppercase tracking-wider text-emerald-400/70 font-bold">
+                    Win Chance
+                  </div>
+                </div>
+              </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function selectHorse(index) {
+        if (isPlaying || hrState === 'racing') return;
+        selectedHorseIndex = index;
+        playSound('click');
+        renderHorsesPaddock();
+        updateGameUI();
+    }
+
+    function renderTrackLanes() {
+        const container = document.getElementById('hr-lanes-container');
+        if (!container) return;
+
+        let html = '';
+        HORSE_ROSTER.forEach((h, idx) => {
+            const isUserHorse = selectedHorseIndex === idx;
+
+            html += `
+              <div id="hr-lane-${idx}" class="relative flex items-center h-6 sm:h-7 bg-emerald-950/70 border-b border-emerald-700/40 px-1 rounded overflow-hidden">
+                <!-- Lane Number & Silk -->
+                <div class="w-10 sm:w-12 flex items-center gap-1 shrink-0 z-10">
+                  <span class="w-4 h-4 sm:w-5 sm:h-5 rounded-md flex items-center justify-center text-[9px] sm:text-[10px] font-black text-white shadow" style="background-color: ${h.color}">
+                    ${h.number}
+                  </span>
+                  <span class="text-[9px] font-bold text-emerald-200 truncate hidden sm:inline">${h.name.split(' ')[0]}</span>
+                </div>
+
+                <!-- Running Area -->
+                <div class="flex-1 relative h-full flex items-center ml-1">
+                  <!-- Runner Element -->
+                  <div id="hr-runner-${idx}" class="absolute flex items-center gap-1 transition-transform select-none pointer-events-none" style="left: 0%;">
+                    <div class="flex items-center gap-0.5 animate-gallop ${isUserHorse ? 'ring-2 ring-yellow-400 rounded-lg bg-yellow-400/20 px-1' : ''}">
+                      <span class="text-base sm:text-lg filter drop-shadow">🏇</span>
+                      <span class="text-[9px] font-black px-1 rounded text-white shadow-sm shrink-0" style="background-color: ${h.color}">#${h.number}</span>
+                      ${isUserHorse ? '<span class="text-[8px] bg-yellow-400 text-yellow-950 font-black px-1 rounded-full uppercase tracking-tighter shrink-0 animate-pulse">YOU</span>' : ''}
+                      <span class="text-[10px] opacity-70">💨</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    async function startHorseRace() {
+        if (isPlaying || isSyncing || balanceDirty) return;
+        if (selectedHorseIndex === null) {
+            showNotification("Please select a horse first by pressing the square next to it!", "warning");
+            return;
+        }
+
+        const bet = betAmount;
+        if (bananas <= 0 || bet <= 0 || bet > bananas) {
+            showNotification("Invalid bet amount!", "error");
+            return;
+        }
+
+        // Deduct bet bananas immediately
+        isInternalUpdate = true;
+        updateBananas(bananas - bet);
+        isInternalUpdate = false;
+
+        isPlaying = true;
+        hrState = 'racing';
+
+        addLog('bet', bet, bananas, `Horse Racing: Bet on #${HORSE_ROSTER[selectedHorseIndex].number} ${HORSE_ROSTER[selectedHorseIndex].name}`);
+        triggerQuestProgress('bet', bet);
+        triggerQuestProgress('play', 1);
+
+        // Switch to Track View
+        const paddockView = document.getElementById('hr-paddock-view');
+        const trackView = document.getElementById('hr-track-view');
+        const resultsOverlay = document.getElementById('hr-results-overlay');
+        if (paddockView) paddockView.classList.add('hidden');
+        if (trackView) {
+            trackView.classList.remove('hidden');
+            trackView.classList.add('flex');
+        }
+        if (resultsOverlay) resultsOverlay.classList.add('hidden');
+
+        // Update live tracking footer
+        const userHorse = HORSE_ROSTER[selectedHorseIndex];
+        const liveNameEl = document.getElementById('hr-live-selected-horse-name');
+        const livePotentialEl = document.getElementById('hr-live-potential-payout');
+        if (liveNameEl) liveNameEl.innerText = `#${userHorse.number} ${userHorse.name} ${userHorse.emoji}`;
+        if (livePotentialEl) livePotentialEl.innerText = `${formatNumber(bet * 3)} 🍌 (1st) / ${formatNumber(bet * 2)} 🍌 (2nd) / ${formatNumber(Math.floor(bet * 1.5))} 🍌 (3rd)`;
+
+        renderTrackLanes();
+        updateGameUI();
+        playSound('spin');
+
+        // Fetch pre-determined outcome from server or fallback locally
+        let finishOrder = [];
+        let serverWinAmount = 0n;
+        let serverNewBalance = null;
+
+        try {
+            if (authToken) {
+                const response = await fetch(API_BASE + '/api/play', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        gameMode: 'horseracing',
+                        selectedHorse: selectedHorseIndex,
+                        horseChances: horseOdds,
+                        betAmount: bet,
+                        clientScore: bananas,
+                        activeGadgets
+                    })
+                });
+                const data = await response.json();
+                if (data.success && data.result && Array.isArray(data.result.finishOrder)) {
+                    finishOrder = data.result.finishOrder;
+                    serverWinAmount = BigInt(data.winAmount || '0');
+                    if (data.newBalance) serverNewBalance = Number(data.newBalance);
+                    if (data.winStreak !== undefined) winStreak = data.winStreak;
+                } else {
+                    throw new Error(data.error || "Server outcome error");
+                }
+            } else {
+                finishOrder = preDetermineFinishOrderLocally(horseOdds);
+            }
+        } catch (err) {
+            console.warn("[HORSE RACING] Playing in local mode:", err);
+            finishOrder = preDetermineFinishOrderLocally(horseOdds);
+        }
+
+        hrPreDeterminedResult = {
+            finishOrder,
+            serverWinAmount,
+            serverNewBalance,
+            betAmount: bet
+        };
+
+        runRaceAnimation();
+    }
+
+    function preDetermineFinishOrderLocally(chances) {
+        const available = chances.map((w, idx) => ({ idx, weight: Math.max(1, Number(w) || 10) }));
+        const order = [];
+        while (available.length > 0) {
+            const curTotal = available.reduce((sum, item) => sum + item.weight, 0);
+            let rnd = Math.random() * curTotal;
+            let pickedIndex = 0;
+            for (let i = 0; i < available.length; i++) {
+                if (rnd < available[i].weight) {
+                    pickedIndex = i;
+                    break;
+                }
+                rnd -= available[i].weight;
+            }
+            order.push(available[pickedIndex].idx);
+            available.splice(pickedIndex, 1);
+        }
+        return order;
+    }
+
+    function runRaceAnimation() {
+        hrRaceStartTime = performance.now();
+        hrRaceDuration = 6200; // 6.2 seconds
+        hrHorsePositions = new Array(10).fill(0);
+
+        const commentaryEl = document.getElementById('hr-commentary-text');
+        const timerEl = document.getElementById('hr-timer-display');
+
+        const commentarySteps = [
+            { at: 0.05, text: "🚩 THE GATES FLY OPEN! All 10 thoroughbreds burst onto the lush turf!" },
+            { at: 0.25, text: "⚡ Furious pace down the back straight! Jockeys jostling for the inside rail!" },
+            { at: 0.50, text: "🔥 HEADING INTO THE FAR TURN! The pack is tightly clustered, nostrils flaring!" },
+            { at: 0.75, text: "💥 HOMESTRETCH SPRINT! The crowd is roaring as they surge for the wire!" },
+            { at: 0.90, text: "🏁 FINAL STRIDES! A magnificent charge towards the checkered line!" }
+        ];
+
+        function loop(now) {
+            if (hrState !== 'racing') return;
+
+            const elapsed = now - hrRaceStartTime;
+            const progress = Math.min(1.0, elapsed / hrRaceDuration);
+
+            // Timer display
+            const sec = (elapsed / 1000).toFixed(1);
+            if (timerEl) timerEl.innerText = `00:0${sec}s`;
+
+            // Commentary updates
+            for (let i = commentarySteps.length - 1; i >= 0; i--) {
+                if (progress >= commentarySteps[i].at) {
+                    if (commentaryEl && commentaryEl.innerText !== commentarySteps[i].text) {
+                        commentaryEl.innerText = commentarySteps[i].text;
+                    }
+                    break;
+                }
+            }
+
+            // Calculate each horse position
+            const finishOrder = hrPreDeterminedResult.finishOrder;
+            const maxTrackWidth = 85.0; // finish line is at 85%
+
+            HORSE_ROSTER.forEach((_, idx) => {
+                const place = finishOrder.indexOf(idx); // 0 = 1st, 1 = 2nd, etc.
+                
+                // Target final position at wire (1st place hits 88%, others stagger slightly behind)
+                const finalTarget = maxTrackWidth + 3.0 - (place * 1.5);
+                
+                // Early race (progress < 0.65) has natural fluctuations
+                let currentPos = 0;
+                if (progress < 0.65) {
+                    const noise = Math.sin((elapsed / 300) + idx) * 3.5;
+                    currentPos = (progress * (maxTrackWidth * 0.6)) + noise;
+                } else {
+                    // Late race converges smoothly to final finish order
+                    const tLate = (progress - 0.65) / 0.35;
+                    const ease = tLate * tLate; // smooth acceleration
+                    const midPos = (0.65 * (maxTrackWidth * 0.6));
+                    currentPos = midPos + ((finalTarget - midPos) * ease);
+                }
+
+                currentPos = Math.max(0, Math.min(92, currentPos));
+                hrHorsePositions[idx] = currentPos;
+
+                const runnerEl = document.getElementById(`hr-runner-${idx}`);
+                if (runnerEl) {
+                    runnerEl.style.left = `${currentPos.toFixed(1)}%`;
+                }
+            });
+
+            if (progress < 1.0) {
+                hrAnimFrame = requestAnimationFrame(loop);
+            } else {
+                finishHorseRace();
+            }
+        }
+
+        hrAnimFrame = requestAnimationFrame(loop);
+    }
+
+    function skipHorseRace() {
+        if (hrState !== 'racing') return;
+        if (hrAnimFrame) cancelAnimationFrame(hrAnimFrame);
+        finishHorseRace();
+    }
+
+    function finishHorseRace() {
+        if (hrAnimFrame) cancelAnimationFrame(hrAnimFrame);
+        hrState = 'results';
+        isPlaying = false;
+
+        const result = hrPreDeterminedResult;
+        if (!result) return;
+
+        const finishOrder = result.finishOrder;
+        const winnerIdx = finishOrder[0];
+        const secondIdx = finishOrder[1];
+        const thirdIdx = finishOrder[2];
+
+        const winnerHorse = HORSE_ROSTER[winnerIdx];
+        const secondHorse = HORSE_ROSTER[secondIdx];
+        const thirdHorse = HORSE_ROSTER[thirdIdx];
+
+        // Put runners at wire
+        HORSE_ROSTER.forEach((_, idx) => {
+            const place = finishOrder.indexOf(idx);
+            const runnerEl = document.getElementById(`hr-runner-${idx}`);
+            if (runnerEl) {
+                runnerEl.style.left = `${(88 - (place * 1.8)).toFixed(1)}%`;
+            }
+        });
+
+        // Calculate placement and payout
+        const userPlacement = finishOrder.indexOf(selectedHorseIndex) + 1; // 1 to 10
+        let multiplier = 0;
+        if (userPlacement === 1) multiplier = 3.0;
+        else if (userPlacement === 2) multiplier = 2.0;
+        else if (userPlacement === 3) multiplier = 1.5;
+
+        const bet = result.betAmount;
+        let winAmount = BigInt(Math.floor(bet * multiplier));
+        if (result.serverWinAmount && result.serverWinAmount > 0n) {
+            winAmount = result.serverWinAmount;
+        }
+
+        // Apply winnings to player balance
+        if (winAmount > 0n) {
+            if (result.serverNewBalance !== null && !isNaN(result.serverNewBalance)) {
+                isInternalUpdate = true;
+                updateBananas(result.serverNewBalance);
+                isInternalUpdate = false;
+            } else {
+                isInternalUpdate = true;
+                updateBananas(bananas + Number(winAmount));
+                isInternalUpdate = false;
+            }
+            triggerQuestProgress('win', Number(winAmount));
+            addLog('win', Number(winAmount), bananas, `Horse Racing: #${HORSE_ROSTER[selectedHorseIndex].number} placed ${userPlacement}${getOrdinalSuffix(userPlacement)} (${multiplier}x)`);
+            playSound('win');
+            showNotification(`🏆 Victory! #${HORSE_ROSTER[selectedHorseIndex].number} ${HORSE_ROSTER[selectedHorseIndex].name} finished ${userPlacement}${getOrdinalSuffix(userPlacement)} (+${formatNumber(Number(winAmount))} 🍌)!`, 'success');
+        } else {
+            playSound('loss');
+        }
+
+        // Update Podium UI
+        const podium1st = document.getElementById('hr-podium-1st');
+        const podium2nd = document.getElementById('hr-podium-2nd');
+        const podium3rd = document.getElementById('hr-podium-3rd');
+        if (podium1st) podium1st.innerText = `#${winnerHorse.number} ${winnerHorse.name}`;
+        if (podium2nd) podium2nd.innerText = `#${secondHorse.number} ${secondHorse.name}`;
+        if (podium3rd) podium3rd.innerText = `#${thirdHorse.number} ${thirdHorse.name}`;
+
+        const iconEl = document.getElementById('hr-result-icon');
+        const headlineEl = document.getElementById('hr-result-headline');
+        const yourBetResultEl = document.getElementById('hr-your-bet-result');
+
+        const userHorse = HORSE_ROSTER[selectedHorseIndex];
+        const won = multiplier > 0;
+
+        if (iconEl) iconEl.innerText = won ? (userPlacement === 1 ? '👑' : '🏆') : '🐎';
+        if (headlineEl) headlineEl.innerText = won ? (userPlacement === 1 ? '1ST PLACE VICTORY!' : `${userPlacement}${getOrdinalSuffix(userPlacement)} PLACE PODIUM!`) : 'BET LOST';
+
+        if (yourBetResultEl) {
+            yourBetResultEl.innerHTML = `
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 text-left">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center font-black text-white text-xs shadow" style="background-color: ${userHorse.color}">
+                    #${userHorse.number}
+                  </div>
+                  <div>
+                    <div class="text-sm font-black text-white">${userHorse.name} ${userHorse.emoji}</div>
+                    <div class="text-[11px] font-bold ${won ? 'text-yellow-400' : 'text-slate-400'}">
+                      Finished ${userPlacement}${getOrdinalSuffix(userPlacement)} of 10
+                    </div>
+                  </div>
+                </div>
+
+                <div class="text-right">
+                  <div class="text-base sm:text-lg font-black ${won ? 'text-yellow-400 animate-pulse' : 'text-red-400'} font-mono">
+                    ${won ? `+${formatNumber(Number(winAmount))} 🍌` : `-${formatNumber(bet)} 🍌`}
+                  </div>
+                  <div class="text-[10px] uppercase tracking-wider font-bold ${won ? 'text-emerald-400' : 'text-red-400/80'}">
+                    ${won ? `${multiplier}x Multiplier` : 'No Payout'}
+                  </div>
+                </div>
+              </div>
+            `;
+        }
+
+        // Show Results Overlay
+        const overlay = document.getElementById('hr-results-overlay');
+        if (overlay) {
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+
+        updateGameUI();
+        syncData(bananas, trees);
+    }
+
+    function getOrdinalSuffix(n) {
+        if (n === 1) return 'st';
+        if (n === 2) return 'nd';
+        if (n === 3) return 'rd';
+        return 'th';
+    }
+
+    function resetHorseRace() {
+        hrState = 'paddock';
+        isPlaying = false;
+
+        const overlay = document.getElementById('hr-results-overlay');
+        const trackView = document.getElementById('hr-track-view');
+        const paddockView = document.getElementById('hr-paddock-view');
+
+        if (overlay) overlay.classList.add('hidden');
+        if (trackView) trackView.classList.add('hidden');
+        if (paddockView) paddockView.classList.remove('hidden');
+
+        // Roll fresh new balanced odds for the new race
+        horseOdds = generateHorseChances();
+        renderHorsesPaddock();
+        updateGameUI();
+        playSound('click');
+    }
 
     // =================================================================
     // 🃏 TEXAS HOLD'EM POKER ENGINE (VS BOTS & ONLINE MULTIPLAYER)
@@ -12403,6 +13095,8 @@
       if (areaTexasHoldem) areaTexasHoldem.classList.toggle('hidden', gameMode !== 'texasholdem');
       const areaPlinko = document.getElementById('area-plinko');
       if (areaPlinko) areaPlinko.classList.toggle('hidden', gameMode !== 'plinko');
+      const areaHorseracing = document.getElementById('area-horseracing');
+      if (areaHorseracing) areaHorseracing.classList.toggle('hidden', gameMode !== 'horseracing');
 
       const elBettingControls = document.getElementById('betting-controls-container');
       if (elBettingControls) {
@@ -12440,12 +13134,19 @@
       elMaxBetBtn.disabled = isPlaying;
       
       const autoBtn = document.getElementById('auto-bet-btn');
-      if (isAutoBetting) {
-          autoBtn.classList.remove('bg-white', 'text-emerald-900');
-          autoBtn.classList.add('bg-blue-600', 'text-white');
-      } else {
-          autoBtn.classList.add('bg-white', 'text-emerald-900');
-          autoBtn.classList.remove('bg-blue-600', 'text-white');
+      if (autoBtn) {
+          if (gameMode === 'horseracing') {
+              autoBtn.classList.add('hidden');
+          } else {
+              autoBtn.classList.remove('hidden');
+              if (isAutoBetting) {
+                  autoBtn.classList.remove('bg-white', 'text-emerald-900');
+                  autoBtn.classList.add('bg-blue-600', 'text-white');
+              } else {
+                  autoBtn.classList.add('bg-white', 'text-emerald-900');
+                  autoBtn.classList.remove('bg-blue-600', 'text-white');
+              }
+          }
       }
 
       let currentBonusBet = 0;
@@ -12466,6 +13167,10 @@
       if (gameMode === 'crash' && crashState === 'flying') canAction = false;
       if (gameMode === 'mines' && minesState === 'playing') canAction = false;
       if (gameMode === 'plinko') canAction = !isPlinkoDropping && !isSyncing && bananas >= betAmount && betAmount > 0;
+      if (gameMode === 'horseracing') {
+          const hasHorse = typeof selectedHorseIndex === 'number' && selectedHorseIndex !== null;
+          canAction = !isPlaying && !isSyncing && !balanceDirty && bananas >= betAmount && betAmount > 0 && hasHorse && (typeof hrState === 'undefined' || hrState !== 'racing');
+      }
       if (gameMode === 'slots' && isBonusBet && (betAmount + currentBonusBet) > bananas) canAction = false;
 
       elMainActionBtn.disabled = !canAction;
@@ -12502,7 +13207,7 @@
         }
       }
       
-      if (isPlaying && gameMode !== 'plinko') { elMainActionBtn.innerText = "PLAYING..."; }
+      if (isPlaying && gameMode !== 'plinko' && gameMode !== 'horseracing') { elMainActionBtn.innerText = "PLAYING..."; }
       else if (isSyncing || balanceDirty) { elMainActionBtn.innerText = "SYNCING..."; }
       else if (gameMode === 'blackjack') { elMainActionBtn.innerText = (bjState === 'gameOver') ? "DEAL AGAIN" : "DEAL"; }
       else if (gameMode === 'hilo') { elMainActionBtn.innerText = (hiloState === 'gameOver') ? "PLAY AGAIN" : "PLAY HI-LO"; }
@@ -12510,6 +13215,15 @@
       else if (gameMode === 'crash') { elMainActionBtn.innerText = "START FLIGHT"; }
       else if (gameMode === 'mines') { elMainActionBtn.innerText = (minesState === 'gameOver') ? "START NEW ROUND" : "START MINES"; }
       else if (gameMode === 'plinko') { elMainActionBtn.innerText = isPlinkoDropping ? "DROPPING..." : "DROP BALL 🍌"; }
+      else if (gameMode === 'horseracing') {
+          if (typeof hrState !== 'undefined' && hrState === 'racing') {
+              elMainActionBtn.innerText = "RACING IN PROGRESS... 🏇";
+          } else if (typeof selectedHorseIndex !== 'number' || selectedHorseIndex === null) {
+              elMainActionBtn.innerText = "SELECT A HORSE 🏇";
+          } else {
+              elMainActionBtn.innerText = `BET ON #${HORSE_ROSTER[selectedHorseIndex].number} & RACE 🏇`;
+          }
+      }
       else { elMainActionBtn.innerText = "SPIN"; }
 
       // Blackjack specifics logic
@@ -15135,7 +15849,8 @@
         unlockTheme, equipTheme, applyTheme, renderDungeonThemes,
         takeRideToBank, finishRideToBank, closeBananaBank,
         handleBankDeposit, handleBankWithdraw,
-        setBankDepositInput, setBankWithdrawInput, copyBankExactBalance
+        setBankDepositInput, setBankWithdrawInput, copyBankExactBalance,
+        selectHorse, refreshHorseOdds, startHorseRace, skipHorseRace, resetHorseRace, initHorseRacingGame
     };
 
     for (const [name, fn] of Object.entries(exposedFunctions)) {
