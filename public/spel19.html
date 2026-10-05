@@ -3791,38 +3791,49 @@
     ];
 
     const TITLES = {
-        'newbie_monkey': { id: 'newbie_monkey', name: 'Newbie Monkey', color: 'text-emerald-400', group: 'Common' },
-        'investor': { id: 'investor', name: 'Investor', color: 'text-emerald-400', group: 'Common' },
-        'grove': { id: 'grove', name: 'Grove', color: 'text-emerald-400', group: 'Common' },
-        'lucky_seven': { id: 'lucky_seven', name: 'Lucky Seven', color: 'text-emerald-400', group: 'Common' },
-        'tree_planter': { id: 'tree_planter', name: 'Tree Planter', color: 'text-emerald-400', group: 'Common' },
-        'apprentice_monkey': { id: 'apprentice_monkey', name: 'Apprentice Monkey', color: 'text-emerald-400', group: 'Common' },
-        'lucky_one': { id: 'lucky_one', name: 'The Lucky One', color: 'text-blue-400', group: 'Rare' },
-        'unlucky': { id: 'unlucky', name: 'The Unlucky', color: 'text-blue-400', group: 'Rare' },
-        'extra_hand': { id: 'extra_hand', name: 'Extra Hand', color: 'text-blue-400', group: 'Rare' },
-        'the_dedicated': { id: 'the_dedicated', name: 'The Dedicated', color: 'text-blue-400', group: 'Rare' },
-        'big_winner': { id: 'big_winner', name: 'Big Winner', color: 'text-blue-400', group: 'Rare' },
-        'banana_millionaire': { id: 'banana_millionaire', name: 'Banana Millionaire', color: 'text-purple-500', group: 'Epic' },
-        'high_roller': { id: 'high_roller', name: 'High Roller', color: 'text-purple-500', group: 'Epic' },
-        'tree_lord': { id: 'tree_lord', name: 'Tree Lord', color: 'text-purple-500', group: 'Epic' },
-        'veteran': { id: 'veteran', name: 'Veteran', color: 'text-purple-500', group: 'Epic' },
-        'banana_billionaire': { id: 'banana_billionaire', name: 'Banana Billionaire', color: 'text-purple-500', group: 'Epic' },
-        'tree_god': { id: 'tree_god', name: 'Tree God', color: 'text-red-500', group: 'Mythic' },
-        'plinko_master': { id: 'plinko_master', name: 'Plinko Master 🎯', color: 'text-amber-400', group: 'Epic' },
-        'the_myth_the_legend': { id: 'the_myth_the_legend', name: 'The Myth The Legend', color: 'text-yellow-400', group: 'Legendary' },
+        'newbie_monkey': { id: 'newbie_monkey', name: 'Newbie Monkey', color: 'text-emerald-400', group: 'Common', desc: 'Place your very first bet in the casino' },
+        'investor': { id: 'investor', name: 'Investor', color: 'text-emerald-400', group: 'Common', desc: 'Purchase your first stock or business investment' },
+        'grove': { id: 'grove', name: 'Grove', color: 'text-emerald-400', group: 'Common', desc: 'Plant your first banana tree in the grove' },
+        'lucky_seven': { id: 'lucky_seven', name: 'Lucky Seven', color: 'text-emerald-400', group: 'Common', desc: 'Win or lose an exact amount of 777 bananas' },
+        'tree_planter': { id: 'tree_planter', name: 'Tree Planter', color: 'text-emerald-400', group: 'Common', desc: 'Reach a combined tree level of 10' },
+        'apprentice_monkey': { id: 'apprentice_monkey', name: 'Apprentice Monkey', color: 'text-emerald-400', group: 'Common', desc: 'Reach player level 10' },
+        'lucky_one': { id: 'lucky_one', name: 'The Lucky One', color: 'text-blue-400', group: 'Rare', desc: 'Hit green 3 times in a row on Roulette' },
+        'unlucky': { id: 'unlucky', name: 'The Unlucky', color: 'text-blue-400', group: 'Rare', desc: 'Lose a single bet of 100,000 bananas or more' },
+        'extra_hand': { id: 'extra_hand', name: 'Extra Hand', color: 'text-blue-400', group: 'Rare', desc: 'Unlock all gadgets in the workshop' },
+        'the_dedicated': { id: 'the_dedicated', name: 'The Dedicated', color: 'text-blue-400', group: 'Rare', desc: 'Reach player level 25' },
+        'big_winner': { id: 'big_winner', name: 'Big Winner', color: 'text-blue-400', group: 'Rare', desc: 'Win 1,000,000 bananas or more in a single payout' },
+        'banana_millionaire': { id: 'banana_millionaire', name: 'Banana Millionaire', color: 'text-purple-500', group: 'Epic', desc: 'Amass 1,000,000 bananas in your active balance' },
+        'high_roller': { id: 'high_roller', name: 'High Roller', color: 'text-purple-500', group: 'Epic', desc: 'Place a single bet of 500,000 bananas or more' },
+        'tree_lord': { id: 'tree_lord', name: 'Tree Lord', color: 'text-purple-500', group: 'Epic', desc: 'Reach a combined tree level of 50' },
+        'veteran': { id: 'veteran', name: 'Veteran', color: 'text-purple-500', group: 'Epic', desc: 'Reach player level 50' },
+        'banana_billionaire': { id: 'banana_billionaire', name: 'Banana Billionaire', color: 'text-purple-500', group: 'Epic', desc: 'Amass 1,000,000,000 bananas in your balance' },
+        'tree_god': { id: 'tree_god', name: 'Tree God', color: 'text-red-500', group: 'Mythic', desc: 'Reach a combined tree level of 100' },
+        'plinko_master': { id: 'plinko_master', name: 'Plinko Master 🎯', color: 'text-amber-400', group: 'Epic', desc: 'Hit a 100x or higher multiplier on Plinko' },
+        'the_myth_the_legend': { id: 'the_myth_the_legend', name: 'The Myth The Legend', color: 'text-yellow-400', group: 'Legendary', desc: 'Reach the maximum player level 100' },
+        // 10 New Progression & Gamemode Titles
+        'hot_streak': { id: 'hot_streak', name: 'Streak Champion 🔥', color: 'text-blue-400', group: 'Rare', desc: 'Achieve a 5-win streak across any casino games' },
+        'derby_jockey': { id: 'derby_jockey', name: 'Jungle Jockey 🏇', color: 'text-blue-400', group: 'Rare', desc: 'Finish 1st place in the Jungle Derby horse race' },
+        'mine_sweeper': { id: 'mine_sweeper', name: 'Mine Sweeper 💣', color: 'text-blue-400', group: 'Rare', desc: 'Uncover 5+ safe tiles and cash out in Mines' },
+        'rocket_rider': { id: 'rocket_rider', name: 'Cosmic Aeronaut 🚀', color: 'text-purple-500', group: 'Epic', desc: 'Successfully cash out at 10.00x or higher in Crash' },
+        'card_shark': { id: 'card_shark', name: 'Card Shark 🃏', color: 'text-purple-500', group: 'Epic', desc: 'Score a natural Blackjack or Poker Full House+' },
+        'banana_baron': { id: 'banana_baron', name: 'Banana Baron 🏦', color: 'text-purple-500', group: 'Epic', desc: 'Hold 100,000,000 bananas in your active balance' },
+        'banana_ascendant': { id: 'banana_ascendant', name: 'Banana Ascendant ✨', color: 'text-purple-500', group: 'Epic', desc: 'Perform an Ascension in Banana Clicker' },
+        'unstoppable': { id: 'unstoppable', name: 'The Unstoppable ⚡', color: 'text-red-500', group: 'Mythic', desc: 'Achieve an incredible 10-win streak across any games' },
+        'vault_overlord': { id: 'vault_overlord', name: 'Vault Overlord 🏛️', color: 'text-red-500', group: 'Mythic', desc: 'Store 1,000,000,000 bananas in the Banana Bank vault' },
+        'grand_casino_monarch': { id: 'grand_casino_monarch', name: 'Grand Casino Monarch 👑', color: 'text-yellow-400', group: 'Legendary', desc: 'Reach player level 75 in the Banana Casino' },
         // Limited Edition Titles
-        'the_hacker': { id: 'the_hacker', name: 'The Hacker', color: 'text-red-500', group: 'Mythic', limited: true },
-        'n1_grinder': { id: 'n1_grinder', name: 'The n1 Grinder', color: 'text-red-500', group: 'Mythic', limited: true },
-        'the_true_one': { id: 'the_true_one', name: 'The True One', color: 'text-yellow-400', group: 'Legendary', limited: true },
-        'the_cheater': { id: 'the_cheater', name: 'The Cheater', color: 'text-blue-400', group: 'Rare', limited: true },
-        'ludvigs_stand': { id: 'ludvigs_stand', name: 'Ludvigs Stand', color: 'text-black drop-shadow-[0_0_2px_rgba(255,255,255,0.8)]', group: 'Admin', limited: true },
+        'the_hacker': { id: 'the_hacker', name: 'The Hacker', color: 'text-red-500', group: 'Mythic', limited: true, desc: 'Secret title for digital anomalies' },
+        'n1_grinder': { id: 'n1_grinder', name: 'The n1 Grinder', color: 'text-red-500', group: 'Mythic', limited: true, desc: 'Awarded to top leaderboard achievers' },
+        'the_true_one': { id: 'the_true_one', name: 'The True One', color: 'text-yellow-400', group: 'Legendary', limited: true, desc: 'Legendary secret title for jungle sages' },
+        'the_cheater': { id: 'the_cheater', name: 'The Cheater', color: 'text-blue-400', group: 'Rare', limited: true, desc: 'Caught by the jungle authorities' },
+        'ludvigs_stand': { id: 'ludvigs_stand', name: 'Ludvigs Stand', color: 'text-black drop-shadow-[0_0_2px_rgba(255,255,255,0.8)]', group: 'Admin', limited: true, desc: 'Exclusive administrative emblem' },
         // Royal Pass Titles (Limited)
-        'royal_subject': { id: 'royal_subject', name: 'Royal Subject', color: 'text-emerald-400', group: 'Common', limited: true },
-        'royal_guard': { id: 'royal_guard', name: 'Royal Guard', color: 'text-blue-400', group: 'Rare', limited: true },
-        'royal_knight': { id: 'royal_knight', name: 'Royal Knight', color: 'text-purple-500', group: 'Epic', limited: true },
-        'royal_prince': { id: 'royal_prince', name: 'Royal Prince', color: 'text-red-500', group: 'Mythic', limited: true },
-        'banana_emperor': { id: 'banana_emperor', name: 'Banana Emperor', color: 'text-yellow-400', group: 'Legendary', limited: true },
-        'season_1_survivor': { id: 'season_1_survivor', name: 'S1 Survivor', color: 'text-purple-500', group: 'Epic', limited: true }
+        'royal_subject': { id: 'royal_subject', name: 'Royal Subject', color: 'text-emerald-400', group: 'Common', limited: true, desc: 'Reach Level 1 in the Royal Banana Pass' },
+        'royal_guard': { id: 'royal_guard', name: 'Royal Guard', color: 'text-blue-400', group: 'Rare', limited: true, desc: 'Reach Level 5 in the Royal Banana Pass' },
+        'royal_knight': { id: 'royal_knight', name: 'Royal Knight', color: 'text-purple-500', group: 'Epic', limited: true, desc: 'Reach Level 10 in the Royal Banana Pass' },
+        'royal_prince': { id: 'royal_prince', name: 'Royal Prince', color: 'text-red-500', group: 'Mythic', limited: true, desc: 'Reach Level 15 in the Royal Banana Pass' },
+        'banana_emperor': { id: 'banana_emperor', name: 'Banana Emperor', color: 'text-yellow-400', group: 'Legendary', limited: true, desc: 'Reach Level 20 in the Royal Banana Pass' },
+        'season_1_survivor': { id: 'season_1_survivor', name: 'S1 Survivor', color: 'text-purple-500', group: 'Epic', limited: true, desc: 'Survive and claim Season 1 Royal rewards' }
     };
 
     const SHOP_ITEMS = [
@@ -6460,10 +6471,12 @@
                 const isEquipped = equippedTitle === title.id;
                 
                 const titleCardHtml = `
-                    <div class="bg-black/40 backdrop-blur-md border-2 ${isEquipped ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.3)]' : 'border-amber-900/30'} rounded-3xl p-6 flex flex-col items-center text-center transition-all">
+                    <div class="bg-black/40 backdrop-blur-md border-2 ${isEquipped ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.3)]' : 'border-amber-900/30'} rounded-3xl p-5 flex flex-col items-center text-center transition-all hover:border-amber-500/40">
                         <div class="text-[8px] font-black uppercase mb-1 ${title.color}">${title.group}</div>
-                        <h3 class="text-xs font-black text-white uppercase mb-4 h-8 flex items-center justify-center">${title.name}</h3>
+                        <h3 class="text-xs font-black text-white uppercase mb-2 h-7 flex items-center justify-center text-center leading-tight">${title.name}</h3>
+                        <p class="text-[9px] text-stone-400 font-medium mb-3 h-9 flex items-center justify-center text-center leading-tight px-1">${title.desc || 'Casino Achievement Title'}</p>
                         
+                        <div class="w-full mt-auto">
                         ${isUnlocked ? `
                             <button onclick="toggleTitle('${title.id}')" class="w-full py-2 rounded-xl font-black text-[10px] transition-all active:translate-y-1 ${isEquipped ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30' : 'bg-emerald-500 text-emerald-950 shadow-[0_4px_0_rgb(6,78,59)] hover:bg-emerald-400'}">
                                 ${isEquipped ? 'UNEQUIP' : 'EQUIP'}
@@ -6474,6 +6487,7 @@
                                 LOCKED
                             </div>
                         `}
+                        </div>
                     </div>
                 `;
 
@@ -6484,11 +6498,12 @@
                 }
             });
             
-            // Add 20 locked slots as requested for normal titles
+            // Add locked slots as requested for normal titles
             const normalTitleCount = Object.values(TITLES).filter(t => !t.limited).length;
-            for (let i = normalTitleCount; i < 20; i++) {
+            const targetNormalSlots = Math.max(45, normalTitleCount + 12);
+            for (let i = normalTitleCount; i < targetNormalSlots; i++) {
                 extrasHtml += `
-                    <div class="bg-black/20 backdrop-blur-md border-2 border-stone-900/30 rounded-3xl p-6 flex flex-col items-center justify-center text-center opacity-40">
+                    <div class="bg-black/20 backdrop-blur-md border-2 border-stone-900/30 rounded-3xl p-5 flex flex-col items-center justify-center text-center opacity-40">
                         <div class="w-6 h-6 rounded-full border-2 border-stone-700 flex items-center justify-center text-stone-700 mb-2">
                             <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                         </div>
@@ -6497,11 +6512,12 @@
                 `;
             }
 
-            // Add 10 locked slots for limited titles for consistency
+            // Add locked slots for limited titles for consistency
             const limitedTitleCount = Object.values(TITLES).filter(t => t.limited).length;
-            for (let i = limitedTitleCount; i < 15; i++) {
+            const targetLimitedSlots = Math.max(20, limitedTitleCount + 8);
+            for (let i = limitedTitleCount; i < targetLimitedSlots; i++) {
                 limitedHtml += `
-                    <div class="bg-black/20 backdrop-blur-md border-2 border-red-950/20 rounded-3xl p-6 flex flex-col items-center justify-center text-center opacity-40">
+                    <div class="bg-black/20 backdrop-blur-md border-2 border-red-950/20 rounded-3xl p-5 flex flex-col items-center justify-center text-center opacity-40">
                         <div class="w-6 h-6 rounded-full border-2 border-red-900/40 flex items-center justify-center text-red-900/40 mb-2">
                             <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                         </div>
@@ -7980,7 +7996,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ taxPenalty: activeBoosts.tax_penalty > Date.now(), clientScore: bananas, gameMode: 'hilo_guess', betAmount: 0, guess: guess })
+                body: JSON.stringify({ taxPenalty: activeBoosts.tax_penalty > Date.now(), clientScore: bananas, gameMode: 'hilo_guess', betAmount: 0, guess: guess, activeGadgets })
             });
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
@@ -8143,6 +8159,9 @@
                 spinResultMsg = `Got ${data.result.handName}! Won ${formatNumber(winVal)} 🍌!`;
                 addLog('win', winVal - pokerOriginalBet, bananas, `Poker: ${data.result.handName}`);
                 playSound('win');
+                if (["FULL HOUSE", "FOUR OF A KIND", "STRAIGHT FLUSH", "ROYAL FLUSH"].includes(data.result.handName)) {
+                    unlockTitle('card_shark');
+                }
                 triggerQuestProgress('poker_win', 1, { rank: data.result.handName });
                 triggerQuestProgress('win_amount', winVal);
                 triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
@@ -8261,7 +8280,7 @@
         }
     }
     
-    function handleCrash(crashPoint) {
+    async function handleCrash(crashPoint) {
         crashState = 'crashed';
         isPlaying = false;
         if (crashAnimationFrame) cancelAnimationFrame(crashAnimationFrame);
@@ -8283,7 +8302,41 @@
         const translateStr = translateMatch ? translateMatch[0] : "translate(0px, 0px)";
         elRocket.style.transform = `${translateStr} rotate(180deg) scale(1.5)`;
         
-        spinResultMsg = processLoss(betAmount, betAmount, `Crashed at ${crashPoint.toFixed(2)}x! Lost ${formatNumber(betAmount)} 🍌`, crashResultData);
+        winStreak = 0;
+        
+        try {
+            const response = await fetch(API_BASE + '/api/play', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ 
+                    taxPenalty: activeBoosts.tax_penalty > Date.now(), 
+                    clientScore: bananas, 
+                    gameMode: 'crash_loss', 
+                    betAmount: betAmount, 
+                    activeGadgets 
+                })
+            });
+            const data = await response.json();
+            if (data && data.success) {
+                if (data.winStreak !== undefined) winStreak = data.winStreak;
+                if (data.result && data.result.failsafeActivated) {
+                    isInternalUpdate = true;
+                    updateBananas(Number(data.newBalance));
+                    expectedDbBananas = Number(data.newBalance);
+                    isInternalUpdate = false;
+                    showNotification("🛡️ Failsafe Saved Your Bananas!", "success");
+                }
+                spinResultMsg = processLoss(betAmount, betAmount, `Crashed at ${crashPoint.toFixed(2)}x! Lost ${formatNumber(betAmount)} 🍌`, data.result);
+            } else {
+                spinResultMsg = processLoss(betAmount, betAmount, `Crashed at ${crashPoint.toFixed(2)}x! Lost ${formatNumber(betAmount)} 🍌`, crashResultData);
+            }
+        } catch (e) {
+            spinResultMsg = processLoss(betAmount, betAmount, `Crashed at ${crashPoint.toFixed(2)}x! Lost ${formatNumber(betAmount)} 🍌`, crashResultData);
+        }
+
         addLog('loss', betAmount, bananas, `Crash: ${crashPoint.toFixed(2)}x`);
         
         if (pendingSync) syncData(bananas, trees);
@@ -8314,7 +8367,14 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ taxPenalty: activeBoosts.tax_penalty > Date.now(), clientScore: bananas, gameMode: 'crash_cashout', multiplier: savedMultiplier.toFixed(2), betAmount: 0 })
+                body: JSON.stringify({ 
+                    taxPenalty: activeBoosts.tax_penalty > Date.now(), 
+                    clientScore: bananas, 
+                    gameMode: 'crash_cashout', 
+                    multiplier: savedMultiplier.toFixed(2), 
+                    betAmount: 0,
+                    activeGadgets
+                })
             });
             const data = await response.json();
             
@@ -8348,6 +8408,9 @@
                     spinResultMsg = `Cashed out at ${savedMultiplier.toFixed(2)}x! Won ${formatNumber(winAmount)} 🍌`;
                     addLog('win', winAmount, bananas, `Crash Cashout: ${savedMultiplier.toFixed(2)}x`);
                     elStatus.innerText = "SUCCESS!";
+                    if (savedMultiplier >= 10.0) {
+                        unlockTitle('rocket_rider');
+                    }
                     triggerQuestProgress('crash_cashout', 1, { mult: savedMultiplier });
                     triggerQuestProgress('win_amount', winAmount);
                     triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
@@ -8620,6 +8683,13 @@
                     banner.innerText = `💥 BOOM! You hit a mine! Lost ${formatNumber(betAmount)} 🍌`;
                     banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-red-950 text-red-300 border border-red-600 shadow-lg shadow-red-900/50";
                 }
+                if (data.newBalance !== undefined && data.result && data.result.failsafeActivated) {
+                    isInternalUpdate = true;
+                    updateBananas(Number(data.newBalance));
+                    expectedDbBananas = Number(data.newBalance);
+                    isInternalUpdate = false;
+                    showNotification("🛡️ Failsafe Saved Your Bananas!", "success");
+                }
                 spinResultMsg = processLoss(betAmount, betAmount, `Hit a mine! Lost ${formatNumber(betAmount)} 🍌`, data.result);
                 addLog('loss', betAmount, bananas, `Mines: Detonated (${minesCount} mines)`);
                 updateMinesMultipliers();
@@ -8657,6 +8727,9 @@
                 isInternalUpdate = false;
                 if (data.winStreak !== undefined) winStreak = data.winStreak;
                 handleMegaBetEffect(data);
+                if (minesRevealed.length >= 5) {
+                    unlockTitle('mine_sweeper');
+                }
                 if (banner) {
                     banner.innerText = `🏆 BOARD CLEARED! Won ${formatNumber(winAmount)} 🍌 (${minesMultiplier.toFixed(2)}x)!`;
                     banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-emerald-950 text-emerald-300 border-2 border-emerald-400 shadow-xl shadow-emerald-950";
@@ -8718,6 +8791,10 @@
 
             if (data.winStreak !== undefined) winStreak = data.winStreak;
             handleMegaBetEffect(data);
+
+            if (minesRevealed.length >= 5) {
+                unlockTitle('mine_sweeper');
+            }
 
             renderMinesGrid(data.result.mines);
             updateMinesMultipliers();
@@ -9420,8 +9497,24 @@
             }
 
             isPlaying = false;
-            if (ball.serverResponse && ball.serverResponse.newBalance !== undefined) {
-                expectedDbBananas = Number(ball.serverResponse.newBalance);
+            if (ball.serverResponse) {
+                if (ball.serverResponse.winStreak !== undefined) {
+                    winStreak = ball.serverResponse.winStreak;
+                }
+                if (ball.serverResponse.newBalance !== undefined) {
+                    isInternalUpdate = true;
+                    updateBananas(Number(ball.serverResponse.newBalance));
+                    expectedDbBananas = Number(ball.serverResponse.newBalance);
+                    isInternalUpdate = false;
+                }
+                if (ball.serverResponse.result && ball.serverResponse.result.failsafeActivated) {
+                    showNotification("🛡️ Failsafe Saved Your Bananas!", "success");
+                    playSound('win');
+                }
+                if (ball.serverResponse.result && ball.serverResponse.result.streakMultiplierApplied) {
+                    showNotification("🔥 Streak 2x Multiplier Applied!", "success");
+                }
+                handleMegaBetEffect(ball.serverResponse);
             }
             if (pendingSync) {
                 pendingSync = false;
@@ -9998,6 +10091,10 @@
         }
 
         // Apply winnings to player balance
+        if (userPlacement === 1) {
+            unlockTitle('derby_jockey');
+        }
+
         if (winAmount > 0n) {
             if (result.serverNewBalance !== null && !isNaN(result.serverNewBalance)) {
                 isInternalUpdate = true;
@@ -10008,13 +10105,29 @@
                 updateBananas(bananas + Number(winAmount));
                 isInternalUpdate = false;
             }
-            triggerQuestProgress('win', Number(winAmount));
-            addLog('win', Number(winAmount), bananas, `Horse Racing: #${HORSE_ROSTER[selectedHorseIndex].number} placed ${userPlacement}${getOrdinalSuffix(userPlacement)} (${multiplier}x)`);
-            playSound('win');
-            showNotification(`🏆 Victory! #${HORSE_ROSTER[selectedHorseIndex].number} ${HORSE_ROSTER[selectedHorseIndex].name} finished ${userPlacement}${getOrdinalSuffix(userPlacement)} (+${formatNumber(Number(winAmount))} 🍌)!`, 'success');
+            if (multiplier > 0) {
+                triggerQuestProgress('win', Number(winAmount));
+                triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+                addLog('win', Number(winAmount), bananas, `Horse Racing: #${HORSE_ROSTER[selectedHorseIndex].number} placed ${userPlacement}${getOrdinalSuffix(userPlacement)} (${multiplier}x)`);
+                playSound('win');
+                showNotification(`🏆 Victory! #${HORSE_ROSTER[selectedHorseIndex].number} ${HORSE_ROSTER[selectedHorseIndex].name} finished ${userPlacement}${getOrdinalSuffix(userPlacement)} (+${formatNumber(Number(winAmount))} 🍌)!`, 'success');
+            } else {
+                // Failsafe activated on a lost race!
+                playSound('win');
+                showNotification(`🛡️ Failsafe Saved Your Bananas! (+${formatNumber(Number(winAmount))} 🍌)`, 'success');
+                spinResultMsg = `Failsafe: Saved ${formatNumber(bet)} bananas!`;
+            }
         } else {
             playSound('loss');
+            spinResultMsg = processLoss(bet, bet, `Horse #${HORSE_ROSTER[selectedHorseIndex].number} placed ${userPlacement}${getOrdinalSuffix(userPlacement)}. Bet lost.`);
+            addLog('loss', bet, bananas, `Horse Racing: #${HORSE_ROSTER[selectedHorseIndex].number} lost`);
+            if (result.serverNewBalance !== null && !isNaN(result.serverNewBalance)) {
+                isInternalUpdate = true;
+                updateBananas(result.serverNewBalance);
+                isInternalUpdate = false;
+            }
         }
+        updateGameUI();
 
         // Update Podium UI
         const podium1st = document.getElementById('hr-podium-1st');
@@ -12924,6 +13037,7 @@
               playSound('win');
           }
           else if (reason === 'blackjack') { 
+              unlockTitle('card_shark');
               spinResultMsg = `Blackjack! Won ${formatNumber(profit)} profit!`; 
               addLog('win', profit, bananas, 'Blackjack: BLACKJACK');
               playSound('win');
@@ -12987,7 +13101,12 @@
       if (level >= 10) unlockTitle('apprentice_monkey');
       if (level >= 25) unlockTitle('the_dedicated');
       if (level >= 50) unlockTitle('veteran');
+      if (level >= 75) unlockTitle('grand_casino_monarch');
       if (level >= 100) unlockTitle('the_myth_the_legend');
+      if (winStreak >= 5) unlockTitle('hot_streak');
+      if (winStreak >= 10) unlockTitle('unstoppable');
+      if (bananas >= 100000000) unlockTitle('banana_baron');
+      if (typeof calculateTotalBankBigInt === 'function' && calculateTotalBankBigInt() >= 1000000000n) unlockTitle('vault_overlord');
 
       elDisplayPlayerName.innerText = playerName;
       elDisplayBananas.innerText = `${formatNumber(bananas)} 🍌`;
@@ -13020,11 +13139,23 @@
       const streakBadgeMobileHeader = document.getElementById('win-streak-badge-mobile');
       const streakCountMobileHeader = document.getElementById('win-streak-count-mobile');
       
-      if (winStreak > 0 && activeGadgets[3]) {
-          if (streakBadge) streakBadge.classList.remove('hidden');
-          if (streakCount) streakCount.innerText = winStreak;
-          if (streakBadgeMobileHeader) streakBadgeMobileHeader.classList.remove('hidden');
-          if (streakCountMobileHeader) streakCountMobileHeader.innerText = winStreak;
+      if (winStreak > 0) {
+          if (streakBadge) {
+              streakBadge.classList.remove('hidden');
+              if (activeGadgets[3]) {
+                  streakBadge.innerHTML = `STREAK: <span id="win-streak-count">${winStreak}</span> 🔥 ${winStreak >= 1 ? '<span class="text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded-full ml-1 font-black shadow-sm animate-bounce">2X MULTIPLIER</span>' : ''}`;
+              } else {
+                  streakBadge.innerHTML = `STREAK: <span id="win-streak-count">${winStreak}</span> 🔥`;
+              }
+          }
+          if (streakBadgeMobileHeader) {
+              streakBadgeMobileHeader.classList.remove('hidden');
+              if (activeGadgets[3] && winStreak >= 1) {
+                  streakBadgeMobileHeader.innerHTML = `🔥 ${winStreak} <span class="text-[7px] bg-red-600 text-white px-1 rounded font-black">2X</span>`;
+              } else {
+                  streakBadgeMobileHeader.innerHTML = `🔥 ${winStreak}`;
+              }
+          }
       } else {
           if (streakBadge) streakBadge.classList.add('hidden');
           if (streakBadgeMobileHeader) streakBadgeMobileHeader.classList.add('hidden');
@@ -15613,6 +15744,7 @@
         bcHeavenlyChips += chipsGained;
         bcPrestigeLevel = potentialTotal;
         bcAscensions++;
+        unlockTitle('banana_ascendant');
 
         // Reset run state
         bcScore = bcHeavenlyUpgrades.includes('h_starter') ? 2500 : 0;
