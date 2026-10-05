@@ -757,6 +757,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         let winAmount = 0n;
         let resultData: any = {};
         let megaBetOutcome: 'win' | 'taxes' | 'none' = 'none';
+        let isGameOutcomeResolved = true;
+        let effectiveBet = totalBet;
         
         let newInventory = user.inventory;
         if (typeof newInventory === 'string') {
@@ -766,8 +768,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
 
         if (gameMode === 'roulette') {
             const rand = Math.random();
-            const pRed = unlockedGadgets[1] ? 0.42 : 0.46;
-            const pBlack = unlockedGadgets[1] ? 0.42 : 0.46;
+            const pRed = activeGadgets[1] ? 0.42 : 0.46;
+            const pBlack = activeGadgets[1] ? 0.42 : 0.46;
             
             let winningColor;
             if (rand < pRed) winningColor = 'red';
@@ -936,10 +938,12 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             activeCrashGames.set(user.id, { betAmount: totalBet, crashPoint });
             winAmount = 0n;
             resultData.crashPoint = crashPoint;
+            isGameOutcomeResolved = false;
         } else if (gameMode === 'crash_cashout') {
             const activeGame = activeCrashGames.get(user.id);
             if (!activeGame) return res.status(400).json({ error: "No active crash game" });
             activeCrashGames.delete(user.id);
+            effectiveBet = activeGame.betAmount;
             
             const requestedMultiplier = Number(req.body.multiplier);
             if (requestedMultiplier <= activeGame.crashPoint) {
@@ -951,6 +955,16 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 resultData.status = 'crash';
             }
             totalBet = 0n; // Bet was already deducted in crash_start
+            isGameOutcomeResolved = true;
+        } else if (gameMode === 'crash_loss') {
+            const activeGame = activeCrashGames.get(user.id);
+            const originalBet = activeGame ? activeGame.betAmount : BigInt(req.body.betAmount || 0);
+            if (activeGame) activeCrashGames.delete(user.id);
+            effectiveBet = originalBet;
+            winAmount = 0n;
+            resultData = { status: 'crash' };
+            totalBet = 0n;
+            isGameOutcomeResolved = true;
         } else if (gameMode === 'hilo_start') {
             const ranks = [
                 { r: '2', v: 2 }, { r: '3', v: 3 }, { r: '4', v: 4 }, { r: '5', v: 5 },
@@ -986,10 +1000,12 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             activeHiloGames.set(user.id, { betAmount: totalBet, firstCard: cardObj });
             winAmount = 0n;
             resultData.firstCard = cardObj;
+            isGameOutcomeResolved = false;
         } else if (gameMode === 'hilo_guess') {
             const activeGame = activeHiloGames.get(user.id);
             if (!activeGame) return res.status(400).json({ error: "No active hilo game" });
             activeHiloGames.delete(user.id);
+            effectiveBet = activeGame.betAmount;
             
             const guess = req.body.guess; // 'higher' or 'lower'
             const ranks = [
@@ -1023,6 +1039,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             resultData.winAmount = winAmount.toString();
             resultData.secondCard = cardObj;
             totalBet = 0n; // Bet was already deducted
+            isGameOutcomeResolved = true;
         } else if (gameMode === 'mines_start') {
             const rawMines = Number(req.body.mineCount) || 3;
             const mineCount = Math.max(1, Math.min(24, rawMines));
@@ -1054,6 +1071,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 sonarCooldownLeft,
                 sonarEligible: mineCount <= 15 && sonarCooldownLeft === 0
             };
+            isGameOutcomeResolved = false;
         } else if (gameMode === 'mines_pick') {
             const activeGame = activeMinesGames.get(user.id);
             if (!activeGame) return res.status(400).json({ error: "No active mines game" });
@@ -1089,7 +1107,9 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
 
             if (activeGame.mines.includes(tileIndex)) {
                 // Hit a mine!
+                const originalBet = activeGame.betAmount;
                 activeMinesGames.delete(user.id);
+                effectiveBet = originalBet;
                 winAmount = 0n;
                 resultData = {
                     status: 'bomb',
@@ -1101,6 +1121,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                     sonarCooldownLeft: Math.max(0, 60000 - (Date.now() - (userSonarCooldowns.get(user.id) || 0)))
                 };
                 totalBet = 0n; // Bet was already deducted at start
+                isGameOutcomeResolved = true;
             } else {
                 // Safe tile!
                 activeGame.revealed.push(tileIndex);
@@ -1127,7 +1148,9 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 const isCleared = activeGame.revealed.length >= safeTiles;
                 const cooldownLeft = sonarTriggered ? 60000 : Math.max(0, 60000 - (Date.now() - (userSonarCooldowns.get(user.id) || 0)));
                 if (isCleared) {
-                    winAmount = BigInt(Math.round(Number(activeGame.betAmount) * mult));
+                    const originalBet = activeGame.betAmount;
+                    effectiveBet = originalBet;
+                    winAmount = BigInt(Math.round(Number(originalBet) * mult));
                     activeMinesGames.delete(user.id);
                     resultData = {
                         status: 'cleared',
@@ -1139,6 +1162,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                         sonarProtected: sonarTriggered,
                         sonarCooldownLeft: cooldownLeft
                     };
+                    totalBet = 0n;
+                    isGameOutcomeResolved = true;
                 } else {
                     winAmount = 0n;
                     resultData = {
@@ -1151,16 +1176,19 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                         sonarProtected: sonarTriggered,
                         sonarCooldownLeft: cooldownLeft
                     };
+                    totalBet = 0n;
+                    isGameOutcomeResolved = false;
                 }
-                totalBet = 0n;
             }
         } else if (gameMode === 'mines_cashout') {
             const activeGame = activeMinesGames.get(user.id);
             if (!activeGame) return res.status(400).json({ error: "No active mines game" });
             if (activeGame.revealed.length === 0) return res.status(400).json({ error: "Cannot cashout without uncovering a tile" });
             
+            const originalBet = activeGame.betAmount;
             activeMinesGames.delete(user.id);
-            winAmount = BigInt(Math.round(Number(activeGame.betAmount) * activeGame.currentMultiplier));
+            effectiveBet = originalBet;
+            winAmount = BigInt(Math.round(Number(originalBet) * activeGame.currentMultiplier));
             resultData = {
                 status: 'cashout',
                 mines: activeGame.mines,
@@ -1169,6 +1197,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 winAmount: winAmount.toString()
             };
             totalBet = 0n;
+            isGameOutcomeResolved = true;
         } else if (gameMode === 'plinko') {
             const rawRows = Number(req.body.rows) || 12;
             const rows = [8, 10, 12, 14, 16].includes(rawRows) ? rawRows : 12;
@@ -1352,40 +1381,46 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         }
         resultData.megaBet = megaBetOutcome;
 
-        // Update balance
+        // Update balance and streak
         let isWin = false;
         let isPush = false;
         
         if (gameMode !== 'cases') {
-            isWin = winAmount > totalBet;
-            isPush = winAmount === totalBet;
-            
-            // Failsafe Gadget (Index 0)
-            if (!isWin && !isPush && totalBet >= 100n && activeGadgets[0]) {
-                if (Math.random() < 0.25) {
-                    winAmount = totalBet;
-                    resultData.failsafeActivated = true;
+            if (isGameOutcomeResolved) {
+                isWin = winAmount > effectiveBet;
+                isPush = (winAmount === effectiveBet && effectiveBet > 0n);
+                
+                // Failsafe Gadget (Index 0)
+                if (!isWin && !isPush && effectiveBet >= 100n && activeGadgets[0]) {
+                    if (Math.random() < 0.25) {
+                        winAmount = effectiveBet;
+                        resultData.failsafeActivated = true;
+                    }
                 }
-            }
-            
-            // Banana Streak Gadget (Multiplier)
-            // User: "when you have a 1+ win streak (so when you have won 2 times in a row) ... get a 2x multiplier"
-            // Translation: If winStreak >= 1 (they have won at least once before), double the win.
-            if (activeGadgets[3] && winStreak >= 1 && isWin) {
-                winAmount = winAmount * 2n;
-            }
-            
-            // Update streak counter
-            if (isWin) {
-                winStreak++;
-            } else if (!isPush) {
-                winStreak = 0;
+                
+                // Banana Streak Gadget (Multiplier)
+                // User: "when you have a 1+ win streak (so when you have won 2 times in a row) ... get a 2x multiplier"
+                // Translation: If winStreak >= 1 (they have won at least once before), double the win.
+                if (activeGadgets[3] && winStreak >= 1 && isWin) {
+                    winAmount = winAmount * 2n;
+                    resultData.streakMultiplierApplied = true;
+                }
+                
+                // Update streak counter
+                if (isWin) {
+                    winStreak++;
+                } else if (!isPush) {
+                    winStreak = 0;
+                }
             }
         }
 
-        if (taxPenalty && winAmount > totalBet && gameMode !== 'cases') {
-            const profit = winAmount - totalBet;
-            winAmount = totalBet + (profit / 2n);
+        resultData.winAmount = winAmount.toString();
+        resultData.winStreak = winStreak;
+
+        if (taxPenalty && winAmount > effectiveBet && gameMode !== 'cases') {
+            const profit = winAmount - effectiveBet;
+            winAmount = effectiveBet + (profit / 2n);
         }
 
         const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
