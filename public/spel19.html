@@ -3641,7 +3641,45 @@
     let isInitialSyncing = true; // Block syncs until server state is fetched or confirmed not logged in
 
     function getXpForLevel(l) {
-        return Math.floor(100 * Math.pow(1.25, l - 1));
+        if (l <= 1) return 100;
+        // Balanced progressive curve: accessible progression at all levels without runaway exponential scaling
+        return Math.floor(100 + (l - 1) * 80 + Math.pow(l - 1, 1.8) * 25);
+    }
+
+    function awardBettingXp(betAmount = 0, isWin = false) {
+        const isBoosted = activeBoosts && activeBoosts.xp > Date.now();
+        const boostMultiplier = isBoosted ? 2 : 1;
+
+        // Base XP scales meaningfully with player level so higher levels get substantial XP
+        const baseLevelXp = 50 + (level * 20) + (level >= 25 ? (level - 25) * 10 : 0) + (level >= 50 ? (level - 50) * 10 : 0);
+        
+        // Bet size bonus: rewarding higher stakes bets
+        let betBonus = 0;
+        const betNum = Number(betAmount || 0);
+        if (betNum > 0) {
+            betBonus = Math.floor(Math.min(level * 35 + 500, Math.sqrt(betNum) * 2));
+        }
+        
+        const winBonus = isWin ? Math.floor(baseLevelXp * 0.5) : 0;
+        const totalXpGain = Math.floor((baseLevelXp + betBonus + winBonus) * boostMultiplier);
+        
+        isInternalUpdate = true;
+        updateXp(xp + totalXpGain);
+        let levelsGained = 0;
+        while (xp >= getXpForLevel(level)) {
+            updateXp(xp - getXpForLevel(level));
+            level++;
+            levelsGained++;
+        }
+        isInternalUpdate = false;
+
+        if (levelsGained > 0) {
+            playSound('win');
+            showNotification(`🎉 LEVEL UP! You reached Level ${level}!`, 'success');
+            updateGameUI();
+            syncData(bananas, trees);
+        }
+        return totalXpGain;
     }
 
     function updateXp(newVal) {
@@ -4685,6 +4723,7 @@
                 royalXP, royalClaimed
             }));
             localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+            if (typeof loadBankStorage === 'function') loadBankStorage();
             updateGameUI();
           }
         }
@@ -4766,6 +4805,7 @@
           unlockedTitles, equippedTitle, inventory, shopStock, shopPurchased, shopRefreshTime, activeBoosts,
           theme: Number(equippedTheme), equippedTheme: Number(equippedTheme),
           unlockedThemes, unlocked_themes: unlockedThemes,
+          bank: (typeof userBankData !== 'undefined' ? userBankData : undefined),
           expectedDbBananas, expectedDbCoins,
           royalXP, royalClaimed
       };
@@ -4795,6 +4835,7 @@
                   active_gadgets: activeGadgets,
                   theme: Number(equippedTheme),
                   unlocked_themes: unlockedThemes,
+                  bank: (typeof userBankData !== 'undefined' ? userBankData : undefined),
                   expectedScore: String(expectedDbBananas),
                   expectedCoins: String(expectedDbCoins),
                   vladimir_quest_status: typeof vladimirQuestStatus !== "undefined" ? vladimirQuestStatus : 0
@@ -6070,11 +6111,13 @@
           unlockedTitles, equippedTitle, inventory, shopStock, shopPurchased, shopRefreshTime, activeBoosts,
           theme: Number(equippedTheme), equippedTheme: Number(equippedTheme),
           unlockedThemes, unlocked_themes: unlockedThemes,
+          bank: (typeof userBankData !== 'undefined' ? userBankData : undefined),
           expectedDbBananas, expectedDbCoins,
           royalXP, royalClaimed
       };
       localStorage.setItem('bananaCasinoSave', JSON.stringify(saveData));
       localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+      if (typeof loadBankStorage === 'function') loadBankStorage();
       
       setView('game');
       renderTreeGrid();
@@ -7428,8 +7471,65 @@
             `;
         });
 
+        if (activeQuests.length > 0 && activeQuests.every(q => q.completed)) {
+            const canAfford = coins >= 50;
+            html += `
+            <div class="mt-2.5 bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-emerald-950/90 border-2 border-yellow-400 rounded-2xl p-3 shadow-[0_0_20px_rgba(250,204,21,0.35)] flex flex-col gap-2 text-center animate-pulse">
+              <div class="flex items-center justify-center gap-2">
+                <span class="text-2xl">✨</span>
+                <div>
+                  <h4 class="text-xs font-black text-yellow-300 uppercase tracking-tight">All Quests Complete!</h4>
+                  <p class="text-[9px] text-emerald-200/90 leading-tight">Get 5 brand new quests right now for 50 coins!</p>
+                </div>
+              </div>
+              <button onclick="buyNewQuestsForCoins()" class="w-full py-2.5 px-3 ${canAfford ? 'bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-300 text-slate-950 shadow-[0_0_15px_rgba(250,204,21,0.5)]' : 'bg-slate-800 text-slate-400 opacity-60 cursor-not-allowed'} font-black text-xs uppercase tracking-wider rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span>🔄 Get New Quests</span>
+                <span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] font-mono ${canAfford ? 'text-white' : 'text-slate-400'}">50 🪙</span>
+              </button>
+              ${!canAfford ? `<div class="text-[9px] text-red-400 font-bold">Need 50 coins (You have ${formatNumber(coins)} 🪙)</div>` : ''}
+            </div>
+            `;
+        }
+
         container.innerHTML = html;
     }
+
+    function buyNewQuestsForCoins() {
+        if (!activeQuests || activeQuests.length === 0 || !activeQuests.every(q => q.completed)) {
+            showNotification("You must complete all your active quests first!", "warning");
+            return;
+        }
+
+        if (coins < 50) {
+            playSound('loss');
+            showNotification(`You need 50 coins to get new quests! You only have ${formatNumber(coins)} 🪙.`, "error");
+            return;
+        }
+
+        // Auto-claim any unclaimed rewards so players don't miss their levels
+        activeQuests.forEach((q, idx) => {
+            if (q.completed && !q.claimed) {
+                q.claimed = true;
+                const wholeLevels = q.reward;
+                level += wholeLevels;
+            }
+        });
+
+        isInternalUpdate = true;
+        updateCoins(coins - 50);
+        isInternalUpdate = false;
+
+        generateNewHourlyQuests();
+        playSound('win');
+        showNotification("🎉 Purchased 5 fresh new quests for 50 🪙! Good luck!", "success");
+
+        updateGameUI();
+        syncData(bananas, trees);
+        saveQuestsToStorage();
+        updateQuestsBadge();
+        renderQuestsUI();
+    }
+    window.buyNewQuestsForCoins = buyNewQuestsForCoins;
 
     function initQuestSystem() {
         loadQuestsFromStorage();
@@ -7621,15 +7721,8 @@
         if (finalAmount > 0) {
             isInternalUpdate = true;
             updateBananas(bananas + finalAmount);
-            
-            const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
-            const xpGain = baseGain + (level * 5);
-            updateXp(xp + xpGain);
-            while (xp >= getXpForLevel(level)) {
-                updateXp(xp - getXpForLevel(level));
-                level++;
-            }
             isInternalUpdate = false;
+            awardBettingXp(finalAmount, true);
             winStreak++;
             playSound('win');
         } else if (megaBetEligible && amount > 0) {
@@ -8039,17 +8132,11 @@
                 triggerQuestProgress('bets_placed', 1);
                 
                 isInternalUpdate = true;
-                const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
-            const xpGain = baseGain + (level * 5);
-                updateXp(xp + xpGain);
-                while (xp >= getXpForLevel(level)) {
-                    updateXp(xp - getXpForLevel(level));
-                    level++;
-                }
                 isInternalUpdate = false;
-                
+                awardBettingXp(winVal, true);
                 playSound('win');
             } else {
+                awardBettingXp(betAmount, false);
                 spinResultMsg = processLoss(betAmount, betAmount, `Wrong! Lost ${formatNumber(betAmount)} 🍌.`, data.result);
                 addLog('loss', betAmount, bananas, `Hi-Lo: Loss`);
                 triggerQuestProgress('bets_placed', 1);
@@ -8159,6 +8246,7 @@
                 spinResultMsg = `Got ${data.result.handName}! Won ${formatNumber(winVal)} 🍌!`;
                 addLog('win', winVal - pokerOriginalBet, bananas, `Poker: ${data.result.handName}`);
                 playSound('win');
+                awardBettingXp(winVal, true);
                 if (["FULL HOUSE", "FOUR OF A KIND", "STRAIGHT FLUSH", "ROYAL FLUSH"].includes(data.result.handName)) {
                     unlockTitle('card_shark');
                 }
@@ -8166,6 +8254,7 @@
                 triggerQuestProgress('win_amount', winVal);
                 triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
             } else {
+                awardBettingXp(pokerOriginalBet, false);
                 if (pokerOriginalBet > 100000) unlockTitle('unlucky');
                 spinResultMsg = processLoss(pokerOriginalBet, pokerOriginalBet, `No winning hand. Lost ${formatNumber(pokerOriginalBet)} 🍌.`, data.result);
                 addLog('loss', pokerOriginalBet, bananas, `Poker: Loss`);
@@ -8418,14 +8507,8 @@
                 
                 // XP Gain
                 isInternalUpdate = true;
-                const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
-            const xpGain = baseGain + (level * 5);
-                updateXp(xp + xpGain);
-                while (xp >= getXpForLevel(level)) {
-                    updateXp(xp - getXpForLevel(level));
-                    level++;
-                }
                 isInternalUpdate = false;
+                awardBettingXp(winAmount, true);
             } else {
                 // Client thought it was a win but server said it crashed already (latency or cheating)
                 handleCrash(savedMultiplier); // visually just crash it there
@@ -8691,6 +8774,7 @@
                     showNotification("🛡️ Failsafe Saved Your Bananas!", "success");
                 }
                 spinResultMsg = processLoss(betAmount, betAmount, `Hit a mine! Lost ${formatNumber(betAmount)} 🍌`, data.result);
+                awardBettingXp(betAmount, false);
                 addLog('loss', betAmount, bananas, `Mines: Detonated (${minesCount} mines)`);
                 updateMinesMultipliers();
                 updateGameUI();
@@ -8727,6 +8811,7 @@
                 isInternalUpdate = false;
                 if (data.winStreak !== undefined) winStreak = data.winStreak;
                 handleMegaBetEffect(data);
+                awardBettingXp(winAmount, true);
                 if (minesRevealed.length >= 5) {
                     unlockTitle('mine_sweeper');
                 }
@@ -8791,6 +8876,7 @@
 
             if (data.winStreak !== undefined) winStreak = data.winStreak;
             handleMegaBetEffect(data);
+            awardBettingXp(winAmount, true);
 
             if (minesRevealed.length >= 5) {
                 unlockTitle('mine_sweeper');
@@ -9446,14 +9532,10 @@
         if (win > 0) {
             isInternalUpdate = true;
             updateBananas(bananas + win);
-            const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
-            const xpGain = baseGain + (level * 5);
-            updateXp(xp + xpGain);
-            while (xp >= getXpForLevel(level)) {
-                updateXp(xp - getXpForLevel(level));
-                level++;
-            }
             isInternalUpdate = false;
+            awardBettingXp(win, true);
+        } else {
+            awardBettingXp(cost, false);
         }
 
         // Master title check
@@ -10106,6 +10188,7 @@
                 isInternalUpdate = false;
             }
             if (multiplier > 0) {
+                awardBettingXp(Number(winAmount), true);
                 triggerQuestProgress('win', Number(winAmount));
                 triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
                 addLog('win', Number(winAmount), bananas, `Horse Racing: #${HORSE_ROSTER[selectedHorseIndex].number} placed ${userPlacement}${getOrdinalSuffix(userPlacement)} (${multiplier}x)`);
@@ -10113,12 +10196,14 @@
                 showNotification(`🏆 Victory! #${HORSE_ROSTER[selectedHorseIndex].number} ${HORSE_ROSTER[selectedHorseIndex].name} finished ${userPlacement}${getOrdinalSuffix(userPlacement)} (+${formatNumber(Number(winAmount))} 🍌)!`, 'success');
             } else {
                 // Failsafe activated on a lost race!
+                awardBettingXp(bet, false);
                 playSound('win');
                 showNotification(`🛡️ Failsafe Saved Your Bananas! (+${formatNumber(Number(winAmount))} 🍌)`, 'success');
                 spinResultMsg = `Failsafe: Saved ${formatNumber(bet)} bananas!`;
             }
         } else {
             playSound('loss');
+            awardBettingXp(bet, false);
             spinResultMsg = processLoss(bet, bet, `Horse #${HORSE_ROSTER[selectedHorseIndex].number} placed ${userPlacement}${getOrdinalSuffix(userPlacement)}. Bet lost.`);
             addLog('loss', bet, bananas, `Horse Racing: #${HORSE_ROSTER[selectedHorseIndex].number} lost`);
             if (result.serverNewBalance !== null && !isNaN(result.serverNewBalance)) {
@@ -11515,17 +11600,12 @@
                   triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
                   
                   // XP Gain
-                  const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
-            const xpGain = baseGain + (level * 5);
-                  updateXp(xp + xpGain);
-                  while (xp >= getXpForLevel(level)) {
-                      updateXp(xp - getXpForLevel(level));
-                      level++;
-                  }
+                  awardBettingXp(winVal, true);
               }
               playSound('win');
             } else {
               consecutiveGreens = 0;
+              awardBettingXp(betAmount, false);
               if (betAmount > 100000) unlockTitle('unlucky');
               spinResultMsg = processLoss(betAmount, betAmount, `Landed on ${winningColor.toUpperCase()}! Lost ${formatNumber(betAmount)} 🍌.`, data.result);
               addLog('loss', betAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
@@ -11738,16 +11818,11 @@
                   triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
                   
                   // XP Gain
-                  const baseGain = activeBoosts.xp > Date.now() ? 50 : 25;
-            const xpGain = baseGain + (level * 5);
-                  updateXp(xp + xpGain);
-                  while (xp >= getXpForLevel(level)) {
-                      updateXp(xp - getXpForLevel(level));
-                      level++;
-                  }
+                  awardBettingXp(winVal, true);
               }
               playSound('win');
           } else {
+              awardBettingXp(actualBet, false);
               spinResultMsg = processLoss(actualBet, actualBet, `No luck this time. Lost ${formatNumber(actualBet)} 🍌.`, data.result);
               addLog('loss', actualBet, bananas, 'Slots Loss');
           }
@@ -12424,17 +12499,73 @@
     }
 
     function loadBankStorage() {
-        const storageKey = `banana_bank_${userId || 'default'}`;
-        const saved = localStorage.getItem(storageKey);
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                for (const d of BANK_DENOMINATIONS) {
-                    if (parsed[d.key] !== undefined) userBankData[d.key] = Number(parsed[d.key]);
-                }
-            } catch (e) {
-                console.warn("[BANK] Failed to parse local bank storage:", e);
+        // Multi-key search across all historical keys to prevent any reset
+        const possibleKeys = [
+            `banana_bank_${userId || ''}`,
+            `banana_bank_${playerName || ''}`,
+            'banana_bank_default',
+            'banana_bank_permanent_vault',
+            'banana_bank_backup'
+        ];
+        
+        let foundSaved = null;
+        let highestSum = 0n;
+
+        for (const k of possibleKeys) {
+            if (!k || k === 'banana_bank_') continue;
+            const item = localStorage.getItem(k);
+            if (item) {
+                try {
+                    const parsed = JSON.parse(item);
+                    let sum = 0n;
+                    for (const d of BANK_DENOMINATIONS) {
+                        if (parsed[d.key]) sum += BigInt(parsed[d.key]) * d.mult;
+                    }
+                    if (sum > highestSum) {
+                        highestSum = sum;
+                        foundSaved = parsed;
+                    }
+                } catch(e) {}
             }
+        }
+
+        // Also check inventory._bank backup if available
+        if (inventory && inventory._bank) {
+            try {
+                let invSum = 0n;
+                for (const d of BANK_DENOMINATIONS) {
+                    if (inventory._bank[d.key]) invSum += BigInt(inventory._bank[d.key]) * d.mult;
+                }
+                if (invSum > highestSum) {
+                    highestSum = invSum;
+                    foundSaved = inventory._bank;
+                }
+            } catch(e) {}
+        }
+
+        // Also check bananaCasinoSave backup if available
+        try {
+            const casinoSaveRaw = localStorage.getItem('bananaCasinoSave');
+            if (casinoSaveRaw) {
+                const parsedSave = JSON.parse(casinoSaveRaw);
+                if (parsedSave && parsedSave.bank) {
+                    let saveSum = 0n;
+                    for (const d of BANK_DENOMINATIONS) {
+                        if (parsedSave.bank[d.key]) saveSum += BigInt(parsedSave.bank[d.key]) * d.mult;
+                    }
+                    if (saveSum > highestSum) {
+                        highestSum = saveSum;
+                        foundSaved = parsedSave.bank;
+                    }
+                }
+            }
+        } catch(e) {}
+
+        if (foundSaved && highestSum > 0n) {
+            for (const d of BANK_DENOMINATIONS) {
+                if (foundSaved[d.key] !== undefined) userBankData[d.key] = Number(foundSaved[d.key]);
+            }
+            saveBankStorage();
         }
         updateBankDisplays();
         
@@ -12443,13 +12574,30 @@
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.success && data.bank) {
-                        for (const d of BANK_DENOMINATIONS) {
-                            if (data.bank[d.key] !== undefined) {
-                                userBankData[d.key] = Number(data.bank[d.key]);
-                            }
+                        const serverTotal = data.total ? BigInt(data.total) : 0n;
+                        const localTotal = calculateTotalBankBigInt();
+
+                        // CRITICAL PROTECTION: Never overwrite a non-zero local balance with 0 from server after updates!
+                        if (serverTotal === 0n && localTotal > 0n) {
+                            console.warn("[BANK SHIELD] Server returned 0 but local bank has", localTotal.toString(), "bananas! Preserving local balance and syncing to server!");
+                            saveBankStorage();
+                            syncBankToServer();
+                            return;
                         }
-                        saveBankStorage();
-                        updateBankDisplays();
+
+                        // If server has more than local, update local
+                        if (serverTotal > localTotal) {
+                            for (const d of BANK_DENOMINATIONS) {
+                                if (data.bank[d.key] !== undefined) {
+                                    userBankData[d.key] = Number(data.bank[d.key]);
+                                }
+                            }
+                            saveBankStorage();
+                            updateBankDisplays();
+                        } else if (localTotal > serverTotal && localTotal > 0n) {
+                            // Local has more than server, sync up to server
+                            syncBankToServer();
+                        }
                     }
                 })
                 .catch(err => console.log("[BANK] Server fetch skipped or offline"));
@@ -12459,8 +12607,33 @@
     function saveBankStorage() {
         const storageKey = `banana_bank_${userId || 'default'}`;
         try {
-            localStorage.setItem(storageKey, JSON.stringify(userBankData));
+            const currentTotal = calculateTotalBankBigInt();
+            const json = JSON.stringify(userBankData);
+            localStorage.setItem(storageKey, json);
+            if (playerName) localStorage.setItem(`banana_bank_${playerName}`, json);
+            
+            // Only overwrite backup keys if current balance > 0 to shield against zero-overwriting
+            if (currentTotal > 0n) {
+                localStorage.setItem('banana_bank_backup', json);
+                localStorage.setItem('banana_bank_permanent_vault', json);
+                localStorage.setItem('banana_bank_vault_total', currentTotal.toString());
+                if (inventory && typeof inventory === 'object') {
+                    inventory._bank = { ...userBankData };
+                    localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+                }
+            }
         } catch (e) {}
+    }
+
+    function syncBankToServer() {
+        if (!userId) return;
+        const total = calculateTotalBankBigInt();
+        if (total <= 0n) return;
+        fetch('/api/bank/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, bank: userBankData })
+        }).catch(e => console.warn("[BANK SYNC] Failed to sync bank to server:", e));
     }
 
     function updateBankDisplays() {
@@ -13052,6 +13225,8 @@
               spinResultMsg = `Push! Returned bet.`; 
               addLog('push', 0, bananas, 'Blackjack: Push');
           } 
+
+          awardBettingXp(winVal > 0 ? winVal : betAmount, isBjWin);
 
       } catch (err) {
           console.error("Blackjack sync error:", err);
