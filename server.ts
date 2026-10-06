@@ -223,10 +223,10 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     const supabase = getSupabase();
     console.log(`[SAVE REQUEST] User: ${userId} (${name}), Score: ${score}, Coins: ${coins}, Expected: ${req.body.expectedScore}/${req.body.expectedCoins}`);
     
-    // 1. Fetch current state to check for conflicts
+    // 1. Fetch current state to check for conflicts and preserve bank
     const { data: current, error: fetchError } = await supabase
       .from('database')
-      .select('score, coins, unlocked_titles, updated_at')
+      .select('score, coins, unlocked_titles, inventory, updated_at')
       .eq('id', userId)
       .maybeSingle();
 
@@ -283,6 +283,67 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     }
     inventoryObj._theme = theme;
     inventoryObj._unlocked_themes = unlockedThemes;
+
+    // BANANA BANK PERMANENT SHIELD: Never reset to 0!
+    // Priority order for bank recovery:
+    // A. Incoming non-zero bank from request body
+    // B. Existing memory store entry
+    // C. Existing user's inventory._bank from database row
+    // D. Incoming inventory._bank object
+    let finalBankRow: any = null;
+    let finalBankTotal = 0n;
+
+    if (req.body.bank && typeof req.body.bank === 'object') {
+      const incomingTotal = calculateTotalFromBankRow(req.body.bank);
+      if (incomingTotal > finalBankTotal) {
+        finalBankTotal = incomingTotal;
+        finalBankRow = decomposeBigIntToBankRow(incomingTotal);
+      }
+    }
+
+    const existingMem = memoryBankStore.get(userId);
+    if (existingMem) {
+      const memTotal = calculateTotalFromBankRow(existingMem);
+      if (memTotal > finalBankTotal) {
+        finalBankTotal = memTotal;
+        finalBankRow = existingMem;
+      }
+    }
+
+    if (current && current.inventory) {
+      try {
+        const curInv = typeof current.inventory === 'string' ? JSON.parse(current.inventory) : current.inventory;
+        if (curInv && curInv._bank && typeof curInv._bank === 'object') {
+          const curInvTotal = calculateTotalFromBankRow(curInv._bank);
+          if (curInvTotal > finalBankTotal) {
+            finalBankTotal = curInvTotal;
+            finalBankRow = decomposeBigIntToBankRow(curInvTotal);
+          }
+        }
+      } catch {}
+    }
+
+    if (inventoryObj && inventoryObj._bank && typeof inventoryObj._bank === 'object') {
+      const objTotal = calculateTotalFromBankRow(inventoryObj._bank);
+      if (objTotal > finalBankTotal) {
+        finalBankTotal = objTotal;
+        finalBankRow = decomposeBigIntToBankRow(objTotal);
+      }
+    }
+
+    if (finalBankRow && finalBankTotal > 0n) {
+      inventoryObj._bank = finalBankRow;
+      memoryBankStore.set(userId, finalBankRow);
+      saveBankDiskStore(memoryBankStore);
+
+      // Async write to banana_bank table without blocking save response
+      supabase.from('banana_bank').upsert({
+        id: userId,
+        user_id: userId,
+        ...finalBankRow,
+        updated_at: new Date().toISOString()
+      }).then(() => {}).catch(() => {});
+    }
 
     const basePayload: any = {
       id: userId,
@@ -1672,8 +1733,104 @@ function decomposeBigIntToBankRow(total: bigint): Record<string, any> {
   return result;
 }
 
-// In-memory fallback if Supabase table is not yet migrated
-const memoryBankStore = new Map<string, Record<string, any>>();
+// Disk & memory fallback to guarantee Banana Bank balance survives server updates & restarts
+const BANK_STORAGE_FILE = path.join(__dirname, "banana_bank_store.json");
+
+function loadBankDiskStore(): Map<string, Record<string, any>> {
+  const map = new Map<string, Record<string, any>>();
+  try {
+    if (fs.existsSync(BANK_STORAGE_FILE)) {
+      const raw = fs.readFileSync(BANK_STORAGE_FILE, "utf-8");
+      const obj = JSON.parse(raw);
+      for (const [k, v] of Object.entries(obj)) {
+        if (v && typeof v === 'object') {
+          map.set(k, v as Record<string, any>);
+        }
+      }
+      console.log(`[BANK STORAGE] Loaded ${map.size} bank profiles from persistent disk storage.`);
+    }
+  } catch (e: any) {
+    console.warn("[BANK STORAGE] Failed to load disk bank storage:", e.message);
+  }
+  return map;
+}
+
+function saveBankDiskStore(store: Map<string, Record<string, any>>) {
+  try {
+    const obj: Record<string, any> = {};
+    for (const [k, v] of store.entries()) {
+      obj[k] = v;
+    }
+    fs.writeFileSync(BANK_STORAGE_FILE, JSON.stringify(obj, null, 2), "utf-8");
+  } catch (e: any) {
+    console.warn("[BANK STORAGE] Failed to save disk bank storage:", e.message);
+  }
+}
+
+const memoryBankStore = loadBankDiskStore();
+
+// Hydrate Banana Bank from database on startup to survive container updates & restarts
+async function hydrateMemoryBankStore() {
+  try {
+    const supabase = getSupabase();
+    console.log("[BANK HYDRATION] Pre-loading all persistent Banana Bank records from database...");
+
+    // 1. Try loading from banana_bank table
+    try {
+      const { data: bankRows, error: bankErr } = await supabase
+        .from('banana_bank')
+        .select('*');
+      if (!bankErr && Array.isArray(bankRows)) {
+        for (const row of bankRows) {
+          if (row.user_id) {
+            const total = calculateTotalFromBankRow(row);
+            if (total > 0n) {
+              const decomposed = decomposeBigIntToBankRow(total);
+              memoryBankStore.set(row.user_id, decomposed);
+            }
+          }
+        }
+      }
+    } catch (e: any) {
+      console.warn("[BANK HYDRATION] banana_bank table check:", e.message);
+    }
+
+    // 2. Load from database table's inventory column (_bank property)
+    try {
+      const { data: userRows, error: userErr } = await supabase
+        .from('database')
+        .select('id, inventory')
+        .not('inventory', 'is', null);
+      if (!userErr && Array.isArray(userRows)) {
+        for (const u of userRows) {
+          if (u.id && u.inventory) {
+            try {
+              const inv = typeof u.inventory === 'string' ? JSON.parse(u.inventory) : u.inventory;
+              if (inv && inv._bank && typeof inv._bank === 'object') {
+                const total = calculateTotalFromBankRow(inv._bank);
+                const currentMem = memoryBankStore.get(u.id);
+                const currentMemTotal = currentMem ? calculateTotalFromBankRow(currentMem) : 0n;
+                if (total > currentMemTotal) {
+                  const decomposed = decomposeBigIntToBankRow(total);
+                  memoryBankStore.set(u.id, decomposed);
+                }
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch (e: any) {
+      console.warn("[BANK HYDRATION] database inventory check:", e.message);
+    }
+
+    saveBankDiskStore(memoryBankStore);
+    console.log(`[BANK HYDRATION] Successfully hydrated ${memoryBankStore.size} active user bank profiles into memory & disk cache.`);
+  } catch (err: any) {
+    console.warn("[BANK HYDRATION NOTE]", err.message);
+  }
+}
+
+hydrateMemoryBankStore().catch(() => {});
 
 // Get Leaderboard (Combining in-game balance + Banana Bank balance!)
 app.get("/api/leaderboard", async (req, res) => {
@@ -2587,31 +2744,116 @@ app.get("/api/bank/:userId", async (req, res) => {
 
   try {
     const supabase = getSupabase();
-    const { data, error } = await supabase
-      .from('banana_bank')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+    let bankData: any = null;
+    let total = 0n;
 
-    if (error && error.code === '42P01') {
-      // Table doesn't exist yet in Supabase
-      const mem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
-      const total = calculateTotalFromBankRow(mem);
-      return res.json({ success: true, bank: mem, total: total.toString(), unmigrated: true });
+    // Check all sources and take the maximum balance to prevent any loss
+    // 1. Try fetching from banana_bank table if available
+    try {
+      const { data, error } = await supabase
+        .from('banana_bank')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!error && data) {
+        const t = calculateTotalFromBankRow(data);
+        if (t > total) {
+          bankData = data;
+          total = t;
+        }
+      }
+    } catch {}
+
+    // 2. Check disk/memory store
+    const mem = memoryBankStore.get(userId);
+    if (mem) {
+      const memTotal = calculateTotalFromBankRow(mem);
+      if (memTotal > total) {
+        bankData = mem;
+        total = memTotal;
+      }
     }
 
-    if (!data) {
-      const initial = decomposeBigIntToBankRow(0n);
-      return res.json({ success: true, bank: initial, total: "0" });
+    // 3. Check user's main profile in 'database' table (inventory._bank)
+    try {
+      const { data: userRow } = await supabase
+        .from('database')
+        .select('inventory')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (userRow && userRow.inventory) {
+        const inv = typeof userRow.inventory === 'string' ? JSON.parse(userRow.inventory) : userRow.inventory;
+        if (inv && inv._bank && typeof inv._bank === 'object') {
+          const invTotal = calculateTotalFromBankRow(inv._bank);
+          if (invTotal > total) {
+            bankData = decomposeBigIntToBankRow(invTotal);
+            total = invTotal;
+          }
+        }
+      }
+    } catch {}
+
+    if (!bankData || total === 0n) {
+      bankData = decomposeBigIntToBankRow(0n);
+      total = 0n;
+    } else {
+      bankData = decomposeBigIntToBankRow(total);
+      memoryBankStore.set(userId, bankData);
+      saveBankDiskStore(memoryBankStore);
     }
 
-    const total = calculateTotalFromBankRow(data);
-    res.json({ success: true, bank: data, total: total.toString() });
+    res.json({ success: true, bank: bankData, total: total.toString() });
   } catch (err: any) {
     console.warn("[BANK API] Fetch warning, using memory store:", err.message);
     const mem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
     const total = calculateTotalFromBankRow(mem);
     res.json({ success: true, bank: mem, total: total.toString() });
+  }
+});
+
+// POST /api/bank/sync (Allows client backup to restore/sync to server)
+app.post("/api/bank/sync", async (req, res) => {
+  const { userId, bank } = req.body;
+  if (!userId || !bank) return res.status(400).json({ error: "Missing userId or bank data" });
+
+  try {
+    const clientTotal = calculateTotalFromBankRow(bank);
+    const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
+    const serverTotal = calculateTotalFromBankRow(currentMem);
+
+    let finalTotal = serverTotal;
+    let finalRow = currentMem;
+
+    if (clientTotal > serverTotal) {
+      finalTotal = clientTotal;
+      finalRow = decomposeBigIntToBankRow(clientTotal);
+    }
+
+    memoryBankStore.set(userId, finalRow);
+    saveBankDiskStore(memoryBankStore);
+
+    // Save to user profile in database
+    try {
+      const supabase = getSupabase();
+      const { data: user } = await supabase.from('database').select('inventory').eq('id', userId).maybeSingle();
+      if (user) {
+        let inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : (user.inventory || {});
+        inv._bank = finalRow;
+        await supabase.from('database').update({ inventory: JSON.stringify(inv) }).eq('id', userId);
+      }
+      await supabase.from('banana_bank').upsert({
+        id: userId,
+        user_id: userId,
+        ...finalRow,
+        updated_at: new Date().toISOString()
+      });
+    } catch {}
+
+    res.json({ success: true, total: finalTotal.toString(), bank: finalRow });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -2635,7 +2877,7 @@ app.post("/api/bank/deposit", async (req, res) => {
     // 1. Fetch user to check current score
     const { data: user, error: userError } = await supabase
       .from('database')
-      .select('score')
+      .select('score, inventory')
       .eq('id', userId)
       .maybeSingle();
 
@@ -2644,60 +2886,75 @@ app.post("/api/bank/deposit", async (req, res) => {
     }
 
     // 2. Fetch current bank row
-    const { data: bankRow, error: bankError } = await supabase
-      .from('banana_bank')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (bankError && bankError.code === '42P01') {
-      // Fallback to memory store if table not migrated
-      const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
-      const currentTotal = calculateTotalFromBankRow(currentMem);
-      const newTotal = currentTotal + depAmount;
-      const newCols = decomposeBigIntToBankRow(newTotal);
-      memoryBankStore.set(userId, newCols);
-      return res.json({ 
-        success: true, 
-        total: newTotal.toString(), 
-        bank: newCols,
-        unmigrated: true 
-      });
+    let currentTotal = 0n;
+    const currentMem = memoryBankStore.get(userId);
+    if (currentMem) {
+      currentTotal = calculateTotalFromBankRow(currentMem);
     }
 
-    const currentTotal = calculateTotalFromBankRow(bankRow);
+    try {
+      const { data: bankRow } = await supabase
+        .from('banana_bank')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (bankRow) {
+        const tableTotal = calculateTotalFromBankRow(bankRow);
+        if (tableTotal > currentTotal) currentTotal = tableTotal;
+      }
+    } catch {}
+
+    // Check user.inventory._bank as well
+    if (user && user.inventory) {
+      try {
+        const inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : user.inventory;
+        if (inv && inv._bank) {
+          const invTotal = calculateTotalFromBankRow(inv._bank);
+          if (invTotal > currentTotal) currentTotal = invTotal;
+        }
+      } catch {}
+    }
+
     const newTotal = currentTotal + depAmount;
     const newCols = decomposeBigIntToBankRow(newTotal);
 
-    // 3. Upsert bank record
-    const upsertPayload = {
-      id: userId,
-      user_id: userId,
-      ...newCols,
-      updated_at: new Date().toISOString()
-    };
+    // Save to disk & memory store
+    memoryBankStore.set(userId, newCols);
+    saveBankDiskStore(memoryBankStore);
 
-    const { error: upsertErr } = await supabase
-      .from('banana_bank')
-      .upsert(upsertPayload);
+    // 3. Upsert bank record if table exists
+    try {
+      await supabase
+        .from('banana_bank')
+        .upsert({
+          id: userId,
+          user_id: userId,
+          ...newCols,
+          updated_at: new Date().toISOString()
+        });
+    } catch {}
 
-    if (upsertErr) throw upsertErr;
-
-    // 4. Update user score in database
+    // 4. Update user score and inventory._bank in database
     if (user) {
       const newScore = Math.max(0, Number(BigInt(user.score || 0) - depAmount));
-      await supabase.from('database').update({ score: newScore }).eq('id', userId);
+      let inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : (user.inventory || {});
+      inv._bank = newCols;
+      await supabase.from('database').update({ 
+        score: newScore,
+        inventory: JSON.stringify(inv)
+      }).eq('id', userId);
     }
 
     res.json({ success: true, total: newTotal.toString(), bank: newCols });
   } catch (err: any) {
     console.error("[BANK DEPOSIT ERROR]", err.message);
-    // Local memory fallback
     const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
     const currentTotal = calculateTotalFromBankRow(currentMem);
     const newTotal = currentTotal + depAmount;
     const newCols = decomposeBigIntToBankRow(newTotal);
     memoryBankStore.set(userId, newCols);
+    saveBankDiskStore(memoryBankStore);
     res.json({ success: true, total: newTotal.toString(), bank: newCols, fallback: true });
   }
 });
@@ -2727,31 +2984,43 @@ app.post("/api/bank/withdraw", async (req, res) => {
   try {
     const supabase = getSupabase();
     
-    // 1. Fetch current bank row
-    const { data: bankRow, error: bankError } = await supabase
-      .from('banana_bank')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (bankError && bankError.code === '42P01') {
-      const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
-      const currentTotal = calculateTotalFromBankRow(currentMem);
-      if (currentTotal < withAmount) {
-        return res.status(400).json({ error: "Insufficient bank balance!" });
-      }
-      const newTotal = currentTotal - withAmount;
-      const newCols = decomposeBigIntToBankRow(newTotal);
-      memoryBankStore.set(userId, newCols);
-      return res.json({ 
-        success: true, 
-        total: newTotal.toString(), 
-        bank: newCols,
-        unmigrated: true 
-      });
+    // 1. Fetch current bank balance
+    let currentTotal = 0n;
+    const currentMem = memoryBankStore.get(userId);
+    if (currentMem) {
+      currentTotal = calculateTotalFromBankRow(currentMem);
     }
 
-    const currentTotal = calculateTotalFromBankRow(bankRow);
+    try {
+      const { data: bankRow } = await supabase
+        .from('banana_bank')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (bankRow) {
+        const tableTotal = calculateTotalFromBankRow(bankRow);
+        if (tableTotal > currentTotal) currentTotal = tableTotal;
+      }
+    } catch {}
+
+    // Check user inventory backup
+    const { data: user } = await supabase
+      .from('database')
+      .select('score, inventory')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (user && user.inventory) {
+      try {
+        const inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : user.inventory;
+        if (inv && inv._bank) {
+          const invTotal = calculateTotalFromBankRow(inv._bank);
+          if (invTotal > currentTotal) currentTotal = invTotal;
+        }
+      } catch {}
+    }
+
     if (currentTotal < withAmount) {
       return res.status(400).json({ error: "Insufficient balance in Banana Bank vault!" });
     }
@@ -2759,30 +3028,31 @@ app.post("/api/bank/withdraw", async (req, res) => {
     const newTotal = currentTotal - withAmount;
     const newCols = decomposeBigIntToBankRow(newTotal);
 
-    // 2. Upsert bank record
-    const upsertPayload = {
-      id: userId,
-      user_id: userId,
-      ...newCols,
-      updated_at: new Date().toISOString()
-    };
+    // Save to disk & memory store
+    memoryBankStore.set(userId, newCols);
+    saveBankDiskStore(memoryBankStore);
 
-    const { error: upsertErr } = await supabase
-      .from('banana_bank')
-      .upsert(upsertPayload);
+    // 2. Upsert bank record if table exists
+    try {
+      await supabase
+        .from('banana_bank')
+        .upsert({
+          id: userId,
+          user_id: userId,
+          ...newCols,
+          updated_at: new Date().toISOString()
+        });
+    } catch {}
 
-    if (upsertErr) throw upsertErr;
-
-    // 3. Update user score in database
-    const { data: user } = await supabase
-      .from('database')
-      .select('score')
-      .eq('id', userId)
-      .maybeSingle();
-
+    // 3. Update user score and inventory._bank in database
     if (user) {
       const newScore = Number(BigInt(user.score || 0) + withAmount);
-      await supabase.from('database').update({ score: newScore }).eq('id', userId);
+      let inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : (user.inventory || {});
+      inv._bank = newCols;
+      await supabase.from('database').update({ 
+        score: newScore,
+        inventory: JSON.stringify(inv)
+      }).eq('id', userId);
     }
 
     res.json({ success: true, total: newTotal.toString(), bank: newCols });
@@ -2796,6 +3066,7 @@ app.post("/api/bank/withdraw", async (req, res) => {
     const newTotal = currentTotal - withAmount;
     const newCols = decomposeBigIntToBankRow(newTotal);
     memoryBankStore.set(userId, newCols);
+    saveBankDiskStore(memoryBankStore);
     res.json({ success: true, total: newTotal.toString(), bank: newCols, fallback: true });
   }
 });
