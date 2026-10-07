@@ -3647,6 +3647,9 @@
     }
 
     function awardBettingXp(betAmount = 0, isWin = false) {
+        // STRICT RULE: You should only be able to get XP when you WIN a bet, not during a loss or a Push!
+        if (!isWin) return 0;
+
         const isBoosted = activeBoosts && activeBoosts.xp > Date.now();
         const boostMultiplier = isBoosted ? 2 : 1;
 
@@ -3660,7 +3663,7 @@
             betBonus = Math.floor(Math.min(level * 35 + 500, Math.sqrt(betNum) * 2));
         }
         
-        const winBonus = isWin ? Math.floor(baseLevelXp * 0.5) : 0;
+        const winBonus = Math.floor(baseLevelXp * 0.5);
         const totalXpGain = Math.floor((baseLevelXp + betBonus + winBonus) * boostMultiplier);
         
         isInternalUpdate = true;
@@ -4128,12 +4131,33 @@
         { id: 'l9', name: 'Sun God Banana', rarity: 'Legendary', color: '#facc15' },
 
         // Ominous (5) - Higher than Legendary!
-        { id: 'o1', name: 'Eldritch Banana', rarity: 'Ominous', color: '#000000' },
-        { id: 'o2', name: 'Abyssal Monarch Banana', rarity: 'Ominous', color: '#000000' },
-        { id: 'o3', name: 'Doomsday Banana', rarity: 'Ominous', color: '#000000' },
-        { id: 'o4', name: 'Void Sovereign Banana', rarity: 'Ominous', color: '#000000' },
-        { id: 'o5', name: 'Blood Moon Banana', rarity: 'Ominous', color: '#000000' }
+        { id: 'o1', name: 'Eldritch Banana', rarity: 'Ominous', color: '#ffffff' },
+        { id: 'o2', name: 'Abyssal Monarch Banana', rarity: 'Ominous', color: '#ffffff' },
+        { id: 'o3', name: 'Doomsday Banana', rarity: 'Ominous', color: '#ffffff' },
+        { id: 'o4', name: 'Void Sovereign Banana', rarity: 'Ominous', color: '#ffffff' },
+        { id: 'o5', name: 'Blood Moon Banana', rarity: 'Ominous', color: '#ffffff' }
     ];
+
+    function getSkin(sid) {
+        if (!sid) return null;
+        const raw = typeof sid === 'object' && sid ? (sid.id || sid.name || '') : String(sid);
+        if (!raw) return null;
+        const clean = raw.trim();
+        const cleanLower = clean.toLowerCase();
+
+        // 1. Direct match by id or name
+        const found = SKINS.find(s => s.id === clean || s.name === clean || s.id.toLowerCase() === cleanLower || s.name.toLowerCase() === cleanLower);
+        if (found) return found;
+
+        // 2. Ominous aliases
+        if (cleanLower === 'ominous' || cleanLower === 'ominous banana' || cleanLower === 'ominous_banana' || cleanLower === 'o' || cleanLower === 'o1') return SKINS.find(s => s.id === 'o1') || null;
+        if (cleanLower === 'ominous2' || cleanLower === 'o2') return SKINS.find(s => s.id === 'o2') || null;
+        if (cleanLower === 'ominous3' || cleanLower === 'o3') return SKINS.find(s => s.id === 'o3') || null;
+        if (cleanLower === 'ominous4' || cleanLower === 'o4') return SKINS.find(s => s.id === 'o4') || null;
+        if (cleanLower === 'ominous5' || cleanLower === 'o5') return SKINS.find(s => s.id === 'o5') || null;
+
+        return null;
+    }
 
     let inventory = JSON.parse(localStorage.getItem('bananaInventory') || '{}');
 
@@ -4654,7 +4678,7 @@
                         vladimirQuestStatus = Number(data.vladimir_quest_status || 0);
                         localStorage.setItem("vladimirQuestStatus_" + playerName, String(vladimirQuestStatus));
                     }
-                    level = serverLevel;
+                    level = Math.max(level, Number(serverLevel || 1));
                     updateXp(serverXp);
                     isInternalUpdate = false;
                     
@@ -4873,7 +4897,7 @@
               updateBananas(Number(serverData.score));
               updateCoins(Number(serverData.coins || 0));
               bananaBox = Number(serverData.banana_box || 0);
-              level = Number(serverData.level || 1);
+              level = Math.max(level, Number(serverData.level || 1));
               updateXp(Number(serverData.xp || 0));
               
               if (serverData.unlocked_titles) {
@@ -4954,13 +4978,16 @@
     };
 
     function calculateTradeTotal(skinIds) {
-        if (!skinIds) return 0;
+        if (!skinIds || !Array.isArray(skinIds)) return 0;
         return skinIds.reduce((total, id) => {
-            const skin = SKINS.find(s => s.id === id);
+            const skin = getSkin(id);
             const isOminous = skin?.rarity === 'Ominous';
+            const canonicalId = skin?.id || (typeof id === 'object' && id ? id.id : String(id));
             let val = 0;
             // 1. Try dynamic value
-            if (dynamicSkinValues[id] !== undefined) {
+            if (dynamicSkinValues[canonicalId] !== undefined) {
+                val = dynamicSkinValues[canonicalId];
+            } else if (dynamicSkinValues[id] !== undefined) {
                 val = dynamicSkinValues[id];
             } else {
                 val = (TRADE_RARITY_DEFAULTS[skin?.rarity || 'Common'] || 0);
@@ -5034,7 +5061,7 @@
             let hasSkins = false;
             
             Object.entries(inv).forEach(([skinId, count]) => {
-                const skin = SKINS.find(s => s.id === skinId);
+                const skin = getSkin(skinId);
                 if (count > 0 && skin) {
                     hasSkins = true;
                     const isOminous = skin.rarity === 'Ominous';
@@ -5262,17 +5289,30 @@
 
     function renderTradeSlots(containerId, skinIds, isMine) {
         const el = document.getElementById(containerId);
-        if (!skinIds || skinIds.length === 0) {
+        if (!el) return;
+        if (!skinIds || !Array.isArray(skinIds) || skinIds.length === 0) {
             el.innerHTML = '<div class="col-span-full h-full flex items-center justify-center text-emerald-800 text-[10px] font-bold uppercase italic opacity-30">No items offered</div>';
             return;
         }
         el.innerHTML = skinIds.map((sid, idx) => {
-            const skin = SKINS.find(s => s.id === sid);
+            const rawId = typeof sid === 'object' && sid ? (sid.id || sid.name || '') : sid;
+            const skin = getSkin(rawId);
+            const isOminous = skin?.rarity === 'Ominous';
+            const rarity = skin?.rarity || 'Common';
+            const name = skin?.name || (isOminous ? 'Ominous Banana' : 'Banana Skin');
+            const color = isOminous ? '#ffffff' : (skin?.color || '#22c55e');
+            const canonId = skin?.id || rawId;
+
             return `
-                <div ${isMine ? `onclick="removeSkinFromTrade('${sid}', ${idx})"` : ''} class="aspect-square bg-emerald-950 border-2 rounded-xl p-2 flex flex-col items-center justify-center ${isMine ? 'cursor-pointer hover:border-red-500' : ''} transition-all group relative border-opacity-50" style="border-color: ${skin?.color || '#555'}">
-                    <div class="text-3xl mb-1">🍌</div>
-                    <p class="text-[8px] font-black uppercase" style="color: ${skin?.color}">${skin?.rarity || 'Common'}</p>
-                    <p class="text-[8px] font-bold text-white text-center leading-tight truncate w-full">${skin?.name || 'Unknown'}</p>
+                <div ${isMine ? `onclick="removeSkinFromTrade('${canonId}', ${idx})"` : ''} 
+                     class="aspect-square ${isOminous ? 'bg-black border-2 border-zinc-500 shadow-[0_0_12px_rgba(255,255,255,0.25)]' : 'bg-emerald-950 border-2'} rounded-xl p-2 flex flex-col items-center justify-center ${isMine ? 'cursor-pointer hover:border-red-500' : ''} transition-all group relative border-opacity-70" 
+                     style="${!isOminous ? `border-color: ${skin?.color || '#555'}` : ''}">
+                    <div class="text-3xl mb-1 ${isOminous ? 'filter drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : ''}">🍌</div>
+                    ${isOminous 
+                        ? `<p class="text-[7.5px] font-black uppercase bg-zinc-900 text-white px-1.5 py-0.5 rounded border border-zinc-700 shadow mb-0.5">OMINOUS</p>`
+                        : `<p class="text-[8px] font-black uppercase" style="color: ${color}">${rarity}</p>`
+                    }
+                    <p class="text-[8.5px] font-bold text-white text-center leading-tight truncate w-full mt-0.5">${name}</p>
                     ${isMine ? `<div class="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] px-1.5 rounded-full font-black opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">X</div>` : ''}
                 </div>
             `;
@@ -5281,45 +5321,69 @@
 
     function renderTradeInventorySelection() {
         const el = document.getElementById('trade-inventory-list');
-        const inv = inventory; // global inventory
+        if (!el) return;
+        const inv = inventory || {};
         
-        const myItems = Object.keys(inv).filter(id => inv[id] > 0);
+        // Strictly filter to valid owned skins to prevent internal keys from showing as undefined
+        const myItems = Object.keys(inv).filter(id => {
+            if (!inv[id] || inv[id] <= 0) return false;
+            return getSkin(id) !== null;
+        });
         
         if (myItems.length === 0) {
-            el.innerHTML = '<p class="text-emerald-700 text-xs italic py-4">Your inventory is empty.</p>';
+            el.innerHTML = '<p class="text-emerald-700 text-xs italic py-4">Your inventory has no tradable skins.</p>';
             return;
         }
 
-        // Sort items by rarity (ominous to common)
+        // Sort items by rarity (Ominous to Common)
+        const rarities = ['Ominous', 'Legendary', 'Mythic', 'Epic', 'Rare', 'Common'];
         const sortedItems = myItems.sort((a, b) => {
-            const rarities = ['Ominous', 'Legendary', 'Mythic', 'Epic', 'Rare', 'Common'];
-            const rA = SKINS.find(s => s.id === a)?.rarity || 'Common';
-            const rB = SKINS.find(s => s.id === b)?.rarity || 'Common';
+            const rA = getSkin(a)?.rarity || 'Common';
+            const rB = getSkin(b)?.rarity || 'Common';
             return rarities.indexOf(rA) - rarities.indexOf(rB);
         });
 
         el.innerHTML = sortedItems.map(sid => {
-            const skin = SKINS.find(s => s.id === sid);
-            const countInTrade = selectedTradeSkins.filter(id => id === sid).length;
-            const available = inv[sid] - countInTrade;
+            const skin = getSkin(sid);
+            if (!skin) return '';
+            const isOminous = skin.rarity === 'Ominous';
+            const canonId = skin.id;
+            const countInTrade = selectedTradeSkins.filter(id => {
+                const checkedSkin = getSkin(id);
+                return (checkedSkin?.id || id) === canonId || id === sid;
+            }).length;
+            const available = (inv[sid] || 0) - countInTrade;
+            const color = isOminous ? '#ffffff' : skin.color;
             
             return `
-                <div onclick="${available > 0 ? `addSkinToTrade('${sid}')` : ''}" class="min-w-[100px] h-[120px] bg-emerald-900 border-2 rounded-2xl p-3 flex flex-col items-center justify-center transition-all ${available > 0 ? 'border-emerald-700 hover:border-yellow-400 cursor-pointer hover:-translate-y-1' : 'border-emerald-950 opacity-40 grayscale'}" style="${available > 0 ? `border-color: ${skin?.color}44` : ''}">
-                    <div class="text-3xl mb-1">🍌</div>
-                    <p class="text-[8px] font-black uppercase mb-0.5" style="color: ${skin?.color}">${skin?.rarity}</p>
-                    <p class="text-[9px] text-white font-black text-center truncate w-full mb-2">${skin?.name}</p>
-                    <div class="bg-black/60 px-3 py-0.5 rounded-full text-[10px] font-black ${available > 0 ? 'text-yellow-400' : 'text-emerald-800'}">x${available}</div>
+                <div onclick="${available > 0 ? `addSkinToTrade('${canonId}')` : ''}" 
+                     class="min-w-[105px] h-[125px] ${isOminous ? 'bg-black border-2 border-zinc-500 shadow-[0_0_12px_rgba(255,255,255,0.25)]' : 'bg-emerald-900 border-2'} rounded-2xl p-2.5 flex flex-col items-center justify-center transition-all ${available > 0 ? (isOminous ? 'hover:border-zinc-300 cursor-pointer hover:-translate-y-1' : 'border-emerald-700 hover:border-yellow-400 cursor-pointer hover:-translate-y-1') : 'border-emerald-950 opacity-40 grayscale'}" 
+                     style="${available > 0 && !isOminous ? `border-color: ${skin.color}55` : ''}">
+                    <div class="text-3xl mb-1 ${isOminous ? 'filter drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : ''}">🍌</div>
+                    ${isOminous 
+                        ? `<span class="text-[7.5px] font-black uppercase bg-zinc-900 text-white px-1.5 py-0.5 rounded border border-zinc-700 shadow mb-0.5">OMINOUS</span>`
+                        : `<p class="text-[8px] font-black uppercase mb-0.5" style="color: ${color}">${skin.rarity}</p>`
+                    }
+                    <p class="text-[9px] text-white font-black text-center truncate w-full mb-1.5">${skin.name}</p>
+                    <div class="bg-black/60 px-3 py-0.5 rounded-full text-[10px] font-black ${available > 0 ? (isOminous ? 'text-zinc-200' : 'text-yellow-400') : 'text-emerald-800'}">x${Math.max(0, available)}</div>
                 </div>
             `;
-        }).join('');
+        }).filter(Boolean).join('');
     }
 
     window.addSkinToTrade = async function(skinId) {
         if (!currentActiveTrade || (currentActiveTrade.sender_id === userId ? currentActiveTrade.sender_ready : currentActiveTrade.receiver_ready)) return;
-        const countInTrade = selectedTradeSkins.filter(id => id === skinId).length;
-        if (inventory[skinId] <= countInTrade) return;
+        const skin = getSkin(skinId);
+        const canonId = skin?.id || skinId;
+        const countInTrade = selectedTradeSkins.filter(id => {
+            const checkedSkin = getSkin(id);
+            return (checkedSkin?.id || id) === canonId;
+        }).length;
 
-        selectedTradeSkins.push(skinId);
+        const owned = (inventory[canonId] || 0) + (canonId !== skinId ? (inventory[skinId] || 0) : 0);
+        if (owned <= countInTrade) return;
+
+        selectedTradeSkins.push(canonId);
         await updateTradeOnServer();
     };
 
@@ -5682,7 +5746,7 @@
         rarities.forEach(rarity => {
             const skinsInRarity = SKINS.filter(s => s.rarity === rarity);
             skinsInRarity.forEach(skin => {
-                const count = inventory[skin.id] || 0;
+                const count = (inventory[skin.id] || 0) + (inventory[skin.name] || 0);
                 if (count > 0) {
                     totalCount += count;
                     const isSelected = selectedGiftSkinId === skin.id;
@@ -5718,8 +5782,8 @@
         }
 
         // Update selected summary
-        if (selectedGiftSkinId && inventory[selectedGiftSkinId] > 0) {
-            const skin = SKINS.find(s => s.id === selectedGiftSkinId);
+        if (selectedGiftSkinId && ((inventory[selectedGiftSkinId] || 0) + (inventory[getSkin(selectedGiftSkinId)?.id || ''] || 0) > 0)) {
+            const skin = getSkin(selectedGiftSkinId);
             if (skin) {
                 const marketValue = (dynamicSkinValues && dynamicSkinValues[skin.id]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || 0;
                 const tax = Math.floor(marketValue / 2);
@@ -7158,7 +7222,7 @@
             title: 'Mega Jackpot Hit',
             desc: 'Hit a Jackpot win on Slots',
             target: 1,
-            evalProgress: (evt, amt) => (evt === 'slots_win' && meta.isJackpot) ? 1 : 0
+            evalProgress: (evt, amt, meta) => (evt === 'slots_win' && meta && meta.isJackpot) ? 1 : 0
         },
         {
             id: 'hard_mines_mult',
@@ -7342,15 +7406,19 @@
             if (q.completed) return;
             const def = QUEST_POOL.find(p => p.id === q.id);
             if (def && typeof def.evalProgress === 'function') {
-                const added = def.evalProgress(eventType, amount, metadata);
-                if (added > 0) {
-                    q.progress = Math.min(q.target, q.progress + added);
-                    changed = true;
-                    if (q.progress >= q.target) {
-                        q.completed = true;
-                        showNotification(`🎉 Quest Complete: "${q.title}"! Claim +${q.reward} Whole Levels in Quests!`, 'success');
-                        playSound('win');
+                try {
+                    const added = def.evalProgress(eventType, amount, metadata || {});
+                    if (added > 0) {
+                        q.progress = Math.min(q.target, q.progress + added);
+                        changed = true;
+                        if (q.progress >= q.target) {
+                            q.completed = true;
+                            showNotification(`🎉 Quest Complete: "${q.title}"! Claim +${q.reward} Whole Levels in Quests!`, 'success');
+                            playSound('win');
+                        }
                     }
+                } catch (questErr) {
+                    console.error("Quest progress evaluation error for quest:", q.id, questErr);
                 }
             }
         });
@@ -7366,8 +7434,19 @@
         if (!q || !q.completed || q.claimed) return;
 
         q.claimed = true;
-        const wholeLevels = q.reward; // 2, 4, or 6
+        const wholeLevels = Number(q.reward || 0); // 2, 4, or 6
         level += wholeLevels;
+
+        // Synchronously save to local storage immediately so no reload or sync can revert it
+        try {
+            const savedRaw = localStorage.getItem('bananaCasinoSave');
+            if (savedRaw) {
+                const sObj = JSON.parse(savedRaw);
+                sObj.level = level;
+                sObj.xp = xp;
+                localStorage.setItem('bananaCasinoSave', JSON.stringify(sObj));
+            }
+        } catch(e) {}
 
         playSound('win');
         showNotification(`🎉 Quest Claimed! Gained +${wholeLevels} Whole Levels! You are now Level ${level}!`, 'success');
@@ -7507,13 +7586,26 @@
         }
 
         // Auto-claim any unclaimed rewards so players don't miss their levels
+        let gainedAny = false;
         activeQuests.forEach((q, idx) => {
             if (q.completed && !q.claimed) {
                 q.claimed = true;
-                const wholeLevels = q.reward;
+                const wholeLevels = Number(q.reward || 0);
                 level += wholeLevels;
+                gainedAny = true;
             }
         });
+        if (gainedAny) {
+            try {
+                const savedRaw = localStorage.getItem('bananaCasinoSave');
+                if (savedRaw) {
+                    const sObj = JSON.parse(savedRaw);
+                    sObj.level = level;
+                    sObj.xp = xp;
+                    localStorage.setItem('bananaCasinoSave', JSON.stringify(sObj));
+                }
+            } catch(e) {}
+        }
 
         isInternalUpdate = true;
         updateCoins(coins - 50);
@@ -12215,8 +12307,10 @@
     }
 
     function sellSkin(skinId) {
-        const skin = SKINS.find(s => s.id === skinId);
-        if (!skin || !inventory[skinId] || inventory[skinId] <= 0) return;
+        const skin = getSkin(skinId);
+        const canonId = skin?.id || skinId;
+        const owned = (inventory[canonId] || 0) + (canonId !== skinId ? (inventory[skinId] || 0) : 0);
+        if (!skin || owned <= 0) return;
 
         const sellPrices = {
             'Common': 1000,
@@ -12227,14 +12321,19 @@
             'Ominous': 100000000000
         };
 
-        let price = (dynamicSkinValues && dynamicSkinValues[skin.id]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || sellPrices[skin.rarity] || 0;
+        let price = (dynamicSkinValues && dynamicSkinValues[canonId]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || sellPrices[skin.rarity] || 0;
         if (skin.rarity === 'Ominous') {
             price = Math.max(100000000000, price);
         }
         
         // Remove 1 skin
-        inventory[skinId]--;
-        if (inventory[skinId] === 0) delete inventory[skinId];
+        if (inventory[canonId] && inventory[canonId] > 0) {
+            inventory[canonId]--;
+            if (inventory[canonId] === 0) delete inventory[canonId];
+        } else if (inventory[skinId] && inventory[skinId] > 0) {
+            inventory[skinId]--;
+            if (inventory[skinId] === 0) delete inventory[skinId];
+        }
         
         // Update balance securely
         isInternalUpdate = true;
@@ -14422,17 +14521,24 @@
     }
 
     function sellSkinToMerchant(skinId) {
-        const skin = SKINS.find(s => s.id === skinId);
-        if (!skin || !inventory[skinId] || inventory[skinId] <= 0) return;
+        const skin = getSkin(skinId);
+        const canonId = skin?.id || skinId;
+        const owned = (inventory[canonId] || 0) + (canonId !== skinId ? (inventory[skinId] || 0) : 0);
+        if (!skin || owned <= 0) return;
 
-        let value = (dynamicSkinValues && dynamicSkinValues[skin.id]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || 0;
+        let value = (dynamicSkinValues && dynamicSkinValues[canonId]) || (TRADE_RARITY_DEFAULTS && TRADE_RARITY_DEFAULTS[skin.rarity]) || 0;
         if (skin.rarity === 'Ominous') {
             value = Math.max(100000000000, value);
         }
         
         // Remove 1 skin
-        inventory[skinId]--;
-        if (inventory[skinId] === 0) delete inventory[skinId];
+        if (inventory[canonId] && inventory[canonId] > 0) {
+            inventory[canonId]--;
+            if (inventory[canonId] === 0) delete inventory[canonId];
+        } else if (inventory[skinId] && inventory[skinId] > 0) {
+            inventory[skinId]--;
+            if (inventory[skinId] === 0) delete inventory[skinId];
+        }
         
         // Update balance
         isInternalUpdate = true;
