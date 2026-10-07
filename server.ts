@@ -226,7 +226,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     // 1. Fetch current state to check for conflicts and preserve bank
     const { data: current, error: fetchError } = await supabase
       .from('database')
-      .select('score, coins, unlocked_titles, inventory, updated_at')
+      .select('score, coins, unlocked_titles, inventory, level, xp, updated_at')
       .eq('id', userId)
       .maybeSingle();
 
@@ -256,6 +256,8 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
                 userData.coins = String(userData.coins);
                 userData.xp = String(userData.xp);
                 userData.banana_box = String(userData.banana_box);
+                // Protect level from ever decreasing due to quest completions
+                userData.level = Math.max(Number(userData.level || 1), Number(req.body.level || 1));
                 return res.json({ success: false, error: "Conflict detected", user: userData });
             }
         }
@@ -353,7 +355,7 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
       banana_box: String(bananaBox || 0),
       trees: JSON.stringify(trees),
       gadgets: JSON.stringify(gadgets),
-      level: Number(level || 1),
+      level: Math.max(Number(level || 1), Number(current?.level || 1)),
       xp: String(xp || 0),
       unlocked_titles: JSON.stringify(finalUnlockedTitles),
       equipped_title: equipped_title || null,
@@ -595,11 +597,11 @@ const SKINS = [
     { id: 'l9', name: 'Sun God Banana', rarity: 'Legendary', color: '#facc15' },
 
     // Ominous (5) - Higher than Legendary!
-    { id: 'o1', name: 'Eldritch Banana', rarity: 'Ominous', color: '#000000' },
-    { id: 'o2', name: 'Abyssal Monarch Banana', rarity: 'Ominous', color: '#000000' },
-    { id: 'o3', name: 'Doomsday Banana', rarity: 'Ominous', color: '#000000' },
-    { id: 'o4', name: 'Void Sovereign Banana', rarity: 'Ominous', color: '#000000' },
-    { id: 'o5', name: 'Blood Moon Banana', rarity: 'Ominous', color: '#000000' }
+    { id: 'o1', name: 'Eldritch Banana', rarity: 'Ominous', color: '#ffffff' },
+    { id: 'o2', name: 'Abyssal Monarch Banana', rarity: 'Ominous', color: '#ffffff' },
+    { id: 'o3', name: 'Doomsday Banana', rarity: 'Ominous', color: '#ffffff' },
+    { id: 'o4', name: 'Void Sovereign Banana', rarity: 'Ominous', color: '#ffffff' },
+    { id: 'o5', name: 'Blood Moon Banana', rarity: 'Ominous', color: '#ffffff' }
 ];
 
 const CASE_COSTS: Record<string, bigint> = {
@@ -851,12 +853,19 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             
             for (let i = 0; i < slotCount; i++) {
                 let r = Math.random() * 100;
-                const jackpotChance = 1.0;
-                if (r < jackpotChance) resultSlots.push(JACKPOT_ICON);
-                else {
-                    const duplicateChance = 0.05;
-                    if (i % 3 > 0 && Math.random() < duplicateChance) resultSlots.push(resultSlots[i - 1]);
-                    else resultSlots.push(SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)]);
+                const jackpotChance = 1.8;
+                if (r < jackpotChance) {
+                    resultSlots.push(JACKPOT_ICON);
+                } else {
+                    const lineStart = Math.floor(i / 3) * 3;
+                    const symbolsInLine = resultSlots.slice(lineStart, i);
+                    const duplicateChance = 0.16;
+                    if (symbolsInLine.length > 0 && Math.random() < duplicateChance) {
+                        const picked = symbolsInLine[Math.floor(Math.random() * symbolsInLine.length)];
+                        resultSlots.push(picked);
+                    } else {
+                        resultSlots.push(SLOT_ICONS[Math.floor(Math.random() * SLOT_ICONS.length)]);
+                    }
                 }
             }
             resultData.slots = resultSlots;
@@ -2099,15 +2108,38 @@ const DEFAULT_RARITY_VALUES: Record<string, number> = {
 const SKINS_METADATA: Record<string, string> = {};
 SKINS.forEach(s => {
   SKINS_METADATA[s.id] = s.rarity;
+  SKINS_METADATA[s.name] = s.rarity;
+  SKINS_METADATA[s.id.toLowerCase()] = s.rarity;
+  SKINS_METADATA[s.name.toLowerCase()] = s.rarity;
 });
 
-function calculateTradeValue(skins: string[]) {
+function getSkinMetadata(idOrName: any) {
+  if (!idOrName) return null;
+  const raw = typeof idOrName === 'object' && idOrName ? (idOrName.id || idOrName.name || '') : String(idOrName);
+  if (!raw) return null;
+  const clean = raw.trim();
+  const cleanLower = clean.toLowerCase();
+  const skin = SKINS.find(s => s.id === clean || s.name === clean || s.id.toLowerCase() === cleanLower || s.name.toLowerCase() === cleanLower);
+  if (skin) return skin;
+  if (cleanLower === 'ominous' || cleanLower === 'ominous banana' || cleanLower === 'ominous_banana' || cleanLower === 'o' || cleanLower === 'o1') return SKINS.find(s => s.id === 'o1') || null;
+  if (cleanLower === 'ominous2' || cleanLower === 'o2') return SKINS.find(s => s.id === 'o2') || null;
+  if (cleanLower === 'ominous3' || cleanLower === 'o3') return SKINS.find(s => s.id === 'o3') || null;
+  if (cleanLower === 'ominous4' || cleanLower === 'o4') return SKINS.find(s => s.id === 'o4') || null;
+  if (cleanLower === 'ominous5' || cleanLower === 'o5') return SKINS.find(s => s.id === 'o5') || null;
+  return null;
+}
+
+function calculateTradeValue(skins: any[]) {
+  if (!Array.isArray(skins)) return 0;
   return skins.reduce((total, id) => {
-    const rarity = SKINS_METADATA[id] || 'Common';
+    const skin = getSkinMetadata(id);
+    const rawId = typeof id === 'object' && id ? (id.id || '') : String(id);
+    const rarity = skin?.rarity || SKINS_METADATA[rawId] || 'Common';
     const minVal = rarity === 'Ominous' ? 100000000000 : (DEFAULT_RARITY_VALUES[rarity] || 1000);
+    const canonicalId = skin?.id || rawId;
     // 1. Try dynamic value from DB
-    if (DYNAMIC_SKIN_VALUES[id] !== undefined) {
-      return total + Math.max(minVal, DYNAMIC_SKIN_VALUES[id]);
+    if (DYNAMIC_SKIN_VALUES[canonicalId] !== undefined) {
+      return total + Math.max(minVal, DYNAMIC_SKIN_VALUES[canonicalId]);
     }
     // 2. Fallback to rarity defaults
     return total + minVal;
@@ -2305,18 +2337,24 @@ app.post("/api/trade/execute", authenticateToken, async (req: any, res) => {
     const receiverInv = typeof receiver.inventory === 'string' ? JSON.parse(receiver.inventory) : (receiver.inventory || {});
 
     // Remove sender skins from sender, add to receiver
-    senderSkins.forEach((sid: string) => {
-        if (senderInv[sid] > 0) {
-            senderInv[sid]--;
-            receiverInv[sid] = (receiverInv[sid] || 0) + 1;
+    senderSkins.forEach((sid: any) => {
+        const skin = getSkinMetadata(sid);
+        const canonId = skin?.id || (typeof sid === 'object' && sid ? sid.id : String(sid));
+        const key = (senderInv[canonId] !== undefined && senderInv[canonId] > 0) ? canonId : (senderInv[sid] !== undefined ? sid : canonId);
+        if (senderInv[key] > 0) {
+            senderInv[key]--;
+            receiverInv[canonId] = (receiverInv[canonId] || 0) + 1;
         }
     });
 
     // Remove receiver skins from receiver, add to sender
-    receiverSkins.forEach((sid: string) => {
-        if (receiverInv[sid] > 0) {
-            receiverInv[sid]--;
-            senderInv[sid] = (senderInv[sid] || 0) + 1;
+    receiverSkins.forEach((sid: any) => {
+        const skin = getSkinMetadata(sid);
+        const canonId = skin?.id || (typeof sid === 'object' && sid ? sid.id : String(sid));
+        const key = (receiverInv[canonId] !== undefined && receiverInv[canonId] > 0) ? canonId : (receiverInv[sid] !== undefined ? sid : canonId);
+        if (receiverInv[key] > 0) {
+            receiverInv[key]--;
+            senderInv[canonId] = (senderInv[canonId] || 0) + 1;
         }
     });
 
@@ -2328,9 +2366,11 @@ app.post("/api/trade/execute", authenticateToken, async (req: any, res) => {
     // RULE: Skin values increase when traded
     const tradedSkinIds = [...senderSkins, ...receiverSkins];
     for (const sid of tradedSkinIds) {
-      const rarity = SKINS_METADATA[sid] || 'Common';
+      const skin = getSkinMetadata(sid);
+      const canonId = skin?.id || (typeof sid === 'object' && sid ? sid.id : String(sid));
+      const rarity = skin?.rarity || SKINS_METADATA[canonId] || 'Common';
       const minVal = rarity === 'Ominous' ? 100000000000 : (DEFAULT_RARITY_VALUES[rarity] || 1000);
-      const curr = Math.max(minVal, DYNAMIC_SKIN_VALUES[sid] || minVal);
+      const curr = Math.max(minVal, DYNAMIC_SKIN_VALUES[canonId] || minVal);
       let tradeBoost = 0;
       if (rarity === 'Ominous') tradeBoost = 2500000000;
       else if (rarity === 'Legendary') tradeBoost = 1000000;
@@ -2340,9 +2380,9 @@ app.post("/api/trade/execute", authenticateToken, async (req: any, res) => {
       else tradeBoost = 250;
       
       const newV = curr + tradeBoost;
-      DYNAMIC_SKIN_VALUES[sid] = newV;
+      DYNAMIC_SKIN_VALUES[canonId] = newV;
       try {
-        await supabase.from('skin_values').upsert({ id: sid, value: newV });
+        await supabase.from('skin_values').upsert({ id: canonId, value: newV });
       } catch (e) {}
     }
 
