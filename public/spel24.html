@@ -17,21 +17,22 @@ h2{margin:0 0 10px;font-size:32px;text-shadow:0 2px 0 #fff8}
 .fall{position:absolute;top:-60px;font-size:30px;pointer-events:none;animation:fall 9s linear infinite}
 @keyframes sway{50%{transform:rotate(6deg)}}
 @keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
-.grid{display:grid;grid-template-columns:repeat(5,58px);gap:10px;margin:10px 0 16px}
-.lv{height:58px;font:700 20px "Trebuchet MS",sans-serif;border:3px solid var(--brown);border-radius:12px;background:#ffe066;color:var(--brown);cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(8,50px);gap:10px;margin:10px 0 16px}
+.lv{height:50px;font:700 17px "Trebuchet MS",sans-serif;border:3px solid var(--brown);border-radius:12px;background:#ffe066;color:var(--brown);cursor:pointer}
 .lv:disabled{background:#c9b27a;opacity:.6;cursor:default}
 .box{background:#fff8dcdd;border:4px solid var(--brown);border-radius:16px;padding:14px 22px;max-width:420px;line-height:1.5}
 #game{background:#0f3d2a;justify-content:flex-start;gap:6px;padding-top:calc(6px + env(safe-area-inset-top,0px))}
 #top,#bot{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;color:#fff3bf;font-weight:700;font-size:15px}
 .sm{font:700 14px "Trebuchet MS",sans-serif;padding:6px 10px;border:2px solid var(--brown);border-radius:10px;background:#ffd43b;color:var(--brown);cursor:pointer}
 .sm:disabled{opacity:.4}
-#cv{touch-action:none;width:min(100%,calc((100vh - 190px)*1.4286));aspect-ratio:800/560;border-radius:10px;background:#2f9e44;box-shadow:0 0 0 3px #ffd43b}
+#cv{touch-action:none;width:min(100%,calc((100vh - 250px)*1.4286));aspect-ratio:800/560;border-radius:10px;background:#2f9e44;box-shadow:0 0 0 3px #ffd43b}
 .tb{width:86px;padding:5px 2px;border:3px solid var(--brown);border-radius:12px;background:#fff3bf;color:var(--brown);font:700 11px "Trebuchet MS",sans-serif;cursor:pointer}
 .tb b{font-size:24px;display:block}
+.tb{touch-action:none}#tip{position:fixed;display:none;z-index:9;max-width:250px;background:#2b1d0e;color:#fff3bf;border:2px solid #ffd43b;border-radius:10px;padding:7px 10px;font:600 12px/1.4 "Trebuchet MS",sans-serif;pointer-events:none}
 .tb.on{background:#ffd43b;outline:3px solid #fff}
 .tb.dis{opacity:.5}
 #sel{display:none;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;width:100%}
-#ov{display:none;position:absolute;inset:0;background:#000a;align-items:center;justify-content:center;z-index:5}
+#tut{display:none;position:absolute;inset:0;background:#0007;align-items:center;justify-content:center;z-index:6;padding:12px}#ov{display:none;position:absolute;inset:0;background:#000a;align-items:center;justify-content:center;z-index:5}
 </style></head><body>
 
 <div id="menu" class="scr">
@@ -45,46 +46,76 @@ h2{margin:0 0 10px;font-size:32px;text-shadow:0 2px 0 #fff8}
 </div>
 
 <div id="modes" class="scr"><h2>Choose a mode</h2>
- <button class="btn" onclick="lvGrid();show('levels')">🏝️ Campaign (20 levels)</button>
- <button class="btn" onclick="startGame('i',0)">♾️ Infinite</button>
+ <button class="btn" onclick="lvGrid();show('levels')">🏝️ Campaign (40 levels)</button>
+ <button class="btn" id="cont" style="display:none" onclick="contI()"></button>
+ <button class="btn" onclick="newI()">♾️ Infinite</button>
  <div id="best" style="font-weight:700"></div>
  <button class="btn" onclick="show('menu')">Back</button></div>
 
 <div id="levels" class="scr"><h2>Campaign</h2><div class="grid" id="lg"></div><button class="btn" onclick="show('modes')">Back</button></div>
 
-<div id="credits" class="scr"><h2>Credits</h2><div class="box">Banana Defenders V1.0<br>Game design and code: Zayn Lilak and Mr Claude <br>Inspired by Bloons TD 6 (not affiliated)<br>Graphics: emoji 🍌🐵🦍🌴<br>Thanks for playing!</div><br><button class="btn" onclick="show('menu')">Back</button></div>
+<div id="credits" class="scr"><h2>Credits</h2><div class="box">Banana Defenders V1.0<br>Game design and code: made with Claude (Anthropic)<br>Inspired by Bloons TD 6 (not affiliated)<br>Graphics: emoji 🍌🐵🦍🌴<br>Thanks for playing!</div><br><button class="btn" onclick="show('menu')">Back</button></div>
 
 <div id="settings" class="scr"><h2>Settings</h2>
  <button class="btn" id="s1" onclick="S.sound=!S.sound;sb()"></button>
  <button class="btn" id="s2" onclick="S.range=!S.range;sb()"></button>
  <button class="btn" id="s3" onclick="S.speed=S.speed%3+1;sb()"></button>
  <button class="btn" id="s4" onclick="S.unlockAll=!S.unlockAll;sb()"></button>
- <button class="btn" onclick="if(confirm('Reset campaign progress?')){prog=1;S.best=0;sb()}">Reset progress</button>
+ <button class="btn" onclick="if(confirm('Reset campaign progress?')){prog=1;S.best=0;S.seen=[];sb()}">Reset progress</button>
  <button class="btn" onclick="show('menu')">Back</button></div>
 
 <div id="game" class="scr">
  <div id="top"><span>🍌 <span id="ba"></span></span><span>❤️ <span id="hp"></span></span><span id="wi"></span>
-  <button class="sm" id="wv" onclick="callWave()"></button><button class="sm" id="spd" onclick="G.spd=G.spd%3+1"></button><button class="sm" id="pa" onclick="G.paused=!G.paused"></button><button class="sm" id="au" onclick="G.auto=!G.auto">Auto</button><button class="sm" onclick="G=null;show('menu')">☰</button></div>
+  <button class="sm" id="wv" onclick="callWave()"></button><button class="sm" id="spd" onclick="G.spd=G.spd%3+1"></button><button class="sm" id="pa" onclick="G.paused=!G.paused"></button><button class="sm" id="au" onclick="G.auto=!G.auto">Auto</button><button class="sm" data-tip="Quit to menu. Infinite saves automatically after every wave, so you can continue later." onclick="G=null;show('menu')">☰</button></div>
  <canvas id="cv" width="800" height="560"></canvas>
- <div id="bot"><div id="sel"><span id="si"></span><button class="sm" id="up"></button><button class="sm" id="sl"></button></div><div id="tbs" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"></div></div>
- <div id="ov"><div class="box"><h2 id="ot"></h2><p id="op"></p><div id="ob"></div></div></div>
+ <div style="color:#fff3bf;font-size:12px;text-align:center">🛡️ Lead: only blasts and lightning pop it · 🍃 Camo: needs a tower that detects camo · hover anything for info</div><div id="bot"><div id="sel"><span id="si"></span><button class="sm" id="u0"></button><button class="sm" id="u1"></button><button class="sm" id="sl" data-tip="Sell for 60% of everything you spent on this tower"></button></div><div id="tbs" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"></div></div>
+ <div id="tut"><div class="box"><div id="tt"></div><br><button class="btn" onclick="tutNext()">Got it</button></div></div><div id="ov"><div class="box"><h2 id="ot"></h2><p id="op"></p><div id="ob"></div></div></div>
 </div>
 
+<div id="tip"></div>
 <script>
 const $=id=>document.getElementById(id),W=800,H=560,cv=$("cv"),x=cv.getContext("2d");
-let S={sound:true,range:false,speed:1,unlockAll:false,best:0},prog=1,G=null,last=0,AC;
+let drg=null,S={seen:[],sound:true,range:false,speed:1,unlockAll:false,best:0},prog=1,G=null,last=0,AC;
 try{Object.assign(S,JSON.parse(localStorage.getItem("bd_s")||"{}"));prog=+localStorage.getItem("bd_p")||1}catch(e){}
 function save(){try{localStorage.setItem("bd_s",JSON.stringify(S));localStorage.setItem("bd_p",prog)}catch(e){}}
+function getSave(){try{return JSON.parse(localStorage.getItem("bd_i"))}catch(e){return null}}
+function saveI(){if(!G||G.over||G.mode!="i")return;try{localStorage.setItem("bd_i",JSON.stringify({w:G.w,b:Math.floor(G.b),hp:G.hp,tw:G.tw.map(t=>({k:t.k,x:t.x,y:t.y,lv:t.lv,sp:t.sp}))}))}catch(e){}}
+function newI(){if(!getSave()||confirm("Start a new Infinite run? Your saved run will be replaced."))startGame("i",0)}
+function contI(){const d=getSave();if(!d)return;startGame("i",0);Object.assign(G,{w:d.w,b:d.b,hp:d.hp,tw:d.tw.map(t=>({...t,cd:0}))});ui()}
+function popup(...a){G.tq.push(...a);if($("tut").style.display!="flex")nextTut()}
+function nextTut(){if(!G||!G.tq.length){$("tut").style.display="none";if(G)G.paused=false;return}G.paused=true;$("tt").innerHTML=G.tq.shift();$("tut").style.display="flex"}
+function tutNext(){snd(500,.04);nextTut()}
 function snd(f,d=.08){if(!S.sound)return;try{AC=AC||new AudioContext();const o=AC.createOscillator(),g=AC.createGain();o.type="triangle";o.frequency.value=f;g.gain.value=.05;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
-function show(id){document.querySelectorAll(".scr").forEach(e=>e.style.display=e.id==id?"flex":"none");if(id=="modes")$("best").textContent=S.best?"Infinite best: wave "+S.best:"";if(id=="settings")sb()}
+function show(id){document.querySelectorAll(".scr").forEach(e=>e.style.display=e.id==id?"flex":"none");if(id=="modes"){$("best").textContent=S.best?"Infinite best: wave "+S.best:"";const d=getSave();$("cont").style.display=d?"":"none";if(d)$("cont").textContent="▶ Continue Infinite (wave "+d.w+")"}if(id=="settings")sb()}
 function sb(){$("s1").textContent="Sound: "+(S.sound?"On":"Off");$("s2").textContent="Show all ranges: "+(S.range?"On":"Off");$("s3").textContent="Default speed: x"+S.speed;$("s4").textContent="Unlock all levels: "+(S.unlockAll?"On":"Off");save()}
-function lvGrid(){$("lg").innerHTML="";for(let i=1;i<=20;i++){const b=document.createElement("button");b.className="lv";b.textContent=i%5?i:i+"👑";b.disabled=!(S.unlockAll||i<=prog);b.onclick=()=>startGame("c",i);$("lg").appendChild(b)}}
+function lvGrid(){$("lg").innerHTML="";for(let i=1;i<=40;i++){const b=document.createElement("button");b.className="lv";b.textContent=i%5?i:i+"👑";b.disabled=!(S.unlockAll||i<=prog);b.onclick=()=>startGame("c",i);$("lg").appendChild(b)}}
 
 const PATHS=[[[0,100],[600,100],[600,260],[150,260],[150,430],[800,430]],[[0,480],[200,480],[200,120],[420,120],[420,400],[640,400],[640,60],[800,60]],[[0,60],[700,60],[700,200],[100,200],[100,340],[700,340],[700,500],[800,500]],[[400,0],[400,150],[120,150],[120,420],[400,420],[400,300],[680,300],[680,560]]];
-const ET=[{e:"🐵",hp:10,sp:55,s:22,r:5,l:1},{e:"🐒",hp:28,sp:70,s:26,r:9,l:2},{e:"🙉",hp:20,sp:120,s:24,r:8,l:2},{e:"🦍",hp:140,sp:42,s:38,r:30,l:5,k:[1,1]},{e:"🦧",hp:1500,sp:30,s:68,r:250,l:20,k:[3,3,3]}];
-const TD=[{n:"Banana Slinger",e:"🍌",c:100,rg:110,rt:.55,d:5,sp:420},{n:"Coconut Cannon",e:"🥥",c:250,rg:130,rt:1.5,d:14,sp:300,spl:55},{n:"Glue Frog",e:"🐸",c:150,rg:105,rt:.9,d:1,sp:360,slow:.5},{n:"Parrot Sniper",e:"🦜",c:300,rg:360,rt:1.9,d:45,sp:900}];
-const PC=["#ffd43b","#6b4a2b","#74c0fc","#f8f9fa"];
-TD.forEach((d,i)=>{const b=document.createElement("button");b.className="tb";b.innerHTML="<b>"+d.e+"</b>"+d.n+"<br>🍌"+d.c;b.onclick=()=>{if(!G)return;G.place=G.place==i?null:i;G.sel=null;ui()};$("tbs").appendChild(b)});
+const ET=[
+{n:"Chimp",e:"🐵",hp:10,sp:55,s:22,r:5,l:1},
+{n:"Macaque",e:"🐒",hp:28,sp:70,s:26,r:9,l:2},
+{n:"Lemur",e:"🙉",hp:20,sp:120,s:24,r:8,l:2,x:"Very fast"},
+{n:"Gorilla",e:"🦍",hp:140,sp:42,s:38,r:30,l:5,k:[1,1],x:"Tough. Splits into 2 Macaques"},
+{n:"King Kong",e:"🦧",hp:1500,sp:30,s:68,r:250,l:20,k:[3,3,3],x:"Boss. Splits into 3 Gorillas"},
+{n:"Lead Monkey",e:"🐒",hp:70,sp:48,s:28,r:14,l:3,lead:1,x:"🛡️ Lead: immune to normal shots. Needs blasts or lightning"},
+{n:"Camo Monkey",e:"🙈",hp:25,sp:88,s:24,r:10,l:2,camo:1,x:"🍃 Camo: invisible to most towers. Needs camo detection"},
+{n:"Shadow Gorilla",e:"🦍",hp:220,sp:46,s:38,r:45,l:6,lead:1,camo:1,k:[5,6],x:"🛡️🍃 Lead and camo. Splits into a Lead and a Camo Monkey"}];
+const LTIP={4:"<b>💡 Tip: Banana Farms</b><br>🌳 Farms earn bananas only <b>during waves</b>. Build them early and protect them!",10:"<b>👑 Boss levels</b><br>Every 5th level ends with a boss. Save bananas and max out an upgrade path before the final wave!"},
+NEWE=[0,"<b>Macaque 🐒</b><br>Tougher than a chimp (28 HP). Needs more hits.","<b>Lemur 🙉</b><br>Very fast but fragile. Slowing towers like the Glue Frog 🐸 help a lot.","<b>Gorilla 🦍</b><br>Big and tough! When popped it splits into 2 Macaques. Splash and high damage shine here.","<b>King Kong 🦧 (BOSS)</b><br>1500 HP, and it splits into 3 Gorillas when popped. Upgrades with bonus damage vs big targets help.","<b>Lead Monkey 🛡️</b><br>Immune to normal shots! Only <b>blasts</b> (Cannon 🥥, Volcano 🌋, Frog Quicksand) and <b>lightning</b> (Storm Totem ⚡) can pop it. Other towers ignore it.","<b>Camo Monkey 🍃</b><br>Invisible to most towers! You need towers that <b>detect camo</b>: Sniper 🦜, Gatling 🔫, Storm Totem ⚡, or upgrades that say Detects camo.","<b>Shadow Gorilla 🛡️🍃</b><br>Lead AND camo! You need blasts or lightning that also detect camo, like the Storm Totem ⚡. It splits into a Lead and a Camo Monkey."],
+TUT=["<b>Welcome to Banana Defenders! 🍌</b><br>Monkeys march along the path to steal your bananas. Every monkey that escapes costs you ❤️ lives. Pop them to earn 🍌 and build a defense!","<b>Build a tower 🏗️</b><br>Pick a tower in the bar at the bottom: click it and then click the map, or <b>drag</b> it onto the map. Place a 🍌 Banana Slinger on the grass beside the path (not on it).","<b>Nice! 🎉</b><br>Towers shoot automatically at the monkey furthest along the path. Hover over towers and monkeys any time for info. Now press <b>▶ Wave</b> at the top to send the first wave.","<b>Bananas! 🍌</b><br>Popped monkeys drop bananas. Spend them on new towers or upgrades. Use ⏩ for speed and Auto to start waves by itself. Now click your tower and buy an upgrade.","<b>Upgrades ⭐</b><br>Each tower has 2 upgrade paths with 5 tiers. Only one path can go past tier 2, so choose a plan! Farms 🌳 make bananas during waves. Survive every wave to win the level. Good luck!"],
+HINT=["","Place a tower beside the path: drag it from the bar, or click it then click the map","Press ▶ Wave at the top to send the monkeys","Click your tower, then buy an upgrade"];
+const FM=.6,INTRO={2:"Macaques 🐒 join the fight",3:"Lemurs 🙉 are very fast",5:"Gorillas 🦍 are tough and split when popped",8:"Lead Monkeys 🛡️ need blasts or lightning",10:"Boss King Kong 🦧 ends every 5th level",12:"Camo Monkeys 🍃 need camo detection",20:"Shadow Gorillas: lead + camo!"};
+const TD=[
+{n:"Banana Slinger",e:"🍌",c:100,rg:110,rt:.55,d:5,sp:420,p:[["Quick Peel",[["Faster Flinging",90,{rm:.75}],["Double Toss",160,{multi:1}],["Triple Toss",450,{multi:1,rm:.8}],["Banana Barrage",1800,{multi:3,rm:.5,dm:1.5}],["Banana Hurricane",14000,{multi:5,rm:.35,dm:2}]]],["Sharp Aim",[["Spyglass",80,{gm:1.2,see:1}],["Hard Peel",150,{dm:2}],["Razor Peel",400,{dm:2,bd:1}],["Golden Peel",2400,{dm:4,gm:1.25,bd:1}],["Diamond Peel",15000,{dm:6,bd:3,gm:1.3,multi:1}]]]]},
+{n:"Coconut Cannon",e:"🥥",c:250,rg:130,rt:1.5,d:14,sp:300,spl:55,p:[["Big Booms",[["Wider Blast",200,{spl:20}],["Heavy Shells",400,{dm:1.8}],["Mega Coconut",900,{spl:30,dm:1.8}],["Coconut Apocalypse",3500,{spl:50,dm:3,rm:.7}],["Coconut Meteor",16000,{spl:80,dm:5,rm:.7}]]],["Rapid Fire",[["Quick Reload",180,{rm:.7}],["Twin Cannons",450,{multi:1}],["Siege Crew",1000,{rm:.6,gm:1.2,bd:1}],["Barrage Bunker",3200,{multi:2,rm:.5,spl:20}],["Cannon Fortress",15000,{multi:4,rm:.5,dm:2,bd:2}]]]]},
+{n:"Glue Frog",e:"🐸",c:150,rg:105,rt:.9,d:1,sp:360,slow:.5,p:[["Super Glue",[["Stickier Goo",100,{slow:.4,st:.5}],["Mega Glue",250,{slow:.3,st:.7}],["Freeze Goo",700,{slow:.15,st:1}],["Quicksand",2200,{slow:.05,st:1.5,spl:60}],["Tar Pit Titan",12000,{slow:.02,st:3,spl:100,dm:5}]]],["Acid Frog",[["Acid Spit",120,{dm:3,see:1}],["Corrosive",300,{dm:3,rm:.8}],["Toxic Wave",800,{spl:40,dm:2}],["Poison Dart King",2600,{dm:4,spl:30,rm:.6,gm:1.2}],["Plague Swamp",13000,{dm:6,spl:60,rm:.5,bd:2}]]]]},
+{n:"Parrot Sniper",e:"🦜",c:300,rg:360,rt:1.9,d:45,sp:900,see:1,p:[["Deadly Aim",[["Sharper Beak",250,{dm:1.6}],["Armor Piercer",550,{dm:2,bd:1}],["Eagle Eye",1400,{dm:2.5,bd:2}],["Apex Predator",4200,{dm:4,bd:3,rm:.7}],["Sky Judge",18000,{dm:8,bd:6,rm:.7}]]],["Rapid Wing",[["Quick Wings",200,{rm:.75}],["Twin Shot",500,{multi:1}],["Flock Volley",1200,{multi:1,rm:.7}],["Skyfall Flock",3800,{multi:3,rm:.5,dm:1.5}],["Thunder Flock",16000,{multi:5,rm:.4,dm:2}]]]]},
+{n:"Banana Farm",e:"🌳",c:450,rg:0,rt:1,d:0,sp:0,inc:2.5,p:[["Orchard",[["Fertile Soil",300,{inc:2}],["Irrigation",700,{inc:4}],["Banana Grove",1800,{inc:9}],["Plantation",4500,{inc:22}],["Banana Empire",15000,{inc:60}]]],["Market",[["Fruit Stand",250,{wb:25}],["Trade Route",600,{wb:60,inc:1}],["Banana Exchange",1500,{wb:130,inc:2}],["Banana Bank",4000,{wb:300,inc:5}],["Central Bank",14000,{wb:900,inc:20}]]]]},
+{n:"Banana Gatling",e:"🔫",c:650,rg:135,rt:.1,d:4,sp:650,see:1,p:[["Rapid Fire",[["Oiled Barrel",500,{rm:.8}],["Hyper Fire",1100,{rm:.7}],["Plasma Peels",2600,{rm:.7,dm:1.5}],["Peel Storm",6500,{rm:.6,dm:2}],["Minigun God",22000,{dm:2.5,multi:2}]]],["Heavy Rounds",[["Hollow Points",450,{dm:1.5,bd:.5}],["Long Barrel",900,{gm:1.25,dm:1.5}],["Armor Breaker",2400,{dm:2,bd:1.5}],["Giga Gatling",6000,{dm:3,multi:1,gm:1.2}],["Annihilator",22000,{dm:6,multi:2,gm:1.3,bd:3}]]]]},
+{n:"Volcano Totem",e:"🌋",c:900,rg:150,rt:2.8,d:30,sp:260,spl:80,p:[["Lava Flow",[["Hotter Lava",700,{dm:1.6}],["Wide Eruption",1500,{spl:40}],["Magma Surge",3200,{dm:2,rm:.8}],["Supervolcano",8000,{dm:3,spl:60,rm:.6,bd:1}],["Doomsday Caldera",26000,{dm:5,spl:80,rm:.6,bd:3}]]],["Ash Cloud",[["Ash Fall",600,{slow:.6,st:1.5,see:1}],["Quick Eruptions",1400,{rm:.7}],["Choking Smog",2800,{slow:.35,st:1,rm:.8}],["Eternal Winter",7000,{slow:.15,st:2,rm:.6,spl:40}],["Frozen Apocalypse",24000,{slow:.02,st:3,rm:.5,spl:80,dm:2}]]]]},
+{n:"Storm Totem",e:"⚡",c:1100,rg:140,rt:1,d:12,sp:0,ch:3,see:1,p:[["Conduction",[["More Arcs",900,{chain:2}],["Chain Master",2000,{chain:3,gm:1.2}],["Thunder Net",4200,{chain:5,dm:1.5}],["Tesla God",9000,{chain:8,dm:2,rm:.7}],["Planet Tesla",28000,{chain:14,dm:3,rm:.6}]]],["High Voltage",[["Charged",800,{dm:1.5}],["Overload",1800,{rm:.7,dm:1.3}],["Megawatt",4000,{dm:2,bd:1,gm:1.2}],["Zeus Wrath",9500,{dm:4,rm:.6,bd:2}],["Wrath of the Gods",28000,{dm:8,rm:.5,bd:4,gm:1.3,chain:3}]]]]}];
+const PC=["#ffd43b","#6b4a2b","#74c0fc","#f8f9fa","#fff","#ffa94d","#e8590c","#a5d8ff"];
+TD.forEach((d,i)=>{const b=document.createElement("button");b.className="tb";b.innerHTML="<b>"+d.e+"</b>"+d.n+"<br>🍌"+d.c;b.onpointerdown=ev=>{if(!G||G.over)return;drg={x:ev.clientX,y:ev.clientY,mv:0,was:G.place==i};G.place=i;G.sel=null;ui();ev.preventDefault()};$("tbs").appendChild(b)});
 
 function pathInfo(p){let L=0,s=[];for(let i=0;i<p.length-1;i++){const l=Math.hypot(p[i+1][0]-p[i][0],p[i+1][1]-p[i][1]);s.push([L,l]);L+=l}return{p,s,L}}
 function posAt(d){const P=G.P;let i=0;while(i<P.s.length-1&&d>P.s[i][0]+P.s[i][1])i++;const a=P.p[i],b=P.p[i+1],t=Math.min(1,Math.max(0,(d-P.s[i][0])/P.s[i][1]));return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]}
@@ -93,60 +124,80 @@ function onPath(px,py,m){const p=G.P.p;return p.slice(1).some((b,i)=>segDist(px,
 const bg=document.createElement("canvas");bg.width=W;bg.height=H;
 function buildBg(){const c=bg.getContext("2d"),g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,"#5fd068");g.addColorStop(1,"#2f9e44");c.fillStyle=g;c.fillRect(0,0,W,H);c.lineCap=c.lineJoin="round";
  for(const[w,col]of[[48,"#b8863b"],[38,"#ecd08a"]]){c.strokeStyle=col;c.lineWidth=w;c.beginPath();G.P.p.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.stroke()}
+ {const v=c.createRadialGradient(400,280,120,400,280,520);v.addColorStop(0,"#ffffff14");v.addColorStop(1,"#00000055");c.fillStyle=v;c.fillRect(0,0,W,H)}
  let s=G.lv*7919+13;const r=()=>(s=s*16807%2147483647)/2147483647;c.textAlign="center";c.textBaseline="middle";
- for(let i=0;i<60;i++){const px=r()*W,py=r()*H;if(onPath(px,py,40))continue;c.font=(18+r()*18|0)+"px serif";c.fillText(["🌴","🌴","🌺","🌿","🪨"][r()*5|0],px,py)}}
+ for(let i=0;i<14;i++){const px=r()*W,py=r()*H;if(onPath(px,py,40))continue;c.font=(16+r()*10|0)+"px serif";c.fillText(["🌴","🌴","🌺","🌿","🪨"][r()*5|0],px,py)}}
 
-function startGame(mode,lv){G={mode,lv,P:pathInfo(PATHS[mode=="c"?(lv-1)%4:1]),waves:mode=="c"?8+(lv>>1):1e9,w:0,b:450,hp:40,en:[],tw:[],pj:[],fl:[],sp:[],clock:0,spd:S.speed,paused:false,inWave:false,sel:null,place:null,mx:0,my:0,over:false,auto:false};buildBg();$("ov").style.display="none";show("game");ui();last=performance.now()}
-function callWave(){if(!G||G.over||G.w>=G.waves)return;G.w++;G.inWave=true;const w=G.w,e=w+(G.mode=="c"?(G.lv-1)*1.2:0),hm=1+Math.max(0,e-8)*.1,q=[];
- q.push([0,5+e*1.6|0,.55]);if(e>=3)q.push([1,e*.9|0,.7]);if(e>=5)q.push([2,e*.8|0,.35]);if(e>=9)q.push([3,(e-7)/2|0,1.6]);
- if((G.mode=="i"&&w%10==0)||(G.mode=="c"&&w==G.waves&&G.lv%5==0))q.push([4,Math.max(1,e/12|0),4]);
+function startGame(mode,lv){document.querySelectorAll(".tb").forEach((b,i)=>b.dataset.tip=tdesc({k:i,lv:[0,0]}));G={mode,lv,P:pathInfo(PATHS[mode=="c"?(lv-1)%4:1].map(q=>((lv-1)>>2&1)&&mode=="c"?[q[0],H-q[1]]:q)),waves:mode=="c"?8+(lv>>1):1e9,w:0,b:mode=="c"?650+lv*30:650,rm:mode=="c"?1+.015*lv:1,hp:40,en:[],tw:[],pj:[],fl:[],sp:[],clock:0,spd:S.speed,paused:false,inWave:false,sel:null,place:null,mx:0,my:0,over:false,auto:false,tq:[],tut:0};buildBg();$("tut").style.display="none";if(mode=="c"){if(lv==1&&!S.seen.includes("T")){G.tut=1;popup(TUT[0],TUT[1])}else if(LTIP[lv]&&!S.seen.includes("L"+lv)){S.seen.push("L"+lv);save();popup(LTIP[lv])}}$("ov").style.display="none";show("game");ui();last=performance.now()}
+function callWave(){if(!G||G.over||G.w>=G.waves)return;G.w++;G.inWave=true;const w=G.w,e=w+(G.mode=="c"?(G.lv-1)*.65:0),hm=1+Math.max(0,e-10)*.06,q=[];
+ const ev=G.mode=="c"?G.lv:1+w/2;q.push([0,4+e*1.1|0,.6]);if(ev>=2&&e>=4)q.push([1,e*.5|0,.8]);if(ev>=3&&e>=5)q.push([2,e*.4|0,.4]);if(ev>=5&&w>=4)q.push([3,Math.max(1,(e-6)/4|0),1.8]);if(ev>=8&&w>=3)q.push([5,1+((ev-8)*.5+w*.2)|0,1]);if(ev>=12&&w>=3)q.push([6,1+((ev-12)*.5+w*.2)|0,.6]);if(ev>=20&&w>=5)q.push([7,Math.max(1,(ev-18)*.4|0),2]);
+ if((G.mode=="i"&&w%10==0&&w>=20)||(G.mode=="c"&&w==G.waves&&G.lv%5==0&&G.lv>=10))q.push([4,Math.max(1,e/20|0),4]);
  q.forEach(([ty,n,gap],i)=>{for(let k=0;k<n;k++)G.sp.push({t:G.clock+i*2.5+k*gap,ty,hm})});G.sp.sort((a,b)=>a.t-b.t);snd(440)}
-function mk(ty,hm,d){const h=ET[ty].hp*hm;G.en.push({ty,hp:h,mh:h,d,sl:0,f:1,hm})}
-function tstat(t){const d=TD[t.k],l=t.lv;return{rg:d.rg*(1+.07*l),rt:Math.max(.12,d.rt*(1-.15*l)),d:d.d*(1+.6*l),sp:d.sp,spl:d.spl?d.spl+10*l:0,slow:d.slow?d.slow-.08*l:0,st:1.5+.5*l}}
-const upc=t=>Math.round(TD[t.k].c*[.8,1.4,2.2][t.lv]);
-function dmg(e,d){e.hp-=d;if(e.hp<=0&&!e.dead){e.dead=1;const t=ET[e.ty],p=posAt(e.d);G.b+=t.r;G.fl.push({x:p[0],y:p[1],t:.8,txt:"+"+t.r+"🍌"});(t.k||[]).forEach((c,i)=>mk(c,e.hm,Math.max(0,e.d-i*14-8)))}}
+function mk(ty,hm,d){if(G.mode=="c"&&ty&&!S.seen.includes(ty)){S.seen.push(ty);save();popup("<b>⚠ New enemy!</b><br>"+NEWE[ty])}const h=ET[ty].hp*hm;G.en.push({ty,hp:h,mh:h,d,sl:0,f:1,hm})}
+function tstat(t){const d=TD[t.k],s={rg:d.rg,rt:d.rt,d:d.d,sp:d.sp,spl:d.spl||0,slow:d.slow||1,st:d.slow?1.5:0,multi:1,chain:d.ch||0,see:d.see||0,inc:d.inc||0,bd:0,wb:0};
+ t.lv.forEach((n,i)=>{for(let j=0;j<n;j++){const m=d.p[i][1][j][2];for(const k in m){const v=m[k];if(k=="dm")s.d*=v;else if(k=="rm")s.rt*=v;else if(k=="gm")s.rg*=v;else if(k=="slow")s.slow=Math.min(s.slow,v);else s[k]+=v}}});return s}
+const nxt=(t,i)=>{const n=t.lv[i];return n>=5||(n>=2&&t.lv[1-i]>2)?null:TD[t.k].p[i][1][n]};
+const DESC=["Cheap, fast single shots. Great vs regular monkeys.","Explodes on impact and hits groups. Pops lead.","Slows monkeys it hits. Weak damage, great support.","Huge range, one big hit. Great vs tough targets. Sees camo.","Grows bananas, but ONLY while a wave is active. Does not attack.","Insane fire rate. Sees camo. Cannot pop lead.","Slow lava blasts with a huge area. Pops lead.","Chain lightning through many monkeys. Pops lead, sees camo."];
+const FXN={dm:v=>"Damage x"+v,rm:v=>"Fires "+Math.round((1/v-1)*100)+"% faster",gm:v=>"Range +"+Math.round((v-1)*100)+"%",multi:v=>"+"+v+" shot(s) per volley",spl:v=>"+"+v+" blast radius (pops lead)",slow:v=>"Slows monkeys to "+Math.round(v*100)+"% speed",st:v=>"+"+v+"s slow time",bd:v=>"+"+Math.round(v*100)+"% damage vs big/boss",chain:v=>"+"+v+" lightning arcs",inc:v=>"+"+(v*FM).toFixed(1)+" bananas/sec during waves",wb:v=>"+"+Math.round(v*FM)+" bananas after each wave",see:()=>"Detects camo monkeys"};
+const fx=m=>Object.keys(m).map(k=>FXN[k](m[k])).join("<br>");
+function tdesc(t){const d=TD[t.k],s=tstat(t);let h="<b>"+d.e+" "+d.n+"</b><br>"+DESC[t.k]+"<br>";
+ if(s.inc)return h+"Income: "+(s.inc*FM).toFixed(1)+"/s in waves"+(s.wb?" + "+Math.round(s.wb*FM)+" per wave":"");
+ return h+"Damage "+s.d.toFixed(0)+(s.multi>1?" x"+s.multi:"")+" · "+(1/s.rt).toFixed(1)+" shots/s · Range "+(s.rg|0)+"<br>Pops: ✔ normal · "+(s.spl||s.chain?"✔":"✘")+" lead · "+(s.see?"✔":"✘")+" camo"}
+function tip(h,ev){const t=$("tip");if(!h){t.style.display="none";return}t.innerHTML=h;t.style.display="block";t.style.left=Math.max(4,Math.min(innerWidth-t.offsetWidth-4,ev.clientX+12))+"px";t.style.top=Math.max(4,ev.clientY-t.offsetHeight-14)+"px"}
+function hov(ev){if(!G||(drg&&drg.mv))return tip();const d=ev.target.closest&&ev.target.closest("[data-tip]");if(d)return tip(d.dataset.tip,ev);if(ev.target!=cv)return tip();const[px,py]=pt(ev);
+ for(const e of G.en){const q=posAt(e.d),t=ET[e.ty];if(Math.hypot(q[0]-px,q[1]-py)<t.s*.7+6)return tip("<b>"+t.n+"</b> "+Math.ceil(e.hp)+"/"+Math.ceil(e.mh)+" HP<br>"+(t.x||"Basic monkey")+"<br>Lives lost if it escapes: "+t.l,ev)}
+ const tw=G.tw.find(t=>Math.hypot(t.x-px,t.y-py)<20);tip(tw?tdesc(tw):"",ev)}
+function dmg(e,d){e.hp-=d;if(e.hp<=0&&!e.dead){e.dead=1;const t=ET[e.ty],p=posAt(e.d);const rw=Math.max(1,Math.round(t.r*G.rm*.65));G.b+=rw;G.fl.push({x:p[0],y:p[1],t:.8,txt:"+"+rw+"🍌"});(t.k||[]).forEach((c,i)=>mk(c,e.hm,Math.max(0,e.d-i*14-8)))}}
 function hit(p){const s=p.st;let tg=[];if(s.spl){tg=G.en.filter(e=>{if(e.dead)return false;const q=posAt(e.d);return Math.hypot(q[0]-p.tx,q[1]-p.ty)<=s.spl});G.fl.push({x:p.tx,y:p.ty,t:.3,r:s.spl})}else if(p.tg&&!p.tg.dead)tg=[p.tg];
- for(const e of tg){dmg(e,s.d);if(s.slow&&!e.dead){e.sl=s.st;e.f=s.slow}}}
-function upd(dt){const g=G;g.clock+=dt;
+ for(const e of tg){dmg(e,s.d*(1+(e.mh>=100?s.bd:0)));if(s.slow<1&&!e.dead){e.sl=s.st;e.f=s.slow}}}
+function upd(dt){const g=G;g.clock+=dt;if(g.tut){if(g.tut==1&&g.tw.length){g.tut=2;popup(TUT[2])}else if(g.tut==2&&g.w>=1){g.tut=3;popup(TUT[3])}else if(g.tut==3&&g.tw.some(t=>t.lv[0]+t.lv[1])){g.tut=0;S.seen.push("T");save();popup(TUT[4])}}
  while(g.sp.length&&g.sp[0].t<=g.clock){const s=g.sp.shift();mk(s.ty,s.hm,0)}
  for(const e of g.en){e.sl-=dt;e.d+=ET[e.ty].sp*(e.sl>0?e.f:1)*dt;if(e.d>=g.P.L){e.dead=1;g.hp-=ET[e.ty].l;snd(150,.15)}}
- for(const t of g.tw){t.cd-=dt;if(t.cd>0)continue;const st=tstat(t);let b=null;for(const e of g.en){if(e.dead)continue;const p=posAt(e.d);if(Math.hypot(p[0]-t.x,p[1]-t.y)<=st.rg&&(!b||e.d>b.d))b=e}
-  if(b){const p=posAt(b.d);t.cd=st.rt;g.pj.push({x:t.x,y:t.y,tg:b,tx:p[0],ty:p[1],st,k:t.k})}}
+ for(const t of g.tw){const st=tstat(t);if(st.inc){if(g.inWave)g.b+=st.inc*FM*dt;continue}t.cd-=dt;if(t.cd>0)continue;
+  const ins=[];for(const e of g.en){if(e.dead)continue;const p=posAt(e.d);if(Math.hypot(p[0]-t.x,p[1]-t.y)<=st.rg&&(!ET[e.ty].camo||st.see)&&(!ET[e.ty].lead||st.spl||st.chain))ins.push(e)}
+  if(!ins.length)continue;ins.sort((a,b)=>b.d-a.d);t.cd=Math.max(.08,st.rt);
+  if(st.chain){let c=ins[0],seen=[],pts=[[t.x,t.y]];for(let i=0;i<st.chain&&c;i++){const q=posAt(c.d);pts.push(q);dmg(c,st.d*(1+(c.mh>=100?st.bd:0)));seen.push(c);let nb=null,bd=95;for(const e of g.en){if(e.dead||seen.includes(e))continue;const r=posAt(e.d),dd=Math.hypot(r[0]-q[0],r[1]-q[1]);if(dd<bd){bd=dd;nb=e}}c=nb}g.fl.push({ln:pts,t:.15});continue}
+  for(let i=0;i<Math.round(st.multi);i++){const b=ins[i%ins.length],p=posAt(b.d);g.pj.push({x:t.x,y:t.y,tg:b,tx:p[0],ty:p[1],st,k:t.k})}}
  for(const p of g.pj){if(p.tg&&!p.tg.dead){const q=posAt(p.tg.d);p.tx=q[0];p.ty=q[1]}const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy),m=p.st.sp*dt;if(d<=m+4){p.done=1;hit(p)}else{p.x+=dx/d*m;p.y+=dy/d*m}}
  g.pj=g.pj.filter(p=>!p.done);g.en=g.en.filter(e=>!e.dead);
  for(const f of g.fl){f.t-=dt;if(f.txt)f.y-=25*dt}g.fl=g.fl.filter(f=>f.t>0);
- if(g.inWave&&!g.sp.length&&!g.en.length){g.inWave=false;const bo=30+g.w*6;g.b+=bo;g.fl.push({x:400,y:280,t:1.4,txt:"Wave cleared! +"+bo+"🍌"});if(g.w>=g.waves)return end(true)}
+ if(g.inWave&&!g.sp.length&&!g.en.length){g.inWave=false;if(g.mode=="i")setTimeout(saveI,0);const bo=Math.round(20+g.w*3+(g.mode=="c"?g.lv:0)+g.tw.reduce((a,t)=>a+tstat(t).wb*FM,0));g.b+=bo;g.fl.push({x:400,y:280,t:1.4,txt:"Wave cleared! +"+bo+"🍌"});if(g.w>=g.waves)return end(true)}
  if(g.hp<=0)return end(false);
  if(g.auto&&!g.inWave&&g.w<g.waves)callWave()}
-function end(win){G.over=true;G.paused=false;if(win&&G.mode=="c"){prog=Math.max(prog,Math.min(20,G.lv+1));}if(G.mode=="i")S.best=Math.max(S.best,G.w-1);save();snd(win?900:120,.4);
- const c=G.mode=="c",l=G.lv;$("ot").textContent=win?(l==20?"Campaign complete! 🏆":"Level complete! 🎉"):"The monkeys broke through! 🐒";
+function end(win){G.over=true;G.paused=false;if(win&&G.mode=="c"){prog=Math.max(prog,Math.min(40,G.lv+1));}if(G.mode=="i"){S.best=Math.max(S.best,G.w-1);try{localStorage.removeItem("bd_i")}catch(e){}}save();snd(win?900:120,.4);
+ const c=G.mode=="c",l=G.lv;$("ot").textContent=win?(l==40?"Campaign complete! 🏆":"Level complete! 🎉"):"The monkeys broke through! 🐒";
  $("op").textContent=c?(win?"The bananas are safe.":"Level "+l+" failed."):"You survived "+(G.w-1)+" waves.";
- $("ob").innerHTML=(win&&c&&l<20?'<button class="btn" onclick="startGame(\'c\','+(l+1)+')">Next level</button>':'')+'<button class="btn" onclick="startGame(\''+G.mode+'\','+l+')">'+(win?"Replay":"Retry")+'</button><button class="btn" onclick="G=null;show(\'menu\')">Menu</button>';$("ov").style.display="flex"}
+ $("ob").innerHTML=(win&&c&&l<40?'<button class="btn" onclick="startGame(\'c\','+(l+1)+')">Next level</button>':'')+'<button class="btn" onclick="startGame(\''+G.mode+'\','+l+')">'+(win?"Replay":"Retry")+'</button><button class="btn" onclick="G=null;show(\'menu\')">Menu</button>';$("ov").style.display="flex"}
 
-function ui(){const t=G.sel;$("sel").style.display=t?"flex":"none";if(t){const d=TD[t.k];$("si").textContent=d.e+" "+d.n+" "+"★".repeat(t.lv)+(t.lv<3?"":" MAX");$("up").textContent=t.lv<3?"Upgrade 🍌"+upc(t):"Maxed";$("sl").textContent="Sell 🍌"+(t.sp*.6|0)}hud()}
+function ui(){if(G.mode=="i"&&!G.inWave)saveI();const t=G.sel;$("sel").style.display=t?"flex":"none";if(t){const d=TD[t.k];$("si").textContent=d.e+" "+d.n+" ["+t.lv.join("-")+"]";[0,1].forEach(i=>{const u=nxt(t,i);$("u"+i).textContent=d.p[i][0]+": "+(u?u[0]+" 🍌"+u[1]:t.lv[i]>=5?"MAX":"Locked");$("u"+i).dataset.tip=u?"<b>"+u[0]+"</b> · "+d.p[i][0]+" path<br>"+fx(u[2]):(t.lv[i]>=5?"Path fully upgraded":"Locked: only one path can go past tier 2")});$("sl").textContent="Sell 🍌"+(t.sp*.6|0)}hud()}
 function hud(){const g=G;$("ba").textContent=g.b|0;$("hp").textContent=Math.max(0,g.hp);$("wi").textContent=g.mode=="c"?"Level "+g.lv+" · Wave "+g.w+"/"+g.waves:"∞ Wave "+g.w;$("wv").textContent="▶ Wave "+(g.w+1);$("wv").disabled=g.w>=g.waves;$("pa").textContent=g.paused?"▶":"⏸";$("spd").textContent="⏩ x"+g.spd;$("au").style.opacity=g.auto?1:.55;
- document.querySelectorAll(".tb").forEach((b,i)=>{b.classList.toggle("on",g.place==i);b.classList.toggle("dis",g.b<TD[i].c)});if(g.sel)$("up").disabled=g.sel.lv>=3||g.b<upc(g.sel)}
-$("up").onclick=()=>{const t=G.sel;if(t&&t.lv<3){const c=upc(t);if(G.b>=c){G.b-=c;t.sp+=c;t.lv++;snd(800)}}ui()};
+ document.querySelectorAll(".tb").forEach((b,i)=>{b.classList.toggle("on",g.place==i);b.classList.toggle("dis",g.b<TD[i].c)});if(g.sel)[0,1].forEach(i=>{const u=nxt(g.sel,i);$("u"+i).disabled=!u||g.b<u[1]})}
+[0,1].forEach(i=>$("u"+i).onclick=()=>{const t=G.sel,u=t&&nxt(t,i);if(u&&G.b>=u[1]){G.b-=u[1];t.sp+=u[1];t.lv[i]++;snd(800)}ui()});
 $("sl").onclick=()=>{const t=G.sel;if(t){G.b+=t.sp*.6|0;G.tw=G.tw.filter(q=>q!=t);G.sel=null;snd(300)}ui()};
 const canPlace=(px,py)=>px>16&&px<W-16&&py>16&&py<H-16&&!onPath(px,py,40)&&!G.tw.some(t=>Math.hypot(t.x-px,t.y-py)<34);
 function pt(ev){const r=cv.getBoundingClientRect();return[(ev.clientX-r.left)*W/r.width,(ev.clientY-r.top)*H/r.height]}
-cv.onpointermove=ev=>{if(!G)return;const p=pt(ev);G.mx=p[0];G.my=p[1]};
-cv.onpointerdown=ev=>{if(!G||G.over)return;const[px,py]=pt(ev);G.mx=px;G.my=py;
- if(G.place!=null){const d=TD[G.place];if(canPlace(px,py)&&G.b>=d.c){G.b-=d.c;G.tw.push({k:G.place,x:px,y:py,lv:0,cd:0,sp:d.c});snd(600);if(!ev.shiftKey)G.place=null}ui();return}
- G.sel=G.tw.find(t=>Math.hypot(t.x-px,t.y-py)<20)||null;ui()};
+function doPlace(px,py,keep){const d=TD[G.place];if(canPlace(px,py)&&G.b>=d.c){G.b-=d.c;G.tw.push({k:G.place,x:px,y:py,lv:[0,0],cd:0,sp:d.c});snd(600);if(!keep)G.place=null}ui()}
+cv.onpointerdown=ev=>{if(!G||G.over)return;const[px,py]=pt(ev);G.mx=px;G.my=py;if(G.place!=null){doPlace(px,py,ev.shiftKey);return}G.sel=G.tw.find(t=>Math.hypot(t.x-px,t.y-py)<20)||null;ui()};
+addEventListener("pointermove",ev=>{if(!G)return;const p=pt(ev);G.mx=p[0];G.my=p[1];if(drg&&Math.hypot(ev.clientX-drg.x,ev.clientY-drg.y)>8)drg.mv=1;hov(ev)});
+addEventListener("pointerdown",hov);
+addEventListener("pointerup",ev=>{if(!drg||!G)return;const d=drg;drg=null;if(d.mv){const r=cv.getBoundingClientRect();if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom){const p=pt(ev);doPlace(p[0],p[1],false)}G.place=null;ui()}else if(d.was){G.place=null;ui()}});
 cv.oncontextmenu=e=>{e.preventDefault();if(G){G.place=null;ui()}};
 addEventListener("keydown",e=>{if(G&&e.key=="Escape"){G.place=null;G.sel=null;ui()}if(G&&e.key==" "){e.preventDefault();callWave()}});
 
 function ring(px,py,r,c){x.beginPath();x.arc(px,py,r,0,7);x.fillStyle=c;x.fill()}
 function draw(){const g=G;x.drawImage(bg,0,0);x.textAlign="center";x.textBaseline="middle";
  for(const t of g.tw)if(S.range||t==g.sel)ring(t.x,t.y,tstat(t).rg,t==g.sel?"#ffffff55":"#ffffff1a");
- for(const t of g.tw){x.font="30px serif";x.fillText(TD[t.k].e,t.x,t.y);if(t.lv){x.font="11px sans-serif";x.fillStyle="#fff";x.fillText("★".repeat(t.lv),t.x,t.y+20)}}
- for(const e of g.en){const[px,py]=posAt(e.d),t=ET[e.ty];if(e.sl>0)ring(px,py,t.s*.6,"#4dabf788");x.font=t.s+"px serif";x.fillText(t.e,px,py);
+ for(const t of g.tw){x.fillStyle="#0004";x.beginPath();x.ellipse(t.x,t.y+14,17,7,0,0,7);x.fill();ring(t.x,t.y+2,19,"#6b4423");ring(t.x,t.y+2,16,"#c19a62");x.font="27px serif";x.fillText(TD[t.k].e,t.x,t.y+1);if(t.lv[0]+t.lv[1]){x.font="11px sans-serif";x.fillStyle="#fff";x.fillText(t.lv.join("★"),t.x,t.y+20)}}
+ for(const e of g.en){const[px,py]=posAt(e.d),t=ET[e.ty];x.fillStyle="#0003";x.beginPath();x.ellipse(px,py+t.s*.42,t.s*.45,t.s*.17,0,0,7);x.fill();if(e.sl>0)ring(px,py,t.s*.6,"#4dabf788");
+  if(t.lead){x.strokeStyle="#adb5bd";x.lineWidth=4;x.beginPath();x.arc(px,py,t.s*.62,0,7);x.stroke()}
+  if(t.camo){x.globalAlpha=.5;x.setLineDash([4,4]);x.strokeStyle="#69db7c";x.lineWidth=2;x.beginPath();x.arc(px,py,t.s*.68,0,7);x.stroke();x.setLineDash([])}
+  x.font=t.s+"px serif";x.fillText(t.e,px,py);x.globalAlpha=1;if(t.lead||t.camo){x.font="12px serif";x.fillText((t.lead?"🛡️":"")+(t.camo?"🍃":""),px+t.s*.5,py-t.s*.5)}
   if(e.hp<e.mh&&e.mh>15){x.fillStyle="#c92a2a";x.fillRect(px-t.s/2,py-t.s*.7,t.s,4);x.fillStyle="#51cf66";x.fillRect(px-t.s/2,py-t.s*.7,t.s*e.hp/e.mh,4)}}
- for(const p of g.pj)ring(p.x,p.y,p.k==1?6:4,PC[p.k]);
- for(const f of g.fl){if(f.r)ring(f.x,f.y,f.r,"#ff922b66");else{x.globalAlpha=Math.min(1,f.t);x.font="bold 15px sans-serif";x.fillStyle="#fff";x.strokeStyle="#000";x.lineWidth=3;x.strokeText(f.txt,f.x,f.y);x.fillText(f.txt,f.x,f.y);x.globalAlpha=1}}
+ for(const p of g.pj)ring(p.x,p.y,p.k==1||p.k==6?7:4,PC[p.k]);
+ for(const f of g.fl){if(f.ln){x.strokeStyle="#a5d8ff";x.lineWidth=3;x.beginPath();f.ln.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.stroke()}else if(f.r)ring(f.x,f.y,f.r,"#ff922b66");else{x.globalAlpha=Math.min(1,f.t);x.font="bold 15px sans-serif";x.fillStyle="#fff";x.strokeStyle="#000";x.lineWidth=3;x.strokeText(f.txt,f.x,f.y);x.fillText(f.txt,f.x,f.y);x.globalAlpha=1}}
  if(g.place!=null){const d=TD[g.place],ok=canPlace(g.mx,g.my)&&g.b>=d.c;ring(g.mx,g.my,d.rg,ok?"#ffffff44":"#ff000044");x.globalAlpha=.75;x.font="30px serif";x.fillText(d.e,g.mx,g.my);x.globalAlpha=1}
- if(g.paused){x.font="bold 40px sans-serif";x.fillStyle="#fff";x.fillText("⏸ Paused",W/2,H/2)}}
+ if(g.tut&&HINT[g.tut]&&$("tut").style.display!="flex"){x.fillStyle="#000b";x.fillRect(80,10,640,34);x.fillStyle="#ffe066";x.font="bold 16px sans-serif";x.fillText(HINT[g.tut],400,27)}
+ if(g.paused&&$("tut").style.display!="flex"){x.font="bold 40px sans-serif";x.fillStyle="#fff";x.fillText("⏸ Paused",W/2,H/2)}}
 function loop(t){requestAnimationFrame(loop);if(!G||$("game").style.display!="flex")return;const dt=Math.min(.05,(t-last)/1000);last=t;if(!G.paused&&!G.over)for(let i=0;i<G.spd&&G&&!G.over;i++)upd(dt);if(!G)return;draw();hud()}
 requestAnimationFrame(loop);show("menu");
 </script></body></html>
