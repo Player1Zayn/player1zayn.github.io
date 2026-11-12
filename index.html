@@ -119,7 +119,7 @@
             </button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div id="home-view" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             <!-- LEFT COLUMN: Sticky Side Panel -->
             <aside class="lg:col-span-4 xl:col-span-3 space-y-6 lg:sticky lg:top-24 max-h-[calc(100vh-140px)] flex flex-col">
@@ -201,6 +201,19 @@
 
         </div>
 
+            <!-- Game Reviews view (replaces the game page, header stays) -->
+        <div id="reviews-view" class="hidden">
+            <div class="flex flex-wrap items-center gap-3 mb-6">
+                <button onclick="window.reviewsBack()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-sm transition-colors">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> <span id="reviews-back-label">Back to Game Hub</span>
+                </button>
+                <h3 class="text-xl font-bold game-font text-slate-300 tracking-widest flex items-center gap-2">
+                    <i data-lucide="star" class="w-5 h-5 text-yellow-400"></i> GAME REVIEWS
+                </h3>
+            </div>
+            <div id="reviews-content"></div>
+        </div>
+
     </main>
 
     <footer class="bg-slate-900 py-6 mt-auto border-t border-slate-800">
@@ -257,7 +270,7 @@
                 { id: 22, name: "Flappy Bird", color: "from-pink-500 to-rose-600", icon: "move" },
                 { id: 23, name: "Star Wars: Galactic Warfare (Alpha 1.1)", color: "from-emerald-500 to-teal-600", icon: "map-pin" },
                 { id: 24, name: "Banana Defenders", color: "from-violet-500 to-purple-600", icon: "banana" },
-                { id: 25, name: "Coming Soon", color: "from-gray-700 to-black", icon: "eye" },
+                { id: 25, name: "Coming Soonr", color: "from-gray-700 to-black", icon: "eye" },
                 { id: 26, name: "Coming Soon", color: "from-yellow-400 to-orange-500", icon: "sun" }
             ];
 
@@ -268,7 +281,7 @@
                 { key: 'hot',    title: 'Hot Right Now', icon: 'flame',       accent: 'text-orange-400', ids: [19, 4, 3, 24, 11] },
                 { key: 'action', title: 'Action',        icon: 'swords',      accent: 'text-red-400',    ids: [1, 2, 4, 5, 6, 8, 10, 12, 13, 14, 15, 16, 18, 21, 22, 23, 24] },
                 { key: 'horror', title: 'Horror',        icon: 'ghost',       accent: 'text-purple-400', ids: [3, 7, 11, 17, 20] },
-                { key: 'idle',   title: 'Idle',          icon: 'timer',       accent: 'text-green-400',  ids: [9, 19] },
+                { key: 'idle',   title: 'Idle',          icon: 'timer',       accent: 'text-green-400',  ids: [9, 19, 24] },
                 { key: 'all',    title: 'All Games',     icon: 'layout-grid', accent: 'text-blue-400',   ids: null }
             ];
 
@@ -301,6 +314,7 @@
                 await fetchProfile();
                 closeAuthModal();
                 updateAuthButton();
+                refreshReviewsIfOpen();
                 await fetchSiteData();
                 startChat();
                 refreshIcons();
@@ -453,6 +467,13 @@
                         nav.appendChild(pill);
                     }
                 });
+                if (nav) {
+                    const rp = document.createElement('button');
+                    rp.className = 'section-nav-btn flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 px-4 py-2 rounded-full text-xs font-bold text-slate-300 transition-colors shrink-0';
+                    rp.innerHTML = '<i data-lucide="star" class="w-4 h-4 text-yellow-400"></i>Game Reviews';
+                    rp.onclick = () => window.openReviews();
+                    nav.appendChild(rp);
+                }
                 refreshIcons();
             }
 
@@ -557,6 +578,7 @@
                 if (input) { input.disabled = true; input.value = ''; input.placeholder = 'Login to chat'; }
                 if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('opacity-50'); }
                 updateAuthButton();
+                refreshReviewsIfOpen();
                 await fetchSiteData();
                 refreshIcons();
             }
@@ -639,7 +661,7 @@
                         const name = (m.username || 'User').replace(/</g, "&lt;");
                         const text = (m.text || '').replace(/</g, "&lt;");
                         const isMe = m.user_id === _user.id;
-                        const timeStr = m.created_at ? new Date(m.created_at).toLocaleTimeString('sv-SE', {hour: '2-digit', minute:'2-digit'}) : '';
+                        const timeStr = m.created_at ? formatDateTime(m.created_at) : '';
                         const div = document.createElement('div');
                         div.className = `p-3 rounded-lg border transition-all flex gap-3 group relative ${userIsBanned ? 'bg-red-900/20 border-red-900/50' : 'bg-slate-800 border-slate-700'}`;
                         div.innerHTML = `
@@ -648,7 +670,7 @@
                             </div>
                             <div class="w-full">
                                 <div class="flex items-center justify-between mb-1">
-                                    <span class="font-bold text-sm flex items-center gap-1 ${m.is_mod ? 'text-yellow-500' : (isMe ? 'text-blue-400' : 'text-purple-400')}">
+                                    <span class="font-bold text-sm flex flex-wrap items-center gap-1 ${m.is_mod ? 'text-yellow-500' : (isMe ? 'text-blue-400' : 'text-purple-400')}">
                                         ${name} 
                                         ${m.is_mod ? '<i data-lucide="shield-check" class="w-3.5 h-3.5 text-yellow-500"></i>' : ''}
                                         <span class="text-xs text-slate-500 ml-2 font-normal">${timeStr}</span>
@@ -687,6 +709,247 @@
                 } 
             };
             window.handleVerify = async function(id, setVerified) { if (!_isMod) return; const { error } = await _supabase.from('comments').update({ verified: setVerified }).eq('id', id); if (error) alert("Could not verify: " + error.message); renderChat(); };
+
+            // ================= GAME REVIEWS =================
+            let _reviewsGameId = null;
+            let _reviewStats = {};
+            let _gameReviews = [];
+            let _reviewVotes = {};
+            let _reviewsError = null;
+            let _draftRating = 0;
+            let _draftText = '';
+            let _reviewsChannelStarted = false;
+
+            function pad2(n) { return String(n).padStart(2, '0'); }
+            function formatDate(iso) { const d = new Date(iso); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`; }
+            function formatDateTime(iso) { const d = new Date(iso); return `${formatDate(iso)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; }
+            function escapeHtml(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+            function countWords(t) { const x = t.trim(); return x ? x.split(/\s+/).length : 0; }
+            function starsText(n) { const r = Math.max(0, Math.min(5, Math.round(n))); return '★'.repeat(r) + '☆'.repeat(5 - r); }
+            function isReviewsOpen() { const v = document.getElementById('reviews-view'); return !!v && !v.classList.contains('hidden'); }
+
+            function setReviewsView(open) {
+                const home = document.getElementById('home-view');
+                const rv = document.getElementById('reviews-view');
+                if (home) home.classList.toggle('hidden', open);
+                if (rv) rv.classList.toggle('hidden', !open);
+                const lbl = document.getElementById('reviews-back-label');
+                if (lbl) lbl.innerText = _reviewsGameId === null ? 'Back to Game Hub' : 'Back to all games';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            async function loadReviewStats() {
+                const { data } = await _supabase.from('game_review_stats').select('*');
+                _reviewStats = {};
+                if (data) data.forEach(r => { _reviewStats[r.game_id] = { count: Number(r.review_count) || 0, avg: Number(r.avg_rating) || 0 }; });
+            }
+
+            async function loadGameReviews(gameId) {
+                const { data, error } = await _supabase.from('game_reviews_public').select('*').eq('game_id', gameId).order('created_at', { ascending: false });
+                _reviewsError = error ? error.message : null;
+                _gameReviews = data || [];
+                _reviewVotes = {};
+                if (_user && _gameReviews.length) {
+                    const { data: mv } = await _supabase.from('review_votes').select('review_id, vote').eq('user_id', _user.id).in('review_id', _gameReviews.map(r => r.id));
+                    if (mv) mv.forEach(v => { _reviewVotes[v.review_id] = v.vote; });
+                }
+            }
+
+            function startReviewsRealtime() {
+                if (_reviewsChannelStarted || !_supabase) return;
+                _reviewsChannelStarted = true;
+                _supabase.channel('reviews-room')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_reviews' }, () => refreshReviewsIfOpen())
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'review_votes' }, () => refreshReviewsIfOpen())
+                    .subscribe();
+            }
+
+            async function refreshReviewsIfOpen() {
+                if (!isReviewsOpen()) return;
+                if (_reviewsGameId === null) { await loadReviewStats(); renderReviewsList(); }
+                else { await loadGameReviews(_reviewsGameId); renderReviewDetail(); }
+            }
+
+            window.openReviews = async function() {
+                startReviewsRealtime();
+                _reviewsGameId = null;
+                setReviewsView(true);
+                await loadReviewStats();
+                renderReviewsList();
+            };
+
+            window.openGameReviews = async function(gameId) {
+                if (_reviewsGameId !== gameId) { _draftRating = 0; _draftText = ''; }
+                _reviewsGameId = gameId;
+                setReviewsView(true);
+                await loadGameReviews(gameId);
+                renderReviewDetail();
+            };
+
+            window.reviewsBack = async function() {
+                if (_reviewsGameId !== null) { await window.openReviews(); }
+                else { setReviewsView(false); }
+            };
+
+            function renderReviewsList() {
+                const box = document.getElementById('reviews-content');
+                if (!box) return;
+                const cards = gamesList.map(g => {
+                    const st = _reviewStats[g.id];
+                    const rating = st && st.count
+                        ? `<div class="text-sm"><span class="text-yellow-400">${starsText(st.avg)}</span> <span class="text-slate-300 font-bold">${st.avg.toFixed(1)}</span> <span class="text-slate-500 text-xs">(${st.count})</span></div>`
+                        : `<div class="text-xs text-slate-500">No reviews yet</div>`;
+                    return `<button onclick="window.openGameReviews(${g.id})" class="game-card text-left bg-slate-800 border-2 border-slate-700 rounded-xl p-5 relative overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center gap-3">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${g.color}"></div>
+                        <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center"><i data-lucide="${g.icon}" class="w-6 h-6 text-gray-300"></i></div>
+                        <h4 class="game-font font-bold text-center break-words max-w-full">${escapeHtml(g.name)}</h4>
+                        ${rating}
+                    </button>`;
+                }).join('');
+                box.innerHTML = `<p class="text-slate-400 text-sm mb-5">Pick a game to read its reviews${_user ? ' or write your own' : ''}.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">${cards}</div>`;
+                const lbl = document.getElementById('reviews-back-label'); if (lbl) lbl.innerText = 'Back to Game Hub';
+                refreshIcons();
+            }
+
+            function reviewCardHtml(r) {
+                const mine = _user && r.user_id === _user.id;
+                const canDelete = mine || _isMod;
+                const my = _reviewVotes[r.id] || 0;
+                const likes = Number(r.likes) || 0, dislikes = Number(r.dislikes) || 0;
+                const nm = escapeHtml(r.username || 'User');
+                return `<div class="bg-slate-800 border ${mine ? 'border-blue-500/40' : 'border-slate-700'} rounded-xl p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-xs font-bold ${mine ? 'text-blue-400' : 'text-purple-400'}">${nm.charAt(0).toUpperCase()}</div>
+                            <span class="font-bold text-sm ${r.is_mod ? 'text-yellow-500' : (mine ? 'text-blue-400' : 'text-purple-400')}">${nm}</span>
+                            <span class="text-xs text-slate-500">${formatDate(r.created_at)}</span>
+                        </div>
+                        <span class="text-yellow-400 text-lg tracking-wide">${starsText(r.rating)}</span>
+                    </div>
+                    <p class="text-sm text-slate-300 whitespace-pre-wrap break-words mb-4">${escapeHtml(r.review_text)}</p>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="text-xs text-slate-500">Was this helpful?</span>
+                        <button onclick="window.voteReview('${r.id}', 1)" title="Helpful" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${my === 1 ? 'text-green-400 border-green-500/60 bg-green-500/15' : 'text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500/50'}"><i data-lucide="thumbs-up" class="w-4 h-4"></i><span>${likes}</span></button>
+                        <button onclick="window.voteReview('${r.id}', -1)" title="Not helpful" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${my === -1 ? 'text-red-400 border-red-500/60 bg-red-500/15' : 'text-slate-400 border-slate-600 hover:text-red-400 hover:border-red-500/50'}"><i data-lucide="thumbs-down" class="w-4 h-4"></i><span>${dislikes}</span></button>
+                        ${canDelete ? `<button onclick="window.deleteReview('${r.id}')" class="ml-auto flex items-center gap-1 text-xs text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i>Delete</button>` : ''}
+                    </div>
+                </div>`;
+            }
+
+            function renderReviewDetail() {
+                const box = document.getElementById('reviews-content');
+                const game = gamesList.find(g => g.id === _reviewsGameId);
+                if (!box || !game) return;
+                const total = _gameReviews.length;
+                const avg = total ? _gameReviews.reduce((a, r) => a + r.rating, 0) / total : 0;
+                const myReview = _user ? _gameReviews.find(r => r.user_id === _user.id) : null;
+
+                let formHtml;
+                if (!_user) {
+                    formHtml = `<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5 mb-8 flex flex-wrap items-center justify-between gap-3">
+                        <span class="text-sm text-slate-300">Login to write a review.</span>
+                        <button onclick="window.openAuthModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Login</button>
+                    </div>`;
+                } else if (myReview) {
+                    formHtml = `<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-4 mb-8 text-sm text-slate-400">You have already reviewed this game. Delete your review below if you want to write a new one.</div>`;
+                } else {
+                    const words = countWords(_draftText);
+                    const stars = [1, 2, 3, 4, 5].map(i => `<button type="button" data-star="${i}" onclick="window.setDraftRating(${i})" class="text-3xl leading-none transition-colors ${i <= _draftRating ? 'text-yellow-400' : 'text-slate-600 hover:text-yellow-300'}">★</button>`).join('');
+                    formHtml = `<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5 mb-8">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                            <span class="text-slate-200 font-bold">Write a review</span>
+                            <span class="text-xs text-slate-500">Posting as <span class="text-blue-400 font-bold">${escapeHtml(_profile ? _profile.username : '')}</span> &middot; ${formatDate(new Date().toISOString())}</span>
+                        </div>
+                        <div class="flex items-center gap-1 mb-4">${stars}</div>
+                        <textarea id="review-text" rows="4" maxlength="1000" oninput="window.onReviewInput(this)" placeholder="Share your thoughts about ${escapeHtml(game.name)} (max 100 words)..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none resize-none">${escapeHtml(_draftText)}</textarea>
+                        <div class="flex items-center justify-between mt-3">
+                            <span id="review-word-count" class="text-xs font-mono ${words > 100 ? 'text-red-400' : 'text-slate-500'}">${words}/100 words</span>
+                            <button id="review-submit" onclick="window.submitReview()" ${words > 100 ? 'disabled' : ''} class="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Publish review</button>
+                        </div>
+                    </div>`;
+                }
+
+                const listHtml = _reviewsError
+                    ? `<div class="text-center text-red-400 text-sm py-8">Could not load reviews: ${escapeHtml(_reviewsError)}</div>`
+                    : (total ? `<div class="space-y-4">${_gameReviews.map(reviewCardHtml).join('')}</div>` : `<div class="text-center text-slate-500 italic py-8">No reviews yet. Be the first!</div>`);
+
+                box.innerHTML = `<div class="relative bg-slate-800 border border-slate-700 rounded-xl p-5 mb-6 flex flex-wrap items-center gap-4 overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${game.color}"></div>
+                        <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center shrink-0"><i data-lucide="${game.icon}" class="w-6 h-6 text-gray-300"></i></div>
+                        <div>
+                            <h4 class="text-xl font-bold game-font break-words">${escapeHtml(game.name)}</h4>
+                            <div class="text-sm">${total ? `<span class="text-yellow-400">${starsText(avg)}</span> <span class="text-slate-300 font-bold">${avg.toFixed(1)}</span> <span class="text-slate-500 text-xs">(${total} review${total === 1 ? '' : 's'})</span>` : '<span class="text-slate-500 text-xs">No reviews yet</span>'}</div>
+                        </div>
+                    </div>
+                    ${formHtml}
+                    ${listHtml}`;
+                const lbl = document.getElementById('reviews-back-label'); if (lbl) lbl.innerText = 'Back to all games';
+                refreshIcons();
+            }
+
+            window.setDraftRating = function(n) {
+                _draftRating = n;
+                document.querySelectorAll('#reviews-content [data-star]').forEach(b => {
+                    const i = Number(b.getAttribute('data-star'));
+                    b.className = 'text-3xl leading-none transition-colors ' + (i <= n ? 'text-yellow-400' : 'text-slate-600 hover:text-yellow-300');
+                });
+            };
+
+            window.onReviewInput = function(el) {
+                _draftText = el.value;
+                const n = countWords(_draftText);
+                const c = document.getElementById('review-word-count');
+                if (c) { c.innerText = `${n}/100 words`; c.className = 'text-xs font-mono ' + (n > 100 ? 'text-red-400' : 'text-slate-500'); }
+                const b = document.getElementById('review-submit');
+                if (b) b.disabled = n > 100;
+            };
+
+            window.submitReview = async function() {
+                if (!_user) { window.showLoginPopup(); return; }
+                const text = _draftText.trim();
+                const words = countWords(text);
+                if (!_draftRating) { alert('Please choose a star rating first.'); return; }
+                if (!text) { alert('Please write a short review.'); return; }
+                if (words > 100) { alert('Your review is limited to 100 words.'); return; }
+                const btn = document.getElementById('review-submit');
+                if (btn) btn.disabled = true;
+                const { error } = await _supabase.from('game_reviews').insert([{ game_id: _reviewsGameId, user_id: _user.id, rating: _draftRating, review_text: text }]);
+                if (error) {
+                    alert(error.code === '23505' ? 'You have already reviewed this game.' : 'Could not publish review: ' + error.message);
+                } else {
+                    _draftRating = 0; _draftText = '';
+                }
+                await loadGameReviews(_reviewsGameId);
+                renderReviewDetail();
+            };
+
+            window.deleteReview = async function(id) {
+                if (!confirm('Delete this review?')) return;
+                const { error } = await _supabase.from('game_reviews').delete().eq('id', id);
+                if (error) alert('Could not delete: ' + error.message);
+                await loadGameReviews(_reviewsGameId);
+                renderReviewDetail();
+            };
+
+            window.voteReview = async function(reviewId, value) {
+                if (!_user) { window.showLoginPopup(); return; }
+                const r = _gameReviews.find(x => x.id === reviewId);
+                if (!r) return;
+                const prev = _reviewVotes[reviewId] || 0;
+                const next = prev === value ? 0 : value;
+                let likes = Number(r.likes) || 0, dislikes = Number(r.dislikes) || 0;
+                if (prev === 1) likes--; if (prev === -1) dislikes--;
+                if (next === 1) likes++; if (next === -1) dislikes++;
+                r.likes = Math.max(0, likes); r.dislikes = Math.max(0, dislikes);
+                if (next === 0) delete _reviewVotes[reviewId]; else _reviewVotes[reviewId] = next;
+                renderReviewDetail();
+                let res;
+                if (next === 0) res = await _supabase.from('review_votes').delete().eq('review_id', reviewId).eq('user_id', _user.id);
+                else res = await _supabase.from('review_votes').upsert({ review_id: reviewId, user_id: _user.id, vote: next }, { onConflict: 'review_id,user_id' });
+                if (res.error) { alert('Could not save vote: ' + res.error.message); await loadGameReviews(_reviewsGameId); renderReviewDetail(); }
+            };
+            // ================= END GAME REVIEWS =================
 
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { window.closeLoginPopup(); closeAuthModal(); } });
 
