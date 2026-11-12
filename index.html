@@ -58,8 +58,9 @@
     </header>
 
     <!-- Auth Section -->
-    <div id="auth-section" class="flex-grow flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl w-full max-w-md backdrop-blur-md">
+    <div id="auth-section" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto" onclick="if(event.target===this) window.closeAuthModal()">
+        <div class="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl w-full max-w-md backdrop-blur-md relative">
+            <button type="button" onclick="window.closeAuthModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button>
             <div class="text-center mb-8">
                 <i data-lucide="lock" class="w-12 h-12 text-blue-500 mx-auto mb-4"></i>
                 <h2 id="auth-title" class="text-3xl font-bold text-white mb-2">Login</h2>
@@ -89,26 +90,32 @@
                 <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-blue-400 hover:text-blue-300 font-bold ml-1">Create Account</button>
             </div>
             
-            <div class="mt-4 text-center">
-                <button type="button" onclick="window.handleGuestLogin()" class="text-slate-400 hover:text-slate-200 font-bold text-sm transition-colors bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-700">
-                    Play as Guest (No Chat)
-                </button>
-            </div>
-
             <div id="auth-error" class="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500 text-xs hidden text-center"></div>
         </div>
     </div>
 
+    <!-- Login required popup -->
+    <div id="login-popup" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm" onclick="if(event.target===this) window.closeLoginPopup()">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
+            <i data-lucide="lock" class="w-10 h-10 text-blue-500 mx-auto mb-3"></i>
+            <p class="text-white font-bold mb-5">Login to access all functions</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="window.closeLoginPopup(); window.openAuthModal();" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Login</button>
+                <button onclick="window.closeLoginPopup()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-5 py-2 rounded-lg text-sm transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content (Hidden initially) -->
-    <main id="main-content" class="hidden flex-grow container mx-auto px-4 py-6">
+    <main id="main-content" class="flex-grow container mx-auto px-4 py-6">
         
         <div class="flex justify-between items-center mb-6">
             <div class="text-left">
-                <h2 class="text-2xl md:text-3xl font-bold">Welcome, <span id="display-name" class="text-blue-400"></span></h2>
+                <h2 class="text-2xl md:text-3xl font-bold">Welcome, <span id="display-name" class="text-blue-400">Guest</span></h2>
                 <p class="text-slate-400 text-sm">Join the community and explore the latest games.</p>
             </div>
-            <button onclick="handleSignOut()" class="flex items-center gap-2 bg-slate-800 hover:bg-red-900/40 border border-slate-700 hover:border-red-500/50 px-4 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-red-500/50">
-                <i data-lucide="log-out" class="w-4 h-4"></i> Sign Out
+            <button id="auth-action-btn" onclick="window.handleAuthButton()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+                <i data-lucide="log-in" class="w-4 h-4"></i> Login
             </button>
         </div>
 
@@ -216,6 +223,10 @@
             let _isDeveloper = false;
             let _isSignUp = false;
             let _gameConfigs = {};
+            let _voteCounts = {};
+            let _myVotes = {};
+            let _chatChannel = null;
+            let _votesChannelStarted = false;
 
             function refreshIcons() {
                 if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
@@ -245,8 +256,8 @@
                 { id: 21, name: "Imposter Online", color: "from-cyan-500 to-blue-600", icon: "rocket" },
                 { id: 22, name: "Flappy Bird", color: "from-pink-500 to-rose-600", icon: "move" },
                 { id: 23, name: "Star Wars: Galactic Warfare (Alpha 1.1)", color: "from-emerald-500 to-teal-600", icon: "map-pin" },
-                { id: 24, name: "Banana Defenders", color: "from-violet-500 to-purple-600", icon: "target" },
-                { id: 25, name: "Coming Soonr", color: "from-gray-700 to-black", icon: "eye" },
+                { id: 24, name: "Banana Defenders", color: "from-violet-500 to-purple-600", icon: "banana" },
+                { id: 25, name: "Coming Soon", color: "from-gray-700 to-black", icon: "eye" },
                 { id: 26, name: "Coming Soon", color: "from-yellow-400 to-orange-500", icon: "sun" }
             ];
 
@@ -257,7 +268,7 @@
                 { key: 'hot',    title: 'Hot Right Now', icon: 'flame',       accent: 'text-orange-400', ids: [19, 4, 3, 24, 11] },
                 { key: 'action', title: 'Action',        icon: 'swords',      accent: 'text-red-400',    ids: [1, 2, 4, 5, 6, 8, 10, 12, 13, 14, 15, 16, 18, 21, 22, 23, 24] },
                 { key: 'horror', title: 'Horror',        icon: 'ghost',       accent: 'text-purple-400', ids: [3, 7, 11, 17, 20] },
-                { key: 'idle',   title: 'Idle',          icon: 'timer',       accent: 'text-green-400',  ids: [9, 19, 24] },
+                { key: 'idle',   title: 'Idle',          icon: 'timer',       accent: 'text-green-400',  ids: [9, 19] },
                 { key: 'all',    title: 'All Games',     icon: 'layout-grid', accent: 'text-blue-400',   ids: null }
             ];
 
@@ -271,14 +282,16 @@
             async function initAuth() {
                 const { data: { session } } = await _supabase.auth.getSession();
                 if (session) await setupUserSession(session.user);
-                else showAuthUI();
+                else await setupGuestView();
+
+                startVotesRealtime();
 
                 _supabase.auth.onAuthStateChange(async (event, session) => {
                     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
                         await setupUserSession(session.user);
                     } else if (event === 'SIGNED_OUT') {
                         _user = null; _profile = null; _isMod = false; _isDeveloper = false;
-                        showAuthUI();
+                        await setupGuestView();
                     }
                 });
             }
@@ -286,7 +299,8 @@
             async function setupUserSession(user) {
                 _user = user;
                 await fetchProfile();
-                showMainContent();
+                closeAuthModal();
+                updateAuthButton();
                 await fetchSiteData();
                 startChat();
                 refreshIcons();
@@ -345,6 +359,7 @@
                 const { data: configs } = await _supabase.from('games_config').select('*');
                 _gameConfigs = {};
                 if (configs) configs.forEach(c => _gameConfigs[c.game_id] = c.is_online);
+                await fetchVotes();
                 renderGames();
             }
 
@@ -374,6 +389,13 @@
             function createGameCard(game) {
                 const isOnline = _gameConfigs[game.id] !== false;
                 const card = document.createElement('div');
+                const counts = _voteCounts[game.id] || { likes: 0, dislikes: 0 };
+                const myVote = _myVotes[game.id] || 0;
+                const voteRow = `
+                    <div class="flex items-center gap-3 mb-4 relative z-20">
+                        <button onclick="event.stopPropagation(); window.voteGame(${game.id}, 1)" title="Like" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${myVote === 1 ? 'text-green-400 border-green-500/60 bg-green-500/15' : 'text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500/50'}"><i data-lucide="thumbs-up" class="w-4 h-4"></i><span>${counts.likes}</span></button>
+                        <button onclick="event.stopPropagation(); window.voteGame(${game.id}, -1)" title="Dislike" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${myVote === -1 ? 'text-red-400 border-red-500/60 bg-red-500/15' : 'text-slate-400 border-slate-600 hover:text-red-400 hover:border-red-500/50'}"><i data-lucide="thumbs-down" class="w-4 h-4"></i><span>${counts.dislikes}</span></button>
+                    </div>`;
                 card.className = `game-card bg-slate-800 border-2 rounded-xl p-6 flex flex-col items-center justify-between transition-all duration-300 transform relative overflow-hidden ${isOnline ? 'border-slate-700 hover:-translate-y-2 cursor-pointer group' : 'border-red-900/50 opacity-75 grayscale bg-slate-900'}`;
                 if (isOnline) {
                     const targetUrl = game.url || `spel${game.id}.html`;
@@ -386,7 +408,8 @@
                         <i data-lucide="${game.icon}" class="w-8 h-8 ${isOnline ? 'text-gray-300 group-hover:text-white' : 'text-slate-600'}"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-2 game-font text-center break-words max-w-full ${isOnline ? '' : 'text-slate-500'}">${game.name}</h3>
-                    <span class="text-xs text-slate-500 mb-6 font-mono">ID: ${game.id}</span>
+                    <span class="text-xs text-slate-500 mb-3 font-mono">ID: ${game.id}</span>
+                    ${voteRow}
                     ${_isDeveloper ? `<button onclick="event.stopPropagation(); window.toggleGameStatus(${game.id})" class="mb-4 text-[10px] font-bold px-3 py-1 rounded-full border ${isOnline ? 'text-green-400 border-green-500/50 bg-green-500/10 hover:bg-green-500/20' : 'text-red-400 border-red-500/50 bg-red-500/10 hover:bg-red-500/20'} z-20">${isOnline ? 'TOGGLE OFFLINE' : 'TOGGLE ONLINE'}</button>` : ''}
                     <button class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${isOnline ? game.color : 'from-slate-700 to-slate-800'} text-white font-bold shadow-lg transform ${isOnline ? 'active:scale-95 hover:opacity-90' : 'opacity-20 cursor-not-allowed'} transition-transform">${isOnline ? 'PLAY NOW' : 'NOT AVAILABLE'}</button>
                 `;
@@ -478,59 +501,102 @@
                 finally { btn.disabled = false; btn.innerText = _isSignUp ? "Sign Up" : "Sign In"; }
             };
 
-            window.handleGuestLogin = async function() {
-                _user = { id: 'guest_' + Date.now(), isGuest: true };
-                _profile = { username: 'Guest_' + Math.floor(Math.random() * 10000) };
-                _isMod = false;
-                _isDeveloper = false;
-                
-                showMainContent();
-                await fetchSiteData();
-                
-                const displayNameElem = document.getElementById('display-name');
-                if (displayNameElem) displayNameElem.innerText = _profile.username;
+            function openAuthModal() {
+                const m = document.getElementById('auth-section');
+                if (m) m.classList.remove('hidden');
+                const em = document.getElementById('auth-email');
+                if (em) setTimeout(() => em.focus(), 50);
+            }
+            function closeAuthModal() {
+                const m = document.getElementById('auth-section');
+                if (m) m.classList.add('hidden');
+                const pw = document.getElementById('auth-password');
+                if (pw) pw.value = '';
+                const err = document.getElementById('auth-error');
+                if (err) err.classList.add('hidden');
+            }
+            window.openAuthModal = openAuthModal;
+            window.closeAuthModal = closeAuthModal;
+            window.showLoginPopup = function() { const p = document.getElementById('login-popup'); if (p) p.classList.remove('hidden'); };
+            window.closeLoginPopup = function() { const p = document.getElementById('login-popup'); if (p) p.classList.add('hidden'); };
 
-                // Disable chat for guest
-                const chatStatus = document.getElementById('chat-status');
-                if (chatStatus) chatStatus.innerText = "Guest Mode (Chat Disabled)";
-                
-                const statusDot = document.getElementById('status-dot');
-                if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-slate-500";
-                
+            function updateAuthButton() {
+                const btn = document.getElementById('auth-action-btn');
+                if (!btn) return;
+                if (_user) {
+                    btn.className = 'flex items-center gap-2 bg-slate-800 hover:bg-red-900/40 border border-slate-700 hover:border-red-500/50 px-4 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-red-500/50';
+                    btn.innerHTML = '<i data-lucide="log-out" class="w-4 h-4"></i> Sign Out';
+                } else {
+                    btn.className = 'flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50';
+                    btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> Login';
+                }
+                refreshIcons();
+            }
+
+            window.handleAuthButton = function() { if (_user) window.handleSignOut(); else openAuthModal(); };
+            window.handleSignOut = async function() { await _supabase.auth.signOut(); };
+
+            // Visitor (not logged in): can browse games and see votes, chat is locked
+            async function setupGuestView() {
+                _user = null; _profile = null; _isMod = false; _isDeveloper = false; _myVotes = {};
+                if (_chatChannel) { _supabase.removeChannel(_chatChannel); _chatChannel = null; }
+                const nameEl = document.getElementById('display-name');
+                if (nameEl) nameEl.innerText = 'Guest';
+                const modInd = document.getElementById('mod-indicator');
+                if (modInd) modInd.classList.add('hidden');
+                const devCtl = document.getElementById('dev-edit-controls');
+                if (devCtl) devCtl.classList.add('hidden');
+                const dot = document.getElementById('status-dot');
+                if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+                const st = document.getElementById('chat-status');
+                if (st) st.innerText = 'Login required';
                 const list = document.getElementById('comments-list');
-                if (list) list.innerHTML = '<div class="text-center text-slate-500 my-4 text-sm">Please log in or create an account to view and participate in chat.</div>';
+                if (list) list.innerHTML = '<div class="text-center text-slate-500 py-10 text-sm">Login to view and join the chat.</div>';
                 const input = document.getElementById('comment-input');
                 const sendBtn = document.getElementById('send-btn');
-                if (input) { input.disabled = true; input.placeholder = "Log in to chat"; }
+                if (input) { input.disabled = true; input.value = ''; input.placeholder = 'Login to chat'; }
                 if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('opacity-50'); }
-
+                updateAuthButton();
+                await fetchSiteData();
                 refreshIcons();
-            };
+            }
 
-            window.handleSignOut = async function() {
-                if (_user && _user.isGuest) {
-                    _user = null; _profile = null; _isMod = false; _isDeveloper = false;
-                    document.getElementById('auth-email').value = '';
-                    document.getElementById('auth-password').value = '';
-                    showAuthUI();
-                } else {
-                    await _supabase.auth.signOut();
+            async function fetchVotes() {
+                const { data: counts } = await _supabase.from('game_vote_counts').select('*');
+                _voteCounts = {};
+                if (counts) counts.forEach(c => { _voteCounts[c.game_id] = { likes: Number(c.likes) || 0, dislikes: Number(c.dislikes) || 0 }; });
+                _myVotes = {};
+                if (_user) {
+                    const { data: mine } = await _supabase.from('game_votes').select('game_id, vote').eq('user_id', _user.id);
+                    if (mine) mine.forEach(v => { _myVotes[v.game_id] = v.vote; });
                 }
+            }
+
+            function startVotesRealtime() {
+                if (_votesChannelStarted || !_supabase) return;
+                _votesChannelStarted = true;
+                _supabase.channel('votes-room')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_votes' }, async () => { await fetchVotes(); renderGames(); })
+                    .subscribe();
+            }
+
+            window.voteGame = async function(gameId, value) {
+                if (!_user) { window.showLoginPopup(); return; }
+                const prev = _myVotes[gameId] || 0;
+                const next = prev === value ? 0 : value; // clicking the same button again removes the vote
+                const c = _voteCounts[gameId] || { likes: 0, dislikes: 0 };
+                if (prev === 1) c.likes--; if (prev === -1) c.dislikes--;
+                if (next === 1) c.likes++; if (next === -1) c.dislikes++;
+                c.likes = Math.max(0, c.likes); c.dislikes = Math.max(0, c.dislikes);
+                _voteCounts[gameId] = c;
+                if (next === 0) delete _myVotes[gameId]; else _myVotes[gameId] = next;
+                renderGames();
+                let res;
+                if (next === 0) res = await _supabase.from('game_votes').delete().eq('game_id', gameId).eq('user_id', _user.id);
+                else res = await _supabase.from('game_votes').upsert({ game_id: gameId, user_id: _user.id, vote: next }, { onConflict: 'game_id,user_id' });
+                if (res.error) { alert("Could not save vote: " + res.error.message); await fetchVotes(); renderGames(); }
             };
             
-            function showAuthUI() { 
-                const authS = document.getElementById('auth-section');
-                const mainS = document.getElementById('main-content');
-                if (authS) authS.classList.remove('hidden'); 
-                if (mainS) mainS.classList.add('hidden'); 
-            }
-            
-            function showMainContent() { 
-                const authS = document.getElementById('auth-section');
-                const mainS = document.getElementById('main-content');
-                if (authS) authS.classList.add('hidden'); 
-                if (mainS) mainS.classList.remove('hidden'); 
-            }
 
             async function startChat() {
                 const statusDot = document.getElementById('status-dot');
@@ -538,7 +604,8 @@
                 if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-green-500";
                 if (chatStatus) chatStatus.innerText = "Live";
                 renderChat();
-                _supabase.channel('chat-room')
+                if (_chatChannel) _supabase.removeChannel(_chatChannel);
+                _chatChannel = _supabase.channel('chat-room')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => renderChat())
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'banned_users' }, () => renderChat())
                     .subscribe();
@@ -620,6 +687,8 @@
                 } 
             };
             window.handleVerify = async function(id, setVerified) { if (!_isMod) return; const { error } = await _supabase.from('comments').update({ verified: setVerified }).eq('id', id); if (error) alert("Could not verify: " + error.message); renderChat(); };
+
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { window.closeLoginPopup(); closeAuthModal(); } });
 
             const commentInput = document.getElementById('comment-input');
             if (commentInput) commentInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.postComment(); });
