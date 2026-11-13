@@ -31,6 +31,13 @@
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
         html { scroll-behavior: smooth; }
         .section-nav-btn { white-space: nowrap; }
+        header,
+        main#main-content,
+        footer,
+        #auth-section,
+        #login-popup {
+            zoom: 0.9;
+        }
     </style>
 </head>
 <body class="text-gray-100 min-h-screen flex flex-col">
@@ -38,12 +45,12 @@
     <!-- Header -->
     <header class="w-full p-6 bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <i data-lucide="gamepad-2" class="text-blue-500 w-8 h-8"></i>
-                <h1 class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+            <button type="button" onclick="window.goHome()" class="flex items-center gap-2 cursor-pointer group text-left focus:outline-none" title="Return to Game Hub menu">
+                <i data-lucide="gamepad-2" class="text-blue-500 w-8 h-8 group-hover:scale-110 transition-transform"></i>
+                <h1 class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 group-hover:opacity-90 transition-opacity">
                     GAME HUB
                 </h1>
-            </div>
+            </button>
             <div id="mod-indicator" class="hidden text-xs font-bold text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/50 animate-pulse">
                 System Edit Enable
             </div>
@@ -109,7 +116,7 @@
     <!-- Main Content (Hidden initially) -->
     <main id="main-content" class="flex-grow container mx-auto px-4 py-6">
         
-        <div class="flex justify-between items-center mb-6">
+        <div id="welcome-bar" class="flex justify-between items-center mb-6">
             <div class="text-left">
                 <h2 class="text-2xl md:text-3xl font-bold">Welcome, <span id="display-name" class="text-blue-400">Guest</span></h2>
                 <p class="text-slate-400 text-sm">Join the community and explore the latest games.</p>
@@ -214,7 +221,37 @@
             <div id="reviews-content"></div>
         </div>
 
+        <!-- Game Player Box View (keeps Game Hub header on top) -->
+        <div id="game-player-view" class="hidden min-h-[calc(100vh-220px)] flex items-center justify-center py-8">
+            <div id="game-player-box" class="w-full max-w-2xl"></div>
+        </div>
+
     </main>
+
+    <!-- Fullscreen / Full-Viewport Game Stage Overlay -->
+    <div id="game-fullscreen-overlay" class="hidden fixed inset-0 z-[200] bg-black flex flex-col">
+        <iframe id="game-iframe" class="w-full h-full border-0 flex-1 bg-black" allow="autoplay; fullscreen; gamepad; clipboard-write" allowfullscreen></iframe>
+
+        <!-- Subtle top-right hover chip for mouse/cross-origin exit -->
+        <button id="overlay-exit-chip" type="button" onclick="window.exitGameFullscreen()" class="fixed top-3 right-3 z-[210] opacity-25 hover:opacity-100 focus:opacity-100 transition-opacity bg-slate-900/90 hover:bg-slate-800 border border-slate-600 text-slate-200 text-xs font-bold px-3.5 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1.5 shadow-xl cursor-pointer">
+            <i data-lucide="minimize-2" class="w-3.5 h-3.5 text-blue-400"></i>
+            <span id="overlay-exit-chip-label">Exit (Hold ESC 5s)</span>
+        </button>
+
+        <!-- Hold ESC 5s progress HUD -->
+        <div id="esc-exit-hud" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-[220] pointer-events-none bg-slate-950/90 border border-slate-600/80 rounded-2xl px-5 py-3 shadow-2xl backdrop-blur-md min-w-[260px]">
+            <div class="flex items-center justify-between gap-4 mb-2">
+                <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                    Hold ESC to exit
+                </span>
+                <span id="esc-exit-countdown" class="text-xs font-mono font-bold text-blue-400">5.0s</span>
+            </div>
+            <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div id="esc-exit-progress" class="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-none" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
 
     <footer class="bg-slate-900 py-6 mt-auto border-t border-slate-800">
         <div class="container mx-auto text-center text-slate-500 text-sm">
@@ -375,6 +412,7 @@
                 if (configs) configs.forEach(c => _gameConfigs[c.game_id] = c.is_online);
                 await fetchVotes();
                 renderGames();
+                if (typeof refreshGameViewIfOpen === 'function') refreshGameViewIfOpen();
             }
 
             window.toggleDevMessageEdit = function() {
@@ -402,6 +440,8 @@
             // Bygger ett enskilt spelkort (samma utseende som tidigare)
             function createGameCard(game) {
                 const isOnline = _gameConfigs[game.id] !== false;
+                const opensInNewPage = game.id === 19;
+                const targetHref = game.url || `spel${game.id}.html`;
                 const card = document.createElement('div');
                 const counts = _voteCounts[game.id] || { likes: 0, dislikes: 0 };
                 const myVote = _myVotes[game.id] || 0;
@@ -412,9 +452,20 @@
                     </div>`;
                 card.className = `game-card bg-slate-800 border-2 rounded-xl p-6 flex flex-col items-center justify-between transition-all duration-300 transform relative overflow-hidden ${isOnline ? 'border-slate-700 hover:-translate-y-2 cursor-pointer group' : 'border-red-900/50 opacity-75 grayscale bg-slate-900'}`;
                 if (isOnline) {
-                    const targetUrl = game.url || `spel${game.id}.html`;
-                    card.onclick = () => window.open(targetUrl, '_blank');
+                    if (opensInNewPage) {
+                        card.onclick = () => {
+                            const link = card.querySelector('a[data-new-page-link]');
+                            if (link) link.click();
+                        };
+                    } else {
+                        card.onclick = () => window.openGameView(game.id);
+                    }
                 }
+                const actionHtml = isOnline
+                    ? (opensInNewPage
+                        ? `<a href="${targetHref}" target="_blank" rel="noopener noreferrer" data-new-page-link="true" onclick="event.stopPropagation()" class="block text-center w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 hover:opacity-90 transition-transform">PLAY NOW</a>`
+                        : `<button class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 hover:opacity-90 transition-transform">PLAY NOW</button>`)
+                    : `<button class="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-slate-700 to-slate-800 text-white font-bold shadow-lg transform opacity-20 cursor-not-allowed transition-transform">NOT AVAILABLE</button>`;
                 card.innerHTML = `
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${isOnline ? game.color : 'from-red-900 to-red-600'}"></div>
                     ${!isOnline ? `<div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none z-10"><span class="bg-red-600 text-white font-bold px-3 py-1 rounded text-xs animate-pulse">OFFLINE</span></div>` : ''}
@@ -425,7 +476,7 @@
                     <span class="text-xs text-slate-500 mb-3 font-mono">ID: ${game.id}</span>
                     ${voteRow}
                     ${_isDeveloper ? `<button onclick="event.stopPropagation(); window.toggleGameStatus(${game.id})" class="mb-4 text-[10px] font-bold px-3 py-1 rounded-full border ${isOnline ? 'text-green-400 border-green-500/50 bg-green-500/10 hover:bg-green-500/20' : 'text-red-400 border-red-500/50 bg-red-500/10 hover:bg-red-500/20'} z-20">${isOnline ? 'TOGGLE OFFLINE' : 'TOGGLE ONLINE'}</button>` : ''}
-                    <button class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${isOnline ? game.color : 'from-slate-700 to-slate-800'} text-white font-bold shadow-lg transform ${isOnline ? 'active:scale-95 hover:opacity-90' : 'opacity-20 cursor-not-allowed'} transition-transform">${isOnline ? 'PLAY NOW' : 'NOT AVAILABLE'}</button>
+                    ${actionHtml}
                 `;
                 return card;
             }
@@ -731,6 +782,10 @@
             function setReviewsView(open) {
                 const home = document.getElementById('home-view');
                 const rv = document.getElementById('reviews-view');
+                const gp = document.getElementById('game-player-view');
+                const wb = document.getElementById('welcome-bar');
+                if (open && gp) gp.classList.add('hidden');
+                if (wb) wb.classList.remove('hidden');
                 if (home) home.classList.toggle('hidden', open);
                 if (rv) rv.classList.toggle('hidden', !open);
                 const lbl = document.getElementById('reviews-back-label');
@@ -951,7 +1006,300 @@
             };
             // ================= END GAME REVIEWS =================
 
-            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { window.closeLoginPopup(); closeAuthModal(); } });
+            // ================= GAME PLAYER VIEW & FULLSCREEN =================
+            let _activeGameId = null;
+            let _isGameStageOpen = false;
+            let _bananaTrueFullscreenActive = false;
+            let _isHoldingEsc = false;
+            let _escHoldStart = 0;
+            let _escHoldRaf = null;
+            const ESC_HOLD_MS = 5000;
+
+            function isGamePlayerOpen() {
+                const gp = document.getElementById('game-player-view');
+                return !!gp && !gp.classList.contains('hidden');
+            }
+
+            function refreshGameViewIfOpen() {
+                if (isGamePlayerOpen() && _activeGameId !== null) {
+                    renderGamePlayerBox();
+                }
+            }
+
+            function cancelEscHold() {
+                _isHoldingEsc = false;
+                _escHoldStart = 0;
+                if (_escHoldRaf) {
+                    cancelAnimationFrame(_escHoldRaf);
+                    _escHoldRaf = null;
+                }
+                const hud = document.getElementById('esc-exit-hud');
+                const bar = document.getElementById('esc-exit-progress');
+                const cd = document.getElementById('esc-exit-countdown');
+                if (hud) hud.classList.add('hidden');
+                if (bar) bar.style.width = '0%';
+                if (cd) cd.innerText = '5.0s';
+            }
+
+            function tickEscHold() {
+                if (!_isHoldingEsc || !_isGameStageOpen) {
+                    cancelEscHold();
+                    return;
+                }
+                const elapsed = performance.now() - _escHoldStart;
+                const pct = Math.min(100, (elapsed / ESC_HOLD_MS) * 100);
+                const remaining = Math.max(0, (ESC_HOLD_MS - elapsed) / 1000);
+                const bar = document.getElementById('esc-exit-progress');
+                const cd = document.getElementById('esc-exit-countdown');
+                if (bar) bar.style.width = `${pct}%`;
+                if (cd) cd.innerText = `${remaining.toFixed(1)}s`;
+
+                if (elapsed >= ESC_HOLD_MS) {
+                    cancelEscHold();
+                    window.exitGameFullscreen();
+                    return;
+                }
+                _escHoldRaf = requestAnimationFrame(tickEscHold);
+            }
+
+            function handleStageKeyDown(e) {
+                if (!_isGameStageOpen) return;
+                if (_activeGameId === 19 && _bananaTrueFullscreenActive) return;
+                if (e.key === 'Escape' || e.code === 'Escape') {
+                    if (!_isHoldingEsc) {
+                        _isHoldingEsc = true;
+                        _escHoldStart = performance.now();
+                        const hud = document.getElementById('esc-exit-hud');
+                        if (hud) hud.classList.remove('hidden');
+                        tickEscHold();
+                    }
+                }
+            }
+
+            function handleStageKeyUp(e) {
+                if (e.key === 'Escape' || e.code === 'Escape') {
+                    if (_isHoldingEsc) {
+                        cancelEscHold();
+                    }
+                }
+            }
+
+            function attachIframeKeyListeners(iframe) {
+                if (!iframe) return;
+                try {
+                    const win = iframe.contentWindow;
+                    if (win && win.document) {
+                        win.removeEventListener('keydown', handleStageKeyDown, true);
+                        win.removeEventListener('keyup', handleStageKeyUp, true);
+                        win.addEventListener('keydown', handleStageKeyDown, true);
+                        win.addEventListener('keyup', handleStageKeyUp, true);
+                        win.addEventListener('blur', cancelEscHold);
+                    }
+                } catch (e) {
+                    // Cross-origin iframe (e.g. external URL): parent listeners & hover exit chip handle exit
+                }
+            }
+
+            function renderGamePlayerBox() {
+                const box = document.getElementById('game-player-box');
+                const game = gamesList.find(g => g.id === _activeGameId);
+                if (!box || !game) return;
+                const isOnline = _gameConfigs[game.id] !== false;
+                const isBananaCasino = game.id === 19;
+                const counts = _voteCounts[game.id] || { likes: 0, dislikes: 0 };
+                const myVote = _myVotes[game.id] || 0;
+
+                box.innerHTML = `
+                    <div class="relative bg-slate-900/95 border-2 ${isOnline ? 'border-slate-700' : 'border-red-900/50'} rounded-2xl p-8 md:p-10 shadow-2xl overflow-hidden flex flex-col items-center text-center">
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${isOnline ? game.color : 'from-red-900 to-red-600'}"></div>
+                        <div class="w-20 h-20 mb-5 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center shadow-lg">
+                            <i data-lucide="${game.icon}" class="w-10 h-10 text-white"></i>
+                        </div>
+                        <h3 class="text-2xl md:text-3xl font-bold game-font text-white mb-2 break-words max-w-full">${escapeHtml(game.name)}</h3>
+                        <span class="text-xs text-slate-500 font-mono mb-4">ID: ${game.id}</span>
+
+                        <div class="flex items-center gap-3 mb-6">
+                            <button onclick="window.voteGame(${game.id}, 1)" title="Like" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-colors ${myVote === 1 ? 'text-green-400 border-green-500/60 bg-green-500/15' : 'text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500/50'}">
+                                <i data-lucide="thumbs-up" class="w-4 h-4"></i><span>${counts.likes}</span>
+                            </button>
+                            <button onclick="window.voteGame(${game.id}, -1)" title="Dislike" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-colors ${myVote === -1 ? 'text-red-400 border-red-500/60 bg-red-500/15' : 'text-slate-400 border-slate-600 hover:text-red-400 hover:border-red-500/50'}">
+                                <i data-lucide="thumbs-down" class="w-4 h-4"></i><span>${counts.dislikes}</span>
+                            </button>
+                        </div>
+
+                        <div class="w-full max-w-md bg-slate-800/70 border border-slate-700/80 rounded-xl p-4 mb-7 text-xs text-slate-300 leading-relaxed">
+                            ${isBananaCasino
+                                ? `<div class="flex items-center justify-center gap-2 text-amber-300 font-bold mb-1"><i data-lucide="monitor" class="w-4 h-4"></i> True Fullscreen Mode</div><span>Banana Casino runs in true monitor fullscreen. Press <kbd class="px-1.5 py-0.5 bg-slate-900 border border-slate-600 rounded text-[10px] font-mono text-white">ESC</kbd> anytime to exit back to this screen.</span>`
+                                : `<div class="flex items-center justify-center gap-2 text-blue-400 font-bold mb-1"><i data-lucide="maximize-2" class="w-4 h-4"></i> Fullscreen Game Stage</div><span>Press <strong>Enter Fullscreen</strong> to cover your screen. Hold <kbd class="px-1.5 py-0.5 bg-slate-900 border border-slate-600 rounded text-[10px] font-mono text-white">ESC</kbd> for <strong>5 seconds</strong> to return here.</span>`
+                            }
+                        </div>
+
+                        ${isOnline
+                            ? `<button onclick="window.enterGameFullscreen()" class="w-full max-w-sm py-3.5 px-6 rounded-xl bg-gradient-to-r ${game.color} text-white font-bold text-base shadow-lg hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer">
+                                <i data-lucide="maximize-2" class="w-5 h-5"></i>
+                                Enter Fullscreen
+                            </button>`
+                            : `<div class="w-full max-w-sm py-3.5 px-6 rounded-xl bg-slate-800 border border-red-900/50 text-red-400 font-bold text-sm">NOT AVAILABLE (OFFLINE)</div>`
+                        }
+
+                        <div class="flex flex-wrap items-center justify-center gap-3 mt-6 pt-5 border-t border-slate-800 w-full">
+                            <button onclick="window.goHome()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-xs font-bold text-slate-300 transition-colors">
+                                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu
+                            </button>
+                            <button onclick="window.openGameReviews(${game.id})" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-xs font-bold text-slate-300 transition-colors">
+                                <i data-lucide="star" class="w-4 h-4 text-yellow-400"></i> Game Reviews
+                            </button>
+                        </div>
+                    </div>
+                `;
+                refreshIcons();
+            }
+
+            window.openGameView = function(gameId) {
+                const game = gamesList.find(g => g.id === gameId);
+                if (!game) return;
+                if (_gameConfigs[game.id] === false) return;
+                window.exitGameFullscreen();
+                _activeGameId = gameId;
+
+                const home = document.getElementById('home-view');
+                const rv = document.getElementById('reviews-view');
+                const wb = document.getElementById('welcome-bar');
+                const gp = document.getElementById('game-player-view');
+                if (home) home.classList.add('hidden');
+                if (rv) rv.classList.add('hidden');
+                if (wb) wb.classList.add('hidden');
+                if (gp) gp.classList.remove('hidden');
+
+                renderGamePlayerBox();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            window.goHome = function() {
+                window.exitGameFullscreen();
+                _activeGameId = null;
+                const home = document.getElementById('home-view');
+                const rv = document.getElementById('reviews-view');
+                const gp = document.getElementById('game-player-view');
+                const wb = document.getElementById('welcome-bar');
+                if (gp) gp.classList.add('hidden');
+                if (rv) rv.classList.add('hidden');
+                if (wb) wb.classList.remove('hidden');
+                if (home) home.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            window.enterGameFullscreen = function() {
+                const game = gamesList.find(g => g.id === _activeGameId);
+                if (!game || _gameConfigs[game.id] === false) return;
+                const targetUrl = game.url || `spel${game.id}.html`;
+
+                const overlay = document.getElementById('game-fullscreen-overlay');
+                const iframe = document.getElementById('game-iframe');
+                const exitChip = document.getElementById('overlay-exit-chip');
+                const exitChipLabel = document.getElementById('overlay-exit-chip-label');
+                if (!overlay || !iframe) return;
+
+                _isGameStageOpen = true;
+                _bananaTrueFullscreenActive = false;
+                cancelEscHold();
+
+                const isBananaCasino = game.id === 19;
+                if (exitChip) {
+                    exitChip.classList.toggle('hidden', isBananaCasino);
+                }
+                if (exitChipLabel) {
+                    exitChipLabel.innerText = 'Exit (Hold ESC 5s)';
+                }
+
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+
+                iframe.onload = function() {
+                    if (!_isGameStageOpen) return;
+                    try {
+                        if (iframe.contentWindow && iframe.contentWindow.location && iframe.contentWindow.location.href === 'about:blank') {
+                            window.exitGameFullscreen();
+                            return;
+                        }
+                    } catch (e) {}
+                    attachIframeKeyListeners(iframe);
+                    try { iframe.focus(); } catch (e) {}
+                };
+                iframe.src = targetUrl;
+
+                if (isBananaCasino) {
+                    const req = overlay.requestFullscreen || overlay.webkitRequestFullscreen || overlay.mozRequestFullScreen || overlay.msRequestFullscreen;
+                    if (req) {
+                        try {
+                            const p = req.call(overlay);
+                            if (p && typeof p.then === 'function') {
+                                p.then(() => {
+                                    _bananaTrueFullscreenActive = true;
+                                }).catch(() => {
+                                    _bananaTrueFullscreenActive = false;
+                                    if (exitChip) exitChip.classList.remove('hidden');
+                                });
+                            } else {
+                                _bananaTrueFullscreenActive = true;
+                            }
+                        } catch (e) {
+                            _bananaTrueFullscreenActive = false;
+                            if (exitChip) exitChip.classList.remove('hidden');
+                        }
+                    } else if (exitChip) {
+                        exitChip.classList.remove('hidden');
+                    }
+                }
+            };
+
+            window.exitGameFullscreen = function() {
+                cancelEscHold();
+                if (!_isGameStageOpen && (!document.getElementById('game-fullscreen-overlay') || document.getElementById('game-fullscreen-overlay').classList.contains('hidden'))) {
+                    return;
+                }
+                _isGameStageOpen = false;
+                _bananaTrueFullscreenActive = false;
+
+                const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+                if (fsEl) {
+                    try {
+                        const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+                        if (exitFs) exitFs.call(document);
+                    } catch (e) {}
+                }
+
+                const overlay = document.getElementById('game-fullscreen-overlay');
+                const iframe = document.getElementById('game-iframe');
+                if (iframe) {
+                    iframe.onload = null;
+                    iframe.src = 'about:blank';
+                }
+                if (overlay) overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            };
+
+            window.addEventListener('keydown', handleStageKeyDown, true);
+            window.addEventListener('keyup', handleStageKeyUp, true);
+            window.addEventListener('blur', cancelEscHold);
+
+            document.addEventListener('fullscreenchange', () => {
+                if (_isGameStageOpen && _activeGameId === 19 && _bananaTrueFullscreenActive) {
+                    const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+                    if (!fsEl) {
+                        window.exitGameFullscreen();
+                    }
+                }
+            });
+
+            window.addEventListener('message', (event) => {
+                if (event && event.data && event.data.type === 'gamehub-exit-game') {
+                    window.exitGameFullscreen();
+                }
+            });
+            // ================= END GAME PLAYER VIEW & FULLSCREEN =================
+
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !_isGameStageOpen) { window.closeLoginPopup(); closeAuthModal(); } });
 
             const commentInput = document.getElementById('comment-input');
             if (commentInput) commentInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.postComment(); });
