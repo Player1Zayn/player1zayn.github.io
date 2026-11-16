@@ -4,6 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Banana Casino</title>
+  <script>
+    (function () {
+      try {
+        if (window.self === window.top || window.parent.location.origin !== window.location.origin) {
+          window.location.replace('/');
+        } else if (window.location.search.includes('launch=')) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      } catch (e) {
+        window.location.replace('/');
+      }
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @keyframes floatUp {
@@ -282,7 +295,7 @@
     <div class="w-12 h-12 border-4 border-emerald-800 border-t-yellow-400 rounded-full animate-spin mb-8"></div>
     <div id="loading-fallback" class="hidden flex flex-col items-center animate-fade-in">
         <p class="text-emerald-500 text-xs mb-4 text-center max-w-xs">The server is taking a while to wake up (Render free tier). Please wait or try again.</p>
-        <button onclick="window.location.reload()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors shadow-lg">Retry Connection</button>
+        <button onclick="typeof bootCasinoApp === 'function' ? bootCasinoApp() : null" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors shadow-lg">Retry Connection</button>
     </div>
   </div>
 
@@ -667,37 +680,6 @@
                   <div class="text-blue-300 text-sm font-bold">Future bets win 50% less for 10 minutes under surveillance.</div>
               </button>
           </div>
-      </div>
-  </div>
-
-  <!-- Fullscreen Entry Overlay -->
-  <div id="fullscreen-entry-overlay" class="fixed inset-0 bg-emerald-950 z-[10000] flex flex-col items-center justify-center text-center p-6">
-    <div class="max-w-md w-full bg-emerald-900 border-4 border-emerald-800 rounded-[3rem] p-10 shadow-2xl">
-      <div class="w-24 h-24 bg-yellow-500/20 rounded-full flex items-center justify-center text-5xl mb-6 mx-auto animate-pulse">🖥️</div>
-      <h1 class="text-3xl font-black text-white uppercase tracking-tighter mb-4">Fullscreen Required</h1>
-      <p class="text-emerald-400 font-medium mb-8 leading-tight">To ensure a fair and immersive experience, this game must be played in fullscreen mode.</p>
-      
-      <div class="mb-8">
-        <div class="text-5xl font-black text-yellow-500 mb-2" id="fullscreen-timer">3</div>
-        <p class="text-xs text-emerald-600 font-bold uppercase tracking-widest">Seconds to enter</p>
-      </div>
-
-      <button 
-        id="btn-enter-fullscreen"
-        class="w-full py-5 bg-yellow-500 text-yellow-950 rounded-2xl font-black text-xl shadow-[0_6px_0_rgb(180,83,9)] hover:bg-yellow-400 active:translate-y-1 transition-all"
-      >
-        ENTER FULLSCREEN
-      </button>
-
-      <button 
-        onclick="leaveGame()"
-        class="w-full mt-4 py-3 bg-emerald-800 text-emerald-300 rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all"
-      >
-        LEAVE GAME
-      </button>
-      
-      <p class="mt-6 text-[10px] text-red-500 font-bold uppercase opacity-50">Failure to enter will close the page</p>
-    </div>
   </div>
 
     </div>
@@ -3262,9 +3244,7 @@
     </div>
   </div>
 
-  <div id="cheat-warning" class="fixed top-4 left-4 z-[9999] hidden pointer-events-none">
-    <div class="text-red-500 font-black text-4xl animate-bounce drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">❌</div>
-  </div>
+
 
   <!-- Server Ban Overlay -->
   <div id="server-ban-overlay" class="fixed inset-0 bg-black flex flex-col items-center justify-center z-[10000] hidden">
@@ -3282,337 +3262,87 @@
 
   <script>
     (function() {
-    // Anti-Cheat: Disable Right Click and common console shortcuts (Capture phase for maximum protection)
-    window.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        const warning = document.getElementById('cheat-warning');
-        if (warning) {
-            warning.classList.remove('hidden');
-            setTimeout(() => warning.classList.add('hidden'), 500);
-        }
-    }, true);
-
-    window.addEventListener('keydown', (e) => {
-        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-        const cmdKey = isMac ? e.metaKey : e.ctrlKey;
-
-        // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K, Ctrl+U, Ctrl+S, Alt+F, Ctrl+Shift+M, Ctrl+Shift+D
-        if (
-            e.key === 'F12' ||
-            (cmdKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K' || e.key === 'M' || e.key === 'D')) ||
-            (cmdKey && (e.key === 'u' || e.key === 's' || e.key === 'p')) ||
-            (e.altKey && (e.key === 'f' || e.key === 'F'))
-        ) {
-            e.preventDefault();
-            const warning = document.getElementById('cheat-warning');
-            if (warning) {
-                warning.classList.remove('hidden');
-                setTimeout(() => warning.classList.add('hidden'), 500);
-            }
-            addCheatTicket();
-        }
-
-        // Specifically catch F11 and Escape keys after entering fullscreen to prevent exit attempts
-        if (typeof hasEnteredFullscreen !== 'undefined' && hasEnteredFullscreen) {
-            if (e.key === 'F11' || e.key === 'Escape') {
-                e.preventDefault();
-                if (typeof banUser === 'function') banUser();
-            }
-        }
-    }, true);
-
-    // Console Trap: Use debugger to hinder console usage
-    setInterval(() => {
-        const startTime = performance.now();
-        debugger;
-        const endTime = performance.now();
-        if (endTime - startTime > 100) {
-            // If debugger paused execution, it likely means DevTools is open
-            addCheatTicket();
-        }
-    }, 1000);
-
-    // Window Resize Detection: Often happens when DevTools is opened/docked
-    let lastWidth = window.outerWidth;
-    let lastHeight = window.outerHeight;
-    window.addEventListener('resize', () => {
-        // Skip resize detection in iframes as outerWidth/Height reflect the parent window
-        if (window.self !== window.top) return;
-        if (isMobile()) return; // Skip for mobile to prevent orientation tilt resets
-        if (Math.abs(window.outerWidth - lastWidth) > threshold || Math.abs(window.outerHeight - lastHeight) > threshold) {
-            addCheatTicket();
-        }
-        lastWidth = window.outerWidth;
-        lastHeight = window.outerHeight;
-    });
-
-    // Anti-Cheat Guard
-    function showBanScreen() {
-        if (document.getElementById('ban-overlay')) return;
-        const banOverlay = document.createElement('div');
-        banOverlay.id = 'ban-overlay';
-        banOverlay.style = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:#064e3b; color:#facc15; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px; z-index:9999;";
-        banOverlay.innerHTML = `
-            <svg style="width:80px; height:80px; margin-bottom:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-            <h1 style="font-size:3rem; font-weight:900; margin:0;">GAME CLOSED</h1>
-            <p style="font-size:1.2rem; opacity:0.8; margin-top:10px;">Security violation detected. The game session is closing.</p>
-            <div id="ban-close-timer" style="margin-top:30px; font-weight:bold; color:#ef4444;">Closing page in 1s...</div>
-        `;
-        document.body.appendChild(banOverlay);
-
-        let timeLeft = 1;
-        const timerEl = document.getElementById('ban-close-timer');
-        const interval = setInterval(() => {
-            timeLeft--;
-            if (timerEl) timerEl.innerText = `Closing page in ${timeLeft}s...`;
-            if (timeLeft <= 0) {
-                clearInterval(interval);
-                window.close();
-                // Fallback for browsers that block window.close()
-                setTimeout(() => {
-                    if (timerEl) timerEl.innerText = "Please close this tab manually.";
-                }, 500);
-            }
-        }, 1000);
-    }
-
-    if (localStorage.getItem('isBanned') === 'true') {
-        // Handled in DOMContentLoaded below
-    }
-
-    async function banUser() {
-        // Ban feature temporarily disabled as requested.
-        // Replacing with page-closing logic.
-        
-        // Immediately hide the app to "close down" the game
-        const appEl = document.getElementById('app');
-        if (appEl) appEl.classList.add('hidden');
-        
-        showBanScreen();
-        
-        // Try to close the window after a short delay
-        setTimeout(() => {
-            try { window.close(); } catch(e) {}
-            setTimeout(() => {
-                window.location.href = "about:blank";
-            }, 100);
-        }, 1000);
-    }
-    window.banUser = banUser;
-
-    // DevTools Detection
-    const devtools = {
-        isOpen: false,
-        orientation: undefined
-    };
-    const threshold = 160;
-    const emitEvent = (state, orientation) => {
-        if (state) {
-            banUser();
-        }
-    };
-
-    setInterval(() => {
-        // Skip resize detection in iframes as outerWidth/Height reflect the parent window
-        if (window.self !== window.top) return;
-        if (isMobile()) return; // Skip for mobile to prevent orientation tilt bans
-
-        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-        const orientation = widthThreshold ? 'vertical' : 'horizontal';
-
-        if (
-            !(heightThreshold && widthThreshold) &&
-            (widthThreshold || heightThreshold)
-        ) {
-            if (!devtools.isOpen || devtools.orientation !== orientation) {
-                emitEvent(true, orientation);
-            }
-            devtools.isOpen = true;
-            devtools.orientation = orientation;
-        } else {
-            devtools.isOpen = false;
-            devtools.orientation = undefined;
-        }
-    }, 500);
-
-    // Console Detection via Getter - Disabled as it's too aggressive and can trigger on F11
-    /*
-    const checkConsole = () => {
-        const devtools = /./;
-        devtools.toString = function() {
-            banUser();
-            return '';
-        };
-        console.log('%c', devtools);
-    };
-    setInterval(checkConsole, 1000);
-    */
-
-    // Fullscreen Enforcement Logic
-    let fullscreenTimer = 3;
-    let fullscreenInterval = null;
-    let hasEnteredFullscreen = false;
+    let hasEnteredFullscreen = true;
 
     function isMobile() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 
-    function startFullscreenCheck() {
-        if (localStorage.getItem('isBanned') === 'true') return;
-        if (isMobile()) {
-            // Mobile users skip fullscreen requirement
-            document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
-            document.getElementById('app').classList.remove('hidden');
-            return;
-        }
-        
-        fullscreenInterval = setInterval(() => {
-            fullscreenTimer--;
-            const timerEl = document.getElementById('fullscreen-timer');
-            if (timerEl) timerEl.innerText = Math.max(0, fullscreenTimer);
-
-            if (fullscreenTimer <= 0) {
-                clearInterval(fullscreenInterval);
-                
-                // ONLY allow API fullscreen now. No F11 fallback.
-                const isApiFullscreen = !!document.fullscreenElement;
-                
-                if (!isApiFullscreen) {
-                    leaveGame();
-                }
-            }
-        }, 1000);
-    }
+    window.banUser = function() {};
 
     window.leaveGame = function() {
-        // Close the window without banning
+        if (window.self !== window.top) {
+            try {
+                window.parent.postMessage({ type: 'gamehub-exit-game' }, '*');
+                return;
+            } catch (e) {}
+        }
         window.close();
-        // Fallback for browsers that block window.close()
-        setTimeout(() => {
-            window.location.href = "about:blank";
-        }, 100);
     };
 
-    function requestFullscreenAndStart() {
-        const docEl = document.documentElement;
-        
-        // Simplified request to maximize success
-        const requestMethod = docEl.requestFullscreen || 
-                            docEl.webkitRequestFullscreen || 
-                            docEl.mozRequestFullScreen || 
-                            docEl.msRequestFullscreen;
+    let hasBootedCasino = false;
+    async function bootCasinoApp() {
+        if (hasBootedCasino) return;
+        hasBootedCasino = true;
 
-        const onSuccess = () => {
-            hasEnteredFullscreen = true;
-            clearInterval(fullscreenInterval);
-            document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
-            document.getElementById('app').classList.remove('hidden');
-            if (typeof updateGameUI === 'function') updateGameUI();
-        };
-
-        if (requestMethod) {
-            try {
-                const promise = requestMethod.call(docEl);
-                if (promise && typeof promise.then === 'function') {
-                    promise.then(onSuccess).catch(err => {
-                        console.error("Fullscreen request failed:", err);
-                        alert("Fullscreen request blocked. Please check your browser settings.");
-                    });
-                } else {
-                    onSuccess();
-                }
-            } catch (e) {
-                console.error("Fullscreen execution error:", e);
-                alert("Fullscreen error.");
+        try {
+            if (elWheel && typeof getWheelBackground === 'function') {
+                elWheel.style.background = getWheelBackground();
             }
-        } else {
-            alert("Your browser does not support the Fullscreen API.");
+            loadPersistentData();
+
+            if (typeof updateGamemodeModalVisibility === 'function') updateGamemodeModalVisibility();
+            if (typeof initQuestSystem === 'function') initQuestSystem();
+
+            // Background status & skin value checks (never block loading screen)
+            checkServerStatus().catch(() => {});
+            setInterval(checkServerStatus, 5000);
+
+            fetchSkinValues().catch(() => {});
+            setInterval(fetchSkinValues, 60 * 1000);
+
+            if (authToken) {
+                fetchGlobalInventory().catch(() => {});
+                // Wait up to 4s for user state sync so logged-in balance loads before menu, without ever hanging
+                await Promise.race([
+                    fetchServerState().catch(() => {}),
+                    new Promise(resolve => setTimeout(resolve, 4000))
+                ]);
+            } else {
+                isInitialSyncing = false;
+            }
+
+            setupSupabaseListeners().catch(() => {});
+
+            if (elBetAmountInput) {
+                elBetAmountInput.addEventListener('input', (e) => {
+                    let val = parseInt(e.target.value) || 0;
+                    val = Math.max(0, Math.min(bananas, val));
+                    betAmount = val;
+                    e.target.value = val || '';
+                    updateGameUI();
+                });
+            }
+
+            setView('menu');
+            renderTreeGrid();
+            setGameMode('roulette');
+        } catch (err) {
+            console.error("Casino startup error:", err);
+        } finally {
+            if (elLoading) elLoading.classList.add('hidden');
+            if (elApp) elApp.classList.remove('hidden');
         }
     }
-    window.requestFullscreenAndStart = requestFullscreenAndStart;
-
-    // Add explicit click listener for better gesture detection
-    document.addEventListener('DOMContentLoaded', () => {
-        const btn = document.getElementById('btn-enter-fullscreen');
-        if (btn) {
-            btn.addEventListener('click', requestFullscreenAndStart);
-        }
-    });
-
-    // Monitor fullscreen change
-    document.addEventListener('fullscreenchange', () => {
-        if (isMobile()) return; // Skip for mobile
-        if (document.fullscreenElement) {
-            // If they entered fullscreen (manually or via button)
-            if (!hasEnteredFullscreen) {
-                hasEnteredFullscreen = true;
-                clearInterval(fullscreenInterval);
-                document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
-                document.getElementById('app').classList.remove('hidden');
-                if (typeof updateGameUI === 'function') updateGameUI();
-            }
-        } else {
-            // If they exited fullscreen
-            if (hasEnteredFullscreen) {
-                // Strict ban on exit: if they were in fullscreen and now they aren't, ban.
-                banUser();
-            }
-        }
-    });
-
-    // Also monitor resize for exit attempts
-    window.addEventListener('resize', () => {
-        if (isMobile()) return; // Skip for mobile
-        if (hasEnteredFullscreen) {
-            const isApiFullscreen = !!document.fullscreenElement;
-            if (!isApiFullscreen) {
-                banUser();
-            }
-        }
-    });
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // Initialize core state as early as possible
-        loadPersistentData();
-        
-        if (authToken) {
-            await fetchServerState(); 
-            fetchGlobalInventory(); // Pre-load counts for the table
-        }
-        await setupSupabaseListeners();
-        if (typeof updateGamemodeModalVisibility === 'function') updateGamemodeModalVisibility();
-        if (typeof initQuestSystem === 'function') initQuestSystem();
-
-        if (isMobile()) {
-            document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
-            document.getElementById('app').classList.remove('hidden');
-            if (typeof updateGameUI === 'function') updateGameUI();
-        } else {
-            // Check if already in fullscreen (e.g. after a reload)
-            if (document.fullscreenElement) {
-                hasEnteredFullscreen = true;
-                document.getElementById('fullscreen-entry-overlay').classList.add('hidden');
-                document.getElementById('app').classList.remove('hidden');
-                if (typeof updateGameUI === 'function') updateGameUI();
-            } else {
-                startFullscreenCheck();
-            }
-        }
+        document.getElementById('fullscreen-entry-overlay')?.classList.add('hidden');
+        document.getElementById('app')?.classList.remove('hidden');
+        if (typeof updateGameUI === 'function') updateGameUI();
+        await bootCasinoApp();
     });
 
-    async function addCheatTicket() {
-        let tickets = JSON.parse(localStorage.getItem('cheatTickets') || '[]');
-        const now = Date.now();
-        tickets.push(now);
-        // Filter tickets older than 1 hour
-        tickets = tickets.filter(t => now - t < 3600000);
-        localStorage.setItem('cheatTickets', JSON.stringify(tickets));
-        
-        if (tickets.length >= 1) {
-            banUser();
-        }
-    }
+    async function addCheatTicket() {}
 
     let authToken = localStorage.getItem('bananaAuthToken') || '';
     
@@ -3686,20 +3416,11 @@
     }
 
     function updateXp(newVal) {
-        if (!isInternalUpdate && newVal !== xp && !isPlaying && gameMode !== 'plinko' && !isPlinkoDropping && bjState !== 'playing' && bjState !== 'dealerTurn') {
-            banUser();
-        }
         xp = newVal;
         if (typeof updateGameUI === 'function') updateGameUI();
     }
 
     function updateBananas(newVal) {
-        if (!isInternalUpdate && newVal !== bananas) {
-            // Unexpected change
-            banUser();
-            return;
-        }
-        
         const delta = newVal - bananas;
         if (delta >= 1000000) unlockTitle('big_winner');
         if (delta === -777) unlockTitle('lucky_seven');
@@ -3717,11 +3438,6 @@
     }
 
     function updateCoins(newVal) {
-        if (!isInternalUpdate && newVal !== coins) {
-            // Unexpected change
-            banUser();
-            return;
-        }
         if (!isInternalUpdate && newVal !== coins) balanceDirty = true;
         coins = newVal;
         if (typeof updateGameUI === 'function') updateGameUI();
@@ -4429,38 +4145,8 @@
         }
     }
 
-    window.onload = async () => {
-      elWheel.style.background = getWheelBackground();
-      loadPersistentData();
-      
-      // Initialize server status check
-      await checkServerStatus();
-      setInterval(checkServerStatus, 5000);
-
-      // Fetch dynamic skin values for trading
-      await fetchSkinValues();
-      setInterval(fetchSkinValues, 60 * 1000); // Fetch updates every 1 minute
-      
-      // Initialize leaderboard and auto-login if token exists
-      if (authToken) {
-          await fetchServerState();
-      } else {
-          isInitialSyncing = false;
-      }
-      await setupSupabaseListeners();
-
-      elBetAmountInput.addEventListener('input', (e) => {
-        let val = parseInt(e.target.value) || 0;
-        val = Math.max(0, Math.min(bananas, val));
-        betAmount = val;
-        e.target.value = val || '';
-        updateGameUI();
-      });
-      elLoading.classList.add('hidden');
-      elApp.classList.remove('hidden');
-      setView('menu');
-      renderTreeGrid();
-      setGameMode('roulette');
+    window.onload = () => {
+        bootCasinoApp();
     };
 
     function loadPersistentData() {
@@ -4615,6 +4301,91 @@
         }
     }
 
+    function applyServerMeta(meta) {
+      if (!meta || typeof meta !== 'object') return;
+      if (meta.boosts && typeof meta.boosts === 'object') {
+        activeBoosts = { ...(typeof activeBoosts === 'object' && activeBoosts ? activeBoosts : {}), ...meta.boosts };
+        if (typeof inventory === 'object' && inventory !== null) {
+          inventory['banana_cloak_expiry'] = Number(meta.boosts.banana_cloak || 0);
+        }
+      }
+      if (meta.shop && typeof meta.shop === 'object') {
+        if (Array.isArray(meta.shop.stock)) shopStock = meta.shop.stock;
+        if (Array.isArray(meta.shop.purchased)) shopPurchased = meta.shop.purchased;
+        if (meta.shop.refreshTime) shopRefreshTime = Number(meta.shop.refreshTime);
+      }
+      if (meta.quests && Array.isArray(meta.quests.active)) {
+        activeQuests = meta.quests.active.map(q => {
+          const def = typeof QUEST_POOL !== 'undefined' ? QUEST_POOL.find(p => p.id === q.id) : null;
+          return def ? {
+            ...q,
+            title: def.title,
+            desc: def.desc,
+            icon: def.icon,
+            reward: def.reward,
+            tier: def.tier,
+            target: def.target,
+            completed: Boolean(q.completed || q.progress >= def.target)
+          } : q;
+        });
+        if (meta.quests.refreshTimestamp) questRefreshTimestamp = Number(meta.quests.refreshTimestamp);
+        if (typeof saveQuestsToStorage === 'function') saveQuestsToStorage();
+        if (typeof updateQuestsBadge === 'function') updateQuestsBadge();
+        if (typeof renderQuestsUI === 'function') renderQuestsUI();
+      }
+    }
+
+    function applyServerPlaySync(data) {
+      if (!data) return;
+      isInternalUpdate = true;
+      if (data.newBalance !== undefined) {
+        const nb = Number(data.newBalance);
+        updateBananas(nb);
+        expectedDbBananas = nb;
+      }
+      if (data.xp !== undefined) {
+        xp = Number(data.xp);
+      }
+      isInternalUpdate = false;
+
+      if (data.winStreak !== undefined) winStreak = Number(data.winStreak);
+      if (data.level !== undefined) level = Number(data.level);
+      if (Array.isArray(data.unlockedTitles)) unlockedTitles = data.unlockedTitles;
+
+      if (data.vladimirQuestStatus !== undefined) {
+        const newVlad = Number(data.vladimirQuestStatus);
+        if (typeof vladimirQuestStatus !== 'undefined') {
+          if (vladimirQuestStatus < 2 && newVlad === 2) {
+            showNotification("Vladimir Beh nods from the shadows... The Banana Clicker is yours.", "success");
+          }
+          vladimirQuestStatus = newVlad;
+          if (playerName) localStorage.setItem("vladimirQuestStatus_" + playerName, String(vladimirQuestStatus));
+          if (typeof updateGamemodeModalVisibility === 'function') updateGamemodeModalVisibility();
+        }
+      }
+
+      if (data.inventory && typeof data.inventory === 'object') {
+        inventory = data.inventory;
+        localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+      }
+      if (data.meta) applyServerMeta(data.meta);
+
+      if (data.royalXP !== undefined) {
+        royalXP = Number(data.royalXP);
+        const rpEl = document.getElementById('rp-current-xp');
+        if (rpEl) rpEl.innerText = formatNumber(royalXP);
+        const passEl = document.getElementById('pass-display-xp');
+        if (passEl) passEl.innerText = formatNumber(royalXP);
+      }
+      if (data.earnedRoyalXP > 0) {
+        showNotification("+1 Royal XP! Check the pass in Ludvig's shop.", "success");
+      }
+      if (data.levelsGained > 0) {
+        playSound('win');
+        showNotification(`🎉 LEVEL UP! You reached Level ${level}!`, 'success');
+      }
+    }
+
     async function fetchServerState() {
       if (!authToken) return;
       try {
@@ -4678,7 +4449,7 @@
                         vladimirQuestStatus = Number(data.vladimir_quest_status || 0);
                         localStorage.setItem("vladimirQuestStatus_" + playerName, String(vladimirQuestStatus));
                     }
-                    level = Math.max(level, Number(serverLevel || 1));
+                    level = Number(serverLevel || 1);
                     updateXp(serverXp);
                     isInternalUpdate = false;
                     
@@ -4702,6 +4473,7 @@
                     if (typeof inventory !== 'object' || inventory === null) inventory = {};
                 } catch (e) { inventory = {}; }
             }
+            if (data.meta) applyServerMeta(data.meta);
 
             if (data.royal_xp !== undefined) royalXP = Number(data.royal_xp || 0);
             if (data.royal_claimed !== undefined) {
@@ -4897,7 +4669,7 @@
               updateBananas(Number(serverData.score));
               updateCoins(Number(serverData.coins || 0));
               bananaBox = Number(serverData.banana_box || 0);
-              level = Math.max(level, Number(serverData.level || 1));
+              level = Number(serverData.level || 1);
               updateXp(Number(serverData.xp || 0));
               
               if (serverData.unlocked_titles) {
@@ -5924,7 +5696,29 @@
         }
     }, 600000);
 
-    function payTaxNow() {
+    async function payTaxNow() {
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/tax/pay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({})
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Failed to pay tax');
+                isInternalUpdate = true;
+                updateBananas(Number(d.newBalance));
+                expectedDbBananas = Number(d.newBalance);
+                isInternalUpdate = false;
+                document.getElementById('tax-government-overlay').classList.add('hidden');
+                showNotification(`Paid ${formatNumber(Number(d.taxPaid || 0))} 🍌 settlement fine.`, 'error');
+                playSound('purchase');
+                return;
+            } catch (e) {
+                showNotification(e.message || 'Server error', 'error');
+                return;
+            }
+        }
         const taxAmount = Math.floor(bananas * 0.30);
         isInternalUpdate = true;
         updateBananas(bananas - taxAmount);
@@ -5935,7 +5729,26 @@
         playSound('purchase');
     }
 
-    function acceptTaxPenalty() {
+    async function acceptTaxPenalty() {
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/tax/penalty', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({})
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Failed to apply penalty');
+                applyServerMeta({ boosts: d.boosts });
+                document.getElementById('tax-government-overlay').classList.add('hidden');
+                showNotification('50% surveillance penalty applied for 10 minutes.', 'error');
+                playSound('purchase');
+                return;
+            } catch (e) {
+                showNotification(e.message || 'Server error', 'error');
+                return;
+            }
+        }
         activeBoosts.tax_penalty = Date.now() + 10 * 60 * 1000;
         document.getElementById('tax-government-overlay').classList.add('hidden');
         showNotification('50% cheating surveillance penalty applied for 10 minutes.', 'error');
@@ -6037,7 +5850,7 @@
             level = 1;
             xp = 0;
 
-            await syncData(bananas, trees);
+            await fetchServerState();
             finalizeEntry();
         } catch (err) {
             console.error(err);
@@ -6133,6 +5946,8 @@
             if (!unlockedThemes.includes(0)) unlockedThemes.unshift(0);
             applyTheme(equippedTheme);
             
+            if (data.meta) applyServerMeta(data.meta);
+
             isInternalUpdate = false;
             
             finalizeEntry();
@@ -6156,10 +5971,12 @@
             activeGadgets = Array(10).fill(false);
             equippedTheme = 0;
             unlockedThemes = [0];
-            applyTheme(0);
+            authToken = '';
+            expectedDbBananas = 0;
             level = 1;
             xp = 0;
-            location.reload();
+            if (typeof updateGameUI === 'function') updateGameUI();
+            if (typeof showAuthStep === 'function') showAuthStep('login');
         }
     }
 
@@ -6440,15 +6257,40 @@
         if (changed && view === 'shop') renderShop();
     }
 
+    let isRefreshingShop = false;
+    async function refreshShopFromServer() {
+        if (!authToken || isRefreshingShop) return;
+        isRefreshingShop = true;
+        try {
+            const res = await fetch(API_BASE + '/api/shop/status', {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            const d = await res.json();
+            if (res.ok && d.success) {
+                isInternalUpdate = true;
+                if (d.coins !== undefined) coins = Number(d.coins);
+                isInternalUpdate = false;
+                applyServerMeta({ shop: d.shop, boosts: d.boosts });
+                renderShop();
+            }
+        } catch (e) {} finally {
+            isRefreshingShop = false;
+        }
+    }
+
     function initShop() {
         ludvigStep = 0;
         document.getElementById('shop-dialogue-overlay').classList.remove('hidden');
         document.getElementById('shop-main-content').classList.add('hidden');
         document.getElementById('ludvig-text').innerText = "Welcome to my humble grove, traveler. I've got some rare goods today... for the right price.";
         
-        const now = Date.now();
-        if (now > shopRefreshTime) {
-            refreshShopStock();
+        if (authToken) {
+            refreshShopFromServer();
+        } else {
+            const now = Date.now();
+            if (now > shopRefreshTime) {
+                refreshShopStock();
+            }
         }
         renderShop();
     }
@@ -6494,6 +6336,10 @@
     }
 
     function refreshShopStock() {
+        if (authToken) {
+            refreshShopFromServer();
+            return;
+        }
         shopStock = SHOP_ITEMS.map(item => Math.random() < item.chance);
         shopPurchased = Array(SHOP_ITEMS.length).fill(false);
         shopRefreshTime = Date.now() + 10 * 60 * 1000; // 10 minutes
@@ -6506,8 +6352,12 @@
         document.getElementById('shop-timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         
         if (remaining === 0) {
-            refreshShopStock();
-            renderShop();
+            if (authToken) {
+                refreshShopFromServer();
+            } else {
+                refreshShopStock();
+                renderShop();
+            }
         }
     }
 
@@ -6657,8 +6507,32 @@
         boostContainer.innerHTML = boostHtml;
     }
 
-    function buyShopItem(index) {
+    async function buyShopItem(index) {
         const item = SHOP_ITEMS[index];
+        if (!item) return;
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/shop/buy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ index })
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Purchase failed');
+                isInternalUpdate = true;
+                coins = Number(d.coins);
+                expectedDbCoins = coins;
+                isInternalUpdate = false;
+                applyServerMeta({ shop: d.shop, boosts: d.boosts });
+                playSound('purchase');
+                renderShop();
+                updateGameUI();
+                addLog('purchase', item.cost, bananas, `Shop: ${item.title}`);
+            } catch (e) {
+                showNotification(e.message || 'Purchase failed', 'error');
+            }
+            return;
+        }
         if (coins >= item.cost && shopStock[index] && !shopPurchased[index]) {
             isInternalUpdate = true;
             updateCoins(coins - item.cost);
@@ -6679,9 +6553,42 @@
         }
     }
     
-    function exchangeBananasForCoins() {
+    async function exchangeBananasForCoins() {
         const isMerchantActive = activeBoosts.merchant > Date.now();
         const cost = isMerchantActive ? 80000 : 100000;
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/shop/exchange', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ amount: 1 })
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Exchange failed');
+                isInternalUpdate = true;
+                updateBananas(Number(d.newBalance));
+                expectedDbBananas = Number(d.newBalance);
+                coins = Number(d.coins);
+                expectedDbCoins = coins;
+                isInternalUpdate = false;
+                playSound('purchase');
+                renderShop();
+                updateGameUI();
+                addLog('exchange', cost, bananas, `Exchange: ${formatNumber(cost)} 🍌 for 1 🪙`);
+                const msg = document.getElementById('spin-result-msg');
+                if (msg) {
+                    msg.innerText = `EXCHANGED ${formatNumber(cost)} 🍌 FOR 1 🪙!`;
+                    msg.classList.add('text-yellow-200');
+                    setTimeout(() => {
+                        msg.classList.remove('text-yellow-200');
+                        if (msg.innerText === `EXCHANGED ${formatNumber(cost)} 🍌 FOR 1 🪙!`) msg.innerText = "Welcome to Casino!";
+                    }, 3000);
+                }
+            } catch (e) {
+                showNotification(e.message || 'Not enough bananas!', 'error');
+            }
+            return;
+        }
         if (bananas >= cost) {
             isInternalUpdate = true;
             updateBananas(bananas - cost);
@@ -6694,7 +6601,6 @@
             syncData(bananas, trees);
             addLog('exchange', cost, bananas, `Exchange: ${formatNumber(cost)} 🍌 for 1 🪙`);
             
-            // Show a small success message
             const msg = document.getElementById('spin-result-msg');
             if (msg) {
             msg.innerText = `EXCHANGED ${formatNumber(cost)} 🍌 FOR 1 🪙!`;
@@ -7373,7 +7279,30 @@
         renderQuestsUI();
     }
 
+    let isRefreshingQuests = false;
+    async function refreshQuestsFromServer() {
+        if (!authToken || isRefreshingQuests) return;
+        isRefreshingQuests = true;
+        try {
+            const res = await fetch(API_BASE + '/api/quests/status', {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            const d = await res.json();
+            if (res.ok && d.success && d.quests) {
+                applyServerMeta({ quests: d.quests });
+            }
+        } catch (e) {} finally {
+            isRefreshingQuests = false;
+        }
+    }
+
     function checkQuestHourlyExpiry() {
+        if (authToken) {
+            if (!questRefreshTimestamp || Date.now() >= questRefreshTimestamp || !Array.isArray(activeQuests) || activeQuests.length < 5) {
+                refreshQuestsFromServer();
+            }
+            return;
+        }
         const now = Date.now();
         if (!questRefreshTimestamp || now >= questRefreshTimestamp || !Array.isArray(activeQuests) || activeQuests.length < 5) {
             generateNewHourlyQuests();
@@ -7386,8 +7315,12 @@
             const now = Date.now();
             const diff = questRefreshTimestamp - now;
             if (diff <= 0) {
-                generateNewHourlyQuests();
-                showNotification("📜 Hourly Quests have refreshed! Incomplete quests reset.", "info");
+                if (authToken) {
+                    refreshQuestsFromServer();
+                } else {
+                    generateNewHourlyQuests();
+                    showNotification("📜 Hourly Quests have refreshed! Incomplete quests reset.", "info");
+                }
             } else {
                 const minutes = Math.floor(diff / 60000);
                 const seconds = Math.floor((diff % 60000) / 1000);
@@ -7429,9 +7362,31 @@
         }
     }
 
-    function claimQuestReward(questIndex) {
+    async function claimQuestReward(questIndex) {
         const q = activeQuests[questIndex];
         if (!q || !q.completed || q.claimed) return;
+
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/quests/claim', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ index: questIndex })
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Quest claim failed');
+                level = Number(d.level);
+                if (Array.isArray(d.unlockedTitles)) unlockedTitles = d.unlockedTitles;
+                applyServerMeta({ quests: d.quests });
+                playSound('win');
+                showNotification(`🎉 Quest Claimed! Gained +${d.reward || q.reward} Whole Levels! You are now Level ${level}!`, 'success');
+                updateGameUI();
+            } catch (e) {
+                showNotification(e.message || 'Could not claim quest', 'error');
+                refreshQuestsFromServer();
+            }
+            return;
+        }
 
         q.claimed = true;
         const wholeLevels = Number(q.reward || 0); // 2, 4, or 6
@@ -7573,7 +7528,7 @@
         container.innerHTML = html;
     }
 
-    function buyNewQuestsForCoins() {
+    async function buyNewQuestsForCoins() {
         if (!activeQuests || activeQuests.length === 0 || !activeQuests.every(q => q.completed)) {
             showNotification("You must complete all your active quests first!", "warning");
             return;
@@ -7582,6 +7537,29 @@
         if (coins < 50) {
             playSound('loss');
             showNotification(`You need 50 coins to get new quests! You only have ${formatNumber(coins)} 🪙.`, "error");
+            return;
+        }
+
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/quests/reroll', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({})
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Failed to reroll quests');
+                isInternalUpdate = true;
+                coins = Number(d.coins);
+                expectedDbCoins = coins;
+                isInternalUpdate = false;
+                applyServerMeta({ quests: d.quests });
+                playSound('win');
+                showNotification("🎉 Purchased 5 fresh new quests for 50 🪙! Good luck!", "success");
+                updateGameUI();
+            } catch (e) {
+                showNotification(e.message || 'Reroll failed', 'error');
+            }
             return;
         }
 
@@ -7688,13 +7666,38 @@
     }
 
     // --- GADGET SYSTEM LOGIC ---
-    function buyGadget(index) {
+    async function buyGadget(index) {
         if (isPlaying || (typeof bjState !== 'undefined' && bjState === 'playing')) {
             showNotification("Cannot buy gadgets while a bet is active!", "error");
             return;
         }
         const gadget = GADGET_DATA[index];
         if (!gadget || gadget.locked || unlockedGadgets[index]) return;
+
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/gadget/buy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ index })
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Failed to buy gadget');
+                isInternalUpdate = true;
+                updateBananas(Number(d.newBalance));
+                expectedDbBananas = Number(d.newBalance);
+                isInternalUpdate = false;
+                if (Array.isArray(d.gadgets)) unlockedGadgets = d.gadgets;
+                if (Array.isArray(d.active_gadgets)) activeGadgets = d.active_gadgets;
+                if (Array.isArray(d.unlockedTitles)) unlockedTitles = d.unlockedTitles;
+                updateGameUI();
+                addLog('purchase', gadget.cost, bananas, `Buy Gadget: ${gadget.title || gadget.name}`);
+                playSound('purchase');
+            } catch (e) {
+                showNotification(e.message || 'Purchase failed', 'error');
+            }
+            return;
+        }
 
         if (bananas >= gadget.cost) {
             isInternalUpdate = true;
@@ -7718,13 +7721,33 @@
         }
     }
 
-    function toggleGadget(index) {
+    async function toggleGadget(index) {
         if (isPlaying || (typeof bjState !== 'undefined' && bjState === 'playing')) {
             showNotification("Cannot switch gadgets while a bet is active!", "error");
             return;
         }
         if (!unlockedGadgets[index]) return;
         playSound('click');
+
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/gadget/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ index })
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Cannot toggle gadget');
+                if (Array.isArray(d.active_gadgets)) activeGadgets = d.active_gadgets;
+                updateGameUI();
+                if (gameMode === 'plinko' && typeof rebuildPlinkoBoard === 'function') rebuildPlinkoBoard();
+                if (gameMode === 'mines' && typeof updateMinesStatusBanner === 'function') updateMinesStatusBanner();
+            } catch (e) {
+                showNotification(e.message || 'Cannot toggle gadget', 'error');
+            }
+            return;
+        }
+
         if (activeGadgets[index]) {
             activeGadgets[index] = false;
         } else {
@@ -7759,7 +7782,35 @@
         }, 2000);
     }
 
-    function claimInsurance() {
+    async function claimInsurance() {
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/insurance/claim', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({})
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Insurance claim failed');
+                const refund = Number(d.refund || 0);
+                isInternalUpdate = true;
+                updateBananas(Number(d.newBalance));
+                expectedDbBananas = Number(d.newBalance);
+                isInternalUpdate = false;
+                spinResultMsg = `Insurance Claimed! Refunded ${formatNumber(refund)} 🍌.`;
+                lastLossAmount = 0;
+                document.getElementById('insurance-btn').classList.add('hidden');
+                clearTimeout(insuranceTimer);
+                lastInsuranceUseTime = Date.now();
+                updateGameUI();
+                addLog('refund', refund, bananas, 'Insurance Claim');
+                playSound('win');
+            } catch (e) {
+                document.getElementById('insurance-btn').classList.add('hidden');
+                showNotification(e.message || 'Insurance unavailable', 'error');
+            }
+            return;
+        }
         if (lastLossAmount <= 0) return;
         const refund = Math.round(lastLossAmount * 0.25);
         isInternalUpdate = true;
@@ -7829,15 +7880,43 @@
     }
 
     // --- TREE SYSTEM LOGIC ---
-    function handleBuyTree() {
+    async function handleBuyTree() {
       if (isPlaying || (typeof bjState !== 'undefined' && bjState === 'playing')) {
           showNotification("Cannot buy trees while a bet is active!", "error");
           return;
       }
       const firstEmpty = trees.indexOf(0);
+      if (firstEmpty === -1) return;
       const data = TREE_DATA[1];
       const discount = activeBoosts.discount > Date.now() ? 0.75 : 1;
       const finalCost = Math.floor(data.cost * discount);
+
+      if (authToken) {
+        try {
+          const res = await fetch(API_BASE + '/api/tree/buy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+              body: JSON.stringify({ index: firstEmpty })
+          });
+          const d = await res.json();
+          if (!res.ok || !d.success) throw new Error(d.error || 'Failed to buy tree');
+          isInternalUpdate = true;
+          updateBananas(Number(d.newBalance));
+          expectedDbBananas = Number(d.newBalance);
+          isInternalUpdate = false;
+          if (d.bananaBox !== undefined) bananaBox = Number(d.bananaBox);
+          if (Array.isArray(d.trees)) trees = d.trees;
+          if (Array.isArray(d.unlockedTitles)) unlockedTitles = d.unlockedTitles;
+          if (d.meta) applyServerMeta(d.meta);
+          updateGameUI();
+          triggerQuestProgress('tree_buy_upgrade', 1);
+          addLog('purchase', finalCost, bananas, 'Buy New Tree');
+          playSound('purchase');
+        } catch (e) {
+          showNotification(e.message || 'Cannot buy tree', 'error');
+        }
+        return;
+      }
       
       if (firstEmpty !== -1 && bananas >= finalCost) {
         unlockTitle('investor');
@@ -7928,15 +8007,43 @@
         selectedTreeIndex = -1;
     }
 
-    function upgradeTree() {
+    async function upgradeTree() {
         if (isPlaying || (typeof bjState !== 'undefined' && bjState === 'playing')) {
             showNotification("Cannot upgrade trees while a bet is active!", "error");
             return;
         }
         if (selectedTreeIndex === -1) return;
-        const level = trees[selectedTreeIndex];
-        const nextData = TREE_DATA[level + 1];
+        const treeLvl = trees[selectedTreeIndex];
+        const nextData = TREE_DATA[treeLvl + 1];
         if (!nextData) return;
+
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/tree/upgrade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ index: selectedTreeIndex })
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Upgrade failed');
+                isInternalUpdate = true;
+                updateBananas(Number(d.newBalance));
+                expectedDbBananas = Number(d.newBalance);
+                isInternalUpdate = false;
+                if (d.bananaBox !== undefined) bananaBox = Number(d.bananaBox);
+                if (Array.isArray(d.trees)) trees = d.trees;
+                if (Array.isArray(d.unlockedTitles)) unlockedTitles = d.unlockedTitles;
+                if (d.meta) applyServerMeta(d.meta);
+                triggerQuestProgress('tree_buy_upgrade', 1);
+                updateGameUI();
+                handleTreeClick(selectedTreeIndex);
+                addLog('purchase', nextData.cost, bananas, `Upgrade Tree to Lvl ${trees[selectedTreeIndex]}`);
+                playSound('purchase');
+            } catch (e) {
+                showNotification(e.message || 'Upgrade failed', 'error');
+            }
+            return;
+        }
         
         const treesOwned = trees.filter(l => l > 0).length;
         const conditionMet = !nextData.reqAllTrees || treesOwned === 20;
@@ -7965,16 +8072,43 @@
         }
     }
 
-    function handleSellTree() {
+    async function handleSellTree() {
         if (isPlaying || (typeof bjState !== 'undefined' && bjState === 'playing')) {
             showNotification("Cannot sell trees while a bet is active!", "error");
             return;
         }
         if (selectedTreeIndex === -1 || selectedTreeIndex === 0) return;
-        const level = trees[selectedTreeIndex];
-        if (level === 0) return;
+        const treeLvl = trees[selectedTreeIndex];
+        if (treeLvl === 0) return;
+
+        if (authToken) {
+            try {
+                const res = await fetch(API_BASE + '/api/tree/sell', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ index: selectedTreeIndex })
+                });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Sell failed');
+                const sellVal = Number(d.refund || 0);
+                isInternalUpdate = true;
+                updateBananas(Number(d.newBalance));
+                expectedDbBananas = Number(d.newBalance);
+                isInternalUpdate = false;
+                if (d.bananaBox !== undefined) bananaBox = Number(d.bananaBox);
+                if (Array.isArray(d.trees)) trees = d.trees;
+                if (d.meta) applyServerMeta(d.meta);
+                updateGameUI();
+                closeTreeModal();
+                addLog('income', sellVal, bananas, `Sold Tree Lvl ${treeLvl}`);
+                playSound('win');
+            } catch (e) {
+                showNotification(e.message || 'Sell failed', 'error');
+            }
+            return;
+        }
         
-        const currentData = TREE_DATA[level];
+        const currentData = TREE_DATA[treeLvl];
         const sellValue = Math.floor(currentData.cost * 0.25);
         
         isInternalUpdate = true;
@@ -7985,7 +8119,7 @@
         syncData(bananas, trees);
         updateGameUI();
         closeTreeModal();
-        addLog('income', sellValue, bananas, `Sold Tree Lvl ${level}`);
+        addLog('income', sellValue, bananas, `Sold Tree Lvl ${treeLvl}`);
         playSound('win');
     }
 
@@ -8149,6 +8283,7 @@
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
             
+            if (data.meta) applyServerMeta(data.meta);
             hiloCards = [data.result.firstCard];
             spinResultMsg = "Higher or Lower?";
             isPlaying = false; // Allow user interaction
@@ -8191,20 +8326,8 @@
             const won = data.result.status === 'win';
             const winVal = Number(data.winAmount);
             
-            isInternalUpdate = true;
-            updateBananas(Number(data.newBalance));
-            expectedDbBananas = Number(data.newBalance);
-            isInternalUpdate = false;
-            
-            if (data.winStreak !== undefined) winStreak = data.winStreak;
+            applyServerPlaySync(data);
             handleMegaBetEffect(data);
-            // Vladimir Beh Quest Check
-            if (vladimirQuestStatus === 1 && betColor === "green" && !activeGadgets.some(g => g) && typeof balanceBeforeSpin !== "undefined" && betAmount >= balanceBeforeSpin) {
-                vladimirQuestStatus = 2;
-                localStorage.setItem("vladimirQuestStatus_" + playerName, "2");
-                showNotification("Vladimir Beh nods from the shadows... The Banana Clicker is yours.", "success");
-            }
-
             
             if (data.result.megaBet === 'taxes') {
                 spinResultMsg = "TAXES! The jungle government took your entire win!";
@@ -8213,30 +8336,29 @@
             } else if (data.result.status === 'push') {
                 spinResultMsg = `Push! The card was the same. Bet refunded!`;
                 addLog('push', 0, bananas, `Hi-Lo: Push`);
-                triggerQuestProgress('bets_placed', 1);
+                if (!authToken) triggerQuestProgress('bets_placed', 1);
             } else if (won) {
                 spinResultMsg = `Correct! Won ${formatNumber(winVal)} 🍌!`;
                 addLog('win', winVal, bananas, `Hi-Lo: 2x`);
-                triggerQuestProgress('hilo_correct', 1, { streak: hiloCards.length, mult: 2.0 });
-                triggerQuestProgress('hilo_win', 1, { mult: 2.0 });
-                triggerQuestProgress('win_amount', winVal);
-                triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
-                triggerQuestProgress('bets_placed', 1);
-                
-                isInternalUpdate = true;
-                isInternalUpdate = false;
-                awardBettingXp(winVal, true);
+                if (!authToken) {
+                    triggerQuestProgress('hilo_correct', 1, { streak: hiloCards.length, mult: 2.0 });
+                    triggerQuestProgress('hilo_win', 1, { mult: 2.0 });
+                    triggerQuestProgress('win_amount', winVal);
+                    triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+                    triggerQuestProgress('bets_placed', 1);
+                    awardBettingXp(winVal, true);
+                }
                 playSound('win');
             } else {
-                awardBettingXp(betAmount, false);
+                if (!authToken) awardBettingXp(betAmount, false);
                 spinResultMsg = processLoss(betAmount, betAmount, `Wrong! Lost ${formatNumber(betAmount)} 🍌.`, data.result);
                 addLog('loss', betAmount, bananas, `Hi-Lo: Loss`);
-                triggerQuestProgress('bets_placed', 1);
+                if (!authToken) triggerQuestProgress('bets_placed', 1);
             }
             
             hiloState = 'gameOver';
             isPlaying = false;
-            if (pendingSync) syncData(bananas, trees);
+            if (!authToken && pendingSync) syncData(bananas, trees);
             updateGameUI();
             
         } catch (err) {
@@ -8261,7 +8383,7 @@
       </div>`;
     }
 
-    function playPoker() {
+    async function playPoker() {
       pokerOriginalBet = betAmount;
       if (bananas < betAmount) {
          showNotification("Not enough bananas!", "error");
@@ -8273,8 +8395,43 @@
       isPlaying = true;
       pokerState = 'holding';
       pokerHeld = [false, false, false, false, false];
+
+      if (authToken) {
+          pokerHand = [];
+          spinResultMsg = "Dealing poker hand...";
+          updateGameUI();
+          try {
+              const response = await fetch(API_BASE + '/api/play', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${authToken}`
+                  },
+                  body: JSON.stringify({ taxPenalty: activeBoosts.tax_penalty > Date.now(), gameMode: 'poker_start', betAmount, activeGadgets })
+              });
+              const data = await response.json();
+              if (!data.success) throw new Error(data.error || "Server error");
+
+              if (data.meta) applyServerMeta(data.meta);
+              pokerHand = data.result.initialHand;
+              spinResultMsg = "Select cards to hold, then DRAW.";
+              document.getElementById('poker-message').innerText = "JACKS OR BETTER";
+              playSound('card');
+              updateGameUI();
+          } catch (err) {
+              console.error("Poker start error:", err);
+              isPlaying = false;
+              pokerState = 'gameOver';
+              isInternalUpdate = true;
+              updateBananas(bananas + betAmount);
+              isInternalUpdate = false;
+              spinResultMsg = "Error: " + parseError(err);
+              updateGameUI();
+          }
+          return;
+      }
       
-      let deck = buildDeck(); // reuse blackjack deck generator
+      let deck = buildDeck(); // guest fallback only
       pokerHand = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
       
       spinResultMsg = "Select cards to hold, then DRAW.";
@@ -8304,31 +8461,20 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ taxPenalty: activeBoosts.tax_penalty > Date.now(), clientScore: bananas, gameMode: 'poker', betAmount: pokerOriginalBet, activeGadgets, pokerHand, pokerHeld })
+                body: JSON.stringify({ taxPenalty: activeBoosts.tax_penalty > Date.now(), gameMode: 'poker_draw', betAmount: 0, activeGadgets, pokerHeld })
             });
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
             
             pokerHand = data.result.finalHand;
-            
-            isInternalUpdate = true;
-            updateBananas(Number(data.newBalance));
-            expectedDbBananas = Number(data.newBalance);
-            isInternalUpdate = false;
-            
-            if (data.winStreak !== undefined) winStreak = data.winStreak;
+            applyServerPlaySync(data);
             handleMegaBetEffect(data);
-            // Vladimir Beh Quest Check
-            if (vladimirQuestStatus === 1 && betColor === "green" && !activeGadgets.some(g => g) && typeof balanceBeforeSpin !== "undefined" && betAmount >= balanceBeforeSpin) {
-                vladimirQuestStatus = 2;
-                localStorage.setItem("vladimirQuestStatus_" + playerName, "2");
-                showNotification("Vladimir Beh nods from the shadows... The Banana Clicker is yours.", "success");
-            }
-
             
             const winVal = Number(data.winAmount);
-            triggerQuestProgress('poker_play', 1);
-            triggerQuestProgress('bets_placed', 1);
+            if (!authToken) {
+                triggerQuestProgress('poker_play', 1);
+                triggerQuestProgress('bets_placed', 1);
+            }
 
             if (data.result.megaBet === 'taxes') {
                 spinResultMsg = "TAXES! The jungle government took your entire win!";
@@ -8338,15 +8484,17 @@
                 spinResultMsg = `Got ${data.result.handName}! Won ${formatNumber(winVal)} 🍌!`;
                 addLog('win', winVal - pokerOriginalBet, bananas, `Poker: ${data.result.handName}`);
                 playSound('win');
-                awardBettingXp(winVal, true);
                 if (["FULL HOUSE", "FOUR OF A KIND", "STRAIGHT FLUSH", "ROYAL FLUSH"].includes(data.result.handName)) {
                     unlockTitle('card_shark');
                 }
-                triggerQuestProgress('poker_win', 1, { rank: data.result.handName });
-                triggerQuestProgress('win_amount', winVal);
-                triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+                if (!authToken) {
+                    awardBettingXp(winVal, true);
+                    triggerQuestProgress('poker_win', 1, { rank: data.result.handName });
+                    triggerQuestProgress('win_amount', winVal);
+                    triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+                }
             } else {
-                awardBettingXp(pokerOriginalBet, false);
+                if (!authToken) awardBettingXp(pokerOriginalBet, false);
                 if (pokerOriginalBet > 100000) unlockTitle('unlucky');
                 spinResultMsg = processLoss(pokerOriginalBet, pokerOriginalBet, `No winning hand. Lost ${formatNumber(pokerOriginalBet)} 🍌.`, data.result);
                 addLog('loss', pokerOriginalBet, bananas, `Poker: Loss`);
@@ -8356,7 +8504,7 @@
             document.getElementById('poker-message').innerText = (winVal > 0) ? data.result.handName : "GAME OVER";
             
             isPlaying = false;
-            syncData(bananas, trees);
+            if (!authToken) syncData(bananas, trees);
             if (betAmount > bananas) betAmount = bananas; 
             updateGameUI();
             
@@ -8404,14 +8552,17 @@
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Server error");
             
+            if (data.meta) applyServerMeta(data.meta);
             crashResultData = data.result;
 
             crashState = 'flying';
             crashStartTime = performance.now();
             elStatus.innerText = "Flying...";
             document.getElementById('crash-cashout-btn').classList.remove('hidden');
-            triggerQuestProgress('crash_play', 1);
-            triggerQuestProgress('bets_placed', 1);
+            if (!authToken) {
+                triggerQuestProgress('crash_play', 1);
+                triggerQuestProgress('bets_placed', 1);
+            }
             
             // Start local animation loop
             function updateCrash() {
@@ -8502,12 +8653,8 @@
             });
             const data = await response.json();
             if (data && data.success) {
-                if (data.winStreak !== undefined) winStreak = data.winStreak;
+                applyServerPlaySync(data);
                 if (data.result && data.result.failsafeActivated) {
-                    isInternalUpdate = true;
-                    updateBananas(Number(data.newBalance));
-                    expectedDbBananas = Number(data.newBalance);
-                    isInternalUpdate = false;
                     showNotification("🛡️ Failsafe Saved Your Bananas!", "success");
                 }
                 spinResultMsg = processLoss(betAmount, betAmount, `Crashed at ${crashPoint.toFixed(2)}x! Lost ${formatNumber(betAmount)} 🍌`, data.result);
@@ -8520,7 +8667,7 @@
 
         addLog('loss', betAmount, bananas, `Crash: ${crashPoint.toFixed(2)}x`);
         
-        if (pendingSync) syncData(bananas, trees);
+        if (!authToken && pendingSync) syncData(bananas, trees);
         updateGameUI();
     }
     
@@ -8563,20 +8710,8 @@
                 const winAmountStr = data.winAmount;
                 const winAmount = Number(winAmountStr);
                 
-                isInternalUpdate = true;
-                updateBananas(Number(data.newBalance));
-                expectedDbBananas = Number(data.newBalance);
-                isInternalUpdate = false;
-                
-                if (data.winStreak !== undefined) winStreak = data.winStreak;
+                applyServerPlaySync(data);
                 handleMegaBetEffect(data);
-            // Vladimir Beh Quest Check
-            if (vladimirQuestStatus === 1 && betColor === "green" && !activeGadgets.some(g => g) && typeof balanceBeforeSpin !== "undefined" && betAmount >= balanceBeforeSpin) {
-                vladimirQuestStatus = 2;
-                localStorage.setItem("vladimirQuestStatus_" + playerName, "2");
-                showNotification("Vladimir Beh nods from the shadows... The Banana Clicker is yours.", "success");
-            }
-
                 
                 if (data.result.megaBet === 'taxes') {
                     spinResultMsg = "TAXES! The jungle government took your entire win!";
@@ -8592,15 +8727,13 @@
                     if (savedMultiplier >= 10.0) {
                         unlockTitle('rocket_rider');
                     }
-                    triggerQuestProgress('crash_cashout', 1, { mult: savedMultiplier });
-                    triggerQuestProgress('win_amount', winAmount);
-                    triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+                    if (!authToken) {
+                        triggerQuestProgress('crash_cashout', 1, { mult: savedMultiplier });
+                        triggerQuestProgress('win_amount', winAmount);
+                        triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+                        awardBettingXp(winAmount, true);
+                    }
                 }
-                
-                // XP Gain
-                isInternalUpdate = true;
-                isInternalUpdate = false;
-                awardBettingXp(winAmount, true);
             } else {
                 // Client thought it was a win but server said it crashed already (latency or cheating)
                 handleCrash(savedMultiplier); // visually just crash it there
@@ -8610,7 +8743,7 @@
             spinResultMsg = "Cashout failed: " + parseError(err);
         }
         
-        if (pendingSync) syncData(bananas, trees);
+        if (!authToken && pendingSync) syncData(bananas, trees);
         updateGameUI();
     }
 
@@ -8797,6 +8930,7 @@
             const data = await response.json();
             if (!data.success) throw new Error(data.error || "Failed to start mines game");
             
+            if (data.meta) applyServerMeta(data.meta);
             if (data.result && data.result.sonarCooldownLeft !== undefined) {
                 sonarCooldownUntil = Date.now() + Number(data.result.sonarCooldownLeft);
             }
@@ -8858,15 +8992,12 @@
                     banner.innerText = `💥 BOOM! You hit a mine! Lost ${formatNumber(betAmount)} 🍌`;
                     banner.className = "w-full text-center py-1.5 px-3 mb-3 rounded-xl text-xs font-black tracking-wider uppercase bg-red-950 text-red-300 border border-red-600 shadow-lg shadow-red-900/50";
                 }
-                if (data.newBalance !== undefined && data.result && data.result.failsafeActivated) {
-                    isInternalUpdate = true;
-                    updateBananas(Number(data.newBalance));
-                    expectedDbBananas = Number(data.newBalance);
-                    isInternalUpdate = false;
+                applyServerPlaySync(data);
+                if (data.result && data.result.failsafeActivated) {
                     showNotification("🛡️ Failsafe Saved Your Bananas!", "success");
                 }
                 spinResultMsg = processLoss(betAmount, betAmount, `Hit a mine! Lost ${formatNumber(betAmount)} 🍌`, data.result);
-                awardBettingXp(betAmount, false);
+                if (!authToken) awardBettingXp(betAmount, false);
                 addLog('loss', betAmount, bananas, `Mines: Detonated (${minesCount} mines)`);
                 updateMinesMultipliers();
                 updateGameUI();
@@ -8897,13 +9028,14 @@
                 playSound('win');
                 renderMinesGrid(data.result.mines);
                 const winAmount = Number(data.winAmount);
-                isInternalUpdate = true;
-                updateBananas(Number(data.newBalance));
-                expectedDbBananas = Number(data.newBalance);
-                isInternalUpdate = false;
-                if (data.winStreak !== undefined) winStreak = data.winStreak;
+                applyServerPlaySync(data);
                 handleMegaBetEffect(data);
-                awardBettingXp(winAmount, true);
+                if (!authToken) {
+                    awardBettingXp(winAmount, true);
+                    triggerQuestProgress('mines_cashout', 1, { gems: minesRevealed.length, mult: minesMultiplier });
+                    triggerQuestProgress('win_amount', winAmount);
+                    triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+                }
                 if (minesRevealed.length >= 5) {
                     unlockTitle('mine_sweeper');
                 }
@@ -8913,9 +9045,6 @@
                 }
                 spinResultMsg = `Board Cleared! Won ${formatNumber(winAmount)} 🍌!`;
                 addLog('win', winAmount, bananas, `Mines Clear (${minesCount} mines)`);
-                triggerQuestProgress('mines_cashout', 1, { gems: minesRevealed.length, mult: minesMultiplier });
-                triggerQuestProgress('win_amount', winAmount);
-                triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
                 updateMinesMultipliers();
                 updateGameUI();
             }
@@ -8961,14 +9090,14 @@
             playSound('win');
 
             const winAmount = Number(data.winAmount);
-            isInternalUpdate = true;
-            updateBananas(Number(data.newBalance));
-            expectedDbBananas = Number(data.newBalance);
-            isInternalUpdate = false;
-
-            if (data.winStreak !== undefined) winStreak = data.winStreak;
+            applyServerPlaySync(data);
             handleMegaBetEffect(data);
-            awardBettingXp(winAmount, true);
+            if (!authToken) {
+                awardBettingXp(winAmount, true);
+                triggerQuestProgress('mines_cashout', 1, { gems: minesRevealed.length, mult: data.result.finalMultiplier });
+                triggerQuestProgress('win_amount', winAmount);
+                triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+            }
 
             if (minesRevealed.length >= 5) {
                 unlockTitle('mine_sweeper');
@@ -8983,9 +9112,6 @@
             }
             spinResultMsg = `Cashed out at ${data.result.finalMultiplier.toFixed(2)}x! Won ${formatNumber(winAmount)} 🍌!`;
             addLog('win', winAmount, bananas, `Mines Cashout (${minesCount} mines)`);
-            triggerQuestProgress('mines_cashout', 1, { gems: minesRevealed.length, mult: data.result.finalMultiplier });
-            triggerQuestProgress('win_amount', winAmount);
-            triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
             updateGameUI();
         } catch (err) {
             isMinesPicking = false;
@@ -9613,21 +9739,23 @@
         currentPlinkoRound.ballResults.push({ mult: mult, win: win });
         updatePlinkoSummaryUI();
 
-        triggerQuestProgress('plinko_drop', 1);
-        triggerQuestProgress('plinko_mult', 1, { mult: mult });
-        triggerQuestProgress('bets_placed', 1);
-        if (win > 0) {
-            triggerQuestProgress('win_amount', win);
-        }
+        if (!authToken) {
+            triggerQuestProgress('plinko_drop', 1);
+            triggerQuestProgress('plinko_mult', 1, { mult: mult });
+            triggerQuestProgress('bets_placed', 1);
+            if (win > 0) {
+                triggerQuestProgress('win_amount', win);
+            }
 
-        // Balance & XP
-        if (win > 0) {
-            isInternalUpdate = true;
-            updateBananas(bananas + win);
-            isInternalUpdate = false;
-            awardBettingXp(win, true);
-        } else {
-            awardBettingXp(cost, false);
+            // Balance & XP (guest fallback only; server already settled when logged in)
+            if (win > 0) {
+                isInternalUpdate = true;
+                updateBananas(bananas + win);
+                isInternalUpdate = false;
+                awardBettingXp(win, true);
+            } else {
+                awardBettingXp(ball.bet, false);
+            }
         }
 
         // Master title check
@@ -9672,15 +9800,7 @@
 
             isPlaying = false;
             if (ball.serverResponse) {
-                if (ball.serverResponse.winStreak !== undefined) {
-                    winStreak = ball.serverResponse.winStreak;
-                }
-                if (ball.serverResponse.newBalance !== undefined) {
-                    isInternalUpdate = true;
-                    updateBananas(Number(ball.serverResponse.newBalance));
-                    expectedDbBananas = Number(ball.serverResponse.newBalance);
-                    isInternalUpdate = false;
-                }
+                applyServerPlaySync(ball.serverResponse);
                 if (ball.serverResponse.result && ball.serverResponse.result.failsafeActivated) {
                     showNotification("🛡️ Failsafe Saved Your Bananas!", "success");
                     playSound('win');
@@ -9690,7 +9810,7 @@
                 }
                 handleMegaBetEffect(ball.serverResponse);
             }
-            if (pendingSync) {
+            if (!authToken && pendingSync) {
                 pendingSync = false;
                 syncData(bananas, trees);
             }
@@ -9798,10 +9918,6 @@
 
             isPlinkoDropping = false;
             const drops = data.result.drops || [];
-            
-            if (data.newBalance !== undefined) {
-                expectedDbBananas = Number(data.newBalance);
-            }
 
             // Launch balls staggered by 130ms for thrilling cascade!
             drops.forEach((drop, idx) => {
@@ -9902,6 +10018,20 @@
         return normalized;
     }
 
+    async function syncHorseOddsFromServer() {
+        if (!authToken) return;
+        try {
+            const res = await fetch(API_BASE + '/api/horseracing/odds', {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            const data = await res.json();
+            if (data && data.success && Array.isArray(data.odds) && data.odds.length === 10) {
+                horseOdds = data.odds;
+                renderHorsesPaddock();
+            }
+        } catch (e) {}
+    }
+
     function initHorseRacingGame() {
         if (!horseOdds || horseOdds.length !== 10) {
             horseOdds = generateHorseChances();
@@ -9915,15 +10045,20 @@
             if (trackView) trackView.classList.add('hidden');
             if (resultsOverlay) resultsOverlay.classList.add('hidden');
             renderHorsesPaddock();
+            if (authToken) syncHorseOddsFromServer();
         }
     }
 
-    function refreshHorseOdds() {
+    async function refreshHorseOdds() {
         if (isPlaying || hrState === 'racing') return;
-        horseOdds = generateHorseChances();
+        if (authToken) {
+            await syncHorseOddsFromServer();
+        } else {
+            horseOdds = generateHorseChances();
+            renderHorsesPaddock();
+        }
         playSound('click');
-        renderHorsesPaddock();
-        showNotification("🎲 Fresh Derby odds generated for all 10 steeds!", "info");
+        showNotification("🎲 Derby odds synced for all 10 steeds!", "info");
     }
 
     function renderHorsesPaddock() {
@@ -10072,10 +10207,11 @@
         updateGameUI();
         playSound('spin');
 
-        // Fetch pre-determined outcome from server or fallback locally
+        // Fetch pre-determined outcome from server (strict when authenticated)
         let finishOrder = [];
         let serverWinAmount = 0n;
         let serverNewBalance = null;
+        let playData = null;
 
         try {
             if (authToken) {
@@ -10088,18 +10224,16 @@
                     body: JSON.stringify({
                         gameMode: 'horseracing',
                         selectedHorse: selectedHorseIndex,
-                        horseChances: horseOdds,
                         betAmount: bet,
-                        clientScore: bananas,
                         activeGadgets
                     })
                 });
                 const data = await response.json();
                 if (data.success && data.result && Array.isArray(data.result.finishOrder)) {
+                    playData = data;
                     finishOrder = data.result.finishOrder;
                     serverWinAmount = BigInt(data.winAmount || '0');
-                    if (data.newBalance) serverNewBalance = Number(data.newBalance);
-                    if (data.winStreak !== undefined) winStreak = data.winStreak;
+                    if (data.newBalance !== undefined) serverNewBalance = Number(data.newBalance);
                 } else {
                     throw new Error(data.error || "Server outcome error");
                 }
@@ -10107,7 +10241,19 @@
                 finishOrder = preDetermineFinishOrderLocally(horseOdds);
             }
         } catch (err) {
-            console.warn("[HORSE RACING] Playing in local mode:", err);
+            if (authToken) {
+                console.error("[HORSE RACING] Server error:", err);
+                isPlaying = false;
+                hrState = 'paddock';
+                isInternalUpdate = true;
+                updateBananas(bananas + bet);
+                isInternalUpdate = false;
+                if (paddockView) paddockView.classList.remove('hidden');
+                if (trackView) trackView.classList.add('hidden');
+                updateGameUI();
+                showNotification("Horse Race Error: " + parseError(err), "error");
+                return;
+            }
             finishOrder = preDetermineFinishOrderLocally(horseOdds);
         }
 
@@ -10115,6 +10261,7 @@
             finishOrder,
             serverWinAmount,
             serverNewBalance,
+            playData,
             betAmount: bet
         };
 
@@ -10264,21 +10411,33 @@
             winAmount = result.serverWinAmount;
         }
 
-        // Apply winnings to player balance
+        // Apply winnings to player balance (100% server-authoritative when logged in)
         if (userPlacement === 1) {
             unlockTitle('derby_jockey');
         }
 
-        if (winAmount > 0n) {
-            if (result.serverNewBalance !== null && !isNaN(result.serverNewBalance)) {
-                isInternalUpdate = true;
-                updateBananas(result.serverNewBalance);
-                isInternalUpdate = false;
+        if (result.playData) {
+            applyServerPlaySync(result.playData);
+            handleMegaBetEffect(result.playData);
+            if (winAmount > 0n) {
+                if (multiplier > 0) {
+                    addLog('win', Number(winAmount), bananas, `Horse Racing: #${HORSE_ROSTER[selectedHorseIndex].number} placed ${userPlacement}${getOrdinalSuffix(userPlacement)} (${multiplier}x)`);
+                    playSound('win');
+                    showNotification(`🏆 Victory! #${HORSE_ROSTER[selectedHorseIndex].number} ${HORSE_ROSTER[selectedHorseIndex].name} finished ${userPlacement}${getOrdinalSuffix(userPlacement)} (+${formatNumber(Number(winAmount))} 🍌)!`, 'success');
+                } else {
+                    playSound('win');
+                    showNotification(`🛡️ Failsafe Saved Your Bananas! (+${formatNumber(Number(winAmount))} 🍌)`, 'success');
+                    spinResultMsg = `Failsafe: Saved ${formatNumber(bet)} bananas!`;
+                }
             } else {
-                isInternalUpdate = true;
-                updateBananas(bananas + Number(winAmount));
-                isInternalUpdate = false;
+                playSound('loss');
+                spinResultMsg = processLoss(bet, bet, `Horse #${HORSE_ROSTER[selectedHorseIndex].number} placed ${userPlacement}${getOrdinalSuffix(userPlacement)}. Bet lost.`, result.playData.result);
+                addLog('loss', bet, bananas, `Horse Racing: #${HORSE_ROSTER[selectedHorseIndex].number} lost`);
             }
+        } else if (winAmount > 0n) {
+            isInternalUpdate = true;
+            updateBananas(bananas + Number(winAmount));
+            isInternalUpdate = false;
             if (multiplier > 0) {
                 awardBettingXp(Number(winAmount), true);
                 triggerQuestProgress('win', Number(winAmount));
@@ -10286,23 +10445,12 @@
                 addLog('win', Number(winAmount), bananas, `Horse Racing: #${HORSE_ROSTER[selectedHorseIndex].number} placed ${userPlacement}${getOrdinalSuffix(userPlacement)} (${multiplier}x)`);
                 playSound('win');
                 showNotification(`🏆 Victory! #${HORSE_ROSTER[selectedHorseIndex].number} ${HORSE_ROSTER[selectedHorseIndex].name} finished ${userPlacement}${getOrdinalSuffix(userPlacement)} (+${formatNumber(Number(winAmount))} 🍌)!`, 'success');
-            } else {
-                // Failsafe activated on a lost race!
-                awardBettingXp(bet, false);
-                playSound('win');
-                showNotification(`🛡️ Failsafe Saved Your Bananas! (+${formatNumber(Number(winAmount))} 🍌)`, 'success');
-                spinResultMsg = `Failsafe: Saved ${formatNumber(bet)} bananas!`;
             }
         } else {
             playSound('loss');
             awardBettingXp(bet, false);
             spinResultMsg = processLoss(bet, bet, `Horse #${HORSE_ROSTER[selectedHorseIndex].number} placed ${userPlacement}${getOrdinalSuffix(userPlacement)}. Bet lost.`);
             addLog('loss', bet, bananas, `Horse Racing: #${HORSE_ROSTER[selectedHorseIndex].number} lost`);
-            if (result.serverNewBalance !== null && !isNaN(result.serverNewBalance)) {
-                isInternalUpdate = true;
-                updateBananas(result.serverNewBalance);
-                isInternalUpdate = false;
-            }
         }
         updateGameUI();
 
@@ -10359,7 +10507,7 @@
         }
 
         updateGameUI();
-        syncData(bananas, trees);
+        if (!result.playData) syncData(bananas, trees);
     }
 
     function getOrdinalSuffix(n) {
@@ -10381,8 +10529,14 @@
         if (trackView) trackView.classList.add('hidden');
         if (paddockView) paddockView.classList.remove('hidden');
 
-        // Roll fresh new balanced odds for the new race
-        horseOdds = generateHorseChances();
+        // Use server-issued nextOdds when logged in
+        if (hrPreDeterminedResult?.playData?.result?.nextOdds && Array.isArray(hrPreDeterminedResult.playData.result.nextOdds)) {
+            horseOdds = hrPreDeterminedResult.playData.result.nextOdds;
+        } else if (authToken) {
+            syncHorseOddsFromServer();
+        } else {
+            horseOdds = generateHorseChances();
+        }
         renderHorsesPaddock();
         updateGameUI();
         playSound('click');
@@ -10744,8 +10898,10 @@
             if (!data.success) throw new Error(data.error || "Failed to create table");
 
             if (data.newBalance !== undefined) {
-                bananas = data.newBalance;
-                updateBananas(bananas);
+                isInternalUpdate = true;
+                updateBananas(Number(data.newBalance));
+                expectedDbBananas = Number(data.newBalance);
+                isInternalUpdate = false;
             }
 
             thInitialBuyin = buyIn;
@@ -10791,8 +10947,10 @@
             if (!data.success) throw new Error(data.error || "Failed to join table");
 
             if (data.newBalance !== undefined) {
-                bananas = data.newBalance;
-                updateBananas(bananas);
+                isInternalUpdate = true;
+                updateBananas(Number(data.newBalance));
+                expectedDbBananas = Number(data.newBalance);
+                isInternalUpdate = false;
             }
 
             thInitialBuyin = data.table.buy_in || 1000;
@@ -10876,8 +11034,10 @@
                     refundedChips = data.refunded;
                 }
                 if (data.newBalance !== undefined) {
-                    bananas = data.newBalance;
-                    updateBananas(bananas);
+                    isInternalUpdate = true;
+                    updateBananas(Number(data.newBalance));
+                    expectedDbBananas = Number(data.newBalance);
+                    isInternalUpdate = false;
                 }
             } catch (e) {
                 console.error("Leave error:", e);
@@ -10942,30 +11102,22 @@
         }
     }
 
-    // Host starts online match:
-    // Host generates the 5 community cards + player cards and sends to backend!
+    // Host starts online match (or deals next hand): 100% server-shuffled
     window.startTexasHoldemHostMatch = async function() {
         if (thMode !== 'online' || !thTable || thTable.host_id !== userId) return;
 
-        const deck = createShuffledPokerDeck();
-        const hostCommunityCards = deck.splice(0, 5);
-        const hostPlayerCards = {};
-        thTable.players.forEach(p => {
-            hostPlayerCards[p.id] = [deck.pop(), deck.pop()];
-        });
+        const endpoint = thTable.status === 'finished'
+            ? '/api/poker/tables/next-hand'
+            : '/api/poker/tables/start';
 
         try {
-            const res = await fetch(API_BASE + '/api/poker/tables/start', {
+            const res = await fetch(API_BASE + endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({
-                    tableId: thCurrentTableId,
-                    hostCommunityCards,
-                    hostPlayerCards
-                })
+                body: JSON.stringify({ tableId: thCurrentTableId })
             });
 
             const data = await res.json();
@@ -10975,7 +11127,7 @@
             playSound('card');
             renderTexasHoldemTable();
         } catch (err) {
-            alert("Start Match Error: " + parseError(err));
+            showToast("Start Match Error: " + parseError(err), "error");
         }
     };
 
@@ -11053,19 +11205,61 @@
     // =================================================================
     // 🤖 VS BOTS FULL TEXAS HOLD'EM IMPLEMENTATION
     // =================================================================
-    window.startTexasHoldemVsBots = function() {
+    window.startTexasHoldemVsBots = async function() {
         const buyInInput = document.getElementById('poker-bots-buyin');
         const buyIn = Math.max(10, Math.floor(Number(buyInInput?.value)) || 1000);
 
         if (bananas < buyIn) {
-            showToast(`Not enough bananas! You have ${formatNumber(bananas)} 🍌 but need ${formatNumber(buyIn)} 🍌.`);
+            showToast(`Not enough bananas! You have ${formatNumber(bananas)} 🍌 but need ${formatNumber(buyIn)} 🍌.`, "error");
             return;
         }
 
-        // Deduct buy-in
+        if (authToken) {
+            try {
+                const sb = Math.max(5, Math.floor(buyIn / 100));
+                const bb = sb * 2;
+                const res = await fetch(API_BASE + '/api/poker/tables/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        name: `${playerName || 'Monkey'} vs Bots`,
+                        buyIn,
+                        smallBlind: sb,
+                        bigBlind: bb,
+                        isVsBot: true
+                    })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || "Failed to start VS Bots table");
+
+                if (data.newBalance !== undefined) {
+                    isInternalUpdate = true;
+                    updateBananas(Number(data.newBalance));
+                    expectedDbBananas = Number(data.newBalance);
+                    isInternalUpdate = false;
+                }
+
+                thInitialBuyin = buyIn;
+                closeTexasHoldemSelector();
+                thMode = 'online';
+                thCurrentTableId = data.table.id;
+                thTable = data.table;
+                setGameMode('texasholdem');
+                startOnlinePolling();
+                playSound('card');
+                renderTexasHoldemTable();
+            } catch (err) {
+                showToast("VS Bots Error: " + parseError(err), "error");
+            }
+            return;
+        }
+
+        // Guest fallback deduct buy-in
         bananas -= buyIn;
         updateBananas(bananas);
-        syncData(bananas, trees);
 
         thInitialBuyin = buyIn;
         closeTexasHoldemSelector();
@@ -11647,30 +11841,13 @@
           elWheel.style.transform = `rotate(${wheelRotation}deg)`;
 
             setTimeout(() => {
-            isInternalUpdate = true;
-            updateBananas(Number(data.newBalance));
-            expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
-            isInternalUpdate = false;
-            
-            if (data.winStreak !== undefined) winStreak = data.winStreak;
-
+            applyServerPlaySync(data);
             handleMegaBetEffect(data);
-            // Vladimir Beh Quest Check
-            if (vladimirQuestStatus === 1 && betColor === "green" && !activeGadgets.some(g => g) && typeof balanceBeforeSpin !== "undefined" && betAmount >= balanceBeforeSpin) {
-                vladimirQuestStatus = 2;
-                localStorage.setItem("vladimirQuestStatus_" + playerName, "2");
-                showNotification("Vladimir Beh nods from the shadows... The Banana Clicker is yours.", "success");
+
+            if (!authToken) {
+                triggerQuestProgress('roulette_spin', 1);
+                triggerQuestProgress('bets_placed', 1);
             }
-
-
-            if (data.earnedRoyalXP) {
-                royalXP = Number(data.royalXP);
-                document.getElementById('rp-current-xp').innerText = formatNumber(royalXP);
-                showNotification("+1 Royal XP! Check the pass in Ludvig's shop.", "success");
-            }
-
-            triggerQuestProgress('roulette_spin', 1);
-            triggerQuestProgress('bets_placed', 1);
 
             if (betColor === winningColor) {
               if (winningColor === 'green') {
@@ -11687,17 +11864,17 @@
                   const winVal = Number(data.winAmount);
                   spinResultMsg = `Landed on ${winningColor.toUpperCase()}! Won ${formatNumber(winVal)} 🍌!`;
                   addLog('win', winVal, bananas, `Roulette ${winningColor.toUpperCase()}`);
-                  triggerQuestProgress('roulette_win', 1, { isGreen: winningColor === 'green' });
-                  triggerQuestProgress('win_amount', winVal);
-                  triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
-                  
-                  // XP Gain
-                  awardBettingXp(winVal, true);
+                  if (!authToken) {
+                      triggerQuestProgress('roulette_win', 1, { isGreen: winningColor === 'green' });
+                      triggerQuestProgress('win_amount', winVal);
+                      triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+                      awardBettingXp(winVal, true);
+                  }
               }
               playSound('win');
             } else {
               consecutiveGreens = 0;
-              awardBettingXp(betAmount, false);
+              if (!authToken) awardBettingXp(betAmount, false);
               if (betAmount > 100000) unlockTitle('unlucky');
               spinResultMsg = processLoss(betAmount, betAmount, `Landed on ${winningColor.toUpperCase()}! Lost ${formatNumber(betAmount)} 🍌.`, data.result);
               addLog('loss', betAmount, bananas, `Roulette ${winningColor.toUpperCase()}`);
@@ -11861,30 +12038,13 @@
           [ [0,1,2], [3,4,5] ].forEach(checkLine);
           winningIndices.forEach(idx => slots[idx].classList.add('slot-win'));
 
-           isInternalUpdate = true;
-           updateBananas(Number(data.newBalance));
-           expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
-           isInternalUpdate = false;
-           
-           if (data.winStreak !== undefined) winStreak = data.winStreak;
+          applyServerPlaySync(data);
+          handleMegaBetEffect(data);
 
-           handleMegaBetEffect(data);
-            // Vladimir Beh Quest Check
-            if (vladimirQuestStatus === 1 && betColor === "green" && !activeGadgets.some(g => g) && typeof balanceBeforeSpin !== "undefined" && betAmount >= balanceBeforeSpin) {
-                vladimirQuestStatus = 2;
-                localStorage.setItem("vladimirQuestStatus_" + playerName, "2");
-                showNotification("Vladimir Beh nods from the shadows... The Banana Clicker is yours.", "success");
-            }
-
-
-           if (data.earnedRoyalXP) {
-              royalXP = Number(data.royalXP);
-              document.getElementById('rp-current-xp').innerText = formatNumber(royalXP);
-              showNotification("+1 Royal XP! Check the pass in Ludvig's shop.", "success");
+          if (!authToken) {
+              triggerQuestProgress('slots_spin', 1);
+              triggerQuestProgress('bets_placed', 1);
           }
-
-          triggerQuestProgress('slots_spin', 1);
-          triggerQuestProgress('bets_placed', 1);
 
           const winVal = Number(data.winAmount);
           if (winVal > 0) {
@@ -11902,19 +12062,19 @@
                       spinResultMsg = `You won ${formatNumber(winVal)} 🍌!`;
                   }
                   addLog('win', winVal, bananas, 'Slots Win');
-                  triggerQuestProgress('slots_win', 1, { 
-                      isJackpot: data.result.winType === 'jackpot', 
-                      isTriple: data.result.winType === 'triple' || data.result.winType === 'jackpot' 
-                  });
-                  triggerQuestProgress('win_amount', winVal);
-                  triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
-                  
-                  // XP Gain
-                  awardBettingXp(winVal, true);
+                  if (!authToken) {
+                      triggerQuestProgress('slots_win', 1, { 
+                          isJackpot: data.result.winType === 'jackpot', 
+                          isTriple: data.result.winType === 'triple' || data.result.winType === 'jackpot' 
+                      });
+                      triggerQuestProgress('win_amount', winVal);
+                      triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+                      awardBettingXp(winVal, true);
+                  }
               }
               playSound('win');
           } else {
-              awardBettingXp(actualBet, false);
+              if (!authToken) awardBettingXp(actualBet, false);
               spinResultMsg = processLoss(actualBet, actualBet, `No luck this time. Lost ${formatNumber(actualBet)} 🍌.`, data.result);
               addLog('loss', actualBet, bananas, 'Slots Loss');
           }
@@ -12035,8 +12195,8 @@
             }
 
             const winningSkin = data.result.skin;
-            triggerQuestProgress('case_open', 1, { highestRarity: winningSkin.rarity });
-            await runCaseOpeningAnimation(winningSkin, data.newBalance);
+            if (!authToken) triggerQuestProgress('case_open', 1, { highestRarity: winningSkin.rarity });
+            await runCaseOpeningAnimation(winningSkin, data);
 
             // Show result
             const isOminous = winningSkin.rarity === 'Ominous';
@@ -12058,7 +12218,7 @@
             
             document.getElementById('case-result-view').classList.remove('hidden');
             isPlaying = false;
-            if (pendingSync) syncData(bananas, trees);
+            if (!authToken && pendingSync) syncData(bananas, trees);
 
             if (isAutoOpeningCase) {
                 autoCaseTimer = setTimeout(() => {
@@ -12125,9 +12285,9 @@
                 if (!data.success) throw new Error(data.error || "Server error");
 
                 const winningSkin = data.result.skin;
-                triggerQuestProgress('case_open', 1, { highestRarity: winningSkin.rarity });
-                // Skip internal balance update during mass opening to prevent visual jumping
-                await runCaseOpeningAnimation(winningSkin, data.newBalance, true);
+                if (!authToken) triggerQuestProgress('case_open', 1, { highestRarity: winningSkin.rarity });
+                // Skip balance update until last item to prevent visual jumping
+                await runCaseOpeningAnimation(winningSkin, data, true);
                 
                 lastKnownGoodBalance = Number(data.newBalance);
 
@@ -12152,12 +12312,9 @@
                 
                 resultView.classList.remove('hidden');
                 
-                // FINAL update on last item or exit loop
+                // FINAL update on last item
                 if (i === count - 1) {
-                    isInternalUpdate = true;
-                    updateBananas(Number(data.newBalance));
-                    expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
-                    isInternalUpdate = false;
+                    applyServerPlaySync(data);
                 }
 
                 // 1 second delay to look at the skin
@@ -12177,11 +12334,11 @@
         }
 
         isPlaying = false;
-        if (pendingSync) syncData(bananas, trees);
+        if (!authToken && pendingSync) syncData(bananas, trees);
         // Keep the last result visible, show button to go back
     }
 
-    async function runCaseOpeningAnimation(winningSkin, newBalance, skipBalanceUpdate = false) {
+    async function runCaseOpeningAnimation(winningSkin, serverDataOrBalance, skipBalanceUpdate = false) {
         const spinner = document.getElementById('case-spinner');
         const view = document.getElementById('case-opening-view');
         view.classList.remove('hidden');
@@ -12219,16 +12376,26 @@
             }, 50);
 
             setTimeout(() => {
+                const hasServerObj = serverDataOrBalance && typeof serverDataOrBalance === 'object';
                 if (!skipBalanceUpdate) {
-                    isInternalUpdate = true;
-                    updateBananas(Number(newBalance));
-                    expectedDbBananas = Number(newBalance); // Anchor sync to new server state
-                    isInternalUpdate = false;
+                    if (hasServerObj) {
+                        applyServerPlaySync(serverDataOrBalance);
+                    } else {
+                        isInternalUpdate = true;
+                        updateBananas(Number(serverDataOrBalance));
+                        expectedDbBananas = Number(serverDataOrBalance);
+                        isInternalUpdate = false;
+                    }
+                } else if (hasServerObj && serverDataOrBalance.inventory) {
+                    inventory = serverDataOrBalance.inventory;
+                    localStorage.setItem('bananaInventory', JSON.stringify(inventory));
                 }
 
-                inventory[winningSkin.id] = (inventory[winningSkin.id] || 0) + 1;
-                localStorage.setItem('bananaInventory', JSON.stringify(inventory));
-                savePersistentData();
+                if (!authToken) {
+                    inventory[winningSkin.id] = (inventory[winningSkin.id] || 0) + 1;
+                    localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+                    savePersistentData();
+                }
 
                 playSound('win');
                 view.classList.add('hidden');
@@ -12306,11 +12473,46 @@
         }
     }
 
-    function sellSkin(skinId) {
+    async function sellSkin(skinId) {
         const skin = getSkin(skinId);
         const canonId = skin?.id || skinId;
         const owned = (inventory[canonId] || 0) + (canonId !== skinId ? (inventory[skinId] || 0) : 0);
         if (!skin || owned <= 0) return;
+
+        if (authToken) {
+            try {
+                const data = await fetchWithRetry('/api/skin/sell', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ skinId: canonId })
+                });
+                if (!data || !data.success) throw new Error(data?.error || "Failed to sell skin");
+
+                isInternalUpdate = true;
+                updateBananas(Number(data.newBalance));
+                expectedDbBananas = Number(data.newBalance);
+                isInternalUpdate = false;
+
+                if (data.inventory && typeof data.inventory === 'object') {
+                    inventory = data.inventory;
+                    localStorage.setItem('bananaInventory', JSON.stringify(inventory));
+                }
+                if (!(inventory[canonId] > 0) && !(inventory[skinId] > 0)) {
+                    selectedInventorySkin = null;
+                }
+                playSound('collect');
+                fetchSkinValues();
+                renderInventory();
+                updateGameUI();
+                showNotification(`Sold ${skin.name} for ${formatNumber(Number(data.soldPrice || 0))} 🍌!`, "success");
+            } catch (err) {
+                showNotification("Sell error: " + parseError(err), "error");
+            }
+            return;
+        }
 
         const sellPrices = {
             'Common': 1000,
@@ -12326,7 +12528,6 @@
             price = Math.max(100000000000, price);
         }
         
-        // Remove 1 skin
         if (inventory[canonId] && inventory[canonId] > 0) {
             inventory[canonId]--;
             if (inventory[canonId] === 0) delete inventory[canonId];
@@ -12335,30 +12536,13 @@
             if (inventory[skinId] === 0) delete inventory[skinId];
         }
         
-        // Update balance securely
         isInternalUpdate = true;
         updateBananas(bananas + price);
         isInternalUpdate = false;
         
         savePersistentData();
-        
-        // Visual feedback
         playSound('collect');
-        
-        // If no more of this skin, deselect it
-        if (!inventory[skinId]) {
-            selectedInventorySkin = null;
-        }
-        
-        // Boost skin value on sale
-        fetchWithRetry('/api/skin/sell', {
-            method: 'POST',
-            body: JSON.stringify({ skinId })
-        }).then(() => {
-            fetchSkinValues();
-        }).catch(() => {});
-
-        savePersistentData();
+        if (!inventory[skinId]) selectedInventorySkin = null;
         renderInventory();
     }
 
@@ -12669,22 +12853,30 @@
         updateBankDisplays();
         
         if (userId) {
-            fetch(`/api/bank/${userId}`)
+            const bankHeaders = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+            fetch(`/api/bank/${userId}`, { headers: bankHeaders })
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.success && data.bank) {
                         const serverTotal = data.total ? BigInt(data.total) : 0n;
                         const localTotal = calculateTotalBankBigInt();
 
-                        // CRITICAL PROTECTION: Never overwrite a non-zero local balance with 0 from server after updates!
-                        if (serverTotal === 0n && localTotal > 0n) {
-                            console.warn("[BANK SHIELD] Server returned 0 but local bank has", localTotal.toString(), "bananas! Preserving local balance and syncing to server!");
+                        if (authToken) {
+                            // Server is always authoritative for authenticated users
+                            for (const d of BANK_DENOMINATIONS) {
+                                userBankData[d.key] = Number(data.bank[d.key] || 0);
+                            }
                             saveBankStorage();
-                            syncBankToServer();
+                            updateBankDisplays();
                             return;
                         }
 
-                        // If server has more than local, update local
+                        // Guest/offline fallback: preserve higher local total if not authenticated
+                        if (serverTotal === 0n && localTotal > 0n) {
+                            saveBankStorage();
+                            return;
+                        }
+
                         if (serverTotal > localTotal) {
                             for (const d of BANK_DENOMINATIONS) {
                                 if (data.bank[d.key] !== undefined) {
@@ -12693,9 +12885,6 @@
                             }
                             saveBankStorage();
                             updateBankDisplays();
-                        } else if (localTotal > serverTotal && localTotal > 0n) {
-                            // Local has more than server, sync up to server
-                            syncBankToServer();
                         }
                     }
                 })
@@ -12725,14 +12914,26 @@
     }
 
     function syncBankToServer() {
-        if (!userId) return;
-        const total = calculateTotalBankBigInt();
-        if (total <= 0n) return;
+        if (!userId || !authToken) return;
         fetch('/api/bank/sync', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, bank: userBankData })
-        }).catch(e => console.warn("[BANK SYNC] Failed to sync bank to server:", e));
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ userId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.success && data.bank) {
+                for (const d of BANK_DENOMINATIONS) {
+                    userBankData[d.key] = Number(data.bank[d.key] || 0);
+                }
+                saveBankStorage();
+                updateBankDisplays();
+            }
+        })
+        .catch(e => console.warn("[BANK SYNC] Failed to sync bank from server:", e));
     }
 
     function updateBankDisplays() {
@@ -12897,12 +13098,53 @@
             return;
         }
 
-        // Deduct from pocket
+        if (authToken) {
+            try {
+                const res = await fetch('/api/bank/deposit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ userId, amount: depAmount.toString() })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    showNotification(data.error || "Deposit failed!", "error");
+                    return;
+                }
+                isInternalUpdate = true;
+                const nb = Number(data.newPocketBalance);
+                updateBananas(nb);
+                expectedDbBananas = nb;
+                isInternalUpdate = false;
+
+                if (data.bank) {
+                    for (const d of BANK_DENOMINATIONS) {
+                        userBankData[d.key] = Number(data.bank[d.key] || 0);
+                    }
+                }
+                if (Array.isArray(data.unlockedTitles)) unlockedTitles = data.unlockedTitles;
+                saveBankStorage();
+                updateBankDisplays();
+                updateGameUI();
+                if (typeof renderLeaderboard === 'function') renderLeaderboard();
+                if (typeof fetchLeaderboard === 'function') fetchLeaderboard();
+
+                input.value = '';
+                playSound('win');
+                showNotification(`Successfully deposited ${formatBankNumberCompact(depAmount)} 🍌 into vault!`, "success");
+            } catch (e) {
+                showNotification("Failed to reach bank server. Please try again.", "error");
+            }
+            return;
+        }
+
+        // Guest/offline fallback
         isInternalUpdate = true;
         updateBananas(bananas - Number(depAmount));
         isInternalUpdate = false;
 
-        // Add to bank
         const currentTotal = calculateTotalBankBigInt();
         const newTotal = currentTotal + depAmount;
         userBankData = decomposeBigIntToBank(newTotal);
@@ -12913,18 +13155,6 @@
         input.value = '';
         playSound('win');
         showNotification(`Successfully deposited ${formatBankNumberCompact(depAmount)} 🍌 into vault!`, "success");
-
-        // Sync with backend API
-        try {
-            await fetch('/api/bank/deposit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, amount: depAmount.toString() })
-            });
-            if (typeof fetchLeaderboard === 'function') fetchLeaderboard();
-        } catch (e) {
-            console.log("[BANK] Background deposit sync queued.");
-        }
     }
 
     async function handleBankWithdraw() {
@@ -12956,12 +13186,52 @@
             return;
         }
 
-        // Deduct from bank
+        if (authToken) {
+            try {
+                const res = await fetch('/api/bank/withdraw', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ userId, amount: withAmount.toString() })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    showNotification(data.error || "Withdrawal failed!", "error");
+                    return;
+                }
+                if (data.bank) {
+                    for (const d of BANK_DENOMINATIONS) {
+                        userBankData[d.key] = Number(data.bank[d.key] || 0);
+                    }
+                }
+                isInternalUpdate = true;
+                const nb = Number(data.newPocketBalance);
+                updateBananas(nb);
+                expectedDbBananas = nb;
+                isInternalUpdate = false;
+
+                saveBankStorage();
+                updateBankDisplays();
+                updateGameUI();
+                if (typeof renderLeaderboard === 'function') renderLeaderboard();
+                if (typeof fetchLeaderboard === 'function') fetchLeaderboard();
+
+                input.value = '';
+                playSound('win');
+                showNotification(`Withdrew ${formatBankNumberCompact(withAmount)} 🍌 to your pocket!`, "success");
+            } catch (e) {
+                showNotification("Failed to reach bank server. Please try again.", "error");
+            }
+            return;
+        }
+
+        // Guest/offline fallback
         const newTotal = currentTotal - withAmount;
         userBankData = decomposeBigIntToBank(newTotal);
         saveBankStorage();
 
-        // Add to pocket
         isInternalUpdate = true;
         updateBananas(bananas + Number(withAmount));
         isInternalUpdate = false;
@@ -12971,18 +13241,6 @@
         input.value = '';
         playSound('win');
         showNotification(`Withdrew ${formatBankNumberCompact(withAmount)} 🍌 to your pocket!`, "success");
-
-        // Sync with backend API
-        try {
-            await fetch('/api/bank/withdraw', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, amount: withAmount.toString() })
-            });
-            if (typeof fetchLeaderboard === 'function') fetchLeaderboard();
-        } catch (e) {
-            console.log("[BANK] Background withdraw sync queued.");
-        }
     }
 
     function openSkinValuesModal() {
@@ -13075,12 +13333,121 @@
     }
     let bjOriginalBet = 0;
     let bjIsDoubleDownBet = false;
-    function playBlackjack() { bjOriginalBet = betAmount;
+
+    function bjHandleServerResult(data) {
+      const r = data.result || {};
+      applyServerPlaySync(data);
+      bjPlayer = Array.isArray(r.playerHand) ? r.playerHand : [];
+      bjSplitHands = Array.isArray(r.splitHands) ? r.splitHands : [];
+      bjActiveHand = Number(r.activeHand || 0);
+      bjIsDoubleDownBet = Boolean(r.isDoubleDown);
+      if (r.totalBet !== undefined) betAmount = Number(r.totalBet);
+
+      if (r.bjStatus === 'playing') {
+          bjState = 'playing';
+          bjDealer = Array.isArray(r.dealerVisible) ? r.dealerVisible : [];
+          spinResultMsg = (bjSplitHands.length > 0 && bjActiveHand === 1)
+              ? "Split Hand 2: Hit or Stand?"
+              : "Your move: Hit or Stand?";
+          updateGameUI();
+          return;
+      }
+
+      bjState = 'gameOver';
+      bjDealer = Array.isArray(r.dealerHand) ? r.dealerHand : [];
+      handleMegaBetEffect(data);
+
+      const totalBetUsed = Number(r.totalBet || betAmount || bjOriginalBet);
+      const winVal = Number(data.winAmount || 0);
+      const profit = winVal - totalBetUsed;
+      const results = Array.isArray(r.bjResults) ? r.bjResults : [];
+      const singleReason = results.length === 1 ? results[0] : results;
+
+      if (r.megaBet === 'taxes') {
+          spinResultMsg = "TAXES! The jungle government took your entire win!";
+          addLog('loss', totalBetUsed, bananas, 'Blackjack: Mega Bet Taxes');
+          playSound('loss');
+      } else if (results.length > 1) {
+          if (profit > 0) {
+              spinResultMsg = `Split Results: ${results.join(', ')}. Won ${formatNumber(profit)} net profit!`;
+              playSound('win');
+              addLog('win', profit, bananas, 'Blackjack: Split Win');
+          } else if (profit < 0) {
+              spinResultMsg = `Split Results: ${results.join(', ')}. Lost ${formatNumber(Math.abs(profit))} net.`;
+              playSound('loss');
+              addLog('loss', Math.abs(profit), bananas, 'Blackjack: Split Loss');
+          } else {
+              spinResultMsg = `Split Results: ${results.join(', ')}. Pushed (Broke even).`;
+              addLog('push', 0, bananas, 'Blackjack: Split Push');
+          }
+      } else if (r.failsafeActivated) {
+          spinResultMsg = processLoss(totalBetUsed, totalBetUsed, `Failsafe: Saved ${formatNumber(totalBetUsed)} bananas!`, r);
+          addLog('push', 0, bananas, 'Blackjack: Failsafe');
+      } else if (singleReason === 'bust') {
+          spinResultMsg = processLoss(totalBetUsed, totalBetUsed, `Bust! Lost ${formatNumber(totalBetUsed)} 🍌.`, r);
+          addLog('loss', totalBetUsed, bananas, 'Blackjack: Bust');
+      } else if (singleReason === 'dealerBust' || singleReason === 'win') {
+          spinResultMsg = (singleReason === 'dealerBust' ? "Dealer bust!" : "You win!") + ` Won ${formatNumber(profit)} profit!`;
+          addLog('win', profit, bananas, 'Blackjack: ' + (singleReason === 'dealerBust' ? 'Dealer Bust' : 'Win'));
+          playSound('win');
+      } else if (singleReason === 'blackjack') {
+          spinResultMsg = `Blackjack! Won ${formatNumber(profit)} profit!`;
+          addLog('win', profit, bananas, 'Blackjack: BLACKJACK');
+          playSound('win');
+      } else if (singleReason === 'lose') {
+          spinResultMsg = processLoss(totalBetUsed, totalBetUsed, `Dealer wins. Lost ${formatNumber(totalBetUsed)} 🍌.`, r);
+          addLog('loss', totalBetUsed, bananas, 'Blackjack: Dealer Wins');
+      } else if (singleReason === 'push') {
+          spinResultMsg = "Push! Returned bet.";
+          addLog('push', 0, bananas, 'Blackjack: Push');
+      }
+
+      endGameTurn();
+    }
+
+    async function playBlackjack() {
+      if (isPlaying || bjState === 'playing') return;
+      bjOriginalBet = betAmount;
       bjIsDoubleDownBet = false;
       if (bananas < betAmount) {
          showNotification("Not enough bananas!", "error");
          return;
       }
+
+      if (authToken) {
+          isPlaying = true;
+          try {
+              const response = await fetch(API_BASE + '/api/play', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${authToken}`
+                  },
+                  body: JSON.stringify({
+                      gameMode: 'blackjack_start',
+                      betAmount,
+                      activeGadgets
+                  })
+              });
+              const data = await response.json();
+              if (!response.ok || !data.success) {
+                  isPlaying = false;
+                  bjState = 'idle';
+                  showNotification(data.error || "Could not start Blackjack.", "error");
+                  updateGameUI();
+                  return;
+              }
+              playSound('card');
+              bjHandleServerResult(data);
+          } catch (err) {
+              isPlaying = false;
+              bjState = 'idle';
+              showNotification("Network error starting Blackjack.", "error");
+              updateGameUI();
+          }
+          return;
+      }
+
       triggerQuestProgress('bj_play', 1);
       triggerQuestProgress('bets_placed', 1);
       isInternalUpdate = true;
@@ -13105,28 +13472,51 @@
       }
     }
     
-    function bjSplit() {
+    async function bjSplit() {
       if (bjState !== 'playing' || bjPlayer.length !== 2 || bjSplitHands.length > 0) return;
       if (bjPlayer[0].rank !== bjPlayer[1].rank && calcScore([bjPlayer[0]]) !== calcScore([bjPlayer[1]])) return;
       if (bananas < betAmount) {
          showNotification("Not enough bananas to Split!", "error");
          return;
       }
+
+      if (authToken) {
+          try {
+              const response = await fetch(API_BASE + '/api/play', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${authToken}`
+                  },
+                  body: JSON.stringify({ gameMode: 'blackjack_split', activeGadgets })
+              });
+              const data = await response.json();
+              if (!response.ok || !data.success) {
+                  showNotification(data.error || "Split failed!", "error");
+                  return;
+              }
+              playSound('card');
+              bjHandleServerResult(data);
+          } catch (err) {
+              showNotification("Network error during Split.", "error");
+          }
+          return;
+      }
+
       isInternalUpdate = true;
       updateBananas(bananas - betAmount);
       isInternalUpdate = false;
-      betAmount *= 2; // total bet is doubled
+      betAmount *= 2;
       
       bjSplitHands = [
           [bjPlayer[0], drawCard()],
           [bjPlayer[1], drawCard()]
       ];
-      bjPlayer = []; // Use bjSplitHands instead
+      bjPlayer = [];
       
       playSound('card');
       updateGameUI();
       
-      // Auto-check for blackjack on splits
       if (calcScore(bjSplitHands[0]) === 21) {
           bjActiveHand = 1;
           updateGameUI();
@@ -13136,8 +13526,36 @@
       }
     }
 
-    function bjHit() {
+    async function bjHit() {
       if (bjState !== 'playing') return;
+
+      if (authToken) {
+          try {
+              const response = await fetch(API_BASE + '/api/play', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${authToken}`
+                  },
+                  body: JSON.stringify({ gameMode: 'blackjack_hit', activeGadgets })
+              });
+              const data = await response.json();
+              if (!response.ok || !data.success) {
+                  showNotification(data.error || "Hit failed!", "error");
+                  if (response.status === 400) {
+                      bjState = 'gameOver';
+                      endGameTurn();
+                  }
+                  return;
+              }
+              playSound('card');
+              bjHandleServerResult(data);
+          } catch (err) {
+              showNotification("Network error during Hit.", "error");
+          }
+          return;
+      }
+
       let hand = bjSplitHands.length > 0 ? bjSplitHands[bjActiveHand] : bjPlayer;
       hand.push(drawCard());
       playSound('card');
@@ -13145,10 +13563,10 @@
       if (calcScore(hand) > 21) {
           if (bjSplitHands.length > 0) {
               if (bjActiveHand === 0) {
-                  bjActiveHand = 1; // Move to next hand
+                  bjActiveHand = 1;
                   updateGameUI();
               } else {
-                  bjStand(); // Both hands done
+                  bjStand();
               }
           } else {
               bjEndGame('bust', -1);
@@ -13158,7 +13576,7 @@
       }
     }
 
-    function bjDoubleDown() {
+    async function bjDoubleDown() {
       if (bjState !== 'playing') return;
       if (bjSplitHands.length > 0) {
           showNotification("Cannot Double Down on split hands!", "error");
@@ -13169,6 +13587,30 @@
          showNotification("Not enough bananas to Double Down!", "error");
          return;
       }
+
+      if (authToken) {
+          try {
+              const response = await fetch(API_BASE + '/api/play', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${authToken}`
+                  },
+                  body: JSON.stringify({ gameMode: 'blackjack_double', activeGadgets })
+              });
+              const data = await response.json();
+              if (!response.ok || !data.success) {
+                  showNotification(data.error || "Double Down failed!", "error");
+                  return;
+              }
+              playSound('card');
+              bjHandleServerResult(data);
+          } catch (err) {
+              showNotification("Network error during Double Down.", "error");
+          }
+          return;
+      }
+
       isInternalUpdate = true;
       updateBananas(bananas - betAmount);
       isInternalUpdate = false;
@@ -13184,8 +13626,35 @@
       }
     }
 
-    function bjStand() {
+    async function bjStand() {
       if (bjState !== 'playing') return;
+
+      if (authToken) {
+          playSound('click');
+          try {
+              const response = await fetch(API_BASE + '/api/play', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${authToken}`
+                  },
+                  body: JSON.stringify({ gameMode: 'blackjack_stand', activeGadgets })
+              });
+              const data = await response.json();
+              if (!response.ok || !data.success) {
+                  showNotification(data.error || "Stand failed!", "error");
+                  if (response.status === 400) {
+                      bjState = 'gameOver';
+                      endGameTurn();
+                  }
+                  return;
+              }
+              bjHandleServerResult(data);
+          } catch (err) {
+              showNotification("Network error during Stand.", "error");
+          }
+          return;
+      }
       
       if (bjSplitHands.length > 0 && bjActiveHand === 0) {
           bjActiveHand = 1;
@@ -13228,120 +13697,120 @@
       }, 800);
     }
 
-    async function bjEndGame(reason, multiplier) {
-      isPlaying = false; // Prevent interactions during fetch
+    function bjEndGame(reason, multiplier) {
+      // Offline/guest-only local settlement (authenticated play settles via blackjack_start/hit/stand/double/split)
+      isPlaying = false;
       bjState = 'gameOver';
-      
-      try {
-          const response = await fetch(API_BASE + '/api/play', {
-              method: 'POST',
-              headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${authToken}`
-              },
-              body: JSON.stringify({
-                  taxPenalty: activeBoosts.tax_penalty > Date.now(), clientScore: bananas, gameMode: 'blackjack',
-                  betAmount,
-                  bjResult: reason,
-                  activeGadgets
-              })
-          });
-          const data = await response.json();
-          if (!data.success) throw new Error(data.error || "Server error");
-          
-          isInternalUpdate = true;
-          updateBananas(Number(data.newBalance));
-          expectedDbBananas = Number(data.newBalance); // Anchor sync to new server state
-          isInternalUpdate = false;
-          
-          if (data.winStreak !== undefined) winStreak = data.winStreak;
-          handleMegaBetEffect(data);
-            // Vladimir Beh Quest Check
-            if (vladimirQuestStatus === 1 && betColor === "green" && !activeGadgets.some(g => g) && typeof balanceBeforeSpin !== "undefined" && betAmount >= balanceBeforeSpin) {
-                vladimirQuestStatus = 2;
-                localStorage.setItem("vladimirQuestStatus_" + playerName, "2");
-                showNotification("Vladimir Beh nods from the shadows... The Banana Clicker is yours.", "success");
-            }
 
-          
-          if (data.earnedRoyalXP) {
-              royalXP = Number(data.royalXP);
-              document.getElementById('rp-current-xp').innerText = formatNumber(royalXP);
-              showNotification("+1 Royal XP! Check the pass in Ludvig's shop.", "success");
-          }
-          
-          const winVal = Number(data.winAmount);
-          const profit = winVal - betAmount;
-
-          const isBjWin = (reason === 'dealerBust' || reason === 'win' || reason === 'blackjack') || (Array.isArray(reason) && profit > 0);
-          if (isBjWin && data.result.megaBet !== 'taxes') {
-              triggerQuestProgress('bj_win', 1, { isNatural: reason === 'blackjack', isDouble: bjIsDoubleDownBet });
-              triggerQuestProgress('win_amount', winVal);
-              triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
-          }
-          
-          if (data.result.megaBet === 'taxes') {
-              spinResultMsg = "TAXES! The jungle government took your entire win!";
-              addLog('loss', betAmount, bananas, 'Blackjack: Mega Bet Taxes');
-              playSound('loss');
-          } else if (Array.isArray(reason)) {
-              if (profit > 0) {
-                  spinResultMsg = `Split Results: ${reason.join(', ')}. Won ${formatNumber(profit)} net profit!`;
-                  playSound('win');
-                  addLog('win', profit, bananas, 'Blackjack: Split Win');
-              } else if (profit < 0) {
-                  spinResultMsg = `Split Results: ${reason.join(', ')}. Lost ${formatNumber(Math.abs(profit))} net.`;
-                  playSound('loss');
-                  addLog('loss', Math.abs(profit), bananas, 'Blackjack: Split Loss');
-              } else {
-                  spinResultMsg = `Split Results: ${reason.join(', ')}. Pushed (Broke even).`;
-                  addLog('push', 0, bananas, 'Blackjack: Split Push');
+      let winVal = 0;
+      if (Array.isArray(reason)) {
+          const perHandBet = betAmount / reason.length;
+          reason.forEach(res => {
+              if (res === 'dealerBust') winVal += applyWin(activeGadgets[4] ? perHandBet * 2.5 : perHandBet * 2, true);
+              else if (res === 'win') winVal += applyWin(perHandBet * 2, true);
+              else if (res === 'push') {
+                  isInternalUpdate = true;
+                  updateBananas(bananas + perHandBet);
+                  isInternalUpdate = false;
+                  winVal += perHandBet;
               }
-          }
-          else if (reason === 'bust') { 
-              if (betAmount > 100000) unlockTitle('unlucky');
-              spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${formatNumber(betAmount)} 🍌.`, data.result); 
-              addLog('loss', betAmount, bananas, 'Blackjack: Bust');
-          }
-          else if (reason === 'dealerBust' || reason === 'win') { 
-              spinResultMsg = (reason === 'dealerBust' ? "Dealer bust!" : "You win!") + ` Won ${formatNumber(profit)} profit!`; 
-              addLog('win', profit, bananas, 'Blackjack: ' + (reason === 'dealerBust' ? 'Dealer Bust' : 'Win'));
-              playSound('win');
-          }
-          else if (reason === 'blackjack') { 
-              unlockTitle('card_shark');
-              spinResultMsg = `Blackjack! Won ${formatNumber(profit)} profit!`; 
-              addLog('win', profit, bananas, 'Blackjack: BLACKJACK');
-              playSound('win');
-          }
-          else if (reason === 'lose') { 
-              if (betAmount > 100000) unlockTitle('unlucky');
-              spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${formatNumber(betAmount)} 🍌.`, data.result); 
-              addLog('loss', betAmount, bananas, 'Blackjack: Dealer Wins');
-              playSound('loss');
-          }
-          else if (reason === 'push') { 
-              spinResultMsg = `Push! Returned bet.`; 
-              addLog('push', 0, bananas, 'Blackjack: Push');
-          } 
-
-          awardBettingXp(winVal > 0 ? winVal : betAmount, isBjWin);
-
-      } catch (err) {
-          console.error("Blackjack sync error:", err);
-          spinResultMsg = "Sync Error: " + parseError(err);
+          });
+      } else if (reason === 'blackjack') {
+          winVal = applyWin(betAmount * 2.5, true);
+      } else if (reason === 'dealerBust') {
+          winVal = applyWin(activeGadgets[4] ? betAmount * 2.5 : betAmount * 2, true);
+      } else if (reason === 'win') {
+          winVal = applyWin(betAmount * 2, true);
+      } else if (reason === 'push') {
+          isInternalUpdate = true;
+          updateBananas(bananas + betAmount);
+          isInternalUpdate = false;
+          winVal = betAmount;
       }
-      
+
+      const profit = winVal - betAmount;
+      const isBjWin = (reason === 'dealerBust' || reason === 'win' || reason === 'blackjack') || (Array.isArray(reason) && profit > 0);
+      if (isBjWin) {
+          triggerQuestProgress('bj_win', 1, { isNatural: reason === 'blackjack', isDouble: bjIsDoubleDownBet });
+          triggerQuestProgress('win_amount', winVal);
+          triggerQuestProgress('win_streak', winStreak, { streak: winStreak });
+      }
+
+      if (Array.isArray(reason)) {
+          if (profit > 0) {
+              spinResultMsg = `Split Results: ${reason.join(', ')}. Won ${formatNumber(profit)} net profit!`;
+              playSound('win');
+              addLog('win', profit, bananas, 'Blackjack: Split Win');
+          } else if (profit < 0) {
+              spinResultMsg = `Split Results: ${reason.join(', ')}. Lost ${formatNumber(Math.abs(profit))} net.`;
+              playSound('loss');
+              addLog('loss', Math.abs(profit), bananas, 'Blackjack: Split Loss');
+          } else {
+              spinResultMsg = `Split Results: ${reason.join(', ')}. Pushed (Broke even).`;
+              addLog('push', 0, bananas, 'Blackjack: Split Push');
+          }
+      } else if (reason === 'bust') {
+          if (betAmount > 100000) unlockTitle('unlucky');
+          spinResultMsg = processLoss(betAmount, betAmount, `Bust! Lost ${formatNumber(betAmount)} 🍌.`);
+          addLog('loss', betAmount, bananas, 'Blackjack: Bust');
+      } else if (reason === 'dealerBust' || reason === 'win') {
+          spinResultMsg = (reason === 'dealerBust' ? "Dealer bust!" : "You win!") + ` Won ${formatNumber(profit)} profit!`;
+          addLog('win', profit, bananas, 'Blackjack: ' + (reason === 'dealerBust' ? 'Dealer Bust' : 'Win'));
+          playSound('win');
+      } else if (reason === 'blackjack') {
+          unlockTitle('card_shark');
+          spinResultMsg = `Blackjack! Won ${formatNumber(profit)} profit!`;
+          addLog('win', profit, bananas, 'Blackjack: BLACKJACK');
+          playSound('win');
+      } else if (reason === 'lose') {
+          if (betAmount > 100000) unlockTitle('unlucky');
+          spinResultMsg = processLoss(betAmount, betAmount, `Dealer wins. Lost ${formatNumber(betAmount)} 🍌.`);
+          addLog('loss', betAmount, bananas, 'Blackjack: Dealer Wins');
+      } else if (reason === 'push') {
+          spinResultMsg = `Push! Returned bet.`;
+          addLog('push', 0, bananas, 'Blackjack: Push');
+      }
+
+      awardBettingXp(winVal > 0 ? winVal : betAmount, isBjWin);
       endGameTurn();
     }
 
-    function claimBananas() {
+    async function claimBananas() {
       if (isPlaying || (typeof bjState !== 'undefined' && bjState === 'playing')) {
           showNotification("Cannot claim bananas while a bet is active!", "error");
           return;
       }
+      if (bananaBox <= 0 && !authToken) return;
+
+      if (authToken) {
+          try {
+              const data = await fetchWithRetry('/api/tree/claim', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${authToken}`
+                  },
+                  body: JSON.stringify({})
+              });
+              if (!data.success) {
+                  showNotification(data.error || "Could not claim bananas!", "error");
+                  return;
+              }
+              applyServerPlaySync(data);
+              bananaBox = Number(data.bananaBox || 0);
+              const claimed = Number(data.claimedAmount || 0);
+              if (claimed > 0) {
+                  addLog('income', claimed, bananas, 'Banana Box Claim');
+                  playSound('win');
+              }
+              updateGameUI();
+          } catch (err) {
+              showNotification(parseError(err) || "Failed to claim Banana Box.", "error");
+          }
+          return;
+      }
+
       if (bananaBox <= 0) return;
-      
       const amount = bananaBox;
       bananaBox = 0;
       
@@ -13366,7 +13835,7 @@
           isInternalUpdate = false;
       }
       isPlaying = false;
-      syncData(bananas, trees);
+      if (!authToken) syncData(bananas, trees);
       if (bjOriginalBet > 0) { betAmount = bjOriginalBet; bjOriginalBet = 0; } if (betAmount > bananas) betAmount = bananas; 
       updateGameUI();
     }
@@ -13684,7 +14153,9 @@
             document.getElementById('player-cards').innerHTML = bjPlayer.map(c => renderCard(c)).join('');
             document.getElementById('player-score').innerText = bjPlayer.length ? calcScore(bjPlayer) : '0';
         }
-        document.getElementById('dealer-cards').innerHTML = bjDealer.map((c, i) => renderCard(c, i === 1 && bjState === 'playing')).join('');
+        document.getElementById('dealer-cards').innerHTML = (bjState === 'playing' && bjDealer.length === 1)
+            ? (renderCard(bjDealer[0], false) + renderCard(null, true))
+            : bjDealer.map((c, i) => renderCard(c, i === 1 && bjState === 'playing')).join('');
         document.getElementById('dealer-score').innerText = bjDealer.length ? (bjState === 'playing' ? calcScore([bjDealer[0]]) : calcScore(bjDealer)) : '?';
       } else if (gameMode === 'hilo') {
         const showHiloActions = hiloState === 'guessing' || hiloState === 'resolving';
@@ -14331,7 +14802,7 @@
         if (dungeonThemeIcon && activeTheme) dungeonThemeIcon.innerText = activeTheme.icon;
     }
 
-    function unlockTheme(themeId) {
+    async function unlockTheme(themeId) {
         if (isPlaying || (typeof bjState !== 'undefined' && bjState === 'playing')) {
             showNotification("Cannot unlock themes during an active bet!", "error");
             return;
@@ -14355,6 +14826,45 @@
             return;
         }
 
+        if (authToken) {
+            try {
+                const data = await fetchWithRetry('/api/theme/unlock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ themeId })
+                });
+                if (!data.success) {
+                    showNotification(data.error || "Could not unlock theme.", "error");
+                    return;
+                }
+                isInternalUpdate = true;
+                if (data.newBalance !== undefined) {
+                    const nb = Number(data.newBalance);
+                    updateBananas(nb);
+                    expectedDbBananas = nb;
+                }
+                if (data.coins !== undefined) updateCoins(Number(data.coins));
+                isInternalUpdate = false;
+
+                if (Array.isArray(data.unlocked_themes)) unlockedThemes = data.unlocked_themes.map(Number);
+                else if (!unlockedThemes.includes(themeId)) unlockedThemes.push(themeId);
+                equippedTheme = Number(data.theme !== undefined ? data.theme : themeId);
+
+                applyTheme(equippedTheme);
+                playSound('purchase');
+                showNotification(`Unlocked & equipped ${theme.name}!`, "success");
+                addLog('purchase', theme.costBananas, bananas, `Unlocked Theme: ${theme.name}`);
+                renderDungeonThemes();
+                updateGameUI();
+            } catch (err) {
+                showNotification(parseError(err) || "Failed to unlock theme.", "error");
+            }
+            return;
+        }
+
         isInternalUpdate = true;
         updateBananas(bananas - theme.costBananas);
         updateCoins(coins - theme.costCoins);
@@ -14372,11 +14882,36 @@
         renderDungeonThemes();
     }
 
-    function equipTheme(themeId) {
+    async function equipTheme(themeId) {
         if (!unlockedThemes.includes(themeId)) {
             showNotification("You have not unlocked this theme yet!", "error");
             return;
         }
+        if (authToken) {
+            try {
+                const data = await fetchWithRetry('/api/theme/equip', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ themeId })
+                });
+                if (!data.success) {
+                    showNotification(data.error || "Failed to equip theme.", "error");
+                    return;
+                }
+                equippedTheme = Number(data.theme !== undefined ? data.theme : themeId);
+                applyTheme(equippedTheme);
+                playSound('click');
+                showNotification(`Equipped ${THEMES.find(t => t.id === equippedTheme)?.name || 'Theme'}!`, "success");
+                renderDungeonThemes();
+            } catch (err) {
+                showNotification(parseError(err) || "Failed to equip theme.", "error");
+            }
+            return;
+        }
+
         equippedTheme = themeId;
         applyTheme(themeId);
         playSound('click');
@@ -14520,7 +15055,7 @@
         }
     }
 
-    function sellSkinToMerchant(skinId) {
+    async function sellSkinToMerchant(skinId) {
         const skin = getSkin(skinId);
         const canonId = skin?.id || skinId;
         const owned = (inventory[canonId] || 0) + (canonId !== skinId ? (inventory[skinId] || 0) : 0);
@@ -14530,8 +15065,47 @@
         if (skin.rarity === 'Ominous') {
             value = Math.max(100000000000, value);
         }
+
+        if (authToken) {
+            try {
+                const data = await fetchWithRetry('/api/skin/dungeon-sell', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ skinId: canonId })
+                });
+                if (!data.success) {
+                    showNotification(data.error || "Could not sell skin.", "error");
+                    return;
+                }
+                if (data.inventory && typeof data.inventory === 'object') {
+                    inventory = data.inventory;
+                }
+                isInternalUpdate = true;
+                const nb = Number(data.newBalance);
+                updateBananas(nb);
+                expectedDbBananas = nb;
+                isInternalUpdate = false;
+
+                if (dynamicSkinValues && data.newValue !== undefined) {
+                    dynamicSkinValues[canonId] = Number(data.newValue);
+                }
+
+                savePersistentData();
+                playSound('collect');
+                fetchSkinValues();
+                updateDungeonUI();
+                updateGameUI();
+                showNotification(`Sold ${skin.name} to merchant for ${formatNumber(Number(data.soldPrice || value))} 🍌!`, "success");
+            } catch (err) {
+                showNotification(parseError(err) || "Failed to sell skin to merchant.", "error");
+            }
+            return;
+        }
         
-        // Remove 1 skin
+        // Remove 1 skin (guest/offline fallback)
         if (inventory[canonId] && inventory[canonId] > 0) {
             inventory[canonId]--;
             if (inventory[canonId] === 0) delete inventory[canonId];
@@ -14540,7 +15114,6 @@
             if (inventory[skinId] === 0) delete inventory[skinId];
         }
         
-        // Update balance
         isInternalUpdate = true;
         updateBananas(bananas + value);
         isInternalUpdate = false;
@@ -14548,7 +15121,6 @@
         savePersistentData();
         playSound('collect');
         
-        // Drop skin market value when sold in dungeon (the way it used to drop)
         const dungeonDropAmounts = {
             'Ominous': 5000000000,
             'Legendary': 15000000,
@@ -14562,13 +15134,6 @@
         if (dynamicSkinValues && dynamicSkinValues[skinId] !== undefined) {
             dynamicSkinValues[skinId] = Math.max(minCap, dynamicSkinValues[skinId] - dropVal);
         }
-
-        fetchWithRetry('/api/skin/dungeon-sell', {
-            method: 'POST',
-            body: JSON.stringify({ skinId })
-        }).then(() => {
-            fetchSkinValues();
-        }).catch(() => {});
 
         updateDungeonUI();
         showNotification(`Sold ${skin.name} to merchant for ${formatNumber(value)} 🍌!`, "success");
@@ -15234,7 +15799,7 @@
         }
     }
 
-    function advanceVladimir() {
+    async function advanceVladimir() {
         vladimirStep++;
         const textEl = document.getElementById("vladimir-text");
         playSound("click");
@@ -15244,10 +15809,34 @@
             } else if (vladimirStep === 2) {
                 textEl.innerText = "But first, you must prove your unwavering loyalty to the Green.";
             } else if (vladimirStep === 3) {
+                if (authToken) {
+                    try {
+                        const data = await fetchWithRetry('/api/vladimir/talk', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${authToken}`
+                            },
+                            body: JSON.stringify({})
+                        });
+                        if (!data.success) {
+                            vladimirStep--;
+                            showNotification(data.error || "Vladimir rejects your pact.", "error");
+                            document.getElementById("vladimir-dialogue-overlay").classList.add("hidden");
+                            return;
+                        }
+                        vladimirQuestStatus = Number(data.vladimir_quest_status || 1);
+                    } catch (err) {
+                        vladimirStep--;
+                        showNotification(parseError(err) || "Vladimir rejects your pact.", "error");
+                        document.getElementById("vladimir-dialogue-overlay").classList.add("hidden");
+                        return;
+                    }
+                } else {
+                    vladimirQuestStatus = 1;
+                }
                 textEl.innerText = "Your task is simple: Go All-In on Green in Roulette. No gadgets. No tricks. Pure faith.";
-                vladimirQuestStatus = 1;
-                localStorage.setItem("vladimirQuestStatus_" + playerName, "1");
-                if (typeof syncData === "function") syncData(bananas, trees);
+                localStorage.setItem("vladimirQuestStatus_" + playerName, String(vladimirQuestStatus));
             } else {
                 document.getElementById("vladimir-dialogue-overlay").classList.add("hidden");
             }
@@ -16261,7 +16850,7 @@
         }, 4000);
     }
 
-    function exportSmoothieToCasino() {
+    async function exportSmoothieToCasino() {
         const exportCost = 50000;
         const casinoGain = 1000;
         if (bcScore < exportCost) {
@@ -16272,6 +16861,44 @@
             );
             return;
         }
+
+        if (authToken) {
+            try {
+                const data = await fetchWithRetry('/api/clicker/export', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({})
+                });
+                if (!data.success) {
+                    showBcToast("warning", "Export Blocked", data.error || "Could not export to Casino.");
+                    return;
+                }
+                bcScore -= exportCost;
+                isInternalUpdate = true;
+                const nb = Number(data.newBalance);
+                updateBananas(nb);
+                expectedDbBananas = nb;
+                isInternalUpdate = false;
+
+                saveBananaClicker();
+                updateBcUI();
+                if (typeof updateBalanceUI === 'function') updateBalanceUI();
+                updateGameUI();
+                playSound('win');
+                showBcToast(
+                    "success",
+                    "Casino Transfer Complete",
+                    `Successfully transferred ${formatNumber(exportCost)} Clicker Bananas for +${formatNumber(Number(data.added || casinoGain))} Casino 🍌!`
+                );
+            } catch (err) {
+                showBcToast("warning", "Export Blocked", parseError(err) || "Could not export to Casino.");
+            }
+            return;
+        }
+
         bcScore -= exportCost;
         bananas += casinoGain;
         saveBananaClicker();
