@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import cors from "cors";
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -44,7 +45,243 @@ const JWT_SECRET = process.env.JWT_SECRET || "banana_secret_monkey_business";
 const activeCrashGames = new Map<string, { betAmount: bigint, crashPoint: number }>();
 const activeHiloGames = new Map<string, { betAmount: bigint, firstCard: { rank: string, suit: string, value: number } }>();
 const activeMinesGames = new Map<string, { betAmount: bigint, mineCount: number, mines: number[], revealed: number[], currentMultiplier: number }>();
+const activeBlackjackGames = new Map<string, {
+  baseBet: bigint;
+  totalBet: bigint;
+  deck: { rank: string; suit: string }[];
+  playerHand: { rank: string; suit: string }[];
+  dealerHand: { rank: string; suit: string }[];
+  splitHands: { rank: string; suit: string }[][];
+  activeHand: number;
+  isDoubleDown: boolean;
+}>();
+const activeVideoPokerGames = new Map<string, {
+  betAmount: bigint;
+  deck: { rank: string; suit: string }[];
+  initialHand: { rank: string; suit: string }[];
+}>();
+const activeHorseOdds = new Map<string, number[]>();
 const userSonarCooldowns = new Map<string, number>();
+const lastLossForInsurance = new Map<string, { amount: bigint; at: number }>();
+const lastInsuranceClaimAt = new Map<string, number>();
+const lastClickerExportAt = new Map<string, number>();
+const rouletteGreenStreak = new Map<string, number>();
+
+const TREE_DATA: Record<number, { cost: number; reward: number; ticks: number; name: string; reqAllTrees: boolean }> = {
+  1:  { cost: 100,      reward: 2,     ticks: 5,  name: 'Common Sapling', reqAllTrees: false },
+  2:  { cost: 500,      reward: 8,     ticks: 4,  name: 'Bronze Palm',    reqAllTrees: false },
+  3:  { cost: 2500,     reward: 25,    ticks: 5,  name: 'Silver Grove',   reqAllTrees: false },
+  4:  { cost: 10000,    reward: 70,    ticks: 7,  name: 'Gold Plantation',reqAllTrees: true  },
+  5:  { cost: 40000,    reward: 160,   ticks: 8,  name: 'Jade Canopy',    reqAllTrees: true  },
+  6:  { cost: 150000,   reward: 360,   ticks: 9,  name: 'Sapphire Oasis', reqAllTrees: true  },
+  7:  { cost: 500000,   reward: 700,   ticks: 10, name: 'Amethyst Ancient',reqAllTrees: true },
+  8:  { cost: 1500000,  reward: 1320,  ticks: 12, name: 'Ruby Colossus',  reqAllTrees: true  },
+  9:  { cost: 4000000,  reward: 2400,  ticks: 15, name: 'Celestial Tree', reqAllTrees: true  },
+  10: { cost: 10000000, reward: 4800,  ticks: 20, name: 'Primordial God-Tree', reqAllTrees: true }
+};
+
+const GADGET_DATA = [
+  { title: 'Failsafe', cost: 50000, locked: false },
+  { title: 'Increased Chance', cost: 10000, locked: false },
+  { title: 'Speed reload', cost: 20000, locked: false },
+  { title: 'Banana Streak', cost: 100000, locked: false },
+  { title: 'Dealer Peek', cost: 250000, locked: false },
+  { title: 'Mega Bet', cost: 500000, locked: false },
+  { title: 'Instant Cases', cost: 75000, locked: false },
+  { title: 'Sonar Radar', cost: 175000, locked: false },
+  { title: 'Bumper Cushion', cost: 250000, locked: false },
+  { title: 'Coming Soon', cost: 0, locked: true }
+];
+
+const SERVER_THEMES = [
+  { id: 0, name: 'Classic Tropical', levelReq: 1, costBananas: 0, costCoins: 0 },
+  { id: 1, name: 'Factory Theme', levelReq: 10, costBananas: 5000000, costCoins: 500 },
+  { id: 2, name: 'Futuristic Theme', levelReq: 20, costBananas: 25000000, costCoins: 1500 },
+  { id: 3, name: 'Ocean Theme', levelReq: 30, costBananas: 100000000, costCoins: 3500 },
+  { id: 4, name: 'Extreme Tropical', levelReq: 40, costBananas: 500000000, costCoins: 10000 }
+];
+
+const SERVER_SHOP_ITEMS = [
+  { id: 'banana_cloak', title: 'Banana Cloak', desc: 'Stops the Jungle Government from appearing for 15 minutes.', cost: 10, chance: 1.0, duration: 15 * 60 * 1000, icon: '🥷', prop: 'banana_cloak' },
+  { id: 'xp_boost', title: 'XP-Boost', desc: 'Double XP gain for 10 minutes.', cost: 1, chance: 0.5, duration: 10 * 60 * 1000, icon: '⚡', prop: 'xp' },
+  { id: 'speed_grove', title: 'Speed Grove', desc: 'Halves tree generation time for 2 minutes.', cost: 2, chance: 0.25, duration: 2 * 60 * 1000, icon: '🌪️', prop: 'speed' },
+  { id: 'tree_discount', title: 'Tree Discount', desc: 'Tree purchases and upgrades cost 25% less for 5 minutes.', cost: 2, chance: 0.35, duration: 5 * 60 * 1000, icon: '🏷️', prop: 'discount' },
+  { id: 'merchant_favor', title: 'Merchant Favor', desc: 'Coins cost 80,000 🍌 (normally 100k) for 10 minutes.', cost: 3, chance: 0.30, duration: 10 * 60 * 1000, icon: '🤝', prop: 'merchant' },
+  { id: 'hyper_spin', title: 'Hyper Spin', desc: 'Roulette animation is instantly fast for 5 minutes.', cost: 1, chance: 0.40, duration: 5 * 60 * 1000, icon: '🎰', prop: 'fast_spin' },
+  { id: 'dungeon_key', title: 'Dungeon Bypass', desc: "100% chance to enter Ludvig's Dungeon for 10 minutes.", cost: 4, chance: 0.65, duration: 10 * 60 * 1000, icon: '🗝️', prop: 'dungeon_key' }
+];
+
+const SERVER_QUEST_DEFS = [
+  { id: 'easy_bet_count', tier: 'easy', reward: 2, icon: '🎲', title: 'Frequent Bettor', desc: 'Place 5 bets in any casino game', target: 5, eval: (e: string, amt: number) => e === 'bets_placed' ? amt : 0 },
+  { id: 'easy_roulette_spin', tier: 'easy', reward: 2, icon: '🎡', title: 'Spin Doctor', desc: 'Spin the Roulette wheel 3 times', target: 3, eval: (e: string, amt: number) => e === 'roulette_spin' ? amt : 0 },
+  { id: 'easy_slots_spin', tier: 'easy', reward: 2, icon: '🎰', title: 'Slot Explorer', desc: 'Spin the Slots machine 4 times', target: 4, eval: (e: string, amt: number) => e === 'slots_spin' ? amt : 0 },
+  { id: 'easy_plinko_drop', tier: 'easy', reward: 2, icon: '🟡', title: 'Plinko Enthusiast', desc: 'Drop 3 Plinko balls', target: 3, eval: (e: string, amt: number) => e === 'plinko_drop' ? amt : 0 },
+  { id: 'easy_win_bananas', tier: 'easy', reward: 2, icon: '🍌', title: 'Banana Collector', desc: 'Win a total of 5,000 🍌 from bets', target: 5000, eval: (e: string, amt: number) => e === 'win_amount' ? Math.floor(amt) : 0 },
+  { id: 'easy_bj_play', tier: 'easy', reward: 2, icon: '🃏', title: 'Table Player', desc: 'Play 3 hands of Blackjack', target: 3, eval: (e: string, amt: number) => e === 'bj_play' ? amt : 0 },
+  { id: 'easy_tree_buy', tier: 'easy', reward: 2, icon: '🌱', title: 'Jungle Gardener', desc: 'Buy or upgrade a Banana Tree', target: 1, eval: (e: string, amt: number) => e === 'tree_buy_upgrade' ? amt : 0 },
+  { id: 'easy_banana_box', tier: 'easy', reward: 2, icon: '📦', title: 'Sweet Harvest', desc: 'Claim bananas from the Banana Box 1 time', target: 1, eval: (e: string, amt: number) => e === 'banana_box_claim' ? amt : 0 },
+  { id: 'easy_hilo_correct', tier: 'easy', reward: 2, icon: '📈', title: 'Sharp Guess', desc: 'Guess correctly 2 times in Hi-Lo', target: 2, eval: (e: string, amt: number) => e === 'hilo_correct' ? amt : 0 },
+  { id: 'easy_poker_play', tier: 'easy', reward: 2, icon: '♠️', title: 'Card Curious', desc: 'Play 2 hands of Video Poker', target: 2, eval: (e: string, amt: number) => e === 'poker_play' ? amt : 0 },
+  { id: 'med_roulette_win', tier: 'medium', reward: 4, icon: '🎯', title: 'Wheel Whisperer', desc: 'Win 4 bets on the Roulette wheel', target: 4, eval: (e: string, amt: number) => e === 'roulette_win' ? amt : 0 },
+  { id: 'med_slots_triple', tier: 'medium', reward: 4, icon: '🍒', title: 'Match Master', desc: 'Land a 3x match or Jackpot on Slots', target: 1, eval: (e: string, amt: number, m: any) => (e === 'slots_win' && (m?.isTriple || m?.isJackpot)) ? 1 : 0 },
+  { id: 'med_bj_wins', tier: 'medium', reward: 4, icon: '👑', title: 'Blackjack Sharpshooter', desc: 'Win 3 hands of Blackjack', target: 3, eval: (e: string, amt: number) => e === 'bj_win' ? amt : 0 },
+  { id: 'med_mines_clear', tier: 'medium', reward: 4, icon: '💣', title: 'Mine Sweeper', desc: 'Cash out in Mines with 3+ bananas revealed', target: 1, eval: (e: string, amt: number, m: any) => (e === 'mines_cashout' && (m?.gems || 0) >= 3) ? 1 : 0 },
+  { id: 'med_plinko_mult', tier: 'medium', reward: 4, icon: '🔥', title: 'Bounce King', desc: 'Hit a 5x or higher multiplier in Plinko', target: 1, eval: (e: string, amt: number, m: any) => (e === 'plinko_mult' && (m?.mult || 0) >= 5) ? 1 : 0 },
+  { id: 'med_crash_mult', tier: 'medium', reward: 4, icon: '🚀', title: 'Rocket Rider', desc: 'Cash out in Crash at 2.5x or higher', target: 1, eval: (e: string, amt: number, m: any) => (e === 'crash_cashout' && (m?.mult || 0) >= 2.5) ? 1 : 0 },
+  { id: 'med_win_streak', tier: 'medium', reward: 4, icon: '⚡', title: 'On Fire', desc: 'Reach a win streak of 3 wins in a row', target: 1, eval: (e: string, amt: number, m: any) => (e === 'win_streak' && (m?.streak || 0) >= 3) ? 1 : 0 },
+  { id: 'med_win_50k', tier: 'medium', reward: 4, icon: '💰', title: 'Mid-Stakes Winner', desc: 'Win a total of 50,000 🍌 across any games', target: 50000, eval: (e: string, amt: number) => e === 'win_amount' ? Math.floor(amt) : 0 },
+  { id: 'med_case_open', tier: 'medium', reward: 4, icon: '🎁', title: 'Case Opener', desc: 'Open 3 Banana Cases', target: 3, eval: (e: string, amt: number) => e === 'case_open' ? amt : 0 },
+  { id: 'med_poker_win', tier: 'medium', reward: 4, icon: '💎', title: 'Poker Tactician', desc: 'Win 3 hands of Video Poker', target: 3, eval: (e: string, amt: number) => e === 'poker_win' ? amt : 0 },
+  { id: 'hard_roulette_green', tier: 'hard', reward: 6, icon: '💚', title: 'Green Miracle', desc: 'Land on GREEN in Roulette', target: 1, eval: (e: string, amt: number, m: any) => (e === 'roulette_win' && m?.isGreen) ? 1 : 0 },
+  { id: 'hard_slots_jackpot', tier: 'hard', reward: 6, icon: '💰', title: 'Jackpot Hunter', desc: 'Hit a MONEY BAG 💰 Jackpot on Slots', target: 1, eval: (e: string, amt: number, m: any) => (e === 'slots_win' && m?.isJackpot) ? 1 : 0 },
+  { id: 'hard_crash_5x', tier: 'hard', reward: 6, icon: '🛸', title: 'To The Moon', desc: 'Cash out in Crash at 5.0x or higher', target: 1, eval: (e: string, amt: number, m: any) => (e === 'crash_cashout' && (m?.mult || 0) >= 5) ? 1 : 0 },
+  { id: 'hard_plinko_10x', tier: 'hard', reward: 6, icon: '🌠', title: 'Gravity Defier', desc: 'Hit a 10x or higher multiplier in Plinko', target: 1, eval: (e: string, amt: number, m: any) => (e === 'plinko_mult' && (m?.mult || 0) >= 10) ? 1 : 0 },
+  { id: 'hard_bj_natural', tier: 'hard', reward: 6, icon: '✨', title: 'Ace & King', desc: 'Get a natural Blackjack (21 on first 2 cards)', target: 1, eval: (e: string, amt: number, m: any) => (e === 'bj_win' && m?.isNatural) ? 1 : 0 },
+  { id: 'hard_mines_high', tier: 'hard', reward: 6, icon: '🧨', title: 'Bomb Squad Master', desc: 'Cash out in Mines with 7+ safe tiles revealed', target: 1, eval: (e: string, amt: number, m: any) => (e === 'mines_cashout' && (m?.gems || 0) >= 7) ? 1 : 0 },
+  { id: 'hard_poker_flush', tier: 'hard', reward: 6, icon: '🎴', title: 'High Roller Hand', desc: 'Get a Flush, Full House or higher in Poker', target: 1, eval: (e: string, amt: number, m: any) => (e === 'poker_win' && m?.rank && ['FLUSH', 'FULL HOUSE', 'FOUR OF A KIND', 'STRAIGHT FLUSH', 'ROYAL FLUSH'].includes(String(m.rank).toUpperCase())) ? 1 : 0 },
+  { id: 'hard_mega_win', tier: 'hard', reward: 6, icon: '👑', title: 'Jungle Kingpin', desc: 'Win 500,000+ 🍌 in a single bet', target: 1, eval: (e: string, amt: number) => (e === 'win_amount' && amt >= 500000) ? 1 : 0 }
+];
+
+function parseNonNegativeBigInt(val: any): bigint | null {
+  if (val === undefined || val === null || val === '') return 0n;
+  const s = String(val).trim();
+  if (!/^\d+$/.test(s)) return null;
+  try { return BigInt(s); } catch { return null; }
+}
+
+function getXpForLevelServer(l: number): number {
+  if (l <= 1) return 100;
+  return Math.floor(100 + (l - 1) * 80 + Math.pow(l - 1, 1.8) * 25);
+}
+
+function parseJsonSafe(raw: any, fallback: any) {
+  if (raw === undefined || raw === null) return fallback;
+  if (typeof raw === 'object') return raw;
+  try { return JSON.parse(raw); } catch { return fallback; }
+}
+
+function generateServerQuests() {
+  const pickRandom = (arr: any[], count: number) => {
+    const copy = [...arr];
+    const out: any[] = [];
+    for (let i = 0; i < count && copy.length > 0; i++) {
+      const idx = Math.floor(Math.random() * copy.length);
+      out.push(copy.splice(idx, 1)[0]);
+    }
+    return out;
+  };
+  const chosen = [
+    ...pickRandom(SERVER_QUEST_DEFS.filter(q => q.tier === 'easy'), 2),
+    ...pickRandom(SERVER_QUEST_DEFS.filter(q => q.tier === 'medium'), 2),
+    ...pickRandom(SERVER_QUEST_DEFS.filter(q => q.tier === 'hard'), 1)
+  ];
+  return chosen.map(def => ({
+    id: def.id,
+    tier: def.tier,
+    reward: def.reward,
+    icon: def.icon,
+    title: def.title,
+    desc: def.desc,
+    target: def.target,
+    progress: 0,
+    completed: false,
+    claimed: false
+  }));
+}
+
+function ensureUserMeta(inventoryObj: any) {
+  const now = Date.now();
+  const inv = (inventoryObj && typeof inventoryObj === 'object') ? inventoryObj : {};
+  if (!inv._meta || typeof inv._meta !== 'object') inv._meta = {};
+  const meta = inv._meta;
+  if (!meta.boosts || typeof meta.boosts !== 'object') meta.boosts = {};
+  if (!meta.lastHarvestAt || typeof meta.lastHarvestAt !== 'number') meta.lastHarvestAt = now;
+  if (!meta.shop || typeof meta.shop !== 'object' || !Array.isArray(meta.shop.stock) || meta.shop.stock.length !== SERVER_SHOP_ITEMS.length || now > (meta.shop.refreshTime || 0)) {
+    meta.shop = {
+      stock: SERVER_SHOP_ITEMS.map(item => Math.random() < item.chance),
+      purchased: Array(SERVER_SHOP_ITEMS.length).fill(false),
+      refreshTime: now + 10 * 60 * 1000
+    };
+  }
+  if (!meta.quests || typeof meta.quests !== 'object' || !Array.isArray(meta.quests.active) || meta.quests.active.length < 5 || now >= (meta.quests.refreshTimestamp || 0)) {
+    meta.quests = {
+      active: generateServerQuests(),
+      refreshTimestamp: now + 3600000
+    };
+  }
+  return { inv, meta };
+}
+
+function accrueTreeBoxFromElapsed(treesArr: number[], currentBox: bigint, meta: any): { newBox: bigint; gained: bigint } {
+  const now = Date.now();
+  const lastAt = Number(meta.lastHarvestAt || now);
+  const elapsedSec = Math.max(0, Math.min(86400, (now - lastAt) / 1000)); // Cap idle accrual to 24h per jump
+  meta.lastHarvestAt = now;
+  if (elapsedSec < 0.25) return { newBox: currentBox, gained: 0n };
+
+  const speedUntil = Number(meta.boosts?.speed || 0);
+  const effectiveMultiplier = speedUntil > lastAt ? (speedUntil >= now ? 2.0 : 1.0 + Math.min(1.0, (speedUntil - lastAt) / (now - lastAt))) : 1.0;
+
+  let perSec = 0;
+  for (let i = 0; i < 20; i++) {
+    const lvl = Number(treesArr[i] || 0);
+    if (lvl > 0 && TREE_DATA[lvl]) {
+      perSec += (TREE_DATA[lvl].reward / TREE_DATA[lvl].ticks);
+    }
+  }
+  const gainedNum = Math.floor(perSec * elapsedSec * effectiveMultiplier);
+  const gained = gainedNum > 0 ? BigInt(gainedNum) : 0n;
+  return { newBox: currentBox + gained, gained };
+}
+
+function advanceServerQuests(meta: any, eventType: string, amount = 1, metadata: any = {}) {
+  const quests = meta?.quests?.active;
+  if (!Array.isArray(quests)) return;
+  for (const q of quests) {
+    if (q.completed) continue;
+    const def = SERVER_QUEST_DEFS.find(d => d.id === q.id);
+    if (!def) continue;
+    const added = def.eval(eventType, amount, metadata);
+    if (added > 0) {
+      q.progress = Math.min(q.target, Number(q.progress || 0) + added);
+      if (q.progress >= q.target) q.completed = true;
+    }
+  }
+}
+
+function buildBlackjackDeck() {
+  const suits = ['H', 'D', 'C', 'S'];
+  const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+  const d: { rank: string; suit: string }[] = [];
+  for (const s of suits) for (const r of ranks) d.push({ suit: s, rank: r });
+  for (let i = d.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d;
+}
+
+function calcBjScore(hand: { rank: string; suit: string }[]): number {
+  let sum = 0;
+  let aces = 0;
+  for (const c of hand) {
+    if (c.rank === 'A') { sum += 11; aces++; }
+    else if (['J', 'Q', 'K'].includes(c.rank)) sum += 10;
+    else sum += parseInt(c.rank, 10) || 0;
+  }
+  while (sum > 21 && aces > 0) { sum -= 10; aces--; }
+  return sum;
+}
+
+function generateFairHorseOdds(): number[] {
+  const rawWeights = Array.from({ length: 10 }, () => 8.5 + Math.random() * 3.0);
+  const total = rawWeights.reduce((a, b) => a + b, 0);
+  const normalized = rawWeights.map(w => Math.round((w / total) * 1000) / 10);
+  const curSum = normalized.reduce((a, b) => a + b, 0);
+  const diff = Math.round((100.0 - curSum) * 10) / 10;
+  normalized[0] = Math.round((normalized[0] + diff) * 10) / 10;
+  return normalized;
+}
 
 // Middleware to verify JWT
 const authenticateToken = (req: any, res: any, next: any) => {
@@ -115,6 +352,7 @@ app.post("/api/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const { inv: initialInventoryObj } = ensureUserMeta({});
     const { error } = await supabase.from('database').insert({
       id,
       name,
@@ -128,9 +366,9 @@ app.post("/api/register", async (req, res) => {
       gadgets: JSON.stringify(Array(10).fill(false)),
       unlocked_titles: JSON.stringify([]),
       equipped_title: null,
-      inventory: JSON.stringify({}),
+      inventory: JSON.stringify(initialInventoryObj),
       active_gadgets: JSON.stringify(Array(10).fill(false)),
-      vladimir_quest_status: req.body.vladimir_quest_status !== undefined ? Number(req.body.vladimir_quest_status) : 0,
+      vladimir_quest_status: 0,
       banned: false
     });
 
@@ -189,197 +427,119 @@ app.post("/api/login", async (req, res) => {
     
     // Don't send password back to client
     const { password: _, ...userData } = user;
+    const rawInv = parseJsonSafe(user.inventory, {});
+    const { inv: syncedInv, meta } = ensureUserMeta(rawInv);
+    const treesArr = parseJsonSafe(user.trees, [1, ...Array(19).fill(0)]);
+    const { newBox } = accrueTreeBoxFromElapsed(treesArr, BigInt(user.banana_box || 0), meta);
+    await supabase.from('database').update({
+      banana_box: String(newBox),
+      inventory: JSON.stringify(syncedInv)
+    }).eq('id', user.id);
+
     let userTheme = 0;
     let unlockedThemes = [0];
-    try {
-      const inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : user.inventory;
-      if (inv && inv._theme !== undefined) userTheme = Number(inv._theme);
-      if (inv && Array.isArray(inv._unlocked_themes)) unlockedThemes = inv._unlocked_themes;
-    } catch (e) {}
+    if (syncedInv && syncedInv._theme !== undefined) userTheme = Number(syncedInv._theme);
+    if (syncedInv && Array.isArray(syncedInv._unlocked_themes)) unlockedThemes = syncedInv._unlocked_themes;
     if (user.theme !== undefined && user.theme !== null) userTheme = Number(user.theme);
     if (user.unlocked_themes) {
-      try {
-        const dbThemes = typeof user.unlocked_themes === 'string' ? JSON.parse(user.unlocked_themes) : user.unlocked_themes;
-        if (Array.isArray(dbThemes)) unlockedThemes = dbThemes;
-      } catch (e) {}
+      const dbThemes = parseJsonSafe(user.unlocked_themes, null);
+      if (Array.isArray(dbThemes)) unlockedThemes = dbThemes;
     }
+    userData.banana_box = String(newBox);
+    userData.inventory = syncedInv;
     userData.theme = userTheme;
     userData.unlocked_themes = unlockedThemes;
+    userData.meta = meta;
     res.json({ token, ...userData });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Save Data
+// Save Data (Strict: Preferences & Cosmetics ONLY — currencies/items/trees/levels/quests are server-authoritative)
 app.post("/api/save", authenticateToken, async (req: any, res) => {
-  const { userId, name, score, coins, bananaBox, trees, gadgets, level, xp, unlocked_titles, equipped_title, inventory, vladimir_quest_status } = req.body;
+  const { userId, equipped_title, active_gadgets, theme } = req.body;
 
-  if (req.user.userId !== userId) {
+  if (userId && req.user.userId !== userId) {
     return res.status(403).json({ error: "Cannot save data for another user" });
   }
+  const targetUserId = req.user.userId;
 
   try {
     const supabase = getSupabase();
-    console.log(`[SAVE REQUEST] User: ${userId} (${name}), Score: ${score}, Coins: ${coins}, Expected: ${req.body.expectedScore}/${req.body.expectedCoins}`);
-    
-    // 1. Fetch current state to check for conflicts and preserve bank
     const { data: current, error: fetchError } = await supabase
       .from('database')
-      .select('score, coins, unlocked_titles, inventory, level, xp, updated_at')
-      .eq('id', userId)
+      .select('*')
+      .eq('id', targetUserId)
       .maybeSingle();
 
-    if (fetchError) {
-        console.error(`[SAVE ERROR] Fetch failed for ${userId}:`, fetchError);
+    if (fetchError || !current) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const { expectedScore, expectedCoins } = req.body;
-    const isForceSync = String(expectedScore) === "-1" || String(expectedCoins) === "-1";
-    
-    // 2. Conflict Detection (Optimistic Concurrency Control)
-    if (current && !isForceSync && expectedScore !== undefined && expectedCoins !== undefined) {
-        const serverScore = String(current.score);
-        const serverCoins = String(current.coins);
-        const clientExpectedScore = String(expectedScore);
-        const clientExpectedCoins = String(expectedCoins);
+    const unlockedTitles = parseJsonSafe(current.unlocked_titles, []);
+    const unlockedGadgets = parseJsonSafe(current.gadgets, Array(10).fill(false));
+    const currentInv = parseJsonSafe(current.inventory, {});
+    const { inv: invObj, meta } = ensureUserMeta(currentInv);
 
-        if (serverScore !== clientExpectedScore || serverCoins !== clientExpectedCoins) {
-            console.warn(`[SYNC CONFLICT] User ${userId}. Server: ${serverScore}/${serverCoins}, Client Expected: ${clientExpectedScore}/${clientExpectedCoins}. Last updated: ${current.updated_at}`);
-            
-            // Return current server data so client can resync
-            const { data: fullUser } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
-            if (fullUser) {
-                const { password: _, ...userData } = fullUser;
-                // Ensure BIGINTs are strings for JSON
-                userData.score = String(userData.score);
-                userData.coins = String(userData.coins);
-                userData.xp = String(userData.xp);
-                userData.banana_box = String(userData.banana_box);
-                // Protect level from ever decreasing due to quest completions
-                userData.level = Math.max(Number(userData.level || 1), Number(req.body.level || 1));
-                return res.json({ success: false, error: "Conflict detected", user: userData });
-            }
-        }
+    let safeUnlockedThemes: number[] = [0];
+    if (Array.isArray(invObj._unlocked_themes)) safeUnlockedThemes = invObj._unlocked_themes.map(Number);
+    if (current.unlocked_themes) {
+      const dbThemes = parseJsonSafe(current.unlocked_themes, null);
+      if (Array.isArray(dbThemes)) safeUnlockedThemes = dbThemes.map(Number);
+    }
+    if (!safeUnlockedThemes.includes(0)) safeUnlockedThemes.unshift(0);
+
+    // 1. Validate equipped_title against server unlocked_titles
+    let safeEquippedTitle = current.equipped_title || null;
+    if (equipped_title === null) {
+      safeEquippedTitle = null;
+    } else if (typeof equipped_title === 'string' && Array.isArray(unlockedTitles) && unlockedTitles.includes(equipped_title)) {
+      safeEquippedTitle = equipped_title;
     }
 
-    // 3. Merge unlocked_titles
-    let finalUnlockedTitles = unlocked_titles || [];
-    if (current && current.unlocked_titles) {
-        const serverTitles = typeof current.unlocked_titles === 'string' ? JSON.parse(current.unlocked_titles) : current.unlocked_titles;
-        if (Array.isArray(serverTitles)) {
-            finalUnlockedTitles = Array.from(new Set([...serverTitles, ...finalUnlockedTitles]));
-        }
-    }
-
-    // 4. Perform Upsert
-    console.log(`[UPSERT START] User: ${userId}`);
-    const theme = req.body.theme !== undefined ? Number(req.body.theme) : 0;
-    const unlockedThemes = Array.isArray(req.body.unlocked_themes) ? req.body.unlocked_themes : [0];
-
-    let inventoryObj: any = {};
-    try {
-      inventoryObj = typeof inventory === 'string' ? JSON.parse(inventory) : (inventory || {});
-    } catch (e) {
-      inventoryObj = {};
-    }
-    inventoryObj._theme = theme;
-    inventoryObj._unlocked_themes = unlockedThemes;
-
-    // BANANA BANK PERMANENT SHIELD: Never reset to 0!
-    // Priority order for bank recovery:
-    // A. Incoming non-zero bank from request body
-    // B. Existing memory store entry
-    // C. Existing user's inventory._bank from database row
-    // D. Incoming inventory._bank object
-    let finalBankRow: any = null;
-    let finalBankTotal = 0n;
-
-    if (req.body.bank && typeof req.body.bank === 'object') {
-      const incomingTotal = calculateTotalFromBankRow(req.body.bank);
-      if (incomingTotal > finalBankTotal) {
-        finalBankTotal = incomingTotal;
-        finalBankRow = decomposeBigIntToBankRow(incomingTotal);
+    // 2. Validate theme against server unlocked_themes
+    let safeTheme = current.theme !== undefined && current.theme !== null ? Number(current.theme) : Number(invObj._theme || 0);
+    if (theme !== undefined && theme !== null) {
+      const reqTheme = Number(theme);
+      if (safeUnlockedThemes.includes(reqTheme)) {
+        safeTheme = reqTheme;
       }
     }
+    invObj._theme = safeTheme;
+    invObj._unlocked_themes = safeUnlockedThemes;
 
-    const existingMem = memoryBankStore.get(userId);
-    if (existingMem) {
-      const memTotal = calculateTotalFromBankRow(existingMem);
-      if (memTotal > finalBankTotal) {
-        finalBankTotal = memTotal;
-        finalBankRow = existingMem;
-      }
-    }
-
-    if (current && current.inventory) {
-      try {
-        const curInv = typeof current.inventory === 'string' ? JSON.parse(current.inventory) : current.inventory;
-        if (curInv && curInv._bank && typeof curInv._bank === 'object') {
-          const curInvTotal = calculateTotalFromBankRow(curInv._bank);
-          if (curInvTotal > finalBankTotal) {
-            finalBankTotal = curInvTotal;
-            finalBankRow = decomposeBigIntToBankRow(curInvTotal);
-          }
+    // 3. Validate active_gadgets (max 2, must be owned on server, and not mid-round)
+    let safeActiveGadgets = parseJsonSafe(current.active_gadgets, Array(10).fill(false));
+    if (Array.isArray(active_gadgets) && !activeBlackjackGames.has(targetUserId) && !activeMinesGames.has(targetUserId) && !activeCrashGames.has(targetUserId) && !activeHiloGames.has(targetUserId) && !activeVideoPokerGames.has(targetUserId)) {
+      const candidate = Array.from({ length: 10 }, (_, i) => Boolean(active_gadgets[i]) && Boolean(unlockedGadgets[i]));
+      let count = 0;
+      for (let i = 0; i < 10; i++) {
+        if (candidate[i]) {
+          count++;
+          if (count > 2) candidate[i] = false;
         }
-      } catch {}
-    }
-
-    if (inventoryObj && inventoryObj._bank && typeof inventoryObj._bank === 'object') {
-      const objTotal = calculateTotalFromBankRow(inventoryObj._bank);
-      if (objTotal > finalBankTotal) {
-        finalBankTotal = objTotal;
-        finalBankRow = decomposeBigIntToBankRow(objTotal);
       }
-    }
-
-    if (finalBankRow && finalBankTotal > 0n) {
-      inventoryObj._bank = finalBankRow;
-      memoryBankStore.set(userId, finalBankRow);
-      saveBankDiskStore(memoryBankStore);
-
-      // Async write to banana_bank table without blocking save response
-      supabase.from('banana_bank').upsert({
-        id: userId,
-        user_id: userId,
-        ...finalBankRow,
-        updated_at: new Date().toISOString()
-      }).then(() => {}).catch(() => {});
+      safeActiveGadgets = candidate;
     }
 
     const basePayload: any = {
-      id: userId,
-      name,
-      score: String(score), 
-      coins: String(coins), 
-      banana_box: String(bananaBox || 0),
-      trees: JSON.stringify(trees),
-      gadgets: JSON.stringify(gadgets),
-      level: Math.max(Number(level || 1), Number(current?.level || 1)),
-      xp: String(xp || 0),
-      unlocked_titles: JSON.stringify(finalUnlockedTitles),
-      equipped_title: equipped_title || null,
-      inventory: JSON.stringify(inventoryObj),
-      active_gadgets: req.body.active_gadgets ? JSON.stringify(req.body.active_gadgets) : JSON.stringify(Array(10).fill(false)),
+      equipped_title: safeEquippedTitle,
+      active_gadgets: JSON.stringify(safeActiveGadgets),
+      inventory: JSON.stringify(invObj),
       updated_at: new Date().toISOString()
     };
 
-    // Attempt direct theme and unlocked_themes column upsert first
-    let { error: upsertError } = await supabase.from('database').upsert({
+    let { error: upsertError } = await supabase.from('database').update({
       ...basePayload,
-      theme,
-      unlocked_themes: JSON.stringify(unlockedThemes)
-    });
+      theme: safeTheme,
+      unlocked_themes: JSON.stringify(safeUnlockedThemes)
+    }).eq('id', targetUserId);
 
     if (upsertError && upsertError.code === 'PGRST204') {
-      // If unlocked_themes or theme not in schema cache, try with just theme
-      const retryResult = await supabase.from('database').upsert({
-        ...basePayload,
-        theme
-      });
+      const retryResult = await supabase.from('database').update({ ...basePayload, theme: safeTheme }).eq('id', targetUserId);
       if (retryResult.error && retryResult.error.code === 'PGRST204') {
-        // Fallback to base payload with theme stored in inventory JSON
-        const fallbackResult = await supabase.from('database').upsert(basePayload);
+        const fallbackResult = await supabase.from('database').update(basePayload).eq('id', targetUserId);
         upsertError = fallbackResult.error;
       } else {
         upsertError = retryResult.error;
@@ -387,27 +547,22 @@ app.post("/api/save", authenticateToken, async (req: any, res) => {
     }
 
     if (upsertError) {
-        console.error(`[SAVE ERROR] Upsert failed for ${userId}:`, upsertError);
-        return res.status(500).json({ error: upsertError.message });
+      return res.status(500).json({ error: upsertError.message });
     }
-    
-    console.log(`[SAVE SUCCESS] User: ${userId} (${name})`);
 
-    // 5. Return updated state
-    const { data: updatedUser } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+    const { data: updatedUser } = await supabase.from('database').select('*').eq('id', targetUserId).maybeSingle();
     if (updatedUser) {
-        const { password: _, ...userData } = updatedUser;
-        userData.score = String(userData.score);
-        userData.coins = String(userData.coins);
-        userData.xp = String(userData.xp);
-        userData.banana_box = String(userData.banana_box);
-        userData.theme = updatedUser.theme !== undefined && updatedUser.theme !== null 
-          ? Number(updatedUser.theme) 
-          : (inventoryObj._theme !== undefined ? Number(inventoryObj._theme) : theme);
-        userData.unlocked_themes = updatedUser.unlocked_themes || inventoryObj._unlocked_themes || unlockedThemes;
-        return res.json({ success: true, user: userData });
+      const { password: _, ...userData } = updatedUser;
+      userData.score = String(userData.score);
+      userData.coins = String(userData.coins);
+      userData.xp = String(userData.xp);
+      userData.banana_box = String(userData.banana_box);
+      userData.theme = safeTheme;
+      userData.unlocked_themes = safeUnlockedThemes;
+      userData.meta = meta;
+      return res.json({ success: true, user: userData });
     }
-    
+
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -437,8 +592,9 @@ app.get("/api/global-inventory", async (req, res) => {
       
       if (inv && typeof inv === 'object' && inv !== null) {
         for (const skinId in inv) {
+          if (skinId.startsWith('_') || !SKINS_METADATA[skinId]) continue;
           const count = Number(inv[skinId]);
-          if (!isNaN(count)) {
+          if (!isNaN(count) && count > 0) {
             totals[skinId] = (totals[skinId] || 0) + count;
           }
         }
@@ -659,7 +815,7 @@ app.get("/api/server-status", async (req, res) => {
       const token = authHeader.split(' ')[1];
       if (token) {
         try {
-          const user = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
+          const user = jwt.verify(token, JWT_SECRET) as any;
           if (user && user.userId) {
               await supabase.from('database').update({ updated_at: new Date().toISOString() }).eq('id', user.userId);
           }
@@ -758,9 +914,19 @@ app.post("/api/creator-code/claim", authenticateToken, async (req: any, res) => 
   }
 });
 
-// Play Game (Server-side result generation)
+// Play Game (100% Server-authoritative result generation, progression & validation)
 app.post("/api/play", authenticateToken, async (req: any, res) => {
-    const { clientScore, gameMode, betAmount, betColor, isBonusBet, bonusBetAmount, bonusBetSelection, activeGadgets: clientActiveGadgets, guess, action, caseType, multiplier, bjResult, dealerScore: reqDealerScore, playerScore: reqPlayerScore, taxPenalty } = req.body;
+    const {
+      gameMode,
+      betAmount,
+      betColor,
+      isBonusBet,
+      bonusBetAmount,
+      bonusBetSelection,
+      activeGadgets: clientActiveGadgets,
+      guess,
+      caseType
+    } = req.body;
     const userId = req.user.userId;
 
     try {
@@ -773,86 +939,131 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         }
 
         const { data: user, error: fetchError } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
-        
         if (fetchError || !user) return res.status(404).json({ error: "User not found" });
+
         if (user.banned) {
-            console.log(`[AUTO-UNBAN] Unbanning user ${userId} (Reason: ${user.ban_reason || 'Security false positive'}). Restoring player access.`);
             await supabase.from('database').update({ banned: false, ban_reason: null }).eq('id', userId);
-            user.banned = false;
-            user.ban_reason = null;
         }
 
-        let currentBananas = BigInt(user.score);
-        let winStreak = Number(user.win_streak || 0);
-        
-        // Ensure betAmount is a valid number/string before converting to BigInt
-        // In 'cases' mode, betAmount might be undefined, so we default to 0
-        const ballCount = gameMode === 'plinko' ? Math.max(1, Math.min(10, Number(req.body.ballCount) || 1)) : 1;
-        const bet = BigInt(betAmount || 0);
-        const bonusBet = BigInt(bonusBetAmount || 0);
-        let totalBet = (bet * BigInt(ballCount)) + (isBonusBet ? bonusBet : 0n);
+        let currentBananas = parseNonNegativeBigInt(user.score) ?? 0n;
+        let winStreak = Math.max(0, Number(user.win_streak || 0));
+        let userLevel = Math.max(1, Number(user.level || 1));
+        let userXp = Math.max(0, Number(user.xp || 0));
+        let vladimirStatus = Number(user.vladimir_quest_status || 0);
 
-        if (clientScore !== undefined && clientScore !== null) {
-            let caseCost = 0n;
-            if (gameMode === 'cases') {
-                caseCost = CASE_COSTS[req.body.caseType] || 0n;
+        const unlockedTitles: string[] = parseJsonSafe(user.unlocked_titles, []);
+        const unlockTitleServer = (tid: string) => {
+            if (!unlockedTitles.includes(tid)) unlockedTitles.push(tid);
+        };
+
+        const rawInventory = parseJsonSafe(user.inventory, {});
+        const { inv: newInventory, meta } = ensureUserMeta(rawInventory);
+
+        // Parse and validate bets strictly from DB / sanitized inputs (NEVER trust clientScore)
+        const parsedBet = parseNonNegativeBigInt(betAmount ?? 0);
+        const parsedBonus = parseNonNegativeBigInt(bonusBetAmount ?? 0);
+        if (parsedBet === null || parsedBonus === null) {
+            return res.status(400).json({ error: "Invalid bet amount." });
+        }
+
+        const ballCount = gameMode === 'plinko' ? Math.max(1, Math.min(10, Math.floor(Number(req.body.ballCount) || 1))) : 1;
+        const bet = parsedBet;
+        let bonusBet = (gameMode === 'slots' && isBonusBet) ? parsedBonus : 0n;
+        if (gameMode === 'slots' && isBonusBet) {
+            if (bonusBet <= 0n || bonusBet > bet / 2n) {
+                return res.status(400).json({ error: "Bonus bet must be positive and at most 50% of base bet." });
             }
-            currentBananas = BigInt(clientScore) + totalBet + caseCost;
+        } else {
+            bonusBet = 0n;
         }
 
-        if (gameMode !== 'cases' && gameMode !== 'crash_cashout' && gameMode !== 'hilo_guess' && gameMode !== 'mines_pick' && gameMode !== 'mines_cashout' && currentBananas < totalBet) {
-            // RELAXED DETECTION: Instead of banning, we return a 400 error. 
-            // This prevents false bans due to client-side tree harvesting not being synced yet.
-            // Only ban if the discrepancy is absurdly high (e.g. betting 1M+ over balance) 
-            // but for now let's just return a helpful error.
-            return res.status(400).json({ 
-                error: "Balance missmatch, Please Sync manually.",
-                serverBalance: String(currentBananas),
-                attemptedBet: String(totalBet)
-            });
+        let totalBet = (bet * BigInt(ballCount)) + bonusBet;
+
+        const unlockedGadgets: boolean[] = parseJsonSafe(user.gadgets, Array(10).fill(false));
+        const dbActiveGadgets: boolean[] = parseJsonSafe(user.active_gadgets, Array(10).fill(false));
+        const requestedGadgets = Array.isArray(clientActiveGadgets) ? clientActiveGadgets : dbActiveGadgets;
+        const activeGadgets: boolean[] = Array(10).fill(false);
+        let activeGadgetCount = 0;
+        for (let i = 0; i < 10; i++) {
+            if (Boolean(requestedGadgets[i]) && Boolean(unlockedGadgets[i]) && !GADGET_DATA[i]?.locked) {
+                if (activeGadgetCount < 2) {
+                    activeGadgets[i] = true;
+                    activeGadgetCount++;
+                }
+            }
         }
 
-        const unlockedGadgets = typeof user.gadgets === 'string' ? JSON.parse(user.gadgets) : (user.gadgets || []);
-        // We use client-provided activeGadgets for UI state, but we should validate they are owned
-        // For simplicity, we'll trust the client's activeGadgets choice but only if they own the gadget
-        const activeGadgets = (clientActiveGadgets || []).map((active: boolean, i: number) => active && unlockedGadgets[i]);
+        const ZERO_BET_MODES = new Set([
+            'cases', 'crash_cashout', 'crash_loss', 'hilo_guess',
+            'mines_pick', 'mines_cashout',
+            'poker_draw',
+            'blackjack_hit', 'blackjack_stand', 'blackjack_double', 'blackjack_split'
+        ]);
+
+        const START_MODES_NEEDING_POSITIVE_BET = new Set([
+            'roulette', 'slots', 'poker_start', 'crash_start', 'hilo_start',
+            'mines_start', 'plinko', 'horseracing', 'blackjack_start'
+        ]);
+
+        if (START_MODES_NEEDING_POSITIVE_BET.has(gameMode) && bet <= 0n) {
+            return res.status(400).json({ error: "Bet amount must be greater than 0." });
+        }
+
+        if (!ZERO_BET_MODES.has(gameMode)) {
+            if (currentBananas < totalBet) {
+                return res.status(400).json({
+                    error: "Insufficient bananas for this bet.",
+                    serverBalance: String(currentBananas),
+                    attemptedBet: String(totalBet)
+                });
+            }
+        }
 
         let winAmount = 0n;
         let resultData: any = {};
         let megaBetOutcome: 'win' | 'taxes' | 'none' = 'none';
         let isGameOutcomeResolved = true;
         let effectiveBet = totalBet;
-        
-        let newInventory = user.inventory;
-        if (typeof newInventory === 'string') {
-            try { newInventory = JSON.parse(newInventory); } catch(e) { newInventory = {}; }
-        }
-        if (!newInventory || typeof newInventory !== 'object') newInventory = {};
+        let resolvedGameCategory: string = gameMode;
+        const balanceBeforePlay = currentBananas;
 
         if (gameMode === 'roulette') {
+            if (!['red', 'black', 'green'].includes(String(betColor))) {
+                return res.status(400).json({ error: "Invalid roulette color." });
+            }
             const rand = Math.random();
             const pRed = activeGadgets[1] ? 0.42 : 0.46;
             const pBlack = activeGadgets[1] ? 0.42 : 0.46;
-            
-            let winningColor;
+
+            let winningColor: 'red' | 'black' | 'green';
             if (rand < pRed) winningColor = 'red';
             else if (rand < pRed + pBlack) winningColor = 'black';
             else winningColor = 'green';
 
             resultData.winningColor = winningColor;
+            advanceServerQuests(meta, 'roulette_spin', 1);
+            advanceServerQuests(meta, 'bets_placed', 1);
 
             if (betColor === winningColor) {
                 const mult = winningColor === 'green' ? 14n : 2n;
                 winAmount = bet * mult;
+                if (winningColor === 'green') {
+                    const gStreak = (rouletteGreenStreak.get(userId) || 0) + 1;
+                    rouletteGreenStreak.set(userId, gStreak);
+                    if (gStreak >= 3) unlockTitleServer('lucky_one');
+                } else {
+                    rouletteGreenStreak.set(userId, 0);
+                }
             } else {
+                rouletteGreenStreak.set(userId, 0);
                 winAmount = 0n;
             }
         } else if (gameMode === 'slots') {
             const slotCount = 6;
-            const resultSlots = [];
-            
+            const resultSlots: string[] = [];
+
             for (let i = 0; i < slotCount; i++) {
-                let r = Math.random() * 100;
+                const r = Math.random() * 100;
                 const jackpotChance = 1.8;
                 if (r < jackpotChance) {
                     resultSlots.push(JACKPOT_ICON);
@@ -869,6 +1080,8 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 }
             }
             resultData.slots = resultSlots;
+            advanceServerQuests(meta, 'slots_spin', 1);
+            advanceServerQuests(meta, 'bets_placed', 1);
 
             let totalWinMultiplier = 0;
             let winType = 'none';
@@ -877,160 +1090,376 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 const icons = indices.map(idx => resultSlots[idx]);
                 if (icons.every(icon => icon === icons[0])) {
                     if (icons[0] === JACKPOT_ICON) {
-                        if (winType === 'none' || winType === 'triple' || winType === 'double') winType = 'jackpot';
+                        winType = 'jackpot';
                         return 10;
                     }
                     if (winType === 'none' || winType === 'double') winType = 'triple';
                     return 3;
                 }
-                const counts: any = {};
+                const counts: Record<string, number> = {};
                 icons.forEach(icon => counts[icon] = (counts[icon] || 0) + 1);
-                if (Object.values(counts).some((c: any) => c >= 2)) {
+                if (Object.values(counts).some(c => c >= 2)) {
                     if (winType === 'none') winType = 'double';
                     return 1;
                 }
                 return 0;
             };
 
-            [ [0,1,2], [3,4,5] ].forEach(line => {
+            [[0, 1, 2], [3, 4, 5]].forEach(line => {
                 totalWinMultiplier += checkLine(line);
             });
-            
+
             resultData.winType = winType;
             winAmount = BigInt(Math.round(Number(bet) * totalWinMultiplier));
-            
-            // Bonus Bet
-            if (isBonusBet && bonusBetAmount > 0 && bonusBetSelection) {
+
+            if (isBonusBet && bonusBet > 0n && Array.isArray(bonusBetSelection) && bonusBetSelection.length === 3) {
                 const checkBonus = (indices: number[]) => indices.every((idx, i) => resultSlots[idx] === bonusBetSelection[i]);
-                let bonusWin = false;
-                if (checkBonus([0, 1, 2]) || checkBonus([3, 4, 5])) bonusWin = true;
-                if (bonusWin) {
-                    winAmount += BigInt(bonusBetAmount) * 50n;
+                if (checkBonus([0, 1, 2]) || checkBonus([3, 4, 5])) {
+                    winAmount += bonusBet * 50n;
                     resultData.bonusWin = true;
                 }
             }
-        } else if (gameMode === 'blackjack') {
-            const bjResults = Array.isArray(req.body.bjResult) ? req.body.bjResult : [req.body.bjResult];
-            const handBet = totalBet / BigInt(bjResults.length);
-            winAmount = 0n;
-            for (const res of bjResults) {
-                if (res === 'dealerBust') winAmount += activeGadgets[4] ? handBet * 5n / 2n : handBet * 2n;
-                else if (res === 'win') winAmount += handBet * 2n;
-                else if (res === 'blackjack') winAmount += handBet * 5n / 2n;
-                else if (res === 'push') winAmount += handBet;
+        } else if (gameMode === 'blackjack_start') {
+            if (activeBlackjackGames.has(userId)) {
+                return res.status(400).json({ error: "A Blackjack hand is already active." });
             }
-            resultData.reason = bjResults.join(', ');
-        } else if (gameMode === 'poker') {
-            const { pokerHand, pokerHeld } = req.body;
-            if (!Array.isArray(pokerHand) || pokerHand.length !== 5 || !Array.isArray(pokerHeld)) {
-                throw new Error("Invalid poker data");
-            }
-            
-            const suits = ['H', 'D', 'C', 'S'];
-            const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
-            let deck: {suit: string, rank: string}[] = [];
-            for (let s of suits) {
-                for (let r of ranks) {
-                    deck.push({suit: s, rank: r});
-                }
-            }
-            deck.sort(() => Math.random() - 0.5);
-            
-            let finalHand: any[] = [];
-            for (let i = 0; i < 5; i++) {
-                if (pokerHeld[i] && pokerHand[i]) {
-                    finalHand.push(pokerHand[i]);
-                    deck = deck.filter(c => !(c.rank === pokerHand[i].rank && c.suit === pokerHand[i].suit));
+            const deck = buildBlackjackDeck();
+            const playerHand = [deck.pop()!, deck.pop()!];
+            const dealerHand = [deck.pop()!, deck.pop()!];
+            const bjState = {
+                baseBet: bet,
+                totalBet: bet,
+                deck,
+                playerHand,
+                dealerHand,
+                splitHands: [] as { rank: string; suit: string }[][],
+                activeHand: 0,
+                isDoubleDown: false
+            };
+
+            advanceServerQuests(meta, 'bj_play', 1);
+            advanceServerQuests(meta, 'bets_placed', 1);
+
+            const pScore = calcBjScore(playerHand);
+            const dScore = calcBjScore(dealerHand);
+            if (pScore === 21) {
+                isGameOutcomeResolved = true;
+                effectiveBet = bet;
+                if (dScore === 21) {
+                    winAmount = bet;
+                    resultData = { bjStatus: 'finished', bjResults: ['push'], playerHand, splitHands: [], dealerHand, pScore, dScore, isNatural: false };
                 } else {
-                    finalHand.push(null);
+                    winAmount = (bet * 5n) / 2n;
+                    unlockTitleServer('card_shark');
+                    resultData = { bjStatus: 'finished', bjResults: ['blackjack'], playerHand, splitHands: [], dealerHand, pScore, dScore, isNatural: true };
+                }
+            } else {
+                activeBlackjackGames.set(userId, bjState);
+                winAmount = 0n;
+                isGameOutcomeResolved = false;
+                resultData = {
+                    bjStatus: 'playing',
+                    playerHand,
+                    splitHands: [],
+                    activeHand: 0,
+                    dealerVisible: [dealerHand[0]],
+                    dealerHiddenCount: 1,
+                    pScore
+                };
+            }
+        } else if (gameMode === 'blackjack_hit' || gameMode === 'blackjack_stand' || gameMode === 'blackjack_double' || gameMode === 'blackjack_split') {
+            const bj = activeBlackjackGames.get(userId);
+            if (!bj) return res.status(400).json({ error: "No active Blackjack game." });
+
+            const finalizeDealerAndScore = () => {
+                while (calcBjScore(bj.dealerHand) < 17 && bj.deck.length > 0) {
+                    bj.dealerHand.push(bj.deck.pop()!);
+                }
+                const dScore = calcBjScore(bj.dealerHand);
+                const hands = bj.splitHands.length > 0 ? bj.splitHands : [bj.playerHand];
+                const perHandBet = bj.totalBet / BigInt(hands.length);
+                const bjResults: string[] = [];
+                let totalOut = 0n;
+                for (const h of hands) {
+                    const pS = calcBjScore(h);
+                    if (pS > 21) {
+                        bjResults.push('bust');
+                    } else if (dScore > 21) {
+                        bjResults.push('dealerBust');
+                        totalOut += activeGadgets[4] ? (perHandBet * 5n) / 2n : perHandBet * 2n;
+                    } else if (dScore > pS) {
+                        bjResults.push('lose');
+                    } else if (dScore < pS) {
+                        bjResults.push('win');
+                        totalOut += perHandBet * 2n;
+                    } else {
+                        bjResults.push('push');
+                        totalOut += perHandBet;
+                    }
+                }
+                activeBlackjackGames.delete(userId);
+                isGameOutcomeResolved = true;
+                effectiveBet = bj.totalBet;
+                winAmount = totalOut;
+                resultData = {
+                    bjStatus: 'finished',
+                    bjResults,
+                    playerHand: bj.playerHand,
+                    splitHands: bj.splitHands,
+                    dealerHand: bj.dealerHand,
+                    dScore,
+                    totalBet: bj.totalBet.toString(),
+                    isDoubleDown: bj.isDoubleDown
+                };
+            };
+
+            if (gameMode === 'blackjack_split') {
+                if (bj.splitHands.length > 0 || bj.playerHand.length !== 2) {
+                    return res.status(400).json({ error: "Cannot split right now." });
+                }
+                if (bj.playerHand[0].rank !== bj.playerHand[1].rank && calcBjScore([bj.playerHand[0]]) !== calcBjScore([bj.playerHand[1]])) {
+                    return res.status(400).json({ error: "Cards do not match value for Split." });
+                }
+                if (currentBananas < bj.baseBet) {
+                    return res.status(400).json({ error: "Not enough bananas to Split!" });
+                }
+                totalBet = bj.baseBet;
+                bj.totalBet += bj.baseBet;
+                bj.splitHands = [
+                    [bj.playerHand[0], bj.deck.pop()!],
+                    [bj.playerHand[1], bj.deck.pop()!]
+                ];
+                bj.playerHand = [];
+                bj.activeHand = 0;
+
+                if (calcBjScore(bj.splitHands[0]) === 21) {
+                    bj.activeHand = 1;
+                    if (calcBjScore(bj.splitHands[1]) === 21) {
+                        finalizeDealerAndScore();
+                    }
+                }
+                if (activeBlackjackGames.has(userId)) {
+                    winAmount = 0n;
+                    isGameOutcomeResolved = false;
+                    resultData = {
+                        bjStatus: 'playing',
+                        playerHand: [],
+                        splitHands: bj.splitHands,
+                        activeHand: bj.activeHand,
+                        dealerVisible: [bj.dealerHand[0]],
+                        dealerHiddenCount: 1,
+                        totalBet: bj.totalBet.toString()
+                    };
+                }
+            } else if (gameMode === 'blackjack_double') {
+                if (bj.splitHands.length > 0 || bj.playerHand.length !== 2) {
+                    return res.status(400).json({ error: "Cannot Double Down right now." });
+                }
+                if (currentBananas < bj.baseBet) {
+                    return res.status(400).json({ error: "Not enough bananas to Double Down!" });
+                }
+                totalBet = bj.baseBet;
+                bj.totalBet += bj.baseBet;
+                bj.isDoubleDown = true;
+                bj.playerHand.push(bj.deck.pop()!);
+                if (calcBjScore(bj.playerHand) > 21) {
+                    activeBlackjackGames.delete(userId);
+                    isGameOutcomeResolved = true;
+                    effectiveBet = bj.totalBet;
+                    winAmount = 0n;
+                    resultData = {
+                        bjStatus: 'finished',
+                        bjResults: ['bust'],
+                        playerHand: bj.playerHand,
+                        splitHands: [],
+                        dealerHand: bj.dealerHand,
+                        dScore: calcBjScore(bj.dealerHand),
+                        totalBet: bj.totalBet.toString(),
+                        isDoubleDown: true
+                    };
+                } else {
+                    finalizeDealerAndScore();
+                }
+            } else if (gameMode === 'blackjack_hit') {
+                totalBet = 0n;
+                const hand = bj.splitHands.length > 0 ? bj.splitHands[bj.activeHand] : bj.playerHand;
+                hand.push(bj.deck.pop()!);
+                if (calcBjScore(hand) > 21) {
+                    if (bj.splitHands.length > 0) {
+                        if (bj.activeHand === 0) {
+                            bj.activeHand = 1;
+                            winAmount = 0n;
+                            isGameOutcomeResolved = false;
+                            resultData = {
+                                bjStatus: 'playing',
+                                playerHand: bj.playerHand,
+                                splitHands: bj.splitHands,
+                                activeHand: bj.activeHand,
+                                dealerVisible: [bj.dealerHand[0]],
+                                dealerHiddenCount: 1,
+                                totalBet: bj.totalBet.toString()
+                            };
+                        } else {
+                            finalizeDealerAndScore();
+                        }
+                    } else {
+                        activeBlackjackGames.delete(userId);
+                        isGameOutcomeResolved = true;
+                        effectiveBet = bj.totalBet;
+                        winAmount = 0n;
+                        resultData = {
+                            bjStatus: 'finished',
+                            bjResults: ['bust'],
+                            playerHand: bj.playerHand,
+                            splitHands: [],
+                            dealerHand: bj.dealerHand,
+                            dScore: calcBjScore(bj.dealerHand),
+                            totalBet: bj.totalBet.toString()
+                        };
+                    }
+                } else {
+                    winAmount = 0n;
+                    isGameOutcomeResolved = false;
+                    resultData = {
+                        bjStatus: 'playing',
+                        playerHand: bj.playerHand,
+                        splitHands: bj.splitHands,
+                        activeHand: bj.activeHand,
+                        dealerVisible: [bj.dealerHand[0]],
+                        dealerHiddenCount: 1,
+                        totalBet: bj.totalBet.toString()
+                    };
+                }
+            } else if (gameMode === 'blackjack_stand') {
+                totalBet = 0n;
+                if (bj.splitHands.length > 0 && bj.activeHand === 0) {
+                    bj.activeHand = 1;
+                    winAmount = 0n;
+                    isGameOutcomeResolved = false;
+                    resultData = {
+                        bjStatus: 'playing',
+                        playerHand: bj.playerHand,
+                        splitHands: bj.splitHands,
+                        activeHand: bj.activeHand,
+                        dealerVisible: [bj.dealerHand[0]],
+                        dealerHiddenCount: 1,
+                        totalBet: bj.totalBet.toString()
+                    };
+                } else {
+                    finalizeDealerAndScore();
                 }
             }
-            
-            for (let i = 0; i < 5; i++) {
-                if (!finalHand[i]) {
-                    finalHand[i] = deck.pop();
-                }
+            resolvedGameCategory = 'blackjack';
+        } else if (gameMode === 'blackjack') {
+            return res.status(400).json({ error: "Direct client Blackjack settlement is disabled. Use blackjack_start." });
+        } else if (gameMode === 'poker_start') {
+            if (activeVideoPokerGames.has(userId)) {
+                return res.status(400).json({ error: "A Video Poker hand is already active." });
             }
-            
-            const rankValues: Record<string, number> = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14};
-            
-            let ranksInHand = finalHand.map(c => rankValues[c.rank]).sort((a,b) => a-b);
-            let suitsInHand = finalHand.map(c => c.suit);
-            
-            let isFlush = suitsInHand.every(s => s === suitsInHand[0]);
+            const deck = buildBlackjackDeck();
+            const initialHand = [deck.pop()!, deck.pop()!, deck.pop()!, deck.pop()!, deck.pop()!];
+            activeVideoPokerGames.set(userId, { betAmount: bet, deck, initialHand });
+            winAmount = 0n;
+            isGameOutcomeResolved = false;
+            resultData = { initialHand };
+            advanceServerQuests(meta, 'poker_play', 1);
+            advanceServerQuests(meta, 'bets_placed', 1);
+        } else if (gameMode === 'poker_draw') {
+            const activeVp = activeVideoPokerGames.get(userId);
+            if (!activeVp) return res.status(400).json({ error: "No active Video Poker hand." });
+            activeVideoPokerGames.delete(userId);
+
+            const heldArr = Array.isArray(req.body.pokerHeld) ? req.body.pokerHeld : [];
+            const finalHand = activeVp.initialHand.map((card, i) => (heldArr[i] ? card : activeVp.deck.pop()!));
+
+            const rankValues: Record<string, number> = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14 };
+            const ranksInHand = finalHand.map(c => rankValues[c.rank]).sort((a, b) => a - b);
+            const suitsInHand = finalHand.map(c => c.suit);
+
+            const isFlush = suitsInHand.every(s => s === suitsInHand[0]);
             let isStraight = false;
-            
             if (ranksInHand[4] - ranksInHand[0] === 4 && new Set(ranksInHand).size === 5) isStraight = true;
-            if (ranksInHand[4] === 14 && ranksInHand[3] === 5 && ranksInHand[2] === 4 && ranksInHand[1] === 3 && ranksInHand[0] === 2) {
-                isStraight = true;
-            }
-            
-            let counts: Record<number, number> = {};
-            for (let r of ranksInHand) counts[r] = (counts[r] || 0) + 1;
-            let countVals = Object.values(counts).sort((a: any, b: any) => b-a);
-            
-            let multiplier = 0n;
+            if (ranksInHand[4] === 14 && ranksInHand[3] === 5 && ranksInHand[2] === 4 && ranksInHand[1] === 3 && ranksInHand[0] === 2) isStraight = true;
+
+            const counts: Record<number, number> = {};
+            for (const r of ranksInHand) counts[r] = (counts[r] || 0) + 1;
+            const countVals = Object.values(counts).sort((a, b) => b - a);
+
+            let mult = 0n;
             let handName = "";
-            
             if (isFlush && isStraight && ranksInHand[4] === 14 && ranksInHand[0] === 10) {
-                multiplier = 800n; handName = "ROYAL FLUSH";
+                mult = 800n; handName = "ROYAL FLUSH";
             } else if (isFlush && isStraight) {
-                multiplier = 50n; handName = "STRAIGHT FLUSH";
+                mult = 50n; handName = "STRAIGHT FLUSH";
             } else if (countVals[0] === 4) {
-                multiplier = 25n; handName = "FOUR OF A KIND";
+                mult = 25n; handName = "FOUR OF A KIND";
             } else if (countVals[0] === 3 && countVals[1] === 2) {
-                multiplier = 9n; handName = "FULL HOUSE";
+                mult = 9n; handName = "FULL HOUSE";
             } else if (isFlush) {
-                multiplier = 6n; handName = "FLUSH";
+                mult = 6n; handName = "FLUSH";
             } else if (isStraight) {
-                multiplier = 4n; handName = "STRAIGHT";
+                mult = 4n; handName = "STRAIGHT";
             } else if (countVals[0] === 3) {
-                multiplier = 3n; handName = "THREE OF A KIND";
+                mult = 3n; handName = "THREE OF A KIND";
             } else if (countVals[0] === 2 && countVals[1] === 2) {
-                multiplier = 2n; handName = "TWO PAIR";
+                mult = 2n; handName = "TWO PAIR";
             } else if (countVals[0] === 2) {
-                let pairRank = parseInt(Object.keys(counts).find(k => counts[k] === 2) || "0");
+                const pairRank = parseInt(Object.keys(counts).find(k => counts[Number(k)] === 2) || "0", 10);
                 if (pairRank >= 11) {
-                    multiplier = 1n; handName = "JACKS OR BETTER";
+                    mult = 1n; handName = "JACKS OR BETTER";
                 }
             }
-            
-            winAmount = multiplier > 0n ? totalBet * multiplier : 0n;
-            resultData = { finalHand, handName };
+
+            effectiveBet = activeVp.betAmount;
+            totalBet = 0n; // Already deducted at poker_start
+            winAmount = mult > 0n ? activeVp.betAmount * mult : 0n;
+            resultData = { finalHand, handName, originalBet: activeVp.betAmount.toString() };
+            isGameOutcomeResolved = true;
+            if (["FULL HOUSE", "FOUR OF A KIND", "STRAIGHT FLUSH", "ROYAL FLUSH"].includes(handName)) {
+                unlockTitleServer('card_shark');
+            }
+            resolvedGameCategory = 'poker';
+        } else if (gameMode === 'poker') {
+            return res.status(400).json({ error: "Direct client Poker settlement is disabled. Use poker_start." });
         } else if (gameMode === 'crash_start') {
-            // Generate a random crash point with a slight house edge
-            // e.g., Crash Point = 1.0 / Random(0..1) with a 5% instant crash chance
             let crashPoint = 1.0;
             if (Math.random() >= 0.05) {
                 crashPoint = parseFloat((1.00 / Math.random()).toFixed(2));
             }
             if (crashPoint > 1000) crashPoint = 1000;
-            activeCrashGames.set(user.id, { betAmount: totalBet, crashPoint });
+            activeCrashGames.set(userId, { betAmount: totalBet, crashPoint });
             winAmount = 0n;
             resultData.crashPoint = crashPoint;
             isGameOutcomeResolved = false;
+            advanceServerQuests(meta, 'crash_play', 1);
+            advanceServerQuests(meta, 'bets_placed', 1);
         } else if (gameMode === 'crash_cashout') {
-            const activeGame = activeCrashGames.get(user.id);
+            const activeGame = activeCrashGames.get(userId);
             if (!activeGame) return res.status(400).json({ error: "No active crash game" });
-            activeCrashGames.delete(user.id);
+            activeCrashGames.delete(userId);
             effectiveBet = activeGame.betAmount;
-            
+
             const requestedMultiplier = Number(req.body.multiplier);
+            if (!Number.isFinite(requestedMultiplier) || requestedMultiplier < 1.0) {
+                return res.status(400).json({ error: "Invalid cashout multiplier." });
+            }
             if (requestedMultiplier <= activeGame.crashPoint) {
                 winAmount = BigInt(Math.round(Number(activeGame.betAmount) * requestedMultiplier));
                 resultData.winAmount = winAmount.toString();
                 resultData.status = 'win';
+                resultData.multiplier = requestedMultiplier;
+                if (requestedMultiplier >= 10.0) unlockTitleServer('rocket_rider');
             } else {
                 winAmount = 0n;
                 resultData.status = 'crash';
             }
-            totalBet = 0n; // Bet was already deducted in crash_start
+            totalBet = 0n;
             isGameOutcomeResolved = true;
         } else if (gameMode === 'crash_loss') {
-            const activeGame = activeCrashGames.get(user.id);
-            const originalBet = activeGame ? activeGame.betAmount : BigInt(req.body.betAmount || 0);
-            if (activeGame) activeCrashGames.delete(user.id);
-            effectiveBet = originalBet;
+            const activeGame = activeCrashGames.get(userId);
+            if (!activeGame) return res.status(400).json({ error: "No active crash game" });
+            activeCrashGames.delete(userId);
+            effectiveBet = activeGame.betAmount;
             winAmount = 0n;
             resultData = { status: 'crash' };
             totalBet = 0n;
@@ -1041,55 +1470,40 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 { r: '6', v: 6 }, { r: '7', v: 7 }, { r: '8', v: 8 }, { r: '9', v: 9 },
                 { r: '10', v: 10 }, { r: 'J', v: 11 }, { r: 'Q', v: 12 }, { r: 'K', v: 13 }, { r: 'A', v: 14 }
             ];
-            
-            const getRankWeight = (v: number) => {
-                if (v >= 6 && v <= 9) return 100;
-                return 0;
-            };
-
+            const getRankWeight = (v: number) => (v >= 6 && v <= 9) ? 100 : 0;
             const totalWeight = ranks.reduce((sum, rank) => sum + getRankWeight(rank.v), 0);
             let randomWeight = Math.floor(Math.random() * totalWeight);
             let selectedRank = ranks[0];
-            
             for (const rank of ranks) {
                 const weight = getRankWeight(rank.v);
-                if (randomWeight < weight) {
-                    selectedRank = rank;
-                    break;
-                }
+                if (randomWeight < weight) { selectedRank = rank; break; }
                 randomWeight -= weight;
             }
-
             const suits = ['S', 'H', 'D', 'C'];
-            const firstCard = { 
-                rank: selectedRank,
-                suit: suits[Math.floor(Math.random() * suits.length)]
-            };
-            const cardObj = { rank: firstCard.rank.r, suit: firstCard.suit, value: firstCard.rank.v };
-            
-            activeHiloGames.set(user.id, { betAmount: totalBet, firstCard: cardObj });
+            const cardObj = { rank: selectedRank.r, suit: suits[Math.floor(Math.random() * suits.length)], value: selectedRank.v };
+            activeHiloGames.set(userId, { betAmount: totalBet, firstCard: cardObj });
             winAmount = 0n;
             resultData.firstCard = cardObj;
             isGameOutcomeResolved = false;
+            advanceServerQuests(meta, 'bets_placed', 1);
         } else if (gameMode === 'hilo_guess') {
-            const activeGame = activeHiloGames.get(user.id);
+            const activeGame = activeHiloGames.get(userId);
             if (!activeGame) return res.status(400).json({ error: "No active hilo game" });
-            activeHiloGames.delete(user.id);
+            if (guess !== 'higher' && guess !== 'lower') {
+                return res.status(400).json({ error: "Invalid guess." });
+            }
+            activeHiloGames.delete(userId);
             effectiveBet = activeGame.betAmount;
-            
-            const guess = req.body.guess; // 'higher' or 'lower'
+
             const ranks = [
                 { r: '2', v: 2 }, { r: '3', v: 3 }, { r: '4', v: 4 }, { r: '5', v: 5 },
                 { r: '6', v: 6 }, { r: '7', v: 7 }, { r: '8', v: 8 }, { r: '9', v: 9 },
                 { r: '10', v: 10 }, { r: 'J', v: 11 }, { r: 'Q', v: 12 }, { r: 'K', v: 13 }, { r: 'A', v: 14 }
             ];
             const suits = ['S', 'H', 'D', 'C'];
-            const secondCard = { 
-                rank: ranks[Math.floor(Math.random() * ranks.length)],
-                suit: suits[Math.floor(Math.random() * suits.length)]
-            };
-            const cardObj = { rank: secondCard.rank.r, suit: secondCard.suit, value: secondCard.rank.v };
-            
+            const picked = ranks[Math.floor(Math.random() * ranks.length)];
+            const cardObj = { rank: picked.r, suit: suits[Math.floor(Math.random() * suits.length)], value: picked.v };
+
             let won = false;
             let push = false;
             if (cardObj.value === activeGame.firstCard.value) push = true;
@@ -1097,7 +1511,7 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             else if (guess === 'lower' && cardObj.value < activeGame.firstCard.value) won = true;
 
             if (push) {
-                winAmount = activeGame.betAmount; // Refund
+                winAmount = activeGame.betAmount;
                 resultData.status = 'push';
             } else if (won) {
                 winAmount = activeGame.betAmount * 2n;
@@ -1108,31 +1522,22 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             }
             resultData.winAmount = winAmount.toString();
             resultData.secondCard = cardObj;
-            totalBet = 0n; // Bet was already deducted
+            resultData.originalBet = activeGame.betAmount.toString();
+            totalBet = 0n;
             isGameOutcomeResolved = true;
         } else if (gameMode === 'mines_start') {
             const rawMines = Number(req.body.mineCount) || 3;
             const mineCount = Math.max(1, Math.min(24, rawMines));
-            
-            // Pick unique random mine positions from 0 to 24
             const allIndices = Array.from({ length: 25 }, (_, i) => i);
             for (let i = allIndices.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [allIndices[i], allIndices[j]] = [allIndices[j], allIndices[i]];
             }
             const mines = allIndices.slice(0, mineCount);
-            
-            activeMinesGames.set(user.id, {
-                betAmount: totalBet,
-                mineCount,
-                mines,
-                revealed: [],
-                currentMultiplier: 1.0
-            });
-            
-            const lastSonar = userSonarCooldowns.get(user.id) || 0;
-            const sonarCooldownLeft = Math.max(0, 60000 - (Date.now() - lastSonar));
+            activeMinesGames.set(userId, { betAmount: totalBet, mineCount, mines, revealed: [], currentMultiplier: 1.0 });
 
+            const lastSonar = userSonarCooldowns.get(userId) || 0;
+            const sonarCooldownLeft = Math.max(0, 60000 - (Date.now() - lastSonar));
             winAmount = 0n;
             resultData = {
                 status: 'started',
@@ -1142,43 +1547,38 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 sonarEligible: mineCount <= 15 && sonarCooldownLeft === 0
             };
             isGameOutcomeResolved = false;
+            advanceServerQuests(meta, 'bets_placed', 1);
         } else if (gameMode === 'mines_pick') {
-            const activeGame = activeMinesGames.get(user.id);
+            const activeGame = activeMinesGames.get(userId);
             if (!activeGame) return res.status(400).json({ error: "No active mines game" });
-            
+
             const tileIndex = Number(req.body.tileIndex);
-            if (isNaN(tileIndex) || tileIndex < 0 || tileIndex >= 25) {
+            if (!Number.isInteger(tileIndex) || tileIndex < 0 || tileIndex >= 25) {
                 return res.status(400).json({ error: "Invalid tile index" });
             }
             if (activeGame.revealed.includes(tileIndex)) {
                 return res.status(400).json({ error: "Tile already revealed" });
             }
-            
+
             const totalTiles = 25;
             const safeTiles = totalTiles - activeGame.mineCount;
-            
-            // Gadget 7 (Sonar Radar): Guaranteed safe first tile pick
-            // NERF: Only works when there are up to 15 mines, and only once every 1 minute (60s)
+
             let sonarTriggered = false;
             const now = Date.now();
-            const lastSonar = userSonarCooldowns.get(user.id) || 0;
-            const isSonarOnCooldown = (now - lastSonar) < 60000;
-            const isEligibleMineCount = activeGame.mineCount <= 15;
-
-            if (activeGadgets[7] && activeGame.revealed.length === 0 && isEligibleMineCount && !isSonarOnCooldown && activeGame.mines.includes(tileIndex)) {
+            const lastSonar = userSonarCooldowns.get(userId) || 0;
+            if (activeGadgets[7] && activeGame.revealed.length === 0 && activeGame.mineCount <= 15 && (now - lastSonar) >= 60000 && activeGame.mines.includes(tileIndex)) {
                 const safeCandidates = Array.from({ length: 25 }, (_, i) => i).filter(idx => idx !== tileIndex && !activeGame.mines.includes(idx));
                 if (safeCandidates.length > 0) {
                     const newMine = safeCandidates[Math.floor(Math.random() * safeCandidates.length)];
                     activeGame.mines = activeGame.mines.map((m: number) => m === tileIndex ? newMine : m);
                     sonarTriggered = true;
-                    userSonarCooldowns.set(user.id, now);
+                    userSonarCooldowns.set(userId, now);
                 }
             }
 
             if (activeGame.mines.includes(tileIndex)) {
-                // Hit a mine!
                 const originalBet = activeGame.betAmount;
-                activeMinesGames.delete(user.id);
+                activeMinesGames.delete(userId);
                 effectiveBet = originalBet;
                 winAmount = 0n;
                 resultData = {
@@ -1188,40 +1588,33 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                     revealed: activeGame.revealed,
                     winAmount: "0",
                     sonarProtected: false,
-                    sonarCooldownLeft: Math.max(0, 60000 - (Date.now() - (userSonarCooldowns.get(user.id) || 0)))
+                    sonarCooldownLeft: Math.max(0, 60000 - (Date.now() - (userSonarCooldowns.get(userId) || 0)))
                 };
-                totalBet = 0n; // Bet was already deducted at start
+                totalBet = 0n;
                 isGameOutcomeResolved = true;
             } else {
-                // Safe tile!
                 activeGame.revealed.push(tileIndex);
                 const k = activeGame.revealed.length;
-                
-                // Multiplier calculation with 97% RTP
                 let prob = 1.0;
-                for (let i = 0; i < k; i++) {
-                    prob *= (safeTiles - i) / (totalTiles - i);
-                }
+                for (let i = 0; i < k; i++) prob *= (safeTiles - i) / (totalTiles - i);
                 const mult = Math.max(1.01, parseFloat((0.97 / prob).toFixed(2)));
                 activeGame.currentMultiplier = mult;
-                
-                // Next tile multiplier
+
                 let nextMult = mult;
                 if (k < safeTiles) {
                     let nextProb = 1.0;
-                    for (let i = 0; i < k + 1; i++) {
-                        nextProb *= (safeTiles - i) / (totalTiles - i);
-                    }
+                    for (let i = 0; i < k + 1; i++) nextProb *= (safeTiles - i) / (totalTiles - i);
                     nextMult = Math.max(1.02, parseFloat((0.97 / nextProb).toFixed(2)));
                 }
-                
+
                 const isCleared = activeGame.revealed.length >= safeTiles;
-                const cooldownLeft = sonarTriggered ? 60000 : Math.max(0, 60000 - (Date.now() - (userSonarCooldowns.get(user.id) || 0)));
+                const cooldownLeft = sonarTriggered ? 60000 : Math.max(0, 60000 - (Date.now() - (userSonarCooldowns.get(userId) || 0)));
                 if (isCleared) {
                     const originalBet = activeGame.betAmount;
                     effectiveBet = originalBet;
                     winAmount = BigInt(Math.round(Number(originalBet) * mult));
-                    activeMinesGames.delete(user.id);
+                    activeMinesGames.delete(userId);
+                    if (k >= 5) unlockTitleServer('mine_sweeper');
                     resultData = {
                         status: 'cleared',
                         tileIndex,
@@ -1251,20 +1644,22 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 }
             }
         } else if (gameMode === 'mines_cashout') {
-            const activeGame = activeMinesGames.get(user.id);
+            const activeGame = activeMinesGames.get(userId);
             if (!activeGame) return res.status(400).json({ error: "No active mines game" });
             if (activeGame.revealed.length === 0) return res.status(400).json({ error: "Cannot cashout without uncovering a tile" });
-            
+
             const originalBet = activeGame.betAmount;
-            activeMinesGames.delete(user.id);
+            activeMinesGames.delete(userId);
             effectiveBet = originalBet;
             winAmount = BigInt(Math.round(Number(originalBet) * activeGame.currentMultiplier));
+            if (activeGame.revealed.length >= 5) unlockTitleServer('mine_sweeper');
             resultData = {
                 status: 'cashout',
                 mines: activeGame.mines,
                 revealed: activeGame.revealed,
                 finalMultiplier: activeGame.currentMultiplier,
-                winAmount: winAmount.toString()
+                winAmount: winAmount.toString(),
+                originalBet: originalBet.toString()
             };
             totalBet = 0n;
             isGameOutcomeResolved = true;
@@ -1273,11 +1668,12 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             const rows = [8, 10, 12, 14, 16].includes(rawRows) ? rawRows : 12;
             const rawRisk = String(req.body.risk || 'medium').toLowerCase();
             const risk = ['low', 'medium', 'high', 'gorilla'].includes(rawRisk) ? rawRisk : 'medium';
-            const count = Math.max(1, Math.min(10, Number(req.body.ballCount) || 1));
+            const count = ballCount;
 
             const table = PLINKO_PAYOUTS[rows]?.[risk] || PLINKO_PAYOUTS[12]['medium'];
-            const drops = [];
+            const drops: any[] = [];
             let totalPlinkoWin = 0n;
+            let maxMult = 0;
 
             for (let b = 0; b < count; b++) {
                 const path: number[] = [];
@@ -1288,10 +1684,10 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                     if (step === 1) slotIndex++;
                 }
                 let mult = table[slotIndex] ?? 1.0;
-                // Gadget 8 (Bumper Cushion): Low multipliers below 0.6x receive a +0.2x cushion
                 if (activeGadgets[8] && mult < 0.6) {
                     mult = Number((mult + 0.2).toFixed(2));
                 }
+                if (mult > maxMult) maxMult = mult;
                 const ballWin = BigInt(Math.round(Number(bet) * mult));
                 totalPlinkoWin += ballWin;
                 drops.push({
@@ -1303,6 +1699,11 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 });
             }
 
+            if (maxMult >= 100) unlockTitleServer('plinko_master');
+            advanceServerQuests(meta, 'plinko_drop', count);
+            advanceServerQuests(meta, 'bets_placed', 1);
+            if (maxMult > 0) advanceServerQuests(meta, 'plinko_mult', 1, { mult: maxMult });
+
             winAmount = totalPlinkoWin;
             resultData = {
                 drops,
@@ -1313,25 +1714,18 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 winAmount: winAmount.toString()
             };
         } else if (gameMode === 'horseracing') {
-            const selectedHorse = Math.max(0, Math.min(9, Number(req.body.selectedHorse) || 0));
-            const rawChances = req.body.horseChances;
-            const chances: number[] = Array.isArray(rawChances) && rawChances.length === 10
-                ? rawChances.map((c: any) => Math.max(1, Number(c) || 10))
-                : [10, 10, 10, 10, 10, 10, 10, 10, 10, 10];
+            const selectedHorse = Math.max(0, Math.min(9, Math.floor(Number(req.body.selectedHorse) || 0)));
+            const chances = activeHorseOdds.get(userId) || generateFairHorseOdds();
+            activeHorseOdds.set(userId, generateFairHorseOdds()); // Rotate odds for next race
 
-            // Pre-determine finish order using weighted sampling without replacement
             const available = chances.map((w, idx) => ({ idx, weight: w }));
             const finishOrder: number[] = [];
-
             while (available.length > 0) {
                 const curTotal = available.reduce((sum, item) => sum + item.weight, 0);
                 let rnd = Math.random() * curTotal;
                 let pickedIndex = 0;
                 for (let i = 0; i < available.length; i++) {
-                    if (rnd < available[i].weight) {
-                        pickedIndex = i;
-                        break;
-                    }
+                    if (rnd < available[i].weight) { pickedIndex = i; break; }
                     rnd -= available[i].weight;
                 }
                 finishOrder.push(available[pickedIndex].idx);
@@ -1341,21 +1735,14 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
             const winner = finishOrder[0];
             const second = finishOrder[1];
             const third = finishOrder[2];
+            const placement = finishOrder.indexOf(selectedHorse) + 1;
+            let mult = 0.0;
+            if (placement === 1) { mult = 3.0; unlockTitleServer('derby_jockey'); }
+            else if (placement === 2) mult = 2.0;
+            else if (placement === 3) mult = 1.5;
 
-            const placement = finishOrder.indexOf(selectedHorse) + 1; // 1 to 10
-            let multiplier = 0;
-            if (placement === 1) {
-                multiplier = 3.0; // 1st place: 3x
-            } else if (placement === 2) {
-                multiplier = 2.0; // 2nd place: 2x
-            } else if (placement === 3) {
-                multiplier = 1.5; // 3rd place: 1.5x
-            } else {
-                multiplier = 0.0; // Bet lost
-            }
-
-            winAmount = BigInt(Math.floor(Number(bet) * multiplier));
-
+            winAmount = BigInt(Math.floor(Number(bet) * mult));
+            advanceServerQuests(meta, 'bets_placed', 1);
             resultData = {
                 finishOrder,
                 winner,
@@ -1363,37 +1750,36 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 third,
                 selectedHorse,
                 placement,
-                multiplier,
-                winAmount: winAmount.toString()
+                multiplier: mult,
+                winAmount: winAmount.toString(),
+                nextOdds: activeHorseOdds.get(userId)
             };
         } else if (gameMode === 'cases') {
-            const caseType = req.body.caseType; 
-            const cost = CASE_COSTS[caseType] || 0n;
+            if (!caseType || !(caseType in CASE_COSTS)) {
+                return res.status(400).json({ error: "Invalid case type" });
+            }
+            const cost = CASE_COSTS[caseType];
             if (currentBananas < cost) return res.status(400).json({ error: "Not enough bananas" });
             const r = Math.random() * 100;
             let rarity = 'Common';
-            
+
             if (caseType === 'void') {
-                // 10B Void Case: 4.5% Ominous, 40.5% Legendary, 40% Mythic, 15% Epic
                 if (r < 4.5) rarity = 'Ominous';
                 else if (r < 45.0) rarity = 'Legendary';
                 else if (r < 85.0) rarity = 'Mythic';
                 else rarity = 'Epic';
             } else if (caseType === 'abyssal') {
-                // 750M Abyssal Case: 1.5% Ominous, 28.5% Legendary, 40% Mythic, 30% Epic
                 if (r < 1.5) rarity = 'Ominous';
                 else if (r < 30.0) rarity = 'Legendary';
                 else if (r < 70.0) rarity = 'Mythic';
                 else rarity = 'Epic';
             } else if (caseType === 'cosmic') {
-                // 50M Cosmic Case: 0.5% Ominous, 14.5% Legendary, 35% Mythic, 35% Epic, 15% Rare
                 if (r < 0.5) rarity = 'Ominous';
                 else if (r < 15.0) rarity = 'Legendary';
                 else if (r < 50.0) rarity = 'Mythic';
                 else if (r < 85.0) rarity = 'Epic';
                 else rarity = 'Rare';
             } else if (caseType === 'toverland') {
-                // 2M Toverland Case: 0.05% Ominous, 5.95% Legendary, 18% Mythic, 36% Epic, 30% Rare, 10% Common
                 if (r < 0.05) rarity = 'Ominous';
                 else if (r < 6.0) rarity = 'Legendary';
                 else if (r < 24.0) rarity = 'Mythic';
@@ -1401,43 +1787,44 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
                 else if (r < 90.0) rarity = 'Rare';
                 else rarity = 'Common';
             } else if (caseType === 'jungle') {
-                // 500K Jungle Case: 2.5% Legendary, 10% Mythic, 25% Epic, 40% Rare, 22.5% Common
                 if (r < 2.5) rarity = 'Legendary';
                 else if (r < 12.5) rarity = 'Mythic';
                 else if (r < 37.5) rarity = 'Epic';
                 else if (r < 77.5) rarity = 'Rare';
                 else rarity = 'Common';
             } else if (caseType === 'booster') {
-                // 100K Booster Case
                 if (r < 1.0) rarity = 'Legendary';
                 else if (r < 5.0) rarity = 'Mythic';
                 else if (r < 20.0) rarity = 'Epic';
                 else if (r < 60.0) rarity = 'Rare';
                 else rarity = 'Common';
             } else {
-                // 10K Normal Case
                 if (r < 0.1) rarity = 'Legendary';
                 else if (r < 1.0) rarity = 'Mythic';
                 else if (r < 6.0) rarity = 'Epic';
                 else if (r < 30.0) rarity = 'Rare';
                 else rarity = 'Common';
             }
-            
+
             const skinPool = SKINS.filter(s => s.rarity === rarity);
             const selectedSkin = skinPool[Math.floor(Math.random() * skinPool.length)] || SKINS[0];
-            winAmount = 0n; 
+            winAmount = 0n;
             currentBananas -= cost;
-            newInventory[selectedSkin.id] = (newInventory[selectedSkin.id] || 0) + 1;
+            newInventory[selectedSkin.id] = (Number(newInventory[selectedSkin.id]) || 0) + 1;
+            advanceServerQuests(meta, 'case_open', 1, { highestRarity: rarity });
             resultData.skin = selectedSkin;
             resultData.rarity = rarity;
             resultData.cost = String(cost);
+        } else {
+            return res.status(400).json({ error: "Unsupported game mode." });
         }
 
         // --- MEGA BET GADGET (GLOBAL) ---
-        // User: "All-in risk: 25% chance for 100x win, 25% chance to lose all (Taxes)."
-        // Triggers on any traditional game win > 0 if gadget index 5 is active.
-        const isPushOutcome = resultData.status === 'push' || resultData.reason === 'push';
-        if (gameMode !== 'cases' && winAmount > 0n && !isPushOutcome && activeGadgets[5]) {
+        const isPushOutcome =
+            resultData.status === 'push' ||
+            (Array.isArray(resultData.bjResults) && resultData.bjResults.length === 1 && resultData.bjResults[0] === 'push');
+
+        if (gameMode !== 'cases' && isGameOutcomeResolved && winAmount > 0n && !isPushOutcome && activeGadgets[5]) {
             const r = Math.random();
             if (r < 0.05) {
                 winAmount = winAmount * 10n;
@@ -1451,86 +1838,156 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
         }
         resultData.megaBet = megaBetOutcome;
 
-        // Update balance and streak
+        // Server-side tax penalty check (never from req.body)
+        const serverTaxPenaltyActive = Number(meta.boosts?.tax_penalty || 0) > Date.now();
+
         let isWin = false;
         let isPush = false;
-        
-        if (gameMode !== 'cases') {
-            if (isGameOutcomeResolved) {
-                isWin = winAmount > effectiveBet;
-                isPush = (winAmount === effectiveBet && effectiveBet > 0n);
-                
-                // Failsafe Gadget (Index 0)
-                if (!isWin && !isPush && effectiveBet >= 100n && activeGadgets[0]) {
-                    if (Math.random() < 0.25) {
-                        winAmount = effectiveBet;
-                        resultData.failsafeActivated = true;
-                    }
-                }
-                
-                // Banana Streak Gadget (Multiplier)
-                // User: "when you have a 1+ win streak (so when you have won 2 times in a row) ... get a 2x multiplier"
-                // Translation: If winStreak >= 1 (they have won at least once before), double the win.
-                if (activeGadgets[3] && winStreak >= 1 && isWin) {
-                    winAmount = winAmount * 2n;
-                    resultData.streakMultiplierApplied = true;
-                }
-                
-                // Update streak counter
-                if (isWin) {
-                    winStreak++;
-                } else if (!isPush) {
-                    winStreak = 0;
+        let levelsGained = 0;
+
+        if (gameMode !== 'cases' && isGameOutcomeResolved) {
+            isWin = winAmount > effectiveBet;
+            isPush = (winAmount === effectiveBet && effectiveBet > 0n);
+
+            // Failsafe Gadget (Index 0)
+            if (!isWin && !isPush && effectiveBet >= 100n && activeGadgets[0]) {
+                if (Math.random() < 0.25) {
+                    winAmount = effectiveBet;
+                    isPush = true;
+                    resultData.failsafeActivated = true;
                 }
             }
+
+            // Banana Streak Gadget (Index 3)
+            if (activeGadgets[3] && winStreak >= 1 && isWin) {
+                winAmount = winAmount * 2n;
+                resultData.streakMultiplierApplied = true;
+            }
+
+            // Apply Tax Penalty on profit if active on server
+            if (serverTaxPenaltyActive && winAmount > effectiveBet) {
+                const profit = winAmount - effectiveBet;
+                winAmount = effectiveBet + (profit / 2n);
+            }
+
+            if (isWin) {
+                winStreak++;
+                if (winStreak >= 5) unlockTitleServer('hot_streak');
+                if (winStreak >= 10) unlockTitleServer('unstoppable');
+                if (winAmount >= 1000000n) unlockTitleServer('big_winner');
+                if (winAmount === 777n || effectiveBet === 777n) unlockTitleServer('lucky_seven');
+
+                // Server-authoritative XP Award (only on actual win)
+                const isBoosted = Number(meta.boosts?.xp || 0) > Date.now();
+                const boostMultiplier = isBoosted ? 2 : 1;
+                const baseLevelXp = 50 + (userLevel * 20) + (userLevel >= 25 ? (userLevel - 25) * 10 : 0) + (userLevel >= 50 ? (userLevel - 50) * 10 : 0);
+                const xpBasis = Math.min(1e15, Number(winAmount > 0n ? winAmount : effectiveBet));
+                const betBonus = xpBasis > 0 ? Math.floor(Math.min(userLevel * 35 + 500, Math.sqrt(xpBasis) * 2)) : 0;
+                const winBonus = Math.floor(baseLevelXp * 0.5);
+                const totalXpGain = Math.floor((baseLevelXp + betBonus + winBonus) * boostMultiplier);
+
+                userXp += totalXpGain;
+                while (userXp >= getXpForLevelServer(userLevel)) {
+                    userXp -= getXpForLevelServer(userLevel);
+                    userLevel++;
+                    levelsGained++;
+                }
+
+                // Quest completion updates
+                advanceServerQuests(meta, 'win_amount', Number(winAmount > 1000000000n ? 1000000000n : winAmount));
+                advanceServerQuests(meta, 'win_streak', winStreak, { streak: winStreak });
+                if (resolvedGameCategory === 'roulette') {
+                    advanceServerQuests(meta, 'roulette_win', 1, { isGreen: resultData.winningColor === 'green' });
+                } else if (resolvedGameCategory === 'slots') {
+                    advanceServerQuests(meta, 'slots_win', 1, { isTriple: resultData.winType === 'triple', isJackpot: resultData.winType === 'jackpot' });
+                } else if (resolvedGameCategory === 'blackjack') {
+                    advanceServerQuests(meta, 'bj_win', 1, { isNatural: Boolean(resultData.isNatural), isDouble: Boolean(resultData.isDoubleDown) });
+                } else if (resolvedGameCategory === 'poker') {
+                    advanceServerQuests(meta, 'poker_win', 1, { rank: resultData.handName });
+                } else if (resolvedGameCategory === 'crash_cashout') {
+                    advanceServerQuests(meta, 'crash_cashout', 1, { mult: resultData.multiplier });
+                } else if (resolvedGameCategory === 'hilo_guess') {
+                    advanceServerQuests(meta, 'hilo_correct', 1);
+                } else if (resolvedGameCategory === 'mines_cashout' || resolvedGameCategory === 'mines_pick') {
+                    advanceServerQuests(meta, 'mines_cashout', 1, { gems: Array.isArray(resultData.revealed) ? resultData.revealed.length : 0 });
+                }
+            } else if (!isPush) {
+                winStreak = 0;
+                if (effectiveBet >= 100000n) unlockTitleServer('unlucky');
+                if (effectiveBet === 777n) unlockTitleServer('lucky_seven');
+                // Track loss for Insurance gadget (Speed reload)
+                const lossAmt = effectiveBet > winAmount ? (effectiveBet - winAmount) : effectiveBet;
+                if (lossAmt > 0n) {
+                    lastLossForInsurance.set(userId, { amount: lossAmt, at: Date.now() });
+                }
+            }
+
+            // Title milestones for bet size & roulette green all-in Vladimir quest
+            if (effectiveBet > 0n) unlockTitleServer('newbie_monkey');
+            if (effectiveBet >= 500000n) unlockTitleServer('high_roller');
+            if (vladimirStatus === 1 && gameMode === 'roulette' && betColor === 'green' && !activeGadgets.some(Boolean) && balanceBeforePlay > 0n && bet >= balanceBeforePlay) {
+                vladimirStatus = 2;
+                resultData.vladimirCompleted = true;
+            }
+        } else if (!isGameOutcomeResolved && totalBet > 0n) {
+            unlockTitleServer('newbie_monkey');
+            if (totalBet >= 500000n) unlockTitleServer('high_roller');
         }
 
         resultData.winAmount = winAmount.toString();
         resultData.winStreak = winStreak;
 
-        if (taxPenalty && winAmount > effectiveBet && gameMode !== 'cases') {
-            const profit = winAmount - effectiveBet;
-            winAmount = effectiveBet + (profit / 2n);
-        }
-
         const newBananas = gameMode === 'cases' ? currentBananas : (currentBananas - totalBet + winAmount);
-        
-        let updatePayload: any = {
+
+        if (newBananas >= 1000000n) unlockTitleServer('banana_millionaire');
+        if (newBananas >= 100000000n) unlockTitleServer('banana_baron');
+        if (newBananas >= 1000000000n) unlockTitleServer('banana_billionaire');
+        if (userLevel >= 10) unlockTitleServer('apprentice_monkey');
+        if (userLevel >= 25) unlockTitleServer('the_dedicated');
+        if (userLevel >= 50) unlockTitleServer('veteran');
+        if (userLevel >= 75) unlockTitleServer('grand_casino_monarch');
+        if (userLevel >= 100) unlockTitleServer('the_myth_the_legend');
+
+        const updatePayload: any = {
             score: String(newBananas),
             win_streak: winStreak,
+            level: userLevel,
+            xp: userXp,
+            vladimir_quest_status: vladimirStatus,
+            unlocked_titles: JSON.stringify(unlockedTitles),
+            inventory: JSON.stringify(newInventory),
             updated_at: new Date().toISOString()
         };
-        
+
         // Royal Banana Pass Progress
         let earnedRoyalXP = 0;
-        if (gameMode !== 'cases') {
-            const isWin = winAmount > totalBet;
-            // Only count wins if the bet was more than 5% of entire balance
-            const isEligibleBet = currentBananas > 0n && totalBet >= currentBananas / 20n;
-            
-            if (isWin && isEligibleBet) {
+        if (gameMode !== 'cases' && isGameOutcomeResolved) {
+            const isEligibleBet = currentBananas > 0n && effectiveBet >= currentBananas / 20n;
+            if (winAmount > effectiveBet && isEligibleBet) {
                 updatePayload.royal_xp = (user.royal_xp || 0) + 1;
-                updatePayload.wins_since_royal_xp = 0; // Reset wins-since counter as it's no longer used for award
+                updatePayload.wins_since_royal_xp = 0;
                 earnedRoyalXP = 1;
             }
         }
 
-        if (gameMode === 'cases') {
-            updatePayload.inventory = JSON.stringify(newInventory);
-        }
-
         const { error: updateError } = await supabase.from('database').update(updatePayload).eq('id', userId);
-
         if (updateError) throw updateError;
 
         res.json({
             success: true,
             winAmount: String(winAmount),
             newBalance: String(newBananas),
-            winStreak: winStreak,
+            winStreak,
+            level: userLevel,
+            xp: userXp,
+            levelsGained,
+            unlockedTitles,
+            vladimirQuestStatus: vladimirStatus,
+            inventory: newInventory,
+            meta,
             result: resultData,
-            royalXP: updatePayload.royal_xp,
-            earnedRoyalXP: earnedRoyalXP
+            royalXP: updatePayload.royal_xp ?? user.royal_xp ?? 0,
+            earnedRoyalXP
         });
 
     } catch (error: any) {
@@ -1539,10 +1996,9 @@ app.post("/api/play", authenticateToken, async (req: any, res) => {
     }
 });
 
-// Get Current User Data
+// Get Current User Data (accrues elapsed Banana Box server-side)
 app.get("/api/me", authenticateToken, async (req: any, res) => {
   try {
-    console.log(`Fetching data for user: ${req.user.userId}`);
     const supabase = getSupabase();
     const { data: user, error } = await supabase
       .from('database')
@@ -1550,37 +2006,706 @@ app.get("/api/me", authenticateToken, async (req: any, res) => {
       .eq('id', req.user.userId)
       .maybeSingle();
 
-    if (error) {
-      console.error("Supabase /api/me error:", error);
-      throw error;
-    }
-    if (!user) {
-      console.warn(`User not found: ${req.user.userId}`);
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (error) throw error;
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Don't send password back to client
+    const rawInv = parseJsonSafe(user.inventory, {});
+    const { inv: syncedInv, meta } = ensureUserMeta(rawInv);
+    const treesArr = parseJsonSafe(user.trees, [1, ...Array(19).fill(0)]);
+    const { newBox, gained } = accrueTreeBoxFromElapsed(treesArr, parseNonNegativeBigInt(user.banana_box) ?? 0n, meta);
+
+    await supabase.from('database').update({
+      banana_box: String(newBox),
+      inventory: JSON.stringify(syncedInv)
+    }).eq('id', user.id);
+
     const { password: _, ...userData } = user;
     let userTheme = 0;
     let unlockedThemes = [0];
-    try {
-      const inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : user.inventory;
-      if (inv && inv._theme !== undefined) userTheme = Number(inv._theme);
-      if (inv && Array.isArray(inv._unlocked_themes)) unlockedThemes = inv._unlocked_themes;
-    } catch (e) {}
+    if (syncedInv._theme !== undefined) userTheme = Number(syncedInv._theme);
+    if (Array.isArray(syncedInv._unlocked_themes)) unlockedThemes = syncedInv._unlocked_themes;
     if (user.theme !== undefined && user.theme !== null) userTheme = Number(user.theme);
     if (user.unlocked_themes) {
-      try {
-        const dbThemes = typeof user.unlocked_themes === 'string' ? JSON.parse(user.unlocked_themes) : user.unlocked_themes;
-        if (Array.isArray(dbThemes)) unlockedThemes = dbThemes;
-      } catch (e) {}
+      const dbThemes = parseJsonSafe(user.unlocked_themes, null);
+      if (Array.isArray(dbThemes)) unlockedThemes = dbThemes;
     }
+
+    userData.banana_box = String(newBox);
+    userData.inventory = syncedInv;
     userData.theme = userTheme;
     userData.unlocked_themes = unlockedThemes;
+    userData.meta = meta;
+    userData.accruedBoxGain = String(gained);
     res.json(userData);
   } catch (error: any) {
     console.error("/api/me API error:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// --- AUTHORITATIVE ECONOMY & PROGRESSION ROUTES ---
+
+app.get("/api/horseracing/odds", authenticateToken, (req: any, res) => {
+  const userId = req.user.userId;
+  let odds = activeHorseOdds.get(userId);
+  if (!odds) {
+    odds = generateFairHorseOdds();
+    activeHorseOdds.set(userId, odds);
+  }
+  res.json({ success: true, odds });
+});
+
+function hasActiveBetSession(userId: string): boolean {
+  return activeBlackjackGames.has(userId) ||
+    activeMinesGames.has(userId) ||
+    activeCrashGames.has(userId) ||
+    activeHiloGames.has(userId) ||
+    activeVideoPokerGames.has(userId);
+}
+
+app.post("/api/tree/claim", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  if (hasActiveBetSession(userId)) {
+    return res.status(400).json({ error: "Cannot claim bananas while a bet is active!" });
+  }
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const treesArr = parseJsonSafe(user.trees, [1, ...Array(19).fill(0)]);
+    const { inv, meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    const { newBox } = accrueTreeBoxFromElapsed(treesArr, parseNonNegativeBigInt(user.banana_box) ?? 0n, meta);
+
+    if (newBox <= 0n) {
+      return res.json({ success: true, claimedAmount: "0", newBalance: String(user.score || 0), bananaBox: "0", meta });
+    }
+
+    const newScore = (parseNonNegativeBigInt(user.score) ?? 0n) + newBox;
+    advanceServerQuests(meta, 'banana_box_claim', 1);
+
+    const unlockedTitles: string[] = parseJsonSafe(user.unlocked_titles, []);
+    if (newScore >= 1000000n && !unlockedTitles.includes('banana_millionaire')) unlockedTitles.push('banana_millionaire');
+    if (newScore >= 100000000n && !unlockedTitles.includes('banana_baron')) unlockedTitles.push('banana_baron');
+    if (newScore >= 1000000000n && !unlockedTitles.includes('banana_billionaire')) unlockedTitles.push('banana_billionaire');
+
+    await supabase.from('database').update({
+      score: String(newScore),
+      banana_box: "0",
+      inventory: JSON.stringify(inv),
+      unlocked_titles: JSON.stringify(unlockedTitles)
+    }).eq('id', userId);
+
+    res.json({ success: true, claimedAmount: String(newBox), newBalance: String(newScore), bananaBox: "0", unlockedTitles, meta });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/tree/buy", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const idx = Number(req.body.index);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= 20) return res.status(400).json({ error: "Invalid tree slot" });
+  if (hasActiveBetSession(userId)) return res.status(400).json({ error: "Cannot buy trees during an active bet!" });
+
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const treesArr: number[] = parseJsonSafe(user.trees, [1, ...Array(19).fill(0)]);
+    while (treesArr.length < 20) treesArr.push(0);
+    if (treesArr[idx] > 0) return res.status(400).json({ error: "Plot already has a tree." });
+
+    const { inv, meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    const { newBox } = accrueTreeBoxFromElapsed(treesArr, parseNonNegativeBigInt(user.banana_box) ?? 0n, meta);
+
+    const hasDiscount = Number(meta.boosts?.discount || 0) > Date.now();
+    const cost = BigInt(hasDiscount ? Math.floor(TREE_DATA[1].cost * 0.75) : TREE_DATA[1].cost);
+    const currentScore = parseNonNegativeBigInt(user.score) ?? 0n;
+    if (currentScore < cost) return res.status(400).json({ error: "Not enough bananas!" });
+
+    const newScore = currentScore - cost;
+    treesArr[idx] = 1;
+    advanceServerQuests(meta, 'tree_buy_upgrade', 1);
+
+    const unlockedTitles: string[] = parseJsonSafe(user.unlocked_titles, []);
+    const addT = (t: string) => { if (!unlockedTitles.includes(t)) unlockedTitles.push(t); };
+    addT('investor');
+    addT('grove');
+    const totalLvl = treesArr.reduce((a, b) => a + (Number(b) || 0), 0);
+    if (totalLvl >= 10) addT('tree_planter');
+    if (totalLvl >= 50) addT('tree_lord');
+    if (totalLvl >= 100) addT('tree_god');
+
+    await supabase.from('database').update({
+      score: String(newScore),
+      banana_box: String(newBox),
+      trees: JSON.stringify(treesArr),
+      inventory: JSON.stringify(inv),
+      unlocked_titles: JSON.stringify(unlockedTitles)
+    }).eq('id', userId);
+
+    res.json({ success: true, newBalance: String(newScore), bananaBox: String(newBox), trees: treesArr, unlockedTitles, meta });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/tree/upgrade", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const idx = Number(req.body.index);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= 20) return res.status(400).json({ error: "Invalid tree slot" });
+  if (hasActiveBetSession(userId)) return res.status(400).json({ error: "Cannot upgrade trees during an active bet!" });
+
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const treesArr: number[] = parseJsonSafe(user.trees, [1, ...Array(19).fill(0)]);
+    while (treesArr.length < 20) treesArr.push(0);
+    const curLvl = Number(treesArr[idx] || 0);
+    const nextLvl = curLvl + 1;
+    if (curLvl <= 0 || nextLvl > 10 || !TREE_DATA[nextLvl]) {
+      return res.status(400).json({ error: "Tree is already at max level or not planted." });
+    }
+    if (TREE_DATA[nextLvl].reqAllTrees && !treesArr.every(t => Number(t) > 0)) {
+      return res.status(400).json({ error: "Unlock all 20 tree plots first!" });
+    }
+
+    const { inv, meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    const { newBox } = accrueTreeBoxFromElapsed(treesArr, parseNonNegativeBigInt(user.banana_box) ?? 0n, meta);
+
+    const hasDiscount = Number(meta.boosts?.discount || 0) > Date.now();
+    const cost = BigInt(hasDiscount ? Math.floor(TREE_DATA[nextLvl].cost * 0.75) : TREE_DATA[nextLvl].cost);
+    const currentScore = parseNonNegativeBigInt(user.score) ?? 0n;
+    if (currentScore < cost) return res.status(400).json({ error: "Not enough bananas!" });
+
+    const newScore = currentScore - cost;
+    treesArr[idx] = nextLvl;
+    advanceServerQuests(meta, 'tree_buy_upgrade', 1);
+
+    const unlockedTitles: string[] = parseJsonSafe(user.unlocked_titles, []);
+    const addT = (t: string) => { if (!unlockedTitles.includes(t)) unlockedTitles.push(t); };
+    const totalLvl = treesArr.reduce((a, b) => a + (Number(b) || 0), 0);
+    if (totalLvl >= 10) addT('tree_planter');
+    if (totalLvl >= 50) addT('tree_lord');
+    if (totalLvl >= 100) addT('tree_god');
+
+    await supabase.from('database').update({
+      score: String(newScore),
+      banana_box: String(newBox),
+      trees: JSON.stringify(treesArr),
+      inventory: JSON.stringify(inv),
+      unlocked_titles: JSON.stringify(unlockedTitles)
+    }).eq('id', userId);
+
+    res.json({ success: true, newBalance: String(newScore), bananaBox: String(newBox), trees: treesArr, unlockedTitles, meta });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/tree/sell", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const idx = Number(req.body.index);
+  if (!Number.isInteger(idx) || idx < 1 || idx >= 20) {
+    return res.status(400).json({ error: "Cannot sell the starter tree plot 0!" });
+  }
+  if (hasActiveBetSession(userId)) return res.status(400).json({ error: "Cannot sell trees during an active bet!" });
+
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const treesArr: number[] = parseJsonSafe(user.trees, [1, ...Array(19).fill(0)]);
+    const curLvl = Number(treesArr[idx] || 0);
+    if (curLvl <= 0) return res.status(400).json({ error: "No tree in this plot." });
+
+    const { inv, meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    const { newBox } = accrueTreeBoxFromElapsed(treesArr, parseNonNegativeBigInt(user.banana_box) ?? 0n, meta);
+
+    let totalCost = 0;
+    for (let l = 1; l <= curLvl; l++) totalCost += TREE_DATA[l]?.cost || 0;
+    const refund = BigInt(Math.floor(totalCost * 0.25));
+    const newScore = (parseNonNegativeBigInt(user.score) ?? 0n) + refund;
+    treesArr[idx] = 0;
+
+    await supabase.from('database').update({
+      score: String(newScore),
+      banana_box: String(newBox),
+      trees: JSON.stringify(treesArr),
+      inventory: JSON.stringify(inv)
+    }).eq('id', userId);
+
+    res.json({ success: true, refund: String(refund), newBalance: String(newScore), bananaBox: String(newBox), trees: treesArr, meta });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/gadget/buy", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const idx = Number(req.body.index);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= GADGET_DATA.length || GADGET_DATA[idx].locked) {
+    return res.status(400).json({ error: "Invalid or locked gadget." });
+  }
+  if (hasActiveBetSession(userId)) return res.status(400).json({ error: "Cannot buy gadgets during an active bet!" });
+
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const unlocked: boolean[] = parseJsonSafe(user.gadgets, Array(10).fill(false));
+    const active: boolean[] = parseJsonSafe(user.active_gadgets, Array(10).fill(false));
+    if (unlocked[idx]) return res.status(400).json({ error: "Gadget already unlocked." });
+
+    const cost = BigInt(GADGET_DATA[idx].cost);
+    const currentScore = parseNonNegativeBigInt(user.score) ?? 0n;
+    if (currentScore < cost) return res.status(400).json({ error: "Not enough bananas!" });
+
+    const newScore = currentScore - cost;
+    unlocked[idx] = true;
+    const activeCount = active.filter(Boolean).length;
+    if (activeCount < 2) active[idx] = true;
+
+    const unlockedTitles: string[] = parseJsonSafe(user.unlocked_titles, []);
+    const unlockedCount = unlocked.filter((g, i) => g && !GADGET_DATA[i]?.locked).length;
+    if (unlockedCount >= 9 && !unlockedTitles.includes('extra_hand')) {
+      unlockedTitles.push('extra_hand');
+    }
+
+    await supabase.from('database').update({
+      score: String(newScore),
+      gadgets: JSON.stringify(unlocked),
+      active_gadgets: JSON.stringify(active),
+      unlocked_titles: JSON.stringify(unlockedTitles)
+    }).eq('id', userId);
+
+    res.json({ success: true, newBalance: String(newScore), gadgets: unlocked, active_gadgets: active, unlockedTitles });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/gadget/toggle", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const idx = Number(req.body.index);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= GADGET_DATA.length || GADGET_DATA[idx].locked) {
+    return res.status(400).json({ error: "Invalid gadget." });
+  }
+  if (hasActiveBetSession(userId)) return res.status(400).json({ error: "Cannot toggle gadgets mid-round!" });
+
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('gadgets, active_gadgets').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const unlocked: boolean[] = parseJsonSafe(user.gadgets, Array(10).fill(false));
+    const active: boolean[] = parseJsonSafe(user.active_gadgets, Array(10).fill(false));
+    if (!unlocked[idx]) return res.status(400).json({ error: "You don't own this gadget." });
+
+    if (active[idx]) {
+      active[idx] = false;
+    } else {
+      if (active.filter(Boolean).length >= 2) {
+        return res.status(400).json({ error: "You can only activate up to 2 gadgets at once." });
+      }
+      active[idx] = true;
+    }
+
+    await supabase.from('database').update({ active_gadgets: JSON.stringify(active) }).eq('id', userId);
+    res.json({ success: true, active_gadgets: active });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/shop/status", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('inventory, coins').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { inv, meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    await supabase.from('database').update({ inventory: JSON.stringify(inv) }).eq('id', userId);
+    res.json({ success: true, shop: meta.shop, boosts: meta.boosts, coins: Number(user.coins || 0) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/shop/buy", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const idx = Number(req.body.index);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= SERVER_SHOP_ITEMS.length) {
+    return res.status(400).json({ error: "Invalid shop item." });
+  }
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('inventory, coins').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { inv, meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    const item = SERVER_SHOP_ITEMS[idx];
+    if (!meta.shop.stock[idx] || meta.shop.purchased[idx]) {
+      return res.status(400).json({ error: "Item is out of stock or already purchased." });
+    }
+    const currentCoins = Number(user.coins || 0);
+    if (currentCoins < item.cost) {
+      return res.status(400).json({ error: "Not enough coins!" });
+    }
+
+    const newCoins = currentCoins - item.cost;
+    meta.shop.purchased[idx] = true;
+    const now = Date.now();
+    if (item.id === 'banana_cloak') {
+      meta.boosts.banana_cloak = now + item.duration;
+    } else if (item.prop) {
+      meta.boosts[item.prop] = now + item.duration;
+    }
+
+    await supabase.from('database').update({
+      coins: newCoins,
+      inventory: JSON.stringify(inv)
+    }).eq('id', userId);
+
+    res.json({ success: true, coins: newCoins, shop: meta.shop, boosts: meta.boosts, item });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/shop/exchange", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const amount = Math.floor(Number(req.body.amount) || 0);
+  if (amount <= 0 || amount > 1000000) {
+    return res.status(400).json({ error: "Invalid coin exchange amount." });
+  }
+  if (hasActiveBetSession(userId)) return res.status(400).json({ error: "Finish active bet before exchanging." });
+
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('score, coins, inventory').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    const hasMerchant = Number(meta.boosts?.merchant || 0) > Date.now();
+    const costPerCoin = hasMerchant ? 80000n : 100000n;
+    const totalCost = BigInt(amount) * costPerCoin;
+    const currentScore = parseNonNegativeBigInt(user.score) ?? 0n;
+
+    if (currentScore < totalCost) {
+      return res.status(400).json({ error: `Not enough bananas! Need ${totalCost.toString()} 🍌.` });
+    }
+
+    const newScore = currentScore - totalCost;
+    const newCoins = Number(user.coins || 0) + amount;
+    await supabase.from('database').update({
+      score: String(newScore),
+      coins: newCoins
+    }).eq('id', userId);
+
+    res.json({ success: true, newBalance: String(newScore), coins: newCoins });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/quests/status", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('inventory').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { inv, meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    await supabase.from('database').update({ inventory: JSON.stringify(inv) }).eq('id', userId);
+    res.json({ success: true, quests: meta.quests });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/quests/claim", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const idx = Number(req.body.index);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= 5) return res.status(400).json({ error: "Invalid quest index." });
+
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { inv, meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    const q = meta.quests.active[idx];
+    if (!q || !q.completed || q.claimed) {
+      return res.status(400).json({ error: "Quest not completed or already claimed." });
+    }
+
+    q.claimed = true;
+    const newLevel = Math.max(1, Number(user.level || 1)) + Number(q.reward || 2);
+    const unlockedTitles: string[] = parseJsonSafe(user.unlocked_titles, []);
+    const addT = (t: string) => { if (!unlockedTitles.includes(t)) unlockedTitles.push(t); };
+    if (newLevel >= 10) addT('apprentice_monkey');
+    if (newLevel >= 25) addT('the_dedicated');
+    if (newLevel >= 50) addT('veteran');
+    if (newLevel >= 75) addT('grand_casino_monarch');
+    if (newLevel >= 100) addT('the_myth_the_legend');
+
+    await supabase.from('database').update({
+      level: newLevel,
+      inventory: JSON.stringify(inv),
+      unlocked_titles: JSON.stringify(unlockedTitles)
+    }).eq('id', userId);
+
+    res.json({ success: true, level: newLevel, reward: q.reward, quests: meta.quests, unlockedTitles });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/quests/reroll", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('inventory, coins').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { inv, meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    if (!meta.quests.active.every((q: any) => q.completed)) {
+      return res.status(400).json({ error: "Complete all 5 quests before rerolling!" });
+    }
+    const currentCoins = Number(user.coins || 0);
+    if (currentCoins < 50) {
+      return res.status(400).json({ error: "Need 50 Coins to reroll quests!" });
+    }
+
+    const newCoins = currentCoins - 50;
+    meta.quests = { active: generateServerQuests(), refreshTimestamp: Date.now() + 3600000 };
+    await supabase.from('database').update({
+      coins: newCoins,
+      inventory: JSON.stringify(inv)
+    }).eq('id', userId);
+
+    res.json({ success: true, coins: newCoins, quests: meta.quests });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/insurance/claim", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('score, gadgets, active_gadgets').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const gadgets: boolean[] = parseJsonSafe(user.gadgets, Array(10).fill(false));
+    const activeGadgets: boolean[] = parseJsonSafe(user.active_gadgets, Array(10).fill(false));
+    if (!gadgets[2] || !activeGadgets[2]) {
+      return res.status(400).json({ error: "Speed reload gadget must be unlocked and equipped!" });
+    }
+
+    const now = Date.now();
+    const lastClaim = lastInsuranceClaimAt.get(userId) || 0;
+    if (now - lastClaim < 25000) {
+      return res.status(400).json({ error: "Insurance is on cooldown!" });
+    }
+    const lastLoss = lastLossForInsurance.get(userId);
+    if (!lastLoss || now - lastLoss.at > 5000 || lastLoss.amount <= 0n) {
+      return res.status(400).json({ error: "Insurance window expired!" });
+    }
+
+    const refund = lastLoss.amount / 4n;
+    lastLossForInsurance.delete(userId);
+    lastInsuranceClaimAt.set(userId, now);
+
+    const newScore = (parseNonNegativeBigInt(user.score) ?? 0n) + refund;
+    await supabase.from('database').update({ score: String(newScore) }).eq('id', userId);
+
+    res.json({ success: true, refund: String(refund), newBalance: String(newScore), cooldownUntil: now + 25000 });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/tax/pay", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('score').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const currentScore = parseNonNegativeBigInt(user.score) ?? 0n;
+    const tax = (currentScore * 30n) / 100n;
+    const newScore = currentScore - tax;
+    await supabase.from('database').update({ score: String(newScore) }).eq('id', userId);
+
+    res.json({ success: true, taxPaid: String(tax), newBalance: String(newScore) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/tax/penalty", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('inventory').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { inv, meta } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    meta.boosts.tax_penalty = Date.now() + 600000;
+    await supabase.from('database').update({ inventory: JSON.stringify(inv) }).eq('id', userId);
+    res.json({ success: true, boosts: meta.boosts });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/theme/unlock", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const themeId = Number(req.body.themeId);
+  const themeDef = SERVER_THEMES.find(t => t.id === themeId);
+  if (!themeDef) return res.status(400).json({ error: "Invalid theme." });
+
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('*').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const userLevel = Number(user.level || 1);
+    if (userLevel < themeDef.levelReq) {
+      return res.status(400).json({ error: `Requires Level ${themeDef.levelReq}!` });
+    }
+
+    const { inv } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    let unlockedThemes: number[] = Array.isArray(inv._unlocked_themes) ? inv._unlocked_themes.map(Number) : [0];
+    if (user.unlocked_themes) {
+      const parsed = parseJsonSafe(user.unlocked_themes, null);
+      if (Array.isArray(parsed)) unlockedThemes = parsed.map(Number);
+    }
+    if (!unlockedThemes.includes(0)) unlockedThemes.unshift(0);
+
+    if (unlockedThemes.includes(themeId)) {
+      return res.json({ success: true, unlocked_themes: unlockedThemes, theme: themeId });
+    }
+
+    const currentScore = parseNonNegativeBigInt(user.score) ?? 0n;
+    const currentCoins = Number(user.coins || 0);
+    if (currentScore < BigInt(themeDef.costBananas) || currentCoins < themeDef.costCoins) {
+      return res.status(400).json({ error: "Insufficient Bananas or Coins for this theme!" });
+    }
+
+    const newScore = currentScore - BigInt(themeDef.costBananas);
+    const newCoins = currentCoins - themeDef.costCoins;
+    unlockedThemes.push(themeId);
+    inv._unlocked_themes = unlockedThemes;
+    inv._theme = themeId;
+
+    const { error: upErr } = await supabase.from('database').update({
+      score: String(newScore),
+      coins: newCoins,
+      inventory: JSON.stringify(inv),
+      theme: themeId,
+      unlocked_themes: JSON.stringify(unlockedThemes)
+    }).eq('id', userId);
+
+    if (upErr && upErr.code === 'PGRST204') {
+      await supabase.from('database').update({
+        score: String(newScore),
+        coins: newCoins,
+        inventory: JSON.stringify(inv)
+      }).eq('id', userId);
+    }
+
+    res.json({ success: true, newBalance: String(newScore), coins: newCoins, unlocked_themes: unlockedThemes, theme: themeId });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/theme/equip", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  const themeId = Number(req.body.themeId);
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('inventory, unlocked_themes').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { inv } = ensureUserMeta(parseJsonSafe(user.inventory, {}));
+    let unlockedThemes: number[] = Array.isArray(inv._unlocked_themes) ? inv._unlocked_themes.map(Number) : [0];
+    if (user.unlocked_themes) {
+      const parsed = parseJsonSafe(user.unlocked_themes, null);
+      if (Array.isArray(parsed)) unlockedThemes = parsed.map(Number);
+    }
+    if (!unlockedThemes.includes(themeId)) {
+      return res.status(403).json({ error: "You have not unlocked this theme!" });
+    }
+
+    inv._theme = themeId;
+    const { error: upErr } = await supabase.from('database').update({
+      inventory: JSON.stringify(inv),
+      theme: themeId
+    }).eq('id', userId);
+    if (upErr && upErr.code === 'PGRST204') {
+      await supabase.from('database').update({ inventory: JSON.stringify(inv) }).eq('id', userId);
+    }
+    res.json({ success: true, theme: themeId });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/vladimir/talk", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('score, level, vladimir_quest_status').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const curStatus = Number(user.vladimir_quest_status || 0);
+    if (curStatus >= 1) {
+      return res.json({ success: true, vladimir_quest_status: curStatus });
+    }
+    if (Number(user.level || 1) < 15 || (parseNonNegativeBigInt(user.score) ?? 0n) >= 10000000000n) {
+      return res.status(400).json({ error: "Requires Level 15+ and under 10B Bananas to accept Vladimir's pact." });
+    }
+    await supabase.from('database').update({ vladimir_quest_status: 1 }).eq('id', userId);
+    res.json({ success: true, vladimir_quest_status: 1 });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/clicker/export", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase.from('database').select('score, vladimir_quest_status').eq('id', userId).maybeSingle();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (Number(user.vladimir_quest_status || 0) < 2) {
+      return res.status(403).json({ error: "Complete Vladimir Beh's pact first!" });
+    }
+
+    const now = Date.now();
+    const lastExport = lastClickerExportAt.get(userId) || 0;
+    if (now - lastExport < 15000) {
+      return res.status(429).json({ error: "Smoothie export cooling down (wait 15s)." });
+    }
+    lastClickerExportAt.set(userId, now);
+
+    const newScore = (parseNonNegativeBigInt(user.score) ?? 0n) + 1000n;
+    await supabase.from('database').update({ score: String(newScore) }).eq('id', userId);
+    res.json({ success: true, added: "1000", newBalance: String(newScore) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -1622,24 +2747,20 @@ app.post("/api/logs", authenticateToken, async (req: any, res) => {
   }
 });
 
-// Debug Endpoint
+// Debug Endpoint (Sanitized - never expose password hash)
 app.get("/api/debug", authenticateToken, async (req: any, res) => {
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('database')
-      .select('*')
+      .select('id, name, score, coins, level, xp, updated_at')
       .eq('id', req.user.userId)
       .maybeSingle();
 
     if (error) throw error;
     res.json({ 
         userId: req.user.userId,
-        dbData: data,
-        env: {
-            hasUrl: !!process.env.SUPABASE_URL,
-            hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-        }
+        dbData: data
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -2023,7 +3144,9 @@ async function updateDynamicSkinValues() {
           try {
             const inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : user.inventory;
             for (const [skinId, count] of Object.entries(inv)) {
-              currentSupply[skinId] = (currentSupply[skinId] || 0) + Number(count);
+              if (skinId.startsWith('_') || !SKINS_METADATA[skinId]) continue;
+              const num = Number(count);
+              if (num > 0) currentSupply[skinId] = (currentSupply[skinId] || 0) + num;
             }
           } catch (e) {}
         }
@@ -2392,58 +3515,98 @@ app.post("/api/trade/execute", authenticateToken, async (req: any, res) => {
   }
 });
 
-// Endpoint to boost skin value when sold
+// Endpoint to sell skin from Inventory (server-authoritative ownership check & credit)
 app.post("/api/skin/sell", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
   const { skinId } = req.body;
   if (!skinId) return res.status(400).json({ error: "Missing skinId" });
+  const skinMeta = getSkinMetadata(skinId);
+  if (!skinMeta) return res.status(400).json({ error: "Invalid skinId" });
+
   try {
     const supabase = getSupabase();
-    const rarity = SKINS_METADATA[skinId] || 'Common';
+    const { data: user, error: uErr } = await supabase.from('database').select('score, inventory').eq('id', userId).maybeSingle();
+    if (uErr || !user) return res.status(404).json({ error: "User not found" });
+
+    const inv = parseJsonSafe(user.inventory, {});
+    const canonId = skinMeta.id;
+    const key = (Number(inv[canonId]) > 0) ? canonId : (Number(inv[skinId]) > 0 ? skinId : null);
+    if (!key) return res.status(400).json({ error: "You do not own this skin" });
+
+    const rarity = skinMeta.rarity || 'Common';
     const minVal = rarity === 'Ominous' ? 100000000000 : (DEFAULT_RARITY_VALUES[rarity] || 1000);
-    const curr = Math.max(minVal, DYNAMIC_SKIN_VALUES[skinId] || minVal);
-    let boost = 0;
+    const sellPrice = Math.max(minVal, DYNAMIC_SKIN_VALUES[canonId] || minVal);
+
+    inv[key] = Number(inv[key]) - 1;
+    if (inv[key] <= 0) delete inv[key];
+
+    const newScore = (parseNonNegativeBigInt(user.score) ?? 0n) + BigInt(sellPrice);
+    await supabase.from('database').update({
+      score: String(newScore),
+      inventory: JSON.stringify(inv)
+    }).eq('id', userId);
+
+    let boost = 500;
     if (rarity === 'Ominous') boost = 5000000000;
     else if (rarity === 'Legendary') boost = 2000000;
     else if (rarity === 'Mythic') boost = 500000;
     else if (rarity === 'Epic') boost = 50000;
     else if (rarity === 'Rare') boost = 5000;
-    else boost = 500;
-    
-    const newV = curr + boost;
-    DYNAMIC_SKIN_VALUES[skinId] = newV;
-    try {
-      await supabase.from('skin_values').upsert({ id: skinId, value: newV });
-    } catch (e) {}
-    res.json({ success: true, newValue: newV });
+
+    const newV = sellPrice + boost;
+    DYNAMIC_SKIN_VALUES[canonId] = newV;
+    try { await supabase.from('skin_values').upsert({ id: canonId, value: newV }); } catch {}
+
+    res.json({ success: true, newValue: newV, soldPrice: sellPrice, newBalance: String(newScore), inventory: inv });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Endpoint to drop skin value when sold in dungeon (the way it used to drop)
+// Endpoint to sell skin in Ludvig's Dungeon (server-authoritative ownership check & credit)
 app.post("/api/skin/dungeon-sell", authenticateToken, async (req: any, res) => {
+  const userId = req.user.userId;
   const { skinId } = req.body;
   if (!skinId) return res.status(400).json({ error: "Missing skinId" });
+  const skinMeta = getSkinMetadata(skinId);
+  if (!skinMeta) return res.status(400).json({ error: "Invalid skinId" });
+
   try {
     const supabase = getSupabase();
-    const rarity = SKINS_METADATA[skinId] || 'Common';
+    const { data: user, error: uErr } = await supabase.from('database').select('score, inventory').eq('id', userId).maybeSingle();
+    if (uErr || !user) return res.status(404).json({ error: "User not found" });
+
+    const inv = parseJsonSafe(user.inventory, {});
+    const canonId = skinMeta.id;
+    const key = (Number(inv[canonId]) > 0) ? canonId : (Number(inv[skinId]) > 0 ? skinId : null);
+    if (!key) return res.status(400).json({ error: "You do not own this skin" });
+
+    const rarity = skinMeta.rarity || 'Common';
     const minCap = rarity === 'Ominous' ? 100000000000 : Math.floor((DEFAULT_RARITY_VALUES[rarity] || 1000) * 0.1);
-    const curr = Math.max(minCap, DYNAMIC_SKIN_VALUES[skinId] || DEFAULT_RARITY_VALUES[rarity] || 1000);
-    
+    const baseVal = rarity === 'Ominous' ? 100000000000 : (DEFAULT_RARITY_VALUES[rarity] || 1000);
+    const sellPrice = Math.max(rarity === 'Ominous' ? 100000000000 : minCap, DYNAMIC_SKIN_VALUES[canonId] || baseVal);
+
+    inv[key] = Number(inv[key]) - 1;
+    if (inv[key] <= 0) delete inv[key];
+
+    const newScore = (parseNonNegativeBigInt(user.score) ?? 0n) + BigInt(sellPrice);
+    await supabase.from('database').update({
+      score: String(newScore),
+      inventory: JSON.stringify(inv)
+    }).eq('id', userId);
+
     let drop = 1500;
     if (rarity === 'Ominous') drop = 5000000000;
     else if (rarity === 'Legendary') drop = 15000000;
     else if (rarity === 'Mythic') drop = 5000000;
     else if (rarity === 'Epic') drop = 150000;
     else if (rarity === 'Rare') drop = 15000;
-    else if (rarity === 'Common') drop = 1500;
 
-    const newV = Math.max(minCap, curr - drop);
-    DYNAMIC_SKIN_VALUES[skinId] = newV;
-    try {
-      await supabase.from('skin_values').upsert({ id: skinId, value: newV });
-    } catch (e) {}
-    res.json({ success: true, newValue: newV, droppedBy: drop });
+    const newV = Math.max(minCap, sellPrice - drop);
+    DYNAMIC_SKIN_VALUES[canonId] = newV;
+    try { await supabase.from('skin_values').upsert({ id: canonId, value: newV }); } catch {}
+
+    res.json({ success: true, newValue: newV, droppedBy: drop, soldPrice: sellPrice, newBalance: String(newScore), inventory: inv });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -2853,212 +4016,177 @@ app.get("/api/bank/:userId", async (req, res) => {
   }
 });
 
-// POST /api/bank/sync (Allows client backup to restore/sync to server)
-app.post("/api/bank/sync", async (req, res) => {
-  const { userId, bank } = req.body;
-  if (!userId || !bank) return res.status(400).json({ error: "Missing userId or bank data" });
+// POST /api/bank/sync (Read-only authoritative sync — client cannot inflate vault balance)
+app.post("/api/bank/sync", authenticateToken, async (req: any, res) => {
+  const authUserId = req.user.userId;
+  const targetUserId = req.body?.userId || authUserId;
+  if (targetUserId !== authUserId) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
 
   try {
-    const clientTotal = calculateTotalFromBankRow(bank);
-    const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
-    const serverTotal = calculateTotalFromBankRow(currentMem);
+    const supabase = getSupabase();
+    let total = 0n;
+    const mem = memoryBankStore.get(authUserId);
+    if (mem) total = calculateTotalFromBankRow(mem);
 
-    let finalTotal = serverTotal;
-    let finalRow = currentMem;
-
-    if (clientTotal > serverTotal) {
-      finalTotal = clientTotal;
-      finalRow = decomposeBigIntToBankRow(clientTotal);
-    }
-
-    memoryBankStore.set(userId, finalRow);
-    saveBankDiskStore(memoryBankStore);
-
-    // Save to user profile in database
     try {
-      const supabase = getSupabase();
-      const { data: user } = await supabase.from('database').select('inventory').eq('id', userId).maybeSingle();
-      if (user) {
-        let inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : (user.inventory || {});
-        inv._bank = finalRow;
-        await supabase.from('database').update({ inventory: JSON.stringify(inv) }).eq('id', userId);
+      const { data: bRow } = await supabase.from('banana_bank').select('*').eq('user_id', authUserId).maybeSingle();
+      if (bRow) {
+        const t = calculateTotalFromBankRow(bRow);
+        if (t > total) total = t;
       }
-      await supabase.from('banana_bank').upsert({
-        id: userId,
-        user_id: userId,
-        ...finalRow,
-        updated_at: new Date().toISOString()
-      });
     } catch {}
 
-    res.json({ success: true, total: finalTotal.toString(), bank: finalRow });
+    const { data: user } = await supabase.from('database').select('inventory').eq('id', authUserId).maybeSingle();
+    if (user?.inventory) {
+      const inv = parseJsonSafe(user.inventory, {});
+      if (inv._bank) {
+        const invT = calculateTotalFromBankRow(inv._bank);
+        if (invT > total) total = invT;
+      }
+    }
+
+    const finalRow = decomposeBigIntToBankRow(total);
+    memoryBankStore.set(authUserId, finalRow);
+    saveBankDiskStore(memoryBankStore);
+    res.json({ success: true, total: total.toString(), bank: finalRow });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/bank/deposit
-app.post("/api/bank/deposit", async (req, res) => {
+// POST /api/bank/deposit (Authenticated, atomic BigInt pocket deduction)
+app.post("/api/bank/deposit", authenticateToken, async (req: any, res) => {
+  const authUserId = req.user.userId;
   const { userId, amount } = req.body;
-  if (!userId || !amount) return res.status(400).json({ error: "Missing userId or amount" });
+  if (userId && userId !== authUserId) return res.status(403).json({ error: "Forbidden" });
+  if (!amount) return res.status(400).json({ error: "Missing amount" });
 
-  let depAmount: bigint;
-  try {
-    depAmount = BigInt(String(amount));
-  } catch {
-    return res.status(400).json({ error: "Invalid deposit amount" });
+  const depAmount = parseNonNegativeBigInt(amount);
+  if (depAmount === null || depAmount <= 0n) {
+    return res.status(400).json({ error: "Deposit amount must be a positive whole number." });
   }
-
-  if (depAmount <= 0n) return res.status(400).json({ error: "Deposit amount must be greater than 0" });
 
   try {
     const supabase = getSupabase();
-    
-    // 1. Fetch user to check current score
     const { data: user, error: userError } = await supabase
       .from('database')
-      .select('score, inventory')
-      .eq('id', userId)
+      .select('score, inventory, unlocked_titles')
+      .eq('id', authUserId)
       .maybeSingle();
 
-    if (user && BigInt(user.score || 0) < depAmount) {
+    if (userError || !user) return res.status(404).json({ error: "User not found" });
+
+    const pocketScore = parseNonNegativeBigInt(user.score) ?? 0n;
+    if (pocketScore < depAmount) {
       return res.status(400).json({ error: "You don't have enough bananas in your pocket!" });
     }
 
-    // 2. Fetch current bank row
     let currentTotal = 0n;
-    const currentMem = memoryBankStore.get(userId);
-    if (currentMem) {
-      currentTotal = calculateTotalFromBankRow(currentMem);
-    }
+    const currentMem = memoryBankStore.get(authUserId);
+    if (currentMem) currentTotal = calculateTotalFromBankRow(currentMem);
 
     try {
-      const { data: bankRow } = await supabase
-        .from('banana_bank')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
+      const { data: bankRow } = await supabase.from('banana_bank').select('*').eq('user_id', authUserId).maybeSingle();
       if (bankRow) {
         const tableTotal = calculateTotalFromBankRow(bankRow);
         if (tableTotal > currentTotal) currentTotal = tableTotal;
       }
     } catch {}
 
-    // Check user.inventory._bank as well
-    if (user && user.inventory) {
-      try {
-        const inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : user.inventory;
-        if (inv && inv._bank) {
-          const invTotal = calculateTotalFromBankRow(inv._bank);
-          if (invTotal > currentTotal) currentTotal = invTotal;
-        }
-      } catch {}
+    const inv = parseJsonSafe(user.inventory, {});
+    if (inv && inv._bank) {
+      const invTotal = calculateTotalFromBankRow(inv._bank);
+      if (invTotal > currentTotal) currentTotal = invTotal;
     }
 
     const newTotal = currentTotal + depAmount;
     const newCols = decomposeBigIntToBankRow(newTotal);
+    const newPocketScore = pocketScore - depAmount;
+    inv._bank = newCols;
 
-    // Save to disk & memory store
-    memoryBankStore.set(userId, newCols);
+    const unlockedTitles: string[] = parseJsonSafe(user.unlocked_titles, []);
+    if (newTotal >= 1000000000n && !unlockedTitles.includes('vault_overlord')) {
+      unlockedTitles.push('vault_overlord');
+    }
+
+    const { error: updateErr } = await supabase.from('database').update({
+      score: String(newPocketScore),
+      inventory: JSON.stringify(inv),
+      unlocked_titles: JSON.stringify(unlockedTitles)
+    }).eq('id', authUserId);
+    if (updateErr) throw updateErr;
+
+    memoryBankStore.set(authUserId, newCols);
     saveBankDiskStore(memoryBankStore);
 
-    // 3. Upsert bank record if table exists
     try {
-      await supabase
-        .from('banana_bank')
-        .upsert({
-          id: userId,
-          user_id: userId,
-          ...newCols,
-          updated_at: new Date().toISOString()
-        });
+      await supabase.from('banana_bank').upsert({
+        id: authUserId,
+        user_id: authUserId,
+        ...newCols,
+        updated_at: new Date().toISOString()
+      });
     } catch {}
 
-    // 4. Update user score and inventory._bank in database
-    if (user) {
-      const newScore = Math.max(0, Number(BigInt(user.score || 0) - depAmount));
-      let inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : (user.inventory || {});
-      inv._bank = newCols;
-      await supabase.from('database').update({ 
-        score: newScore,
-        inventory: JSON.stringify(inv)
-      }).eq('id', userId);
-    }
-
-    res.json({ success: true, total: newTotal.toString(), bank: newCols });
+    res.json({
+      success: true,
+      total: newTotal.toString(),
+      bank: newCols,
+      newPocketBalance: String(newPocketScore),
+      unlockedTitles
+    });
   } catch (err: any) {
     console.error("[BANK DEPOSIT ERROR]", err.message);
-    const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
-    const currentTotal = calculateTotalFromBankRow(currentMem);
-    const newTotal = currentTotal + depAmount;
-    const newCols = decomposeBigIntToBankRow(newTotal);
-    memoryBankStore.set(userId, newCols);
-    saveBankDiskStore(memoryBankStore);
-    res.json({ success: true, total: newTotal.toString(), bank: newCols, fallback: true });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/bank/withdraw (Max 1T at a time!)
-app.post("/api/bank/withdraw", async (req, res) => {
+// POST /api/bank/withdraw (Authenticated, Max 1T at a time, BigInt pocket credit)
+app.post("/api/bank/withdraw", authenticateToken, async (req: any, res) => {
+  const authUserId = req.user.userId;
   const { userId, amount } = req.body;
-  if (!userId || !amount) return res.status(400).json({ error: "Missing userId or amount" });
+  if (userId && userId !== authUserId) return res.status(403).json({ error: "Forbidden" });
+  if (!amount) return res.status(400).json({ error: "Missing amount" });
 
-  let withAmount: bigint;
-  try {
-    withAmount = BigInt(String(amount));
-  } catch {
-    return res.status(400).json({ error: "Invalid withdrawal amount" });
+  const withAmount = parseNonNegativeBigInt(amount);
+  if (withAmount === null || withAmount <= 0n) {
+    return res.status(400).json({ error: "Withdrawal amount must be a positive whole number." });
   }
 
-  if (withAmount <= 0n) return res.status(400).json({ error: "Withdrawal amount must be greater than 0" });
-
-  // STRICT REQUIREMENT: Max 1T (1,000,000,000,000) at a time
-  const MAX_WITHDRAW = BigInt("1000000000000"); // 1 Trillion
+  const MAX_WITHDRAW = BigInt("1000000000000");
   if (withAmount > MAX_WITHDRAW) {
-    return res.status(400).json({ 
-      error: "Maximum withdrawal limit is 1T (1,000,000,000,000 🍌) per ride!" 
+    return res.status(400).json({
+      error: "Maximum withdrawal limit is 1T (1,000,000,000,000 🍌) per ride!"
     });
   }
 
   try {
     const supabase = getSupabase();
-    
-    // 1. Fetch current bank balance
     let currentTotal = 0n;
-    const currentMem = memoryBankStore.get(userId);
-    if (currentMem) {
-      currentTotal = calculateTotalFromBankRow(currentMem);
-    }
+    const currentMem = memoryBankStore.get(authUserId);
+    if (currentMem) currentTotal = calculateTotalFromBankRow(currentMem);
 
     try {
-      const { data: bankRow } = await supabase
-        .from('banana_bank')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
+      const { data: bankRow } = await supabase.from('banana_bank').select('*').eq('user_id', authUserId).maybeSingle();
       if (bankRow) {
         const tableTotal = calculateTotalFromBankRow(bankRow);
         if (tableTotal > currentTotal) currentTotal = tableTotal;
       }
     } catch {}
 
-    // Check user inventory backup
-    const { data: user } = await supabase
+    const { data: user, error: userErr } = await supabase
       .from('database')
       .select('score, inventory')
-      .eq('id', userId)
+      .eq('id', authUserId)
       .maybeSingle();
+    if (userErr || !user) return res.status(404).json({ error: "User not found" });
 
-    if (user && user.inventory) {
-      try {
-        const inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : user.inventory;
-        if (inv && inv._bank) {
-          const invTotal = calculateTotalFromBankRow(inv._bank);
-          if (invTotal > currentTotal) currentTotal = invTotal;
-        }
-      } catch {}
+    const inv = parseJsonSafe(user.inventory, {});
+    if (inv && inv._bank) {
+      const invTotal = calculateTotalFromBankRow(inv._bank);
+      if (invTotal > currentTotal) currentTotal = invTotal;
     }
 
     if (currentTotal < withAmount) {
@@ -3067,47 +4195,36 @@ app.post("/api/bank/withdraw", async (req, res) => {
 
     const newTotal = currentTotal - withAmount;
     const newCols = decomposeBigIntToBankRow(newTotal);
+    const newPocketScore = (parseNonNegativeBigInt(user.score) ?? 0n) + withAmount;
+    inv._bank = newCols;
 
-    // Save to disk & memory store
-    memoryBankStore.set(userId, newCols);
+    const { error: updateErr } = await supabase.from('database').update({
+      score: String(newPocketScore),
+      inventory: JSON.stringify(inv)
+    }).eq('id', authUserId);
+    if (updateErr) throw updateErr;
+
+    memoryBankStore.set(authUserId, newCols);
     saveBankDiskStore(memoryBankStore);
 
-    // 2. Upsert bank record if table exists
     try {
-      await supabase
-        .from('banana_bank')
-        .upsert({
-          id: userId,
-          user_id: userId,
-          ...newCols,
-          updated_at: new Date().toISOString()
-        });
+      await supabase.from('banana_bank').upsert({
+        id: authUserId,
+        user_id: authUserId,
+        ...newCols,
+        updated_at: new Date().toISOString()
+      });
     } catch {}
 
-    // 3. Update user score and inventory._bank in database
-    if (user) {
-      const newScore = Number(BigInt(user.score || 0) + withAmount);
-      let inv = typeof user.inventory === 'string' ? JSON.parse(user.inventory) : (user.inventory || {});
-      inv._bank = newCols;
-      await supabase.from('database').update({ 
-        score: newScore,
-        inventory: JSON.stringify(inv)
-      }).eq('id', userId);
-    }
-
-    res.json({ success: true, total: newTotal.toString(), bank: newCols });
+    res.json({
+      success: true,
+      total: newTotal.toString(),
+      bank: newCols,
+      newPocketBalance: String(newPocketScore)
+    });
   } catch (err: any) {
     console.error("[BANK WITHDRAW ERROR]", err.message);
-    const currentMem = memoryBankStore.get(userId) || decomposeBigIntToBankRow(0n);
-    const currentTotal = calculateTotalFromBankRow(currentMem);
-    if (currentTotal < withAmount) {
-      return res.status(400).json({ error: "Insufficient bank balance!" });
-    }
-    const newTotal = currentTotal - withAmount;
-    const newCols = decomposeBigIntToBankRow(newTotal);
-    memoryBankStore.set(userId, newCols);
-    saveBankDiskStore(memoryBankStore);
-    res.json({ success: true, total: newTotal.toString(), bank: newCols, fallback: true });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -3620,7 +4737,82 @@ app.get("/api/poker/tables", async (req, res) => {
     }
 });
 
-// 2. Create poker table
+function dealServerPokerHand(table: PokerTableState) {
+    // Rebuy busted bots up to table buy-in; folded humans without chips stay out or minimum chips check
+    table.players.forEach(p => {
+        if (p.isBot && p.chips <= 0) {
+            p.chips = table.buy_in;
+        }
+        p.folded = p.chips <= 0;
+        p.isAllIn = false;
+        p.currentBet = 0;
+        p.cards = [];
+    });
+
+    const suits = ['H', 'D', 'C', 'S'];
+    const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+    const deck: PokerCard[] = [];
+    suits.forEach(s => ranks.forEach(r => deck.push({ rank: r, suit: s, value: getRankVal(r) })));
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+
+    table.community_cards = deck.splice(0, 5);
+    table.players.forEach(p => {
+        p.cards = [deck.pop()!, deck.pop()!];
+    });
+
+    table.status = 'in_progress';
+    table.stage = 'preflop';
+    table.pot = 0;
+    table.acted_in_round = [];
+    table.winners = [];
+    table.dealer_seat = (table.dealer_seat + 1) % table.players.length;
+
+    const sbPlayer = table.players[(table.dealer_seat + 1) % table.players.length];
+    const bbPlayer = table.players[(table.dealer_seat + 2) % table.players.length];
+
+    const sbPay = Math.min(sbPlayer.chips, table.small_blind);
+    sbPlayer.chips -= sbPay;
+    sbPlayer.currentBet = sbPay;
+    if (sbPlayer.chips === 0) sbPlayer.isAllIn = true;
+    table.pot += sbPay;
+
+    const bbPay = Math.min(bbPlayer.chips, table.big_blind);
+    bbPlayer.chips -= bbPay;
+    bbPlayer.currentBet = bbPay;
+    if (bbPlayer.chips === 0) bbPlayer.isAllIn = true;
+    table.pot += bbPay;
+
+    table.current_bet = table.big_blind;
+
+    const utgPlayer = table.players[(table.dealer_seat + 3) % table.players.length];
+    table.active_turn_player_id = utgPlayer.id;
+
+    table.last_action = {
+        playerId: bbPlayer.id,
+        playerName: bbPlayer.name,
+        action: 'raise',
+        amount: table.big_blind,
+        message: `Blinds posted (${table.small_blind}/${table.big_blind} 🍌). Game started!`,
+        timestamp: Date.now()
+    };
+    table.round_history.push(`Round started! ${sbPlayer.name} posted SB (${sbPay} 🍌), ${bbPlayer.name} posted BB (${bbPay} 🍌)`);
+
+    let botTurns = 0;
+    while (table.status === 'in_progress' && (table.stage as string) !== 'showdown' && botTurns < 8) {
+        const curP = table.players.find(p => p.id === table.active_turn_player_id);
+        if (curP && curP.isBot && !curP.folded && !curP.isAllIn) {
+            processBotTurn(table);
+            botTurns++;
+        } else {
+            break;
+        }
+    }
+}
+
+// 2. Create poker table (Supports both online tables and server-authoritative VS Bots)
 app.post("/api/poker/tables/create", authenticateToken, async (req: any, res) => {
     const userId = req.user.userId;
     const { name, buyIn, smallBlind, bigBlind, isVsBot } = req.body;
@@ -3631,15 +4823,14 @@ app.post("/api/poker/tables/create", authenticateToken, async (req: any, res) =>
         if (userError || !user) return res.status(404).json({ error: "User not found. Please log in again." });
 
         const buyInNum = Math.max(10, Math.floor(Number(buyIn)) || 1000);
-        const userBananas = Number(user.score || 0);
+        const userBananas = parseNonNegativeBigInt(user.score) ?? 0n;
 
-        if (userBananas < buyInNum) {
-            return res.status(400).json({ error: `Not enough bananas! You have ${userBananas} 🍌 but need ${buyInNum} 🍌.` });
+        if (userBananas < BigInt(buyInNum)) {
+            return res.status(400).json({ error: `Not enough bananas! You have ${userBananas.toString()} 🍌 but need ${buyInNum} 🍌.` });
         }
 
-        // Deduct buy-in from score
-        const newBalance = userBananas - buyInNum;
-        await supabase.from('database').update({ score: newBalance }).eq('id', userId);
+        const newBalance = userBananas - BigInt(buyInNum);
+        await supabase.from('database').update({ score: String(newBalance) }).eq('id', userId);
 
         const tableId = "table_" + Math.random().toString(36).substring(2, 9);
         const hostSeat: PokerPlayerSeat = {
@@ -3656,8 +4847,8 @@ app.post("/api/poker/tables/create", authenticateToken, async (req: any, res) =>
         };
 
         const defaultSb = Math.max(5, Math.floor(buyInNum / 100));
-        const sb = Number(smallBlind) && Number(smallBlind) > 0 ? Number(smallBlind) : defaultSb;
-        const bb = Number(bigBlind) && Number(bigBlind) >= sb ? Number(bigBlind) : (sb * 2);
+        const sb = Number(smallBlind) && Number(smallBlind) > 0 ? Math.floor(Number(smallBlind)) : defaultSb;
+        const bb = Number(bigBlind) && Number(bigBlind) >= sb ? Math.floor(Number(bigBlind)) : (sb * 2);
 
         const table: PokerTableState = {
             id: tableId,
@@ -3684,10 +4875,29 @@ app.post("/api/poker/tables/create", authenticateToken, async (req: any, res) =>
             updated_at: new Date().toISOString()
         };
 
+        if (isVsBot) {
+            const botNames = [...BOT_NAMES].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < 4; i++) {
+                table.players.push({
+                    id: "bot_" + Math.random().toString(36).substring(2, 8),
+                    name: botNames[i] || `Bot Monkey ${i + 1}`,
+                    isHost: false,
+                    isBot: true,
+                    seat: table.players.length,
+                    chips: buyInNum,
+                    currentBet: 0,
+                    folded: false,
+                    isAllIn: false,
+                    cards: []
+                });
+            }
+            dealServerPokerHand(table);
+        }
+
         activePokerTables.set(tableId, table);
         syncPokerTableDb(table).catch(() => {});
 
-        res.json({ success: true, table, newBalance });
+        res.json({ success: true, table, newBalance: String(newBalance) });
     } catch (e: any) {
         console.error("Poker table create error:", e);
         res.status(500).json({ error: e.message || "Failed to create table" });
@@ -3713,14 +4923,13 @@ app.post("/api/poker/tables/join", authenticateToken, async (req: any, res) => {
         const { data: user, error: userError } = await supabase.from('database').select('id, name, score').eq('id', userId).maybeSingle();
         if (userError || !user) return res.status(404).json({ error: "User not found" });
 
-        const userBananas = Number(user.score || 0);
-        if (userBananas < table.buy_in) {
+        const userBananas = parseNonNegativeBigInt(user.score) ?? 0n;
+        if (userBananas < BigInt(table.buy_in)) {
             return res.status(400).json({ error: `Not enough bananas to buy in! Requires ${table.buy_in} 🍌.` });
         }
 
-        // Deduct buy-in from score
-        const newBalance = userBananas - table.buy_in;
-        await supabase.from('database').update({ score: newBalance }).eq('id', userId);
+        const newBalance = userBananas - BigInt(table.buy_in);
+        await supabase.from('database').update({ score: String(newBalance) }).eq('id', userId);
 
         const newSeat: PokerPlayerSeat = {
             id: userId,
@@ -3740,7 +4949,7 @@ app.post("/api/poker/tables/join", authenticateToken, async (req: any, res) => {
         table.updated_at = new Date().toISOString();
 
         syncPokerTableDb(table).catch(() => {});
-        res.json({ success: true, table, newBalance });
+        res.json({ success: true, table, newBalance: String(newBalance) });
     } catch (e: any) {
         console.error("Poker table join error:", e);
         res.status(500).json({ error: e.message || "Failed to join table" });
@@ -3760,29 +4969,24 @@ app.post("/api/poker/tables/leave", authenticateToken, async (req: any, res) => 
         if (playerIdx === -1) return res.status(400).json({ error: "You are not at this table" });
 
         const leavingPlayer = table.players[playerIdx];
-        const refundChips = leavingPlayer.chips;
+        const refundChips = Math.max(0, Math.floor(Number(leavingPlayer.chips || 0)));
 
-        // Refund remaining chips to score
         const supabase = getSupabase();
         const { data: user } = await supabase.from('database').select('score').eq('id', userId).maybeSingle();
-        let newBalance = Number(user?.score || 0);
+        let newBalance = parseNonNegativeBigInt(user?.score) ?? 0n;
         if (refundChips > 0) {
-            newBalance += refundChips;
-            await supabase.from('database').update({ score: newBalance }).eq('id', userId);
+            newBalance += BigInt(refundChips);
+            await supabase.from('database').update({ score: String(newBalance) }).eq('id', userId);
         }
 
         table.players.splice(playerIdx, 1);
         table.round_history.push(`${leavingPlayer.name} left with ${refundChips} 🍌`);
 
         if (table.players.filter(p => !p.isBot).length === 0) {
-            // No humans left, destroy table
             activePokerTables.delete(tableId);
-            try {
-                await supabase.from('poker_tables').delete().eq('id', tableId);
-            } catch (err) {}
+            try { await supabase.from('poker_tables').delete().eq('id', tableId); } catch {}
         } else {
             if (leavingPlayer.isHost && table.players.length > 0) {
-                // Pass host to next human
                 const nextHuman = table.players.find(p => !p.isBot) || table.players[0];
                 nextHuman.isHost = true;
                 table.host_id = nextHuman.id;
@@ -3791,30 +4995,28 @@ app.post("/api/poker/tables/leave", authenticateToken, async (req: any, res) => 
             syncPokerTableDb(table).catch(() => {});
         }
 
-        res.json({ success: true, refunded: refundChips, newBalance });
+        res.json({ success: true, refunded: refundChips, newBalance: String(newBalance) });
     } catch (e: any) {
         console.error("Poker table leave error:", e);
         res.status(500).json({ error: e.message || "Failed to leave table" });
     }
 });
 
-// 5. Start poker match (Host initiates; client host generates community cards & deals cards)
+// 5. Start poker match (100% server-shuffled cards — ignores any client-provided cards)
 app.post("/api/poker/tables/start", authenticateToken, async (req: any, res) => {
     const userId = req.user.userId;
-    const { tableId, hostCommunityCards, hostPlayerCards } = req.body;
+    const { tableId } = req.body;
 
     try {
         const table = activePokerTables.get(tableId);
         if (!table) return res.status(404).json({ error: "Table not found" });
         if (table.host_id !== userId) return res.status(403).json({ error: "Only the table host can start the game" });
+        if (table.status !== 'waiting') return res.status(400).json({ error: "Match already started." });
 
-        // REQUIREMENT:
-        // "There has to be atleast 5 players, are there 3 players in a table, the last 2 will be bots.
-        // If you go more than 5 players (humans), no bots will be added. Simple as that."
         const humanCount = table.players.filter(p => !p.isBot).length;
         if (humanCount < 5) {
             const botsNeeded = 5 - humanCount;
-            let availableBotNames = BOT_NAMES.filter(bName => !table.players.some(p => p.name === bName));
+            const availableBotNames = BOT_NAMES.filter(bName => !table.players.some(p => p.name === bName));
             for (let i = 0; i < botsNeeded; i++) {
                 const bName = availableBotNames[i % availableBotNames.length] || `Bot Monkey ${i + 1}`;
                 table.players.push({
@@ -3832,108 +5034,31 @@ app.post("/api/poker/tables/start", authenticateToken, async (req: any, res) => 
             }
         }
 
-        // Deal cards: The 5 community cards generated by the table host client
-        if (Array.isArray(hostCommunityCards) && hostCommunityCards.length === 5) {
-            table.community_cards = hostCommunityCards;
-        } else {
-            // Backup card generator if host payload was omitted
-            const suits = ['H', 'D', 'C', 'S'];
-            const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
-            const deck: PokerCard[] = [];
-            suits.forEach(s => ranks.forEach(r => deck.push({ rank: r, suit: s, value: getRankVal(r) })));
-            for (let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
-            table.community_cards = deck.splice(0, 5);
+        dealServerPokerHand(table);
+        await syncPokerTableDb(table);
+        res.json({ success: true, table });
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// 5b. Deal next hand after showdown
+app.post("/api/poker/tables/next-hand", authenticateToken, async (req: any, res) => {
+    const userId = req.user.userId;
+    const { tableId } = req.body;
+
+    try {
+        const table = activePokerTables.get(tableId);
+        if (!table) return res.status(404).json({ error: "Table not found" });
+        if (table.host_id !== userId) return res.status(403).json({ error: "Only the table host can start the next hand" });
+        if (table.status !== 'finished') return res.status(400).json({ error: "Finish the current hand first!" });
+
+        const human = table.players.find(p => p.id === userId);
+        if (!human || human.chips <= 0) {
+            return res.status(400).json({ error: "You are out of chips! Leave and re-join with a fresh buy-in." });
         }
 
-        // Assign 2 hole cards to each seated player
-        if (hostPlayerCards && typeof hostPlayerCards === 'object') {
-            table.players.forEach(p => {
-                if (hostPlayerCards[p.id] && Array.isArray(hostPlayerCards[p.id]) && hostPlayerCards[p.id].length === 2) {
-                    p.cards = hostPlayerCards[p.id];
-                }
-            });
-        }
-        
-        // Fill any unassigned player cards
-        const usedCards = new Set([...table.community_cards.map(c => `${c.rank}${c.suit}`)]);
-        table.players.forEach(p => {
-            p.cards.forEach(c => usedCards.add(`${c.rank}${c.suit}`));
-        });
-        const fullDeck: PokerCard[] = [];
-        ['H', 'D', 'C', 'S'].forEach(s => ['2','3','4','5','6','7','8','9','10','J','Q','K','A'].forEach(r => {
-            if (!usedCards.has(`${r}${s}`)) {
-                fullDeck.push({ rank: r, suit: s, value: getRankVal(r) });
-            }
-        }));
-        for (let i = fullDeck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]];
-        }
-        table.players.forEach(p => {
-            if (!p.cards || p.cards.length < 2) {
-                p.cards = [fullDeck.pop()!, fullDeck.pop()!];
-            }
-            p.folded = false;
-            p.isAllIn = false;
-            p.currentBet = 0;
-        });
-
-        // Initialize betting state & blinds
-        table.status = 'in_progress';
-        table.stage = 'preflop';
-        table.pot = 0;
-        table.acted_in_round = [];
-        table.winners = [];
-
-        // Rotate dealer button
-        table.dealer_seat = (table.dealer_seat + 1) % table.players.length;
-
-        // Post Small Blind and Big Blind
-        const sbPlayer = table.players[(table.dealer_seat + 1) % table.players.length];
-        const bbPlayer = table.players[(table.dealer_seat + 2) % table.players.length];
-
-        const sbPay = Math.min(sbPlayer.chips, table.small_blind);
-        sbPlayer.chips -= sbPay;
-        sbPlayer.currentBet = sbPay;
-        table.pot += sbPay;
-
-        const bbPay = Math.min(bbPlayer.chips, table.big_blind);
-        bbPlayer.chips -= bbPay;
-        bbPlayer.currentBet = bbPay;
-        table.pot += bbPay;
-
-        table.current_bet = table.big_blind;
-
-        // First player to act preflop (Under The Gun)
-        const utgPlayer = table.players[(table.dealer_seat + 3) % table.players.length];
-        table.active_turn_player_id = utgPlayer.id;
-
-        table.last_action = {
-            playerId: bbPlayer.id,
-            playerName: bbPlayer.name,
-            action: 'raise',
-            amount: table.big_blind,
-            message: `Blinds posted (${table.small_blind}/${table.big_blind} 🍌). Game started!`,
-            timestamp: Date.now()
-        };
-
-        table.round_history.push(`Round started! ${sbPlayer.name} posted SB (${sbPay} 🍌), ${bbPlayer.name} posted BB (${bbPay} 🍌)`);
-
-        // If the first turn player is a bot, execute bot action
-        let botTurns = 0;
-        while (table.status === 'in_progress' && (table.stage as string) !== 'showdown' && botTurns < 8) {
-            const curP = table.players.find(p => p.id === table.active_turn_player_id);
-            if (curP && curP.isBot && !curP.folded && !curP.isAllIn) {
-                processBotTurn(table);
-                botTurns++;
-            } else {
-                break;
-            }
-        }
-
+        dealServerPokerHand(table);
         await syncPokerTableDb(table);
         res.json({ success: true, table });
     } catch (e: any) {
@@ -3946,6 +5071,10 @@ app.post("/api/poker/tables/action", authenticateToken, async (req: any, res) =>
     const userId = req.user.userId;
     const { tableId, action, amount } = req.body;
 
+    if (!['fold', 'check', 'call', 'raise'].includes(String(action))) {
+        return res.status(400).json({ error: "Invalid poker action." });
+    }
+
     try {
         const table = activePokerTables.get(tableId);
         if (!table) return res.status(404).json({ error: "Table not found" });
@@ -3955,7 +5084,8 @@ app.post("/api/poker/tables/action", authenticateToken, async (req: any, res) =>
         const player = table.players.find(p => p.id === userId);
         if (!player || player.folded || player.isAllIn) return res.status(400).json({ error: "Player cannot act" });
 
-        applyPlayerAction(table, player, action, Number(amount) || 0);
+        const raiseAmt = Math.max(0, Math.floor(Number(amount) || 0));
+        applyPlayerAction(table, player, action, raiseAmt);
         await syncPokerTableDb(table);
 
         res.json({ success: true, table });
@@ -4015,6 +5145,172 @@ app.get("/api/poker/tables/:tableId", authenticateToken, async (req: any, res) =
         res.status(500).json({ error: e.message });
     }
 });
+
+  // --- GAME URL ACCESS GUARD (Blocks direct /spelX.html and /spelX access) ---
+  const GAME_LAUNCH_COOKIE = "gh_game_launch";
+  const LAUNCH_SECRET = crypto.createHmac("sha256", JWT_SECRET).update("game_hub_launch_guard_v1").digest();
+  const consumedLaunchNonces = new Map<string, number>();
+
+  const parseCookies = (cookieHeader: string | undefined): Record<string, string> => {
+    const out: Record<string, string> = {};
+    if (!cookieHeader) return out;
+    for (const part of cookieHeader.split(";")) {
+      const idx = part.indexOf("=");
+      if (idx === -1) continue;
+      const k = part.slice(0, idx).trim();
+      const v = part.slice(idx + 1).trim();
+      if (k) out[k] = decodeURIComponent(v);
+    }
+    return out;
+  };
+
+  const signGameLaunchCookie = (gameId: number): string => {
+    const payload = {
+      gameId,
+      nonce: crypto.randomBytes(16).toString("hex"),
+      exp: Date.now() + 25000
+    };
+    const payloadB64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+    const sigB64 = crypto.createHmac("sha256", LAUNCH_SECRET).update(payloadB64).digest("base64url");
+    return `${payloadB64}.${sigB64}`;
+  };
+
+  const verifyAndConsumeGameLaunchCookie = (token: string | undefined, expectedGameId: number): boolean => {
+    const now = Date.now();
+    for (const [n, exp] of consumedLaunchNonces.entries()) {
+      if (now > exp) consumedLaunchNonces.delete(n);
+    }
+    if (!token || !token.includes(".")) return false;
+    const [payloadB64, sigB64] = token.split(".");
+    if (!payloadB64 || !sigB64) return false;
+    const expectedSig = crypto.createHmac("sha256", LAUNCH_SECRET).update(payloadB64).digest("base64url");
+    const sigBuf = Buffer.from(sigB64);
+    const expBuf = Buffer.from(expectedSig);
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return false;
+    try {
+      const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
+      if (Number(payload.gameId) !== expectedGameId) return false;
+      if (typeof payload.nonce !== "string" || !payload.nonce) return false;
+      if (now > Number(payload.exp)) return false;
+      if (consumedLaunchNonces.has(payload.nonce)) return false;
+      consumedLaunchNonces.set(payload.nonce, Number(payload.exp));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const isSameOriginLaunchRequest = (req: any): boolean => {
+    const secFetchSite = String(req.headers["sec-fetch-site"] || "").toLowerCase();
+    if (secFetchSite && secFetchSite !== "same-origin") return false;
+
+    const expectedHost = String(req.headers["x-forwarded-host"] || req.get("host") || "").split(",")[0].trim().toLowerCase();
+    const refOrOrigin = String(req.headers["origin"] || req.headers["referer"] || "");
+    if (refOrOrigin) {
+      try {
+        const parsedHost = new URL(refOrOrigin).host.toLowerCase();
+        if (expectedHost && parsedHost !== expectedHost) return false;
+        return secFetchSite === "same-origin" || Boolean(expectedHost && parsedHost === expectedHost);
+      } catch {
+        return false;
+      }
+    }
+    return secFetchSite === "same-origin";
+  };
+
+  const isGameOnlineOnServer = async (gameId: number): Promise<boolean> => {
+    try {
+      const supabase = getSupabase();
+      const { data } = await supabase.from("games_config").select("is_online").eq("game_id", gameId).maybeSingle();
+      if (data && data.is_online === false) return false;
+    } catch {}
+    return true;
+  };
+
+  const isHttpsRequest = (req: any): boolean =>
+    Boolean(req.secure || String(req.headers["x-forwarded-proto"] || "").includes("https"));
+
+  app.get("/robots.txt", (_req, res) => {
+    res.type("text/plain").send("User-agent: *\nDisallow: /spel\nDisallow: /api/\nAllow: /\n");
+  });
+
+  // Issues a short-lived single-use signed launch token before index.html loads #game-iframe
+  app.post("/api/game-launch", async (req, res) => {
+    if (!isSameOriginLaunchRequest(req)) {
+      return res.status(403).json({ error: "Direct launch forbidden" });
+    }
+    const gameId = parseInt(String(req.body?.gameId || ""), 10);
+    if (!Number.isFinite(gameId) || gameId < 1 || gameId > 999) {
+      return res.status(400).json({ error: "Invalid game ID" });
+    }
+    const online = await isGameOnlineOnServer(gameId);
+    if (!online) {
+      return res.status(403).json({ error: "This game is currently offline." });
+    }
+    const token = signGameLaunchCookie(gameId);
+    res.json({ success: true, launchToken: token });
+  });
+
+  // All games launch via iframe from Game Hub; bounce legacy direct launch URLs to /
+  app.get("/api/launch-game/:gameId", (_req, res) => {
+    return res.redirect(302, "/");
+  });
+
+  // Block direct navigation to /spelX.html and /spelX (dev & production)
+  app.use((req, res, next) => {
+    const match = req.path.match(/^\/spel(\d+)(?:\.html)?\/?$/i);
+    if (!match) return next();
+
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      return res.redirect(302, "/");
+    }
+
+    const gameId = parseInt(match[1], 10);
+    const secFetchDest = String(req.headers["sec-fetch-dest"] || "").toLowerCase();
+    const secFetchSite = String(req.headers["sec-fetch-site"] || "").toLowerCase();
+
+    // Allow Vite internal html-proxy script loads if any occur
+    if ((req.query["html-proxy"] !== undefined || req.query["direct"] !== undefined) && secFetchDest === "script") {
+      return next();
+    }
+
+    // Must be requested by an <iframe> (direct tab visits send Sec-Fetch-Dest: document)
+    if (secFetchDest !== "iframe") {
+      return res.redirect(302, "/");
+    }
+
+    // If Referer is provided, its immediate initiator host must match our server host
+    const expectedHost = String(req.headers["x-forwarded-host"] || req.get("host") || "").split(",")[0].trim().toLowerCase();
+    const referer = String(req.headers["referer"] || "");
+    if (referer && expectedHost) {
+      try {
+        if (new URL(referer).host.toLowerCase() !== expectedHost) {
+          return res.redirect(302, "/");
+        }
+      } catch {
+        return res.redirect(302, "/");
+      }
+    }
+
+    const cookies = parseCookies(req.headers.cookie);
+    const launchParam = typeof req.query.launch === "string" ? req.query.launch : undefined;
+    const token = launchParam || cookies[GAME_LAUNCH_COOKIE];
+
+    if (!verifyAndConsumeGameLaunchCookie(token, gameId)) {
+      return res.redirect(302, "/");
+    }
+
+    if (launchParam) {
+      req.url = req.path;
+    }
+    if (cookies[GAME_LAUNCH_COOKIE]) {
+      res.clearCookie(GAME_LAUNCH_COOKIE, { path: "/" });
+    }
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("X-Robots-Tag", "noindex, nofollow");
+    next();
+  });
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
