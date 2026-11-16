@@ -440,8 +440,6 @@
             // Bygger ett enskilt spelkort (samma utseende som tidigare)
             function createGameCard(game) {
                 const isOnline = _gameConfigs[game.id] !== false;
-                const opensInNewPage = game.id === 19;
-                const targetHref = game.url || `spel${game.id}.html`;
                 const card = document.createElement('div');
                 const counts = _voteCounts[game.id] || { likes: 0, dislikes: 0 };
                 const myVote = _myVotes[game.id] || 0;
@@ -452,19 +450,10 @@
                     </div>`;
                 card.className = `game-card bg-slate-800 border-2 rounded-xl p-6 flex flex-col items-center justify-between transition-all duration-300 transform relative overflow-hidden ${isOnline ? 'border-slate-700 hover:-translate-y-2 cursor-pointer group' : 'border-red-900/50 opacity-75 grayscale bg-slate-900'}`;
                 if (isOnline) {
-                    if (opensInNewPage) {
-                        card.onclick = () => {
-                            const link = card.querySelector('a[data-new-page-link]');
-                            if (link) link.click();
-                        };
-                    } else {
-                        card.onclick = () => window.openGameView(game.id);
-                    }
+                    card.onclick = () => window.openGameView(game.id);
                 }
                 const actionHtml = isOnline
-                    ? (opensInNewPage
-                        ? `<a href="${targetHref}" target="_blank" rel="noopener noreferrer" data-new-page-link="true" onclick="event.stopPropagation()" class="block text-center w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 hover:opacity-90 transition-transform">PLAY NOW</a>`
-                        : `<button class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 hover:opacity-90 transition-transform">PLAY NOW</button>`)
+                    ? `<button class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 hover:opacity-90 transition-transform">PLAY NOW</button>`
                     : `<button class="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-slate-700 to-slate-800 text-white font-bold shadow-lg transform opacity-20 cursor-not-allowed transition-transform">NOT AVAILABLE</button>`;
                 card.innerHTML = `
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${isOnline ? game.color : 'from-red-900 to-red-600'}"></div>
@@ -1064,7 +1053,6 @@
 
             function handleStageKeyDown(e) {
                 if (!_isGameStageOpen) return;
-                if (_activeGameId === 19 && _bananaTrueFullscreenActive) return;
                 if (e.key === 'Escape' || e.code === 'Escape') {
                     if (!_isHoldingEsc) {
                         _isHoldingEsc = true;
@@ -1105,7 +1093,6 @@
                 const game = gamesList.find(g => g.id === _activeGameId);
                 if (!box || !game) return;
                 const isOnline = _gameConfigs[game.id] !== false;
-                const isBananaCasino = game.id === 19;
                 const counts = _voteCounts[game.id] || { likes: 0, dislikes: 0 };
                 const myVote = _myVotes[game.id] || 0;
 
@@ -1128,10 +1115,7 @@
                         </div>
 
                         <div class="w-full max-w-md bg-slate-800/70 border border-slate-700/80 rounded-xl p-4 mb-7 text-xs text-slate-300 leading-relaxed">
-                            ${isBananaCasino
-                                ? `<div class="flex items-center justify-center gap-2 text-amber-300 font-bold mb-1"><i data-lucide="monitor" class="w-4 h-4"></i> True Fullscreen Mode</div><span>Banana Casino runs in true monitor fullscreen. Press <kbd class="px-1.5 py-0.5 bg-slate-900 border border-slate-600 rounded text-[10px] font-mono text-white">ESC</kbd> anytime to exit back to this screen.</span>`
-                                : `<div class="flex items-center justify-center gap-2 text-blue-400 font-bold mb-1"><i data-lucide="maximize-2" class="w-4 h-4"></i> Fullscreen Game Stage</div><span>Press <strong>Enter Fullscreen</strong> to cover your screen. Hold <kbd class="px-1.5 py-0.5 bg-slate-900 border border-slate-600 rounded text-[10px] font-mono text-white">ESC</kbd> for <strong>5 seconds</strong> to return here.</span>`
-                            }
+                            <div class="flex items-center justify-center gap-2 text-blue-400 font-bold mb-1"><i data-lucide="maximize-2" class="w-4 h-4"></i> Fullscreen Game Stage</div><span>Press <strong>Enter Fullscreen</strong> to cover your screen. Hold <kbd class="px-1.5 py-0.5 bg-slate-900 border border-slate-600 rounded text-[10px] font-mono text-white">ESC</kbd> for <strong>5 seconds</strong> to return here.</span>
                         </div>
 
                         ${isOnline
@@ -1189,7 +1173,7 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
-            window.enterGameFullscreen = function() {
+            window.enterGameFullscreen = async function() {
                 const game = gamesList.find(g => g.id === _activeGameId);
                 if (!game || _gameConfigs[game.id] === false) return;
                 const targetUrl = game.url || `spel${game.id}.html`;
@@ -1200,13 +1184,32 @@
                 const exitChipLabel = document.getElementById('overlay-exit-chip-label');
                 if (!overlay || !iframe) return;
 
+                let launchToken = '';
+                try {
+                    const launchRes = await fetch('/api/game-launch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ gameId: game.id })
+                    });
+                    if (!launchRes.ok) {
+                        return;
+                    }
+                    const launchData = await launchRes.json();
+                    if (!launchData || !launchData.success || (!game.url && !launchData.launchToken)) {
+                        return;
+                    }
+                    launchToken = launchData.launchToken || '';
+                } catch (e) {
+                    return;
+                }
+
                 _isGameStageOpen = true;
                 _bananaTrueFullscreenActive = false;
                 cancelEscHold();
 
-                const isBananaCasino = game.id === 19;
                 if (exitChip) {
-                    exitChip.classList.toggle('hidden', isBananaCasino);
+                    exitChip.classList.remove('hidden');
                 }
                 if (exitChipLabel) {
                     exitChipLabel.innerText = 'Exit (Hold ESC 5s)';
@@ -1226,31 +1229,9 @@
                     attachIframeKeyListeners(iframe);
                     try { iframe.focus(); } catch (e) {}
                 };
-                iframe.src = targetUrl;
-
-                if (isBananaCasino) {
-                    const req = overlay.requestFullscreen || overlay.webkitRequestFullscreen || overlay.mozRequestFullScreen || overlay.msRequestFullscreen;
-                    if (req) {
-                        try {
-                            const p = req.call(overlay);
-                            if (p && typeof p.then === 'function') {
-                                p.then(() => {
-                                    _bananaTrueFullscreenActive = true;
-                                }).catch(() => {
-                                    _bananaTrueFullscreenActive = false;
-                                    if (exitChip) exitChip.classList.remove('hidden');
-                                });
-                            } else {
-                                _bananaTrueFullscreenActive = true;
-                            }
-                        } catch (e) {
-                            _bananaTrueFullscreenActive = false;
-                            if (exitChip) exitChip.classList.remove('hidden');
-                        }
-                    } else if (exitChip) {
-                        exitChip.classList.remove('hidden');
-                    }
-                }
+                iframe.src = game.url
+                    ? targetUrl
+                    : `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}launch=${encodeURIComponent(launchToken)}`;
             };
 
             window.exitGameFullscreen = function() {
