@@ -35,7 +35,8 @@
         main#main-content,
         footer,
         #auth-section,
-        #login-popup {
+        #login-popup,
+        #hub-confirm-modal {
             zoom: 0.9;
         }
     </style>
@@ -45,15 +46,13 @@
     <!-- Header -->
     <header class="w-full p-6 bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <button type="button" onclick="window.goHome()" class="flex items-center gap-2 cursor-pointer group text-left focus:outline-none" title="Return to Game Hub menu">
+            <button id="home-logo-btn" type="button" class="flex items-center gap-2 cursor-pointer group text-left focus:outline-none" title="Return to Game Hub menu">
                 <i data-lucide="gamepad-2" class="text-blue-500 w-8 h-8 group-hover:scale-110 transition-transform"></i>
                 <h1 class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 group-hover:opacity-90 transition-opacity">
                     GAME HUB
                 </h1>
             </button>
-            <div id="mod-indicator" class="hidden text-xs font-bold text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/50 animate-pulse">
-                System Edit Enable
-            </div>
+            <div id="mod-indicator-slot"></div>
             
             <!-- NEDLADDNINGSLÄNKEN -->
             <a href="https://github.com/Player1Zayn/player1zayn.github.io/releases/tag/v1.0" download class="text-sm text-slate-400 hidden sm:block hover:text-blue-400 transition-colors cursor-pointer text-right">
@@ -65,19 +64,19 @@
     </header>
 
     <!-- Auth Section -->
-    <div id="auth-section" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto" onclick="if(event.target===this) window.closeAuthModal()">
+    <div id="auth-section" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
         <div class="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl w-full max-w-md backdrop-blur-md relative">
-            <button type="button" onclick="window.closeAuthModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button id="auth-close-btn" type="button" class="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button>
             <div class="text-center mb-8">
                 <i data-lucide="lock" class="w-12 h-12 text-blue-500 mx-auto mb-4"></i>
                 <h2 id="auth-title" class="text-3xl font-bold text-white mb-2">Login</h2>
                 <p id="auth-subtitle" class="text-slate-400">Welcome back! Please login to continue.</p>
             </div>
 
-            <form id="auth-form" onsubmit="event.preventDefault(); window.handleAuth(event);" class="space-y-4">
+            <form id="auth-form" class="space-y-4">
                 <div id="username-field" class="hidden">
                     <label class="block text-sm font-medium text-slate-300 mb-1">Username</label>
-                    <input type="text" id="auth-username" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter username">
+                    <input type="text" id="auth-username" maxlength="30" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter username">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300 mb-1">Email</label>
@@ -94,7 +93,7 @@
 
             <div class="mt-6 text-center text-sm">
                 <span id="auth-toggle-text" class="text-slate-400">Don't have an account?</span>
-                <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-blue-400 hover:text-blue-300 font-bold ml-1">Create Account</button>
+                <button type="button" id="auth-toggle-btn" class="text-blue-400 hover:text-blue-300 font-bold ml-1">Create Account</button>
             </div>
             
             <div id="auth-error" class="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500 text-xs hidden text-center"></div>
@@ -102,18 +101,32 @@
     </div>
 
     <!-- Login required popup -->
-    <div id="login-popup" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm" onclick="if(event.target===this) window.closeLoginPopup()">
+    <div id="login-popup" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
             <i data-lucide="lock" class="w-10 h-10 text-blue-500 mx-auto mb-3"></i>
             <p class="text-white font-bold mb-5">Login to access all functions</p>
             <div class="flex gap-3 justify-center">
-                <button onclick="window.closeLoginPopup(); window.openAuthModal();" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Login</button>
-                <button onclick="window.closeLoginPopup()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-5 py-2 rounded-lg text-sm transition-colors">Close</button>
+                <button type="button" id="login-popup-login-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Login</button>
+                <button type="button" id="login-popup-close-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-5 py-2 rounded-lg text-sm transition-colors">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Main Content (Hidden initially) -->
+    <!-- In-page confirm dialog (replaces native confirm/alert) -->
+    <div id="hub-confirm-modal" class="hidden fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
+            <p id="hub-confirm-message" class="text-white font-bold mb-5 text-sm leading-relaxed"></p>
+            <div class="flex gap-3 justify-center">
+                <button type="button" id="hub-confirm-ok" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Confirm</button>
+                <button type="button" id="hub-confirm-cancel" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-5 py-2 rounded-lg text-sm transition-colors">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Non-blocking status toast -->
+    <div id="hub-toast" class="hidden fixed bottom-5 right-5 z-[260] max-w-sm px-4 py-3 rounded-xl border text-xs font-bold shadow-2xl backdrop-blur-md transition-all"></div>
+
+    <!-- Main Content -->
     <main id="main-content" class="flex-grow container mx-auto px-4 py-6">
         
         <div id="welcome-bar" class="flex justify-between items-center mb-6">
@@ -121,7 +134,7 @@
                 <h2 class="text-2xl md:text-3xl font-bold">Welcome, <span id="display-name" class="text-blue-400">Guest</span></h2>
                 <p class="text-slate-400 text-sm">Join the community and explore the latest games.</p>
             </div>
-            <button id="auth-action-btn" onclick="window.handleAuthButton()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+            <button id="auth-action-btn" type="button" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50">
                 <i data-lucide="log-in" class="w-4 h-4"></i> Login
             </button>
         </div>
@@ -131,14 +144,8 @@
             <!-- LEFT COLUMN: Sticky Side Panel -->
             <aside class="lg:col-span-4 xl:col-span-3 space-y-6 lg:sticky lg:top-24 max-h-[calc(100vh-140px)] flex flex-col">
                 
-                <!-- Developer Message -->
-                <div class="p-5 bg-slate-800/50 border-l-4 border-blue-500 rounded-r-xl backdrop-blur-sm shadow-lg group relative shrink-0">
-                    <div id="dev-edit-controls" class="hidden absolute top-3 right-3 flex gap-2">
-                        <button onclick="toggleDevMessageEdit()" class="bg-blue-600 hover:bg-blue-700 p-1.5 rounded-lg text-[10px] font-bold transition-colors">
-                            <i data-lucide="edit-3" class="w-3 h-3"></i>
-                        </button>
-                    </div>
-                    
+                <!-- Developer Message (edit UI mounted dynamically for verified developers only) -->
+                <div id="dev-update-card" class="p-5 bg-slate-800/50 border-l-4 border-blue-500 rounded-r-xl backdrop-blur-sm shadow-lg group relative shrink-0">
                     <h3 class="text-sm font-bold text-blue-400 mb-2 game-font flex items-center gap-2">
                         <i data-lucide="terminal" class="w-4 h-4"></i>
                         DEV UPDATE
@@ -147,16 +154,8 @@
                     <div id="dev-message-display" class="text-slate-300 leading-relaxed text-xs">
                         <div id="dev-message-content" class="whitespace-pre-wrap max-h-32 overflow-y-auto custom-scroll pr-2">Loading...</div>
                     </div>
-                    
-                    <div id="dev-message-edit" class="hidden space-y-2">
-                        <textarea id="dev-message-input" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none resize-none"></textarea>
-                        <div class="flex gap-2">
-                            <button onclick="saveDevMessage()" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-[10px] font-bold">Save</button>
-                            <button onclick="toggleDevMessageEdit()" class="bg-slate-700 px-3 py-1 rounded text-[10px]">Cancel</button>
-                        </div>
-                    </div>
 
-                    <div class="mt-3 pt-3 border-t border-slate-700/50 flex items-center gap-2 text-[10px] text-slate-500 font-mono">
+                    <div id="dev-message-time-wrap" class="mt-3 pt-3 border-t border-slate-700/50 flex items-center gap-2 text-[10px] text-slate-500 font-mono">
                         <i data-lucide="clock" class="w-3 h-3"></i>
                         <span id="dev-message-time">Syncing...</span>
                     </div>
@@ -181,8 +180,8 @@
 
                     <div class="p-3 bg-slate-800 border-t border-slate-700">
                         <div class="flex gap-2">
-                            <input type="text" id="comment-input" placeholder="Message..." class="bg-slate-900 border border-slate-600 text-white text-xs rounded-lg focus:ring-purple-500 outline-none block w-full p-2">
-                            <button onclick="postComment()" id="send-btn" class="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition-colors">
+                            <input type="text" id="comment-input" maxlength="500" placeholder="Message..." class="bg-slate-900 border border-slate-600 text-white text-xs rounded-lg focus:ring-purple-500 outline-none block w-full p-2">
+                            <button type="button" id="send-btn" class="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition-colors">
                                 <i data-lucide="send" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -208,10 +207,10 @@
 
         </div>
 
-            <!-- Game Reviews view (replaces the game page, header stays) -->
+        <!-- Game Reviews view (replaces the game page, header stays) -->
         <div id="reviews-view" class="hidden">
             <div class="flex flex-wrap items-center gap-3 mb-6">
-                <button onclick="window.reviewsBack()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-sm transition-colors">
+                <button type="button" id="reviews-back-btn" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i data-lucide="arrow-left" class="w-4 h-4"></i> <span id="reviews-back-label">Back to Game Hub</span>
                 </button>
                 <h3 class="text-xl font-bold game-font text-slate-300 tracking-widest flex items-center gap-2">
@@ -233,7 +232,7 @@
         <iframe id="game-iframe" class="w-full h-full border-0 flex-1 bg-black" allow="autoplay; fullscreen; gamepad; clipboard-write" allowfullscreen></iframe>
 
         <!-- Subtle top-right hover chip for mouse/cross-origin exit -->
-        <button id="overlay-exit-chip" type="button" onclick="window.exitGameFullscreen()" class="fixed top-3 right-3 z-[210] opacity-25 hover:opacity-100 focus:opacity-100 transition-opacity bg-slate-900/90 hover:bg-slate-800 border border-slate-600 text-slate-200 text-xs font-bold px-3.5 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1.5 shadow-xl cursor-pointer">
+        <button id="overlay-exit-chip" type="button" class="fixed top-3 right-3 z-[210] opacity-25 hover:opacity-100 focus:opacity-100 transition-opacity bg-slate-900/90 hover:bg-slate-800 border border-slate-600 text-slate-200 text-xs font-bold px-3.5 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1.5 shadow-xl cursor-pointer">
             <i data-lucide="minimize-2" class="w-3.5 h-3.5 text-blue-400"></i>
             <span id="overlay-exit-chip-label">Exit (Hold ESC 5s)</span>
         </button>
@@ -263,26 +262,114 @@
         (function() {
             "use strict";
 
-            const SUPABASE_URL = 'https://bqdbgsvcrpjqxflhupsn.supabase.co';
-            const SUPABASE_KEY = 'sb_publishable_ElL56Wu9aJJppRv-ECWLbw_K_CfLWwk';
-            
-            let _supabase;
+            const SUPABASE_CONFIG = Object.freeze({
+                url: 'https://bqdbgsvcrpjqxflhupsn.supabase.co',
+                key: 'sb_publishable_ElL56Wu9aJJppRv-ECWLbw_K_CfLWwk'
+            });
+
+            const createSbClient = window.supabase && typeof window.supabase.createClient === 'function'
+                ? window.supabase.createClient.bind(window.supabase)
+                : null;
+            const lucideApi = window.lucide && typeof window.lucide.createIcons === 'function'
+                ? window.lucide
+                : null;
+
+            function deepFreeze(obj) {
+                if (!obj || typeof obj !== 'object') return obj;
+                Object.freeze(obj);
+                Object.keys(obj).forEach((k) => {
+                    if (obj[k] && typeof obj[k] === 'object' && !Object.isFrozen(obj[k])) {
+                        deepFreeze(obj[k]);
+                    }
+                });
+                return obj;
+            }
+
+            let _supabase = null;
             let _user = null;
             let _profile = null;
             let _isMod = false;
             let _isDeveloper = false;
+            let _isBanned = false;
             let _isSignUp = false;
+            let _devEditOpen = false;
+            let _latestDevMessage = '';
             let _gameConfigs = {};
             let _voteCounts = {};
             let _myVotes = {};
             let _chatChannel = null;
             let _votesChannelStarted = false;
+            let _suppressObserver = false;
+            let _toastTimer = null;
 
-            function refreshIcons() {
-                if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
+            function withObserverPaused(fn) {
+                _suppressObserver = true;
+                try {
+                    return fn();
+                } finally {
+                    _suppressObserver = false;
+                }
             }
 
-            const gamesList = [
+            function refreshIcons() {
+                if (lucideApi && typeof lucideApi.createIcons === "function") {
+                    withObserverPaused(() => lucideApi.createIcons());
+                }
+            }
+
+            function showToast(message, type = 'info') {
+                const el = document.getElementById('hub-toast');
+                if (!el) return;
+                withObserverPaused(() => {
+                    const styles = type === 'error'
+                        ? 'bg-red-950/95 border-red-500/60 text-red-200'
+                        : type === 'success'
+                            ? 'bg-emerald-950/95 border-emerald-500/60 text-emerald-200'
+                            : 'bg-slate-900/95 border-blue-500/60 text-slate-100';
+                    el.className = `fixed bottom-5 right-5 z-[260] max-w-sm px-4 py-3 rounded-xl border text-xs font-bold shadow-2xl backdrop-blur-md transition-all ${styles}`;
+                    el.textContent = String(message || '');
+                    el.classList.remove('hidden');
+                });
+                if (_toastTimer) clearTimeout(_toastTimer);
+                _toastTimer = setTimeout(() => {
+                    withObserverPaused(() => el.classList.add('hidden'));
+                }, 4000);
+            }
+
+            function showConfirm(message) {
+                return new Promise((resolve) => {
+                    const modal = document.getElementById('hub-confirm-modal');
+                    const msgEl = document.getElementById('hub-confirm-message');
+                    const okBtn = document.getElementById('hub-confirm-ok');
+                    const cancelBtn = document.getElementById('hub-confirm-cancel');
+                    if (!modal || !msgEl || !okBtn || !cancelBtn) {
+                        resolve(false);
+                        return;
+                    }
+                    msgEl.textContent = String(message || 'Are you sure?');
+                    withObserverPaused(() => modal.classList.remove('hidden'));
+
+                    const cleanup = (result) => {
+                        okBtn.removeEventListener('click', onOk);
+                        cancelBtn.removeEventListener('click', onCancel);
+                        modal.removeEventListener('click', onBackdrop);
+                        document.removeEventListener('keydown', onKey);
+                        withObserverPaused(() => modal.classList.add('hidden'));
+                        resolve(result);
+                    };
+                    const onOk = () => cleanup(true);
+                    const onCancel = () => cleanup(false);
+                    const onBackdrop = (e) => { if (e.target === modal) cleanup(false); };
+                    const onKey = (e) => { if (e.key === 'Escape') cleanup(false); };
+
+                    okBtn.addEventListener('click', onOk);
+                    cancelBtn.addEventListener('click', onCancel);
+                    modal.addEventListener('click', onBackdrop);
+                    document.addEventListener('keydown', onKey);
+                });
+            }
+
+            const gamesList = deepFreeze([
                 { id: 1, name: "Last Defence", color: "from-blue-500 to-cyan-400", icon: "skull" },
                 { id: 2, name: "Tank Survival", color: "from-green-500 to-emerald-400", icon: "truck" },
                 { id: 3, name: "Five Nights at BIG E", color: "from-red-500 to-orange-400", icon: "flashlight" },
@@ -309,21 +396,222 @@
                 { id: 24, name: "Banana Defenders", color: "from-violet-500 to-purple-600", icon: "banana" },
                 { id: 25, name: "Coming Soon", color: "from-gray-700 to-black", icon: "eye" },
                 { id: 26, name: "Coming Soon", color: "from-yellow-400 to-orange-500", icon: "sun" }
-            ];
+            ]);
 
-            // Sektioner på menyn. Ett spel kan ligga i flera sektioner (ange bara dess id).
-            // "All Games" (ids: null) visar alltid ALLA spel, inklusive Coming Soon / platshållare (21-26),
-            // som alltså bara finns där och inte i någon annan kategori.
-            const gameSections = [
+            const gameSections = deepFreeze([
                 { key: 'hot',    title: 'Hot Right Now', icon: 'flame',       accent: 'text-orange-400', ids: [19, 4, 3, 24, 11] },
                 { key: 'action', title: 'Action',        icon: 'swords',      accent: 'text-red-400',    ids: [1, 2, 4, 5, 6, 8, 10, 12, 13, 14, 15, 16, 18, 21, 22, 23, 24] },
                 { key: 'horror', title: 'Horror',        icon: 'ghost',       accent: 'text-purple-400', ids: [3, 7, 11, 17, 20] },
                 { key: 'idle',   title: 'Idle',          icon: 'timer',       accent: 'text-green-400',  ids: [9, 19, 24] },
                 { key: 'all',    title: 'All Games',     icon: 'layout-grid', accent: 'text-blue-400',   ids: null }
-            ];
+            ]);
+
+            function escapeHtml(t) {
+                return String(t == null ? '' : t)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function sanitizeAvatarUrl(raw) {
+                if (typeof raw !== 'string') return null;
+                const trimmed = raw.trim();
+                if (!trimmed) return null;
+                try {
+                    const parsed = new URL(trimmed);
+                    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+                        return parsed.toString();
+                    }
+                } catch {}
+                return null;
+            }
+
+            function safeIdAttr(val) {
+                const s = String(val == null ? '' : val);
+                return /^[a-zA-Z0-9_-]{1,80}$/.test(s) ? s : '';
+            }
+
+            function syncRoleUi() {
+                withObserverPaused(() => {
+                    const modSlot = document.getElementById('mod-indicator-slot');
+                    if (modSlot) {
+                        modSlot.innerHTML = '';
+                        if (_isDeveloper || _isMod) {
+                            const badge = document.createElement('div');
+                            badge.id = 'mod-indicator';
+                            badge.className = 'text-xs font-bold text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/50 animate-pulse';
+                            badge.textContent = _isDeveloper ? 'System Developer Access' : 'System Edit Enable';
+                            modSlot.appendChild(badge);
+                        }
+                    }
+
+                    const devCard = document.getElementById('dev-update-card');
+                    const displayEl = document.getElementById('dev-message-display');
+                    const timeWrap = document.getElementById('dev-message-time-wrap');
+                    const existingControls = document.getElementById('dev-edit-controls');
+                    const existingEditBox = document.getElementById('dev-message-edit');
+
+                    if (!_isDeveloper) {
+                        _devEditOpen = false;
+                        if (existingControls) existingControls.remove();
+                        if (existingEditBox) existingEditBox.remove();
+                        if (displayEl) displayEl.classList.remove('hidden');
+                    } else if (devCard) {
+                        if (!existingControls) {
+                            const controls = document.createElement('div');
+                            controls.id = 'dev-edit-controls';
+                            controls.className = 'absolute top-3 right-3 flex gap-2';
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.dataset.action = 'toggle-dev-edit';
+                            btn.className = 'bg-blue-600 hover:bg-blue-700 p-1.5 rounded-lg text-[10px] font-bold transition-colors';
+                            btn.innerHTML = '<i data-lucide="edit-3" class="w-3 h-3"></i>';
+                            btn.addEventListener('click', toggleDevMessageEdit);
+                            controls.appendChild(btn);
+                            devCard.insertBefore(controls, devCard.firstChild);
+                        }
+
+                        if (!existingEditBox) {
+                            const editBox = document.createElement('div');
+                            editBox.id = 'dev-message-edit';
+                            editBox.className = _devEditOpen ? 'space-y-2' : 'hidden space-y-2';
+
+                            const textarea = document.createElement('textarea');
+                            textarea.id = 'dev-message-input';
+                            textarea.rows = 3;
+                            textarea.maxLength = 1000;
+                            textarea.className = 'w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none resize-none';
+                            textarea.value = _latestDevMessage || '';
+
+                            const btnRow = document.createElement('div');
+                            btnRow.className = 'flex gap-2';
+
+                            const saveBtn = document.createElement('button');
+                            saveBtn.type = 'button';
+                            saveBtn.dataset.action = 'save-dev-msg';
+                            saveBtn.className = 'bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-[10px] font-bold';
+                            saveBtn.textContent = 'Save';
+                            saveBtn.addEventListener('click', saveDevMessage);
+
+                            const cancelBtn = document.createElement('button');
+                            cancelBtn.type = 'button';
+                            cancelBtn.dataset.action = 'cancel-dev-edit';
+                            cancelBtn.className = 'bg-slate-700 px-3 py-1 rounded text-[10px]';
+                            cancelBtn.textContent = 'Cancel';
+                            cancelBtn.addEventListener('click', toggleDevMessageEdit);
+
+                            btnRow.appendChild(saveBtn);
+                            btnRow.appendChild(cancelBtn);
+                            editBox.appendChild(textarea);
+                            editBox.appendChild(btnRow);
+
+                            if (timeWrap && timeWrap.parentNode === devCard) {
+                                devCard.insertBefore(editBox, timeWrap);
+                            } else {
+                                devCard.appendChild(editBox);
+                            }
+                        }
+
+                        if (displayEl) displayEl.classList.toggle('hidden', _devEditOpen);
+                    }
+                });
+                refreshIcons();
+            }
+
+            async function verifyServerRoles() {
+                if (!_supabase || !_user) {
+                    _isMod = false;
+                    _isDeveloper = false;
+                    syncRoleUi();
+                    return { isMod: false, isDeveloper: false };
+                }
+                try {
+                    const { data: userData } = await _supabase.auth.getUser();
+                    if (!userData || !userData.user || userData.user.id !== _user.id) {
+                        _isMod = false;
+                        _isDeveloper = false;
+                        syncRoleUi();
+                        return { isMod: false, isDeveloper: false };
+                    }
+                    const { data, error } = await _supabase
+                        .from('profiles')
+                        .select('is_mod, is_developer')
+                        .eq('id', _user.id)
+                        .maybeSingle();
+
+                    if (error || !data) {
+                        _isMod = false;
+                        _isDeveloper = false;
+                    } else {
+                        _isMod = data.is_mod === true;
+                        _isDeveloper = data.is_developer === true;
+                    }
+                } catch {
+                    _isMod = false;
+                    _isDeveloper = false;
+                }
+                syncRoleUi();
+                return { isMod: _isMod, isDeveloper: _isDeveloper };
+            }
+
+            function installDomIntegrityGuard() {
+                if (typeof MutationObserver !== 'function' || !document.body) return;
+                let cleaning = false;
+                const scrubUnauthorizedDom = () => {
+                    if (_suppressObserver || cleaning) return;
+                    cleaning = true;
+                    try {
+                        if (!_isDeveloper && !_isMod) {
+                            const forgedBadge = document.getElementById('mod-indicator');
+                            if (forgedBadge) forgedBadge.remove();
+                        }
+                        if (!_isDeveloper) {
+                            const forgedControls = document.getElementById('dev-edit-controls');
+                            if (forgedControls) forgedControls.remove();
+                            const forgedEdit = document.getElementById('dev-message-edit');
+                            if (forgedEdit) forgedEdit.remove();
+                            document.querySelectorAll('[data-action="toggle-game-status"]').forEach((el) => el.remove());
+                        }
+                        if (!_isMod) {
+                            document.querySelectorAll('[data-action="verify-comment"], [data-action="ban-user"], [data-action="delete-comment"]').forEach((el) => el.remove());
+                        }
+                        if (!_user || _isBanned) {
+                            const input = document.getElementById('comment-input');
+                            const sendBtn = document.getElementById('send-btn');
+                            if (input && !input.disabled) input.disabled = true;
+                            if (sendBtn && !sendBtn.disabled) {
+                                sendBtn.disabled = true;
+                                sendBtn.classList.add('opacity-50');
+                            }
+                        }
+                        if (!_isGameStageOpen) {
+                            const overlay = document.getElementById('game-fullscreen-overlay');
+                            if (overlay && !overlay.classList.contains('hidden')) {
+                                overlay.classList.add('hidden');
+                                const iframe = document.getElementById('game-iframe');
+                                if (iframe) iframe.src = 'about:blank';
+                                document.body.style.overflow = '';
+                            }
+                        }
+                    } finally {
+                        cleaning = false;
+                    }
+                };
+
+                const observer = new MutationObserver(scrubUnauthorizedDom);
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['class', 'style', 'disabled', 'hidden']
+                });
+            }
 
             try {
-                _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                if (!createSbClient) throw new Error('Supabase client library missing');
+                _supabase = createSbClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
                 initAuth();
             } catch (e) {
                 console.error("Supabase init error:", e);
@@ -340,7 +628,7 @@
                     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
                         await setupUserSession(session.user);
                     } else if (event === 'SIGNED_OUT') {
-                        _user = null; _profile = null; _isMod = false; _isDeveloper = false;
+                        _user = null; _profile = null; _isMod = false; _isDeveloper = false; _isBanned = false;
                         await setupGuestView();
                     }
                 });
@@ -359,10 +647,12 @@
 
             async function fetchProfile() {
                 if (!_user) return;
-                let { data, error } = await _supabase.from('profiles').select('*').eq('id', _user.id).single();
+                let { data } = await _supabase.from('profiles').select('*').eq('id', _user.id).maybeSingle();
                 
                 if (!data && _user) {
-                    const username = _user.user_metadata?.username || _user.user_metadata?.full_name || _user.email.split('@')[0];
+                    const fallbackBase = (_user.email || 'user').split('@')[0];
+                    const rawName = (_user.user_metadata?.username || _user.user_metadata?.full_name || fallbackBase).trim();
+                    const username = rawName.length >= 2 ? rawName.slice(0, 30) : `user_${_user.id.slice(0, 6)}`;
                     const { data: newProfile, error: insertError } = await _supabase
                         .from('profiles')
                         .insert([{ id: _user.id, username: username }])
@@ -373,98 +663,123 @@
 
                 if (data) {
                     _profile = data;
-                    _isMod = data.is_mod;
-                    _isDeveloper = data.is_developer;
-                    
-                    const displayNameElem = document.getElementById('display-name');
-                    if (displayNameElem) displayNameElem.innerText = _profile.username;
+                    _isMod = data.is_mod === true;
+                    _isDeveloper = data.is_developer === true;
 
-                    const modIndicator = document.getElementById('mod-indicator');
-                    const devControls = document.getElementById('dev-edit-controls');
-                    
-                    if (_isDeveloper) {
-                        if (modIndicator) {
-                            modIndicator.innerText = "System Developer Access";
-                            modIndicator.classList.remove('hidden');
-                        }
-                        if (devControls) devControls.classList.remove('hidden');
-                    } else if (_isMod) {
-                        if (modIndicator) {
-                            modIndicator.innerText = "System Edit Enable";
-                            modIndicator.classList.remove('hidden');
-                        }
-                    } else {
-                        if (modIndicator) modIndicator.classList.add('hidden');
-                        if (devControls) devControls.classList.add('hidden');
-                    }
+                    const displayNameElem = document.getElementById('display-name');
+                    if (displayNameElem) displayNameElem.textContent = _profile.username || 'Player';
+                    syncRoleUi();
+                } else {
+                    _profile = null;
+                    _isMod = false;
+                    _isDeveloper = false;
+                    syncRoleUi();
                 }
             }
 
             async function fetchSiteData() {
-                const { data: settings } = await _supabase.from('site_settings').select('*').eq('key', 'dev_message').single();
+                const { data: settings } = await _supabase.from('site_settings').select('*').eq('key', 'dev_message').maybeSingle();
                 if (settings) {
-                    document.getElementById('dev-message-content').innerText = settings.value;
-                    document.getElementById('dev-message-input').value = settings.value;
-                    document.getElementById('dev-message-time').innerText = `Updated: ${new Date(settings.updated_at).toLocaleDateString()}`;
+                    _latestDevMessage = settings.value || '';
+                    const msgContent = document.getElementById('dev-message-content');
+                    const msgInput = document.getElementById('dev-message-input');
+                    const msgTime = document.getElementById('dev-message-time');
+                    if (msgContent) msgContent.textContent = _latestDevMessage;
+                    if (msgInput) msgInput.value = _latestDevMessage;
+                    if (msgTime) msgTime.textContent = `Updated: ${formatDate(settings.updated_at)}`;
                 }
                 const { data: configs } = await _supabase.from('games_config').select('*');
                 _gameConfigs = {};
                 if (configs) configs.forEach(c => _gameConfigs[c.game_id] = c.is_online);
                 await fetchVotes();
                 renderGames();
-                if (typeof refreshGameViewIfOpen === 'function') refreshGameViewIfOpen();
+                refreshGameViewIfOpen();
             }
 
-            window.toggleDevMessageEdit = function() {
-                document.getElementById('dev-message-display').classList.toggle('hidden');
-                document.getElementById('dev-message-edit').classList.toggle('hidden');
-            };
+            async function toggleDevMessageEdit() {
+                const roles = await verifyServerRoles();
+                if (!roles.isDeveloper) return;
+                _devEditOpen = !_devEditOpen;
+                withObserverPaused(() => {
+                    const disp = document.getElementById('dev-message-display');
+                    const edit = document.getElementById('dev-message-edit');
+                    const input = document.getElementById('dev-message-input');
+                    if (disp) disp.classList.toggle('hidden', _devEditOpen);
+                    if (edit) edit.classList.toggle('hidden', !_devEditOpen);
+                    if (_devEditOpen && input) {
+                        input.value = _latestDevMessage || '';
+                        input.focus();
+                    }
+                });
+            }
 
-            window.saveDevMessage = async function() {
-                const val = document.getElementById('dev-message-input').value.trim();
+            async function saveDevMessage() {
+                const roles = await verifyServerRoles();
+                if (!roles.isDeveloper) {
+                    showToast('Developer access required.', 'error');
+                    return;
+                }
+                const input = document.getElementById('dev-message-input');
+                const val = input ? input.value.trim() : '';
                 if (!val) return;
-                const { error } = await _supabase.from('site_settings').upsert({ key: 'dev_message', value: val, updated_at: new Date().toISOString() });
-                if (error) alert("Error: " + error.message);
-                else { alert("Status updated!"); fetchSiteData(); window.toggleDevMessageEdit(); }
-            };
+                const { error } = await _supabase
+                    .from('site_settings')
+                    .upsert({ key: 'dev_message', value: val, updated_at: new Date().toISOString() });
+                if (error) {
+                    showToast("Error: " + error.message, 'error');
+                } else {
+                    _devEditOpen = false;
+                    showToast("Status updated!", 'success');
+                    await fetchSiteData();
+                    syncRoleUi();
+                }
+            }
 
-            window.toggleGameStatus = async function(gameId) {
-                if (!_isDeveloper) return;
-                const currentStatus = _gameConfigs[gameId] !== false;
+            async function toggleGameStatus(gameId) {
+                const idNum = Number(gameId);
+                if (!gamesList.some(g => g.id === idNum)) return;
+                const roles = await verifyServerRoles();
+                if (!roles.isDeveloper) {
+                    showToast('Developer access required.', 'error');
+                    return;
+                }
+                const currentStatus = _gameConfigs[idNum] !== false;
                 const newStatus = !currentStatus;
-                const { error } = await _supabase.from('games_config').upsert({ game_id: gameId, is_online: newStatus, updated_at: new Date().toISOString() });
-                if (error) alert("Error: " + error.message);
-                else fetchSiteData();
-            };
+                const { error } = await _supabase
+                    .from('games_config')
+                    .upsert({ game_id: idNum, is_online: newStatus, updated_at: new Date().toISOString() });
+                if (error) showToast("Error: " + error.message, 'error');
+                else await fetchSiteData();
+            }
 
-            // Bygger ett enskilt spelkort (samma utseende som tidigare)
             function createGameCard(game) {
                 const isOnline = _gameConfigs[game.id] !== false;
                 const card = document.createElement('div');
+                card.dataset.gameId = String(game.id);
                 const counts = _voteCounts[game.id] || { likes: 0, dislikes: 0 };
                 const myVote = _myVotes[game.id] || 0;
                 const voteRow = `
                     <div class="flex items-center gap-3 mb-4 relative z-20">
-                        <button onclick="event.stopPropagation(); window.voteGame(${game.id}, 1)" title="Like" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${myVote === 1 ? 'text-green-400 border-green-500/60 bg-green-500/15' : 'text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500/50'}"><i data-lucide="thumbs-up" class="w-4 h-4"></i><span>${counts.likes}</span></button>
-                        <button onclick="event.stopPropagation(); window.voteGame(${game.id}, -1)" title="Dislike" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${myVote === -1 ? 'text-red-400 border-red-500/60 bg-red-500/15' : 'text-slate-400 border-slate-600 hover:text-red-400 hover:border-red-500/50'}"><i data-lucide="thumbs-down" class="w-4 h-4"></i><span>${counts.dislikes}</span></button>
+                        <button type="button" data-action="vote-game" data-game-id="${game.id}" data-vote="1" title="Like" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${myVote === 1 ? 'text-green-400 border-green-500/60 bg-green-500/15' : 'text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500/50'}"><i data-lucide="thumbs-up" class="w-4 h-4"></i><span>${Number(counts.likes) || 0}</span></button>
+                        <button type="button" data-action="vote-game" data-game-id="${game.id}" data-vote="-1" title="Dislike" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${myVote === -1 ? 'text-red-400 border-red-500/60 bg-red-500/15' : 'text-slate-400 border-slate-600 hover:text-red-400 hover:border-red-500/50'}"><i data-lucide="thumbs-down" class="w-4 h-4"></i><span>${Number(counts.dislikes) || 0}</span></button>
                     </div>`;
                 card.className = `game-card bg-slate-800 border-2 rounded-xl p-6 flex flex-col items-center justify-between transition-all duration-300 transform relative overflow-hidden ${isOnline ? 'border-slate-700 hover:-translate-y-2 cursor-pointer group' : 'border-red-900/50 opacity-75 grayscale bg-slate-900'}`;
-                if (isOnline) {
-                    card.onclick = () => window.openGameView(game.id);
-                }
                 const actionHtml = isOnline
-                    ? `<button class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 hover:opacity-90 transition-transform">PLAY NOW</button>`
-                    : `<button class="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-slate-700 to-slate-800 text-white font-bold shadow-lg transform opacity-20 cursor-not-allowed transition-transform">NOT AVAILABLE</button>`;
+                    ? `<button type="button" class="w-full py-2 px-4 rounded-lg bg-gradient-to-r ${game.color} text-white font-bold shadow-lg transform active:scale-95 hover:opacity-90 transition-transform">PLAY NOW</button>`
+                    : `<button type="button" disabled class="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-slate-700 to-slate-800 text-white font-bold shadow-lg transform opacity-20 cursor-not-allowed transition-transform">NOT AVAILABLE</button>`;
+                const devToggleHtml = _isDeveloper
+                    ? `<button type="button" data-action="toggle-game-status" data-game-id="${game.id}" class="mb-4 text-[10px] font-bold px-3 py-1 rounded-full border ${isOnline ? 'text-green-400 border-green-500/50 bg-green-500/10 hover:bg-green-500/20' : 'text-red-400 border-red-500/50 bg-red-500/10 hover:bg-red-500/20'} z-20">${isOnline ? 'TOGGLE OFFLINE' : 'TOGGLE ONLINE'}</button>`
+                    : '';
                 card.innerHTML = `
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${isOnline ? game.color : 'from-red-900 to-red-600'}"></div>
                     ${!isOnline ? `<div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none z-10"><span class="bg-red-600 text-white font-bold px-3 py-1 rounded text-xs animate-pulse">OFFLINE</span></div>` : ''}
                     <div class="w-16 h-16 mb-4 rounded-full bg-slate-900 flex items-center justify-center border border-slate-600 ${isOnline ? 'group-hover:border-white' : ''} transition-colors">
-                        <i data-lucide="${game.icon}" class="w-8 h-8 ${isOnline ? 'text-gray-300 group-hover:text-white' : 'text-slate-600'}"></i>
+                        <i data-lucide="${escapeHtml(game.icon)}" class="w-8 h-8 ${isOnline ? 'text-gray-300 group-hover:text-white' : 'text-slate-600'}"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-2 game-font text-center break-words max-w-full ${isOnline ? '' : 'text-slate-500'}">${game.name}</h3>
+                    <h3 class="text-xl font-bold mb-2 game-font text-center break-words max-w-full ${isOnline ? '' : 'text-slate-500'}">${escapeHtml(game.name)}</h3>
                     <span class="text-xs text-slate-500 mb-3 font-mono">ID: ${game.id}</span>
                     ${voteRow}
-                    ${_isDeveloper ? `<button onclick="event.stopPropagation(); window.toggleGameStatus(${game.id})" class="mb-4 text-[10px] font-bold px-3 py-1 rounded-full border ${isOnline ? 'text-green-400 border-green-500/50 bg-green-500/10 hover:bg-green-500/20' : 'text-red-400 border-red-500/50 bg-red-500/10 hover:bg-red-500/20'} z-20">${isOnline ? 'TOGGLE OFFLINE' : 'TOGGLE ONLINE'}</button>` : ''}
+                    ${devToggleHtml}
                     ${actionHtml}
                 `;
                 return card;
@@ -474,50 +789,55 @@
                 const root = document.getElementById('game-sections');
                 const nav = document.getElementById('section-nav');
                 if (!root) return;
-                root.innerHTML = '';
-                if (nav) nav.innerHTML = '';
 
-                gameSections.forEach(sec => {
-                    const list = sec.ids
-                        ? sec.ids.map(id => gamesList.find(g => g.id === id)).filter(Boolean)
-                        : gamesList;
-                    if (list.length === 0) return;
+                withObserverPaused(() => {
+                    root.innerHTML = '';
+                    if (nav) nav.innerHTML = '';
 
-                    const section = document.createElement('section');
-                    section.id = `section-${sec.key}`;
-                    section.className = 'scroll-mt-28';
-                    section.innerHTML = `
-                        <div class="flex items-center gap-3 mb-5">
-                            <i data-lucide="${sec.icon}" class="w-6 h-6 shrink-0 ${sec.accent}"></i>
-                            <h4 class="text-lg md:text-xl font-bold game-font text-slate-200 tracking-wider uppercase">${sec.title}</h4>
-                            <span class="text-xs font-mono text-slate-400 bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-full">${list.length}</span>
-                            <div class="h-px bg-slate-700 flex-grow"></div>
-                        </div>
-                        <div class="section-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6"></div>
-                    `;
-                    const grid = section.querySelector('.section-grid');
-                    list.forEach(game => grid.appendChild(createGameCard(game)));
-                    root.appendChild(section);
+                    gameSections.forEach(sec => {
+                        const list = sec.ids
+                            ? sec.ids.map(id => gamesList.find(g => g.id === id)).filter(Boolean)
+                            : gamesList;
+                        if (list.length === 0) return;
 
+                        const section = document.createElement('section');
+                        section.id = `section-${sec.key}`;
+                        section.className = 'scroll-mt-28';
+                        section.innerHTML = `
+                            <div class="flex items-center gap-3 mb-5">
+                                <i data-lucide="${escapeHtml(sec.icon)}" class="w-6 h-6 shrink-0 ${sec.accent}"></i>
+                                <h4 class="text-lg md:text-xl font-bold game-font text-slate-200 tracking-wider uppercase">${escapeHtml(sec.title)}</h4>
+                                <span class="text-xs font-mono text-slate-400 bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-full">${list.length}</span>
+                                <div class="h-px bg-slate-700 flex-grow"></div>
+                            </div>
+                            <div class="section-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6"></div>
+                        `;
+                        const grid = section.querySelector('.section-grid');
+                        list.forEach(game => grid.appendChild(createGameCard(game)));
+                        root.appendChild(section);
+
+                        if (nav) {
+                            const pill = document.createElement('button');
+                            pill.type = 'button';
+                            pill.className = 'section-nav-btn flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 px-4 py-2 rounded-full text-xs font-bold text-slate-300 transition-colors shrink-0';
+                            pill.innerHTML = `<i data-lucide="${escapeHtml(sec.icon)}" class="w-4 h-4 ${sec.accent}"></i>${escapeHtml(sec.title)}`;
+                            pill.addEventListener('click', () => section.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+                            nav.appendChild(pill);
+                        }
+                    });
                     if (nav) {
-                        const pill = document.createElement('button');
-                        pill.className = 'section-nav-btn flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 px-4 py-2 rounded-full text-xs font-bold text-slate-300 transition-colors shrink-0';
-                        pill.innerHTML = `<i data-lucide="${sec.icon}" class="w-4 h-4 ${sec.accent}"></i>${sec.title}`;
-                        pill.onclick = () => section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        nav.appendChild(pill);
+                        const rp = document.createElement('button');
+                        rp.type = 'button';
+                        rp.className = 'section-nav-btn flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 px-4 py-2 rounded-full text-xs font-bold text-slate-300 transition-colors shrink-0';
+                        rp.innerHTML = '<i data-lucide="star" class="w-4 h-4 text-yellow-400"></i>Game Reviews';
+                        rp.addEventListener('click', openReviews);
+                        nav.appendChild(rp);
                     }
                 });
-                if (nav) {
-                    const rp = document.createElement('button');
-                    rp.className = 'section-nav-btn flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 px-4 py-2 rounded-full text-xs font-bold text-slate-300 transition-colors shrink-0';
-                    rp.innerHTML = '<i data-lucide="star" class="w-4 h-4 text-yellow-400"></i>Game Reviews';
-                    rp.onclick = () => window.openReviews();
-                    nav.appendChild(rp);
-                }
                 refreshIcons();
             }
 
-            window.toggleAuthMode = function() {
+            function toggleAuthMode() {
                 _isSignUp = !_isSignUp;
                 const title = document.getElementById('auth-title');
                 const subtitle = document.getElementById('auth-subtitle');
@@ -526,25 +846,37 @@
                 const toggleBtn = document.getElementById('auth-toggle-btn');
                 const usernameField = document.getElementById('username-field');
                 if (_isSignUp) {
-                    title.innerText = "Create Account"; subtitle.innerText = "Join the hub to start playing."; btn.innerText = "Sign Up";
-                    toggleText.innerText = "Already have an account?"; toggleBtn.innerText = "Login"; usernameField.classList.remove('hidden');
+                    if (title) title.textContent = "Create Account";
+                    if (subtitle) subtitle.textContent = "Join the hub to start playing.";
+                    if (btn) btn.textContent = "Sign Up";
+                    if (toggleText) toggleText.textContent = "Already have an account?";
+                    if (toggleBtn) toggleBtn.textContent = "Login";
+                    if (usernameField) usernameField.classList.remove('hidden');
                 } else {
-                    title.innerText = "Login"; subtitle.innerText = "Welcome back! Please login to continue."; btn.innerText = "Sign In";
-                    toggleText.innerText = "Don't have an account?"; toggleBtn.innerText = "Create Account"; usernameField.classList.add('hidden');
+                    if (title) title.textContent = "Login";
+                    if (subtitle) subtitle.textContent = "Welcome back! Please login to continue.";
+                    if (btn) btn.textContent = "Sign In";
+                    if (toggleText) toggleText.textContent = "Don't have an account?";
+                    if (toggleBtn) toggleBtn.textContent = "Create Account";
+                    if (usernameField) usernameField.classList.add('hidden');
                 }
-            };
+            }
 
-            window.handleAuth = async function(e) {
+            async function handleAuth(e) {
                 e.preventDefault();
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                const username = document.getElementById('auth-username').value;
+                const email = (document.getElementById('auth-email')?.value || '').trim();
+                const password = document.getElementById('auth-password')?.value || '';
+                const username = (document.getElementById('auth-username')?.value || '').trim();
                 const errorDiv = document.getElementById('auth-error');
                 const btn = document.getElementById('auth-btn');
-                errorDiv.classList.add('hidden'); btn.disabled = true; btn.innerHTML = '<span class="animate-pulse">Processing...</span>';
+                if (errorDiv) errorDiv.classList.add('hidden');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="animate-pulse">Processing...</span>';
+                }
                 try {
                     if (_isSignUp) {
-                        if (!username) throw new Error("Username is required");
+                        if (!username || username.length < 2) throw new Error("Username must be at least 2 characters");
                         const { error } = await _supabase.auth.signUp({ 
                             email, 
                             password, 
@@ -553,14 +885,24 @@
                             } 
                         });
                         if (error) throw error;
-                        alert("Account created! You can now login."); window.toggleAuthMode();
+                        showToast("Account created! You can now login.", 'success');
+                        toggleAuthMode();
                     } else {
                         const { error } = await _supabase.auth.signInWithPassword({ email, password });
                         if (error) throw error;
                     }
-                } catch (err) { errorDiv.innerText = err.message; errorDiv.classList.remove('hidden'); }
-                finally { btn.disabled = false; btn.innerText = _isSignUp ? "Sign Up" : "Sign In"; }
-            };
+                } catch (err) {
+                    if (errorDiv) {
+                        errorDiv.textContent = err && err.message ? err.message : 'Authentication error';
+                        errorDiv.classList.remove('hidden');
+                    }
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = _isSignUp ? "Sign Up" : "Sign In";
+                    }
+                }
+            }
 
             function openAuthModal() {
                 const m = document.getElementById('auth-section');
@@ -576,47 +918,45 @@
                 const err = document.getElementById('auth-error');
                 if (err) err.classList.add('hidden');
             }
-            window.openAuthModal = openAuthModal;
-            window.closeAuthModal = closeAuthModal;
-            window.showLoginPopup = function() { const p = document.getElementById('login-popup'); if (p) p.classList.remove('hidden'); };
-            window.closeLoginPopup = function() { const p = document.getElementById('login-popup'); if (p) p.classList.add('hidden'); };
+            function showLoginPopup() { const p = document.getElementById('login-popup'); if (p) p.classList.remove('hidden'); }
+            function closeLoginPopup() { const p = document.getElementById('login-popup'); if (p) p.classList.add('hidden'); }
 
             function updateAuthButton() {
                 const btn = document.getElementById('auth-action-btn');
                 if (!btn) return;
-                if (_user) {
-                    btn.className = 'flex items-center gap-2 bg-slate-800 hover:bg-red-900/40 border border-slate-700 hover:border-red-500/50 px-4 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-red-500/50';
-                    btn.innerHTML = '<i data-lucide="log-out" class="w-4 h-4"></i> Sign Out';
-                } else {
-                    btn.className = 'flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50';
-                    btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> Login';
-                }
+                withObserverPaused(() => {
+                    if (_user) {
+                        btn.className = 'flex items-center gap-2 bg-slate-800 hover:bg-red-900/40 border border-slate-700 hover:border-red-500/50 px-4 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-red-500/50';
+                        btn.innerHTML = '<i data-lucide="log-out" class="w-4 h-4"></i> Sign Out';
+                    } else {
+                        btn.className = 'flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50';
+                        btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> Login';
+                    }
+                });
                 refreshIcons();
             }
 
-            window.handleAuthButton = function() { if (_user) window.handleSignOut(); else openAuthModal(); };
-            window.handleSignOut = async function() { await _supabase.auth.signOut(); };
+            function handleAuthButton() { if (_user) handleSignOut(); else openAuthModal(); }
+            async function handleSignOut() { await _supabase.auth.signOut(); }
 
-            // Visitor (not logged in): can browse games and see votes, chat is locked
             async function setupGuestView() {
-                _user = null; _profile = null; _isMod = false; _isDeveloper = false; _myVotes = {};
+                _user = null; _profile = null; _isMod = false; _isDeveloper = false; _isBanned = false; _myVotes = {};
                 if (_chatChannel) { _supabase.removeChannel(_chatChannel); _chatChannel = null; }
-                const nameEl = document.getElementById('display-name');
-                if (nameEl) nameEl.innerText = 'Guest';
-                const modInd = document.getElementById('mod-indicator');
-                if (modInd) modInd.classList.add('hidden');
-                const devCtl = document.getElementById('dev-edit-controls');
-                if (devCtl) devCtl.classList.add('hidden');
-                const dot = document.getElementById('status-dot');
-                if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-500';
-                const st = document.getElementById('chat-status');
-                if (st) st.innerText = 'Login required';
-                const list = document.getElementById('comments-list');
-                if (list) list.innerHTML = '<div class="text-center text-slate-500 py-10 text-sm">Login to view and join the chat.</div>';
-                const input = document.getElementById('comment-input');
-                const sendBtn = document.getElementById('send-btn');
-                if (input) { input.disabled = true; input.value = ''; input.placeholder = 'Login to chat'; }
-                if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('opacity-50'); }
+                syncRoleUi();
+                withObserverPaused(() => {
+                    const nameEl = document.getElementById('display-name');
+                    if (nameEl) nameEl.textContent = 'Guest';
+                    const dot = document.getElementById('status-dot');
+                    if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+                    const st = document.getElementById('chat-status');
+                    if (st) st.textContent = 'Login required';
+                    const list = document.getElementById('comments-list');
+                    if (list) list.innerHTML = '<div class="text-center text-slate-500 py-10 text-sm">Login to view and join the chat.</div>';
+                    const input = document.getElementById('comment-input');
+                    const sendBtn = document.getElementById('send-btn');
+                    if (input) { input.disabled = true; input.value = ''; input.placeholder = 'Login to chat'; }
+                    if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('opacity-50'); }
+                });
                 updateAuthButton();
                 refreshReviewsIfOpen();
                 await fetchSiteData();
@@ -638,33 +978,38 @@
                 if (_votesChannelStarted || !_supabase) return;
                 _votesChannelStarted = true;
                 _supabase.channel('votes-room')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_votes' }, async () => { await fetchVotes(); renderGames(); })
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_votes' }, async () => { await fetchVotes(); renderGames(); refreshGameViewIfOpen(); })
                     .subscribe();
             }
 
-            window.voteGame = async function(gameId, value) {
-                if (!_user) { window.showLoginPopup(); return; }
-                const prev = _myVotes[gameId] || 0;
-                const next = prev === value ? 0 : value; // clicking the same button again removes the vote
-                const c = _voteCounts[gameId] || { likes: 0, dislikes: 0 };
+            async function voteGame(gameId, value) {
+                if (!_user) { showLoginPopup(); return; }
+                const idNum = Number(gameId);
+                const voteVal = Number(value);
+                if (!gamesList.some(g => g.id === idNum) || (voteVal !== 1 && voteVal !== -1)) return;
+                const prev = _myVotes[idNum] || 0;
+                const next = prev === voteVal ? 0 : voteVal;
+                const c = _voteCounts[idNum] || { likes: 0, dislikes: 0 };
                 if (prev === 1) c.likes--; if (prev === -1) c.dislikes--;
                 if (next === 1) c.likes++; if (next === -1) c.dislikes++;
                 c.likes = Math.max(0, c.likes); c.dislikes = Math.max(0, c.dislikes);
-                _voteCounts[gameId] = c;
-                if (next === 0) delete _myVotes[gameId]; else _myVotes[gameId] = next;
+                _voteCounts[idNum] = c;
+                if (next === 0) delete _myVotes[idNum]; else _myVotes[idNum] = next;
                 renderGames();
+                refreshGameViewIfOpen();
                 let res;
-                if (next === 0) res = await _supabase.from('game_votes').delete().eq('game_id', gameId).eq('user_id', _user.id);
-                else res = await _supabase.from('game_votes').upsert({ game_id: gameId, user_id: _user.id, vote: next }, { onConflict: 'game_id,user_id' });
-                if (res.error) { alert("Could not save vote: " + res.error.message); await fetchVotes(); renderGames(); }
-            };
-            
+                if (next === 0) res = await _supabase.from('game_votes').delete().eq('game_id', idNum).eq('user_id', _user.id);
+                else res = await _supabase.from('game_votes').upsert({ game_id: idNum, user_id: _user.id, vote: next }, { onConflict: 'game_id,user_id' });
+                if (res.error) { showToast("Could not save vote: " + res.error.message, 'error'); await fetchVotes(); renderGames(); refreshGameViewIfOpen(); }
+            }
 
             async function startChat() {
-                const statusDot = document.getElementById('status-dot');
-                const chatStatus = document.getElementById('chat-status');
-                if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-green-500";
-                if (chatStatus) chatStatus.innerText = "Live";
+                withObserverPaused(() => {
+                    const statusDot = document.getElementById('status-dot');
+                    const chatStatus = document.getElementById('chat-status');
+                    if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+                    if (chatStatus) chatStatus.textContent = "Live";
+                });
                 renderChat();
                 if (_chatChannel) _supabase.removeChannel(_chatChannel);
                 _chatChannel = _supabase.channel('chat-room')
@@ -675,80 +1020,121 @@
 
             async function renderChat() {
                 if (!_supabase || !_user) return;
-                const { data: myBan } = await _supabase.from('banned_users').select('*').eq('user_id', _user.id).maybeSingle();
-                const isMeBanned = !!myBan;
-                const input = document.getElementById('comment-input');
-                const sendBtn = document.getElementById('send-btn');
-                if (isMeBanned) { 
-                    if (input) { input.disabled = true; input.placeholder = "YOU ARE BANNED."; }
-                    if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('opacity-50'); }
-                } else { 
-                    if (input) { input.disabled = false; input.placeholder = "Write message (follow chat rules)"; }
-                    if (sendBtn) { sendBtn.disabled = false; sendBtn.classList.remove('opacity-50'); }
-                }
+                const { data: myBan } = await _supabase.from('banned_users').select('user_id').eq('user_id', _user.id).maybeSingle();
+                _isBanned = !!myBan;
+                withObserverPaused(() => {
+                    const input = document.getElementById('comment-input');
+                    const sendBtn = document.getElementById('send-btn');
+                    if (_isBanned) {
+                        if (input) { input.disabled = true; input.value = ''; input.placeholder = "YOU ARE BANNED."; }
+                        if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('opacity-50'); }
+                    } else {
+                        if (input) { input.disabled = false; input.placeholder = "Write message (follow chat rules)"; }
+                        if (sendBtn) { sendBtn.disabled = false; sendBtn.classList.remove('opacity-50'); }
+                    }
+                });
                 const { data: allBans } = await _supabase.from('banned_users').select('user_id');
                 const bannedIds = allBans ? allBans.map(b => b.user_id) : [];
                 const { data: msgs, error } = await _supabase.from('chat_messages').select('*').order('created_at', { ascending: false }).limit(50);
                 const list = document.getElementById('comments-list');
-                if (error) { if (list) list.innerHTML = `<div class="text-center text-red-500 p-4">Error loading chat.</div>`; return; }
-                if (!msgs || msgs.length === 0) { if (list) list.innerHTML = '<div class="text-center text-slate-600 py-10 italic">No messages yet.</div>'; return; }
-                
-                if (list) {
+                if (!list) return;
+                if (error) { withObserverPaused(() => { list.innerHTML = '<div class="text-center text-red-500 p-4">Error loading chat.</div>'; }); return; }
+                if (!msgs || msgs.length === 0) { withObserverPaused(() => { list.innerHTML = '<div class="text-center text-slate-600 py-10 italic">No messages yet.</div>'; }); return; }
+
+                withObserverPaused(() => {
                     list.innerHTML = '';
                     [...msgs].reverse().forEach(m => {
                         const userIsBanned = bannedIds.includes(m.user_id);
                         if (userIsBanned && !_isMod) return;
-                        const name = (m.username || 'User').replace(/</g, "&lt;");
-                        const text = (m.text || '').replace(/</g, "&lt;");
+                        const rawName = (m.username || 'User');
+                        const safeName = escapeHtml(rawName);
+                        const safeText = escapeHtml(m.text || '');
+                        const safeAvatar = sanitizeAvatarUrl(m.avatar_url);
                         const isMe = m.user_id === _user.id;
-                        const timeStr = m.created_at ? formatDateTime(m.created_at) : '';
+                        const timeStr = m.created_at ? escapeHtml(formatDateTime(m.created_at)) : '';
+                        const safeMsgId = safeIdAttr(m.id);
+                        const safeUid = safeIdAttr(m.user_id);
                         const div = document.createElement('div');
                         div.className = `p-3 rounded-lg border transition-all flex gap-3 group relative ${userIsBanned ? 'bg-red-900/20 border-red-900/50' : 'bg-slate-800 border-slate-700'}`;
                         div.innerHTML = `
                             <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 shrink-0 overflow-hidden">
-                                ${m.avatar_url ? `<img src="${m.avatar_url}" class="w-full h-full object-cover">` : `<span class="text-xs font-bold ${isMe ? 'text-blue-400' : 'text-purple-400'}">${name.charAt(0).toUpperCase()}</span>`}
+                                ${safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="" class="w-full h-full object-cover">` : `<span class="text-xs font-bold ${isMe ? 'text-blue-400' : 'text-purple-400'}">${escapeHtml(rawName.charAt(0).toUpperCase())}</span>`}
                             </div>
-                            <div class="w-full">
+                            <div class="w-full min-w-0">
                                 <div class="flex items-center justify-between mb-1">
                                     <span class="font-bold text-sm flex flex-wrap items-center gap-1 ${m.is_mod ? 'text-yellow-500' : (isMe ? 'text-blue-400' : 'text-purple-400')}">
-                                        ${name} 
+                                        ${safeName}
                                         ${m.is_mod ? '<i data-lucide="shield-check" class="w-3.5 h-3.5 text-yellow-500"></i>' : ''}
                                         <span class="text-xs text-slate-500 ml-2 font-normal">${timeStr}</span>
                                         ${m.verified ? '<i data-lucide="check-circle" class="w-3.5 h-3.5 text-blue-400 ml-1"></i>' : ''}
                                         ${userIsBanned ? '<span class="text-red-500 text-[10px] ml-1 font-mono uppercase">[Banned]</span>' : ''}
                                     </span>
-                                    ${_isMod ? `<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="window.handleVerify('${m.id}', ${!m.verified})" class="text-green-500 hover:text-green-400" title="Verify"><i data-lucide="check-circle" class="w-4 h-4"></i></button><button onclick="window.handleBan('${m.user_id}')" class="text-orange-500 hover:text-orange-400" title="Ban"><i data-lucide="user-x" class="w-4 h-4"></i></button><button onclick="window.handleDelete('${m.id}')" class="text-red-500 hover:text-red-400" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : ''}
+                                    ${_isMod && safeMsgId && safeUid ? `<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button type="button" data-action="verify-comment" data-id="${safeMsgId}" data-verified="${!m.verified}" class="text-green-500 hover:text-green-400" title="Verify"><i data-lucide="check-circle" class="w-4 h-4"></i></button><button type="button" data-action="ban-user" data-user-id="${safeUid}" class="text-orange-500 hover:text-orange-400" title="Ban"><i data-lucide="user-x" class="w-4 h-4"></i></button><button type="button" data-action="delete-comment" data-id="${safeMsgId}" class="text-red-500 hover:text-red-400" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : ''}
                                 </div>
-                                <p class="text-sm text-slate-300 break-words">${text}</p>
+                                <p class="text-sm text-slate-300 break-words">${safeText}</p>
                             </div>
                         `;
                         list.appendChild(div);
                     });
-                    refreshIcons(); list.scrollTop = list.scrollHeight;
+                });
+                refreshIcons();
+                list.scrollTop = list.scrollHeight;
+            }
+
+            async function postComment() {
+                const input = document.getElementById('comment-input');
+                if (!input || !_supabase || !_user) return;
+                const { data: myBan } = await _supabase.from('banned_users').select('user_id').eq('user_id', _user.id).maybeSingle();
+                if (myBan) {
+                    _isBanned = true;
+                    showToast('You are banned from chatting.', 'error');
+                    renderChat();
+                    return;
+                }
+                const text = input.value.trim().slice(0, 500);
+                if (!text) return;
+                const { error } = await _supabase.from('comments').insert([{ text: text, user_id: _user.id }]);
+                if (error) showToast("Error sending: " + error.message, 'error');
+                else { input.value = ''; renderChat(); }
+            }
+
+            async function handleDelete(id) {
+                const roles = await verifyServerRoles();
+                if (!roles.isMod) return;
+                const safeId = safeIdAttr(id);
+                if (!safeId) return;
+                if (await showConfirm("Delete message?")) {
+                    const { error } = await _supabase.from('comments').delete().eq('id', safeId);
+                    if (error) showToast("Could not delete: " + error.message, 'error');
+                    renderChat();
                 }
             }
 
-            window.postComment = async function() {
-                const input = document.getElementById('comment-input');
-                if (!input) return;
-                const text = input.value.trim();
-                if (!text || !_supabase || !_user) return;
-                const { error } = await _supabase.from('comments').insert([{ text: text, user_id: _user.id }]);
-                if (error) alert("Error sending: " + error.message);
-                else { input.value = ''; renderChat(); }
-            };
+            async function handleBan(uid) {
+                const roles = await verifyServerRoles();
+                if (!roles.isMod) return;
+                const safeUid = safeIdAttr(uid);
+                if (!safeUid) return;
+                if (safeUid === _user.id) {
+                    showToast("You can't ban yourself!", 'error');
+                    return;
+                }
+                if (await showConfirm("Permanently ban this user?")) {
+                    const { error } = await _supabase.from('banned_users').insert([{ user_id: safeUid, reason: 'Moderator-ban' }]);
+                    if (error) showToast("Could not ban: " + error.message, 'error');
+                    renderChat();
+                }
+            }
 
-            window.handleDelete = async function(id) { if (!_isMod) return; if (confirm("Delete message?")) { await _supabase.from('comments').delete().eq('id', id); renderChat(); } };
-            window.handleBan = async function(uid) { 
-                if (!_isMod) return; 
-                if (uid === _user.id) return alert("You can't ban yourself!"); 
-                if (confirm("Permanently ban this user?")) { 
-                    const { error } = await _supabase.from('banned_users').insert([{ user_id: uid, reason: 'Moderator-ban' }]); 
-                    if (error) alert("Could not ban: " + error.message); 
-                    renderChat(); 
-                } 
-            };
-            window.handleVerify = async function(id, setVerified) { if (!_isMod) return; const { error } = await _supabase.from('comments').update({ verified: setVerified }).eq('id', id); if (error) alert("Could not verify: " + error.message); renderChat(); };
+            async function handleVerify(id, setVerified) {
+                const roles = await verifyServerRoles();
+                if (!roles.isMod) return;
+                const safeId = safeIdAttr(id);
+                if (!safeId) return;
+                const { error } = await _supabase.from('comments').update({ verified: Boolean(setVerified) }).eq('id', safeId);
+                if (error) showToast("Could not verify: " + error.message, 'error');
+                renderChat();
+            }
 
             // ================= GAME REVIEWS =================
             let _reviewsGameId = null;
@@ -761,9 +1147,8 @@
             let _reviewsChannelStarted = false;
 
             function pad2(n) { return String(n).padStart(2, '0'); }
-            function formatDate(iso) { const d = new Date(iso); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`; }
-            function formatDateTime(iso) { const d = new Date(iso); return `${formatDate(iso)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; }
-            function escapeHtml(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+            function formatDate(iso) { const d = new Date(iso); return isNaN(d.getTime()) ? '' : `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`; }
+            function formatDateTime(iso) { const d = new Date(iso); return isNaN(d.getTime()) ? '' : `${formatDate(iso)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; }
             function countWords(t) { const x = t.trim(); return x ? x.split(/\s+/).length : 0; }
             function starsText(n) { const r = Math.max(0, Math.min(5, Math.round(n))); return '★'.repeat(r) + '☆'.repeat(5 - r); }
             function isReviewsOpen() { const v = document.getElementById('reviews-view'); return !!v && !v.classList.contains('hidden'); }
@@ -778,7 +1163,7 @@
                 if (home) home.classList.toggle('hidden', open);
                 if (rv) rv.classList.toggle('hidden', !open);
                 const lbl = document.getElementById('reviews-back-label');
-                if (lbl) lbl.innerText = _reviewsGameId === null ? 'Back to Game Hub' : 'Back to all games';
+                if (lbl) lbl.textContent = _reviewsGameId === null ? 'Back to Game Hub' : 'Back to all games';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
@@ -814,26 +1199,28 @@
                 else { await loadGameReviews(_reviewsGameId); renderReviewDetail(); }
             }
 
-            window.openReviews = async function() {
+            async function openReviews() {
                 startReviewsRealtime();
                 _reviewsGameId = null;
                 setReviewsView(true);
                 await loadReviewStats();
                 renderReviewsList();
-            };
+            }
 
-            window.openGameReviews = async function(gameId) {
-                if (_reviewsGameId !== gameId) { _draftRating = 0; _draftText = ''; }
-                _reviewsGameId = gameId;
+            async function openGameReviews(gameId) {
+                const idNum = Number(gameId);
+                if (!gamesList.some(g => g.id === idNum)) return;
+                if (_reviewsGameId !== idNum) { _draftRating = 0; _draftText = ''; }
+                _reviewsGameId = idNum;
                 setReviewsView(true);
-                await loadGameReviews(gameId);
+                await loadGameReviews(idNum);
                 renderReviewDetail();
-            };
+            }
 
-            window.reviewsBack = async function() {
-                if (_reviewsGameId !== null) { await window.openReviews(); }
+            async function reviewsBack() {
+                if (_reviewsGameId !== null) { await openReviews(); }
                 else { setReviewsView(false); }
-            };
+            }
 
             function renderReviewsList() {
                 const box = document.getElementById('reviews-content');
@@ -843,16 +1230,18 @@
                     const rating = st && st.count
                         ? `<div class="text-sm"><span class="text-yellow-400">${starsText(st.avg)}</span> <span class="text-slate-300 font-bold">${st.avg.toFixed(1)}</span> <span class="text-slate-500 text-xs">(${st.count})</span></div>`
                         : `<div class="text-xs text-slate-500">No reviews yet</div>`;
-                    return `<button onclick="window.openGameReviews(${g.id})" class="game-card text-left bg-slate-800 border-2 border-slate-700 rounded-xl p-5 relative overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center gap-3">
+                    return `<button type="button" data-action="open-game-reviews" data-game-id="${g.id}" class="game-card text-left bg-slate-800 border-2 border-slate-700 rounded-xl p-5 relative overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center gap-3">
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${g.color}"></div>
-                        <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center"><i data-lucide="${g.icon}" class="w-6 h-6 text-gray-300"></i></div>
+                        <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center"><i data-lucide="${escapeHtml(g.icon)}" class="w-6 h-6 text-gray-300"></i></div>
                         <h4 class="game-font font-bold text-center break-words max-w-full">${escapeHtml(g.name)}</h4>
                         ${rating}
                     </button>`;
                 }).join('');
-                box.innerHTML = `<p class="text-slate-400 text-sm mb-5">Pick a game to read its reviews${_user ? ' or write your own' : ''}.</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">${cards}</div>`;
-                const lbl = document.getElementById('reviews-back-label'); if (lbl) lbl.innerText = 'Back to Game Hub';
+                withObserverPaused(() => {
+                    box.innerHTML = `<p class="text-slate-400 text-sm mb-5">Pick a game to read its reviews${_user ? ' or write your own' : ''}.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">${cards}</div>`;
+                    const lbl = document.getElementById('reviews-back-label'); if (lbl) lbl.textContent = 'Back to Game Hub';
+                });
                 refreshIcons();
             }
 
@@ -861,22 +1250,24 @@
                 const canDelete = mine || _isMod;
                 const my = _reviewVotes[r.id] || 0;
                 const likes = Number(r.likes) || 0, dislikes = Number(r.dislikes) || 0;
-                const nm = escapeHtml(r.username || 'User');
+                const rawName = r.username || 'User';
+                const nm = escapeHtml(rawName);
+                const rid = safeIdAttr(r.id);
                 return `<div class="bg-slate-800 border ${mine ? 'border-blue-500/40' : 'border-slate-700'} rounded-xl p-5">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-xs font-bold ${mine ? 'text-blue-400' : 'text-purple-400'}">${nm.charAt(0).toUpperCase()}</div>
+                            <div class="w-8 h-8 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-xs font-bold ${mine ? 'text-blue-400' : 'text-purple-400'}">${escapeHtml(rawName.charAt(0).toUpperCase())}</div>
                             <span class="font-bold text-sm ${r.is_mod ? 'text-yellow-500' : (mine ? 'text-blue-400' : 'text-purple-400')}">${nm}</span>
-                            <span class="text-xs text-slate-500">${formatDate(r.created_at)}</span>
+                            <span class="text-xs text-slate-500">${escapeHtml(formatDate(r.created_at))}</span>
                         </div>
                         <span class="text-yellow-400 text-lg tracking-wide">${starsText(r.rating)}</span>
                     </div>
                     <p class="text-sm text-slate-300 whitespace-pre-wrap break-words mb-4">${escapeHtml(r.review_text)}</p>
                     <div class="flex flex-wrap items-center gap-3">
                         <span class="text-xs text-slate-500">Was this helpful?</span>
-                        <button onclick="window.voteReview('${r.id}', 1)" title="Helpful" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${my === 1 ? 'text-green-400 border-green-500/60 bg-green-500/15' : 'text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500/50'}"><i data-lucide="thumbs-up" class="w-4 h-4"></i><span>${likes}</span></button>
-                        <button onclick="window.voteReview('${r.id}', -1)" title="Not helpful" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${my === -1 ? 'text-red-400 border-red-500/60 bg-red-500/15' : 'text-slate-400 border-slate-600 hover:text-red-400 hover:border-red-500/50'}"><i data-lucide="thumbs-down" class="w-4 h-4"></i><span>${dislikes}</span></button>
-                        ${canDelete ? `<button onclick="window.deleteReview('${r.id}')" class="ml-auto flex items-center gap-1 text-xs text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i>Delete</button>` : ''}
+                        ${rid ? `<button type="button" data-action="vote-review" data-id="${rid}" data-vote="1" title="Helpful" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${my === 1 ? 'text-green-400 border-green-500/60 bg-green-500/15' : 'text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500/50'}"><i data-lucide="thumbs-up" class="w-4 h-4"></i><span>${likes}</span></button>
+                        <button type="button" data-action="vote-review" data-id="${rid}" data-vote="-1" title="Not helpful" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-colors ${my === -1 ? 'text-red-400 border-red-500/60 bg-red-500/15' : 'text-slate-400 border-slate-600 hover:text-red-400 hover:border-red-500/50'}"><i data-lucide="thumbs-down" class="w-4 h-4"></i><span>${dislikes}</span></button>` : ''}
+                        ${canDelete && rid ? `<button type="button" data-action="delete-review" data-id="${rid}" class="ml-auto flex items-center gap-1 text-xs text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i>Delete</button>` : ''}
                     </div>
                 </div>`;
             }
@@ -893,23 +1284,23 @@
                 if (!_user) {
                     formHtml = `<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5 mb-8 flex flex-wrap items-center justify-between gap-3">
                         <span class="text-sm text-slate-300">Login to write a review.</span>
-                        <button onclick="window.openAuthModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Login</button>
+                        <button type="button" data-action="open-auth-modal" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Login</button>
                     </div>`;
                 } else if (myReview) {
                     formHtml = `<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-4 mb-8 text-sm text-slate-400">You have already reviewed this game. Delete your review below if you want to write a new one.</div>`;
                 } else {
                     const words = countWords(_draftText);
-                    const stars = [1, 2, 3, 4, 5].map(i => `<button type="button" data-star="${i}" onclick="window.setDraftRating(${i})" class="text-3xl leading-none transition-colors ${i <= _draftRating ? 'text-yellow-400' : 'text-slate-600 hover:text-yellow-300'}">★</button>`).join('');
+                    const stars = [1, 2, 3, 4, 5].map(i => `<button type="button" data-action="set-draft-rating" data-star="${i}" class="text-3xl leading-none transition-colors ${i <= _draftRating ? 'text-yellow-400' : 'text-slate-600 hover:text-yellow-300'}">★</button>`).join('');
                     formHtml = `<div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5 mb-8">
                         <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                             <span class="text-slate-200 font-bold">Write a review</span>
                             <span class="text-xs text-slate-500">Posting as <span class="text-blue-400 font-bold">${escapeHtml(_profile ? _profile.username : '')}</span> &middot; ${formatDate(new Date().toISOString())}</span>
                         </div>
                         <div class="flex items-center gap-1 mb-4">${stars}</div>
-                        <textarea id="review-text" rows="4" maxlength="1000" oninput="window.onReviewInput(this)" placeholder="Share your thoughts about ${escapeHtml(game.name)} (max 100 words)..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none resize-none">${escapeHtml(_draftText)}</textarea>
+                        <textarea id="review-text" rows="4" maxlength="1000" placeholder="Share your thoughts about ${escapeHtml(game.name)} (max 100 words)..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none resize-none">${escapeHtml(_draftText)}</textarea>
                         <div class="flex items-center justify-between mt-3">
                             <span id="review-word-count" class="text-xs font-mono ${words > 100 ? 'text-red-400' : 'text-slate-500'}">${words}/100 words</span>
-                            <button id="review-submit" onclick="window.submitReview()" ${words > 100 ? 'disabled' : ''} class="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Publish review</button>
+                            <button type="button" id="review-submit" data-action="submit-review" ${words > 100 ? 'disabled' : ''} class="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Publish review</button>
                         </div>
                     </div>`;
                 }
@@ -918,81 +1309,97 @@
                     ? `<div class="text-center text-red-400 text-sm py-8">Could not load reviews: ${escapeHtml(_reviewsError)}</div>`
                     : (total ? `<div class="space-y-4">${_gameReviews.map(reviewCardHtml).join('')}</div>` : `<div class="text-center text-slate-500 italic py-8">No reviews yet. Be the first!</div>`);
 
-                box.innerHTML = `<div class="relative bg-slate-800 border border-slate-700 rounded-xl p-5 mb-6 flex flex-wrap items-center gap-4 overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${game.color}"></div>
-                        <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center shrink-0"><i data-lucide="${game.icon}" class="w-6 h-6 text-gray-300"></i></div>
-                        <div>
-                            <h4 class="text-xl font-bold game-font break-words">${escapeHtml(game.name)}</h4>
-                            <div class="text-sm">${total ? `<span class="text-yellow-400">${starsText(avg)}</span> <span class="text-slate-300 font-bold">${avg.toFixed(1)}</span> <span class="text-slate-500 text-xs">(${total} review${total === 1 ? '' : 's'})</span>` : '<span class="text-slate-500 text-xs">No reviews yet</span>'}</div>
+                withObserverPaused(() => {
+                    box.innerHTML = `<div class="relative bg-slate-800 border border-slate-700 rounded-xl p-5 mb-6 flex flex-wrap items-center gap-4 overflow-hidden">
+                            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${game.color}"></div>
+                            <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center shrink-0"><i data-lucide="${escapeHtml(game.icon)}" class="w-6 h-6 text-gray-300"></i></div>
+                            <div>
+                                <h4 class="text-xl font-bold game-font break-words">${escapeHtml(game.name)}</h4>
+                                <div class="text-sm">${total ? `<span class="text-yellow-400">${starsText(avg)}</span> <span class="text-slate-300 font-bold">${avg.toFixed(1)}</span> <span class="text-slate-500 text-xs">(${total} review${total === 1 ? '' : 's'})</span>` : '<span class="text-slate-500 text-xs">No reviews yet</span>'}</div>
+                            </div>
                         </div>
-                    </div>
-                    ${formHtml}
-                    ${listHtml}`;
-                const lbl = document.getElementById('reviews-back-label'); if (lbl) lbl.innerText = 'Back to all games';
+                        ${formHtml}
+                        ${listHtml}`;
+                    const lbl = document.getElementById('reviews-back-label'); if (lbl) lbl.textContent = 'Back to all games';
+                });
                 refreshIcons();
             }
 
-            window.setDraftRating = function(n) {
-                _draftRating = n;
+            function setDraftRating(n) {
+                const rating = Math.max(1, Math.min(5, Number(n) || 0));
+                _draftRating = rating;
                 document.querySelectorAll('#reviews-content [data-star]').forEach(b => {
                     const i = Number(b.getAttribute('data-star'));
-                    b.className = 'text-3xl leading-none transition-colors ' + (i <= n ? 'text-yellow-400' : 'text-slate-600 hover:text-yellow-300');
+                    b.className = 'text-3xl leading-none transition-colors ' + (i <= rating ? 'text-yellow-400' : 'text-slate-600 hover:text-yellow-300');
                 });
-            };
+            }
 
-            window.onReviewInput = function(el) {
+            function onReviewInput(el) {
                 _draftText = el.value;
                 const n = countWords(_draftText);
                 const c = document.getElementById('review-word-count');
-                if (c) { c.innerText = `${n}/100 words`; c.className = 'text-xs font-mono ' + (n > 100 ? 'text-red-400' : 'text-slate-500'); }
+                if (c) { c.textContent = `${n}/100 words`; c.className = 'text-xs font-mono ' + (n > 100 ? 'text-red-400' : 'text-slate-500'); }
                 const b = document.getElementById('review-submit');
                 if (b) b.disabled = n > 100;
-            };
+            }
 
-            window.submitReview = async function() {
-                if (!_user) { window.showLoginPopup(); return; }
+            async function submitReview() {
+                if (!_user) { showLoginPopup(); return; }
                 const text = _draftText.trim();
                 const words = countWords(text);
-                if (!_draftRating) { alert('Please choose a star rating first.'); return; }
-                if (!text) { alert('Please write a short review.'); return; }
-                if (words > 100) { alert('Your review is limited to 100 words.'); return; }
+                if (!_draftRating) { showToast('Please choose a star rating first.', 'error'); return; }
+                if (!text) { showToast('Please write a short review.', 'error'); return; }
+                if (words > 100) { showToast('Your review is limited to 100 words.', 'error'); return; }
                 const btn = document.getElementById('review-submit');
                 if (btn) btn.disabled = true;
                 const { error } = await _supabase.from('game_reviews').insert([{ game_id: _reviewsGameId, user_id: _user.id, rating: _draftRating, review_text: text }]);
                 if (error) {
-                    alert(error.code === '23505' ? 'You have already reviewed this game.' : 'Could not publish review: ' + error.message);
+                    showToast(error.code === '23505' ? 'You have already reviewed this game.' : 'Could not publish review: ' + error.message, 'error');
                 } else {
                     _draftRating = 0; _draftText = '';
+                    showToast('Review published!', 'success');
                 }
                 await loadGameReviews(_reviewsGameId);
                 renderReviewDetail();
-            };
+            }
 
-            window.deleteReview = async function(id) {
-                if (!confirm('Delete this review?')) return;
-                const { error } = await _supabase.from('game_reviews').delete().eq('id', id);
-                if (error) alert('Could not delete: ' + error.message);
+            async function deleteReview(id) {
+                const safeId = safeIdAttr(id);
+                if (!safeId) return;
+                const target = _gameReviews.find(r => r.id === safeId);
+                if (!target) return;
+                const isMine = _user && target.user_id === _user.id;
+                if (!isMine) {
+                    const roles = await verifyServerRoles();
+                    if (!roles.isMod) return;
+                }
+                if (!(await showConfirm('Delete this review?'))) return;
+                const { error } = await _supabase.from('game_reviews').delete().eq('id', safeId);
+                if (error) showToast('Could not delete: ' + error.message, 'error');
                 await loadGameReviews(_reviewsGameId);
                 renderReviewDetail();
-            };
+            }
 
-            window.voteReview = async function(reviewId, value) {
-                if (!_user) { window.showLoginPopup(); return; }
-                const r = _gameReviews.find(x => x.id === reviewId);
+            async function voteReview(reviewId, value) {
+                if (!_user) { showLoginPopup(); return; }
+                const safeId = safeIdAttr(reviewId);
+                const valNum = Number(value);
+                if (!safeId || (valNum !== 1 && valNum !== -1)) return;
+                const r = _gameReviews.find(x => x.id === safeId);
                 if (!r) return;
-                const prev = _reviewVotes[reviewId] || 0;
-                const next = prev === value ? 0 : value;
+                const prev = _reviewVotes[safeId] || 0;
+                const next = prev === valNum ? 0 : valNum;
                 let likes = Number(r.likes) || 0, dislikes = Number(r.dislikes) || 0;
                 if (prev === 1) likes--; if (prev === -1) dislikes--;
                 if (next === 1) likes++; if (next === -1) dislikes++;
                 r.likes = Math.max(0, likes); r.dislikes = Math.max(0, dislikes);
-                if (next === 0) delete _reviewVotes[reviewId]; else _reviewVotes[reviewId] = next;
+                if (next === 0) delete _reviewVotes[safeId]; else _reviewVotes[safeId] = next;
                 renderReviewDetail();
                 let res;
-                if (next === 0) res = await _supabase.from('review_votes').delete().eq('review_id', reviewId).eq('user_id', _user.id);
-                else res = await _supabase.from('review_votes').upsert({ review_id: reviewId, user_id: _user.id, vote: next }, { onConflict: 'review_id,user_id' });
-                if (res.error) { alert('Could not save vote: ' + res.error.message); await loadGameReviews(_reviewsGameId); renderReviewDetail(); }
-            };
+                if (next === 0) res = await _supabase.from('review_votes').delete().eq('review_id', safeId).eq('user_id', _user.id);
+                else res = await _supabase.from('review_votes').upsert({ review_id: safeId, user_id: _user.id, vote: next }, { onConflict: 'review_id,user_id' });
+                if (res.error) { showToast('Could not save vote: ' + res.error.message, 'error'); await loadGameReviews(_reviewsGameId); renderReviewDetail(); }
+            }
             // ================= END GAME REVIEWS =================
 
             // ================= GAME PLAYER VIEW & FULLSCREEN =================
@@ -1027,7 +1434,7 @@
                 const cd = document.getElementById('esc-exit-countdown');
                 if (hud) hud.classList.add('hidden');
                 if (bar) bar.style.width = '0%';
-                if (cd) cd.innerText = '5.0s';
+                if (cd) cd.textContent = '5.0s';
             }
 
             function tickEscHold() {
@@ -1041,11 +1448,11 @@
                 const bar = document.getElementById('esc-exit-progress');
                 const cd = document.getElementById('esc-exit-countdown');
                 if (bar) bar.style.width = `${pct}%`;
-                if (cd) cd.innerText = `${remaining.toFixed(1)}s`;
+                if (cd) cd.textContent = `${remaining.toFixed(1)}s`;
 
                 if (elapsed >= ESC_HOLD_MS) {
                     cancelEscHold();
-                    window.exitGameFullscreen();
+                    exitGameFullscreen();
                     return;
                 }
                 _escHoldRaf = requestAnimationFrame(tickEscHold);
@@ -1096,55 +1503,58 @@
                 const counts = _voteCounts[game.id] || { likes: 0, dislikes: 0 };
                 const myVote = _myVotes[game.id] || 0;
 
-                box.innerHTML = `
-                    <div class="relative bg-slate-900/95 border-2 ${isOnline ? 'border-slate-700' : 'border-red-900/50'} rounded-2xl p-8 md:p-10 shadow-2xl overflow-hidden flex flex-col items-center text-center">
-                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${isOnline ? game.color : 'from-red-900 to-red-600'}"></div>
-                        <div class="w-20 h-20 mb-5 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center shadow-lg">
-                            <i data-lucide="${game.icon}" class="w-10 h-10 text-white"></i>
-                        </div>
-                        <h3 class="text-2xl md:text-3xl font-bold game-font text-white mb-2 break-words max-w-full">${escapeHtml(game.name)}</h3>
-                        <span class="text-xs text-slate-500 font-mono mb-4">ID: ${game.id}</span>
+                withObserverPaused(() => {
+                    box.innerHTML = `
+                        <div class="relative bg-slate-900/95 border-2 ${isOnline ? 'border-slate-700' : 'border-red-900/50'} rounded-2xl p-8 md:p-10 shadow-2xl overflow-hidden flex flex-col items-center text-center">
+                            <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${isOnline ? game.color : 'from-red-900 to-red-600'}"></div>
+                            <div class="w-20 h-20 mb-5 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center shadow-lg">
+                                <i data-lucide="${escapeHtml(game.icon)}" class="w-10 h-10 text-white"></i>
+                            </div>
+                            <h3 class="text-2xl md:text-3xl font-bold game-font text-white mb-2 break-words max-w-full">${escapeHtml(game.name)}</h3>
+                            <span class="text-xs text-slate-500 font-mono mb-4">ID: ${game.id}</span>
 
-                        <div class="flex items-center gap-3 mb-6">
-                            <button onclick="window.voteGame(${game.id}, 1)" title="Like" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-colors ${myVote === 1 ? 'text-green-400 border-green-500/60 bg-green-500/15' : 'text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500/50'}">
-                                <i data-lucide="thumbs-up" class="w-4 h-4"></i><span>${counts.likes}</span>
-                            </button>
-                            <button onclick="window.voteGame(${game.id}, -1)" title="Dislike" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-colors ${myVote === -1 ? 'text-red-400 border-red-500/60 bg-red-500/15' : 'text-slate-400 border-slate-600 hover:text-red-400 hover:border-red-500/50'}">
-                                <i data-lucide="thumbs-down" class="w-4 h-4"></i><span>${counts.dislikes}</span>
-                            </button>
-                        </div>
+                            <div class="flex items-center gap-3 mb-6">
+                                <button type="button" data-action="vote-game" data-game-id="${game.id}" data-vote="1" title="Like" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-colors ${myVote === 1 ? 'text-green-400 border-green-500/60 bg-green-500/15' : 'text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500/50'}">
+                                    <i data-lucide="thumbs-up" class="w-4 h-4"></i><span>${Number(counts.likes) || 0}</span>
+                                </button>
+                                <button type="button" data-action="vote-game" data-game-id="${game.id}" data-vote="-1" title="Dislike" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-colors ${myVote === -1 ? 'text-red-400 border-red-500/60 bg-red-500/15' : 'text-slate-400 border-slate-600 hover:text-red-400 hover:border-red-500/50'}">
+                                    <i data-lucide="thumbs-down" class="w-4 h-4"></i><span>${Number(counts.dislikes) || 0}</span>
+                                </button>
+                            </div>
 
-                        <div class="w-full max-w-md bg-slate-800/70 border border-slate-700/80 rounded-xl p-4 mb-7 text-xs text-slate-300 leading-relaxed">
-                            <div class="flex items-center justify-center gap-2 text-blue-400 font-bold mb-1"><i data-lucide="maximize-2" class="w-4 h-4"></i> Fullscreen Game Stage</div><span>Press <strong>Enter Fullscreen</strong> to cover your screen. Hold <kbd class="px-1.5 py-0.5 bg-slate-900 border border-slate-600 rounded text-[10px] font-mono text-white">ESC</kbd> for <strong>5 seconds</strong> to return here.</span>
-                        </div>
+                            <div class="w-full max-w-md bg-slate-800/70 border border-slate-700/80 rounded-xl p-4 mb-7 text-xs text-slate-300 leading-relaxed">
+                                <div class="flex items-center justify-center gap-2 text-blue-400 font-bold mb-1"><i data-lucide="maximize-2" class="w-4 h-4"></i> Fullscreen Game Stage</div><span>Press <strong>Enter Fullscreen</strong> to cover your screen. Hold <kbd class="px-1.5 py-0.5 bg-slate-900 border border-slate-600 rounded text-[10px] font-mono text-white">ESC</kbd> for <strong>5 seconds</strong> to return here.</span>
+                            </div>
 
-                        ${isOnline
-                            ? `<button onclick="window.enterGameFullscreen()" class="w-full max-w-sm py-3.5 px-6 rounded-xl bg-gradient-to-r ${game.color} text-white font-bold text-base shadow-lg hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer">
-                                <i data-lucide="maximize-2" class="w-5 h-5"></i>
-                                Enter Fullscreen
-                            </button>`
-                            : `<div class="w-full max-w-sm py-3.5 px-6 rounded-xl bg-slate-800 border border-red-900/50 text-red-400 font-bold text-sm">NOT AVAILABLE (OFFLINE)</div>`
-                        }
+                            ${isOnline
+                                ? `<button type="button" data-action="enter-fullscreen" class="w-full max-w-sm py-3.5 px-6 rounded-xl bg-gradient-to-r ${game.color} text-white font-bold text-base shadow-lg hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer">
+                                    <i data-lucide="maximize-2" class="w-5 h-5"></i>
+                                    Enter Fullscreen
+                                </button>`
+                                : `<div class="w-full max-w-sm py-3.5 px-6 rounded-xl bg-slate-800 border border-red-900/50 text-red-400 font-bold text-sm">NOT AVAILABLE (OFFLINE)</div>`
+                            }
 
-                        <div class="flex flex-wrap items-center justify-center gap-3 mt-6 pt-5 border-t border-slate-800 w-full">
-                            <button onclick="window.goHome()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-xs font-bold text-slate-300 transition-colors">
-                                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu
-                            </button>
-                            <button onclick="window.openGameReviews(${game.id})" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-xs font-bold text-slate-300 transition-colors">
-                                <i data-lucide="star" class="w-4 h-4 text-yellow-400"></i> Game Reviews
-                            </button>
+                            <div class="flex flex-wrap items-center justify-center gap-3 mt-6 pt-5 border-t border-slate-800 w-full">
+                                <button type="button" data-action="go-home" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-xs font-bold text-slate-300 transition-colors">
+                                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu
+                                </button>
+                                <button type="button" data-action="open-game-reviews" data-game-id="${game.id}" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-xs font-bold text-slate-300 transition-colors">
+                                    <i data-lucide="star" class="w-4 h-4 text-yellow-400"></i> Game Reviews
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                });
                 refreshIcons();
             }
 
-            window.openGameView = function(gameId) {
-                const game = gamesList.find(g => g.id === gameId);
+            function openGameView(gameId) {
+                const idNum = Number(gameId);
+                const game = gamesList.find(g => g.id === idNum);
                 if (!game) return;
                 if (_gameConfigs[game.id] === false) return;
-                window.exitGameFullscreen();
-                _activeGameId = gameId;
+                exitGameFullscreen();
+                _activeGameId = idNum;
 
                 const home = document.getElementById('home-view');
                 const rv = document.getElementById('reviews-view');
@@ -1157,10 +1567,10 @@
 
                 renderGamePlayerBox();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-            };
+            }
 
-            window.goHome = function() {
-                window.exitGameFullscreen();
+            function goHome() {
+                exitGameFullscreen();
                 _activeGameId = null;
                 const home = document.getElementById('home-view');
                 const rv = document.getElementById('reviews-view');
@@ -1171,9 +1581,9 @@
                 if (wb) wb.classList.remove('hidden');
                 if (home) home.classList.remove('hidden');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-            };
+            }
 
-            window.enterGameFullscreen = async function() {
+            async function enterGameFullscreen() {
                 const game = gamesList.find(g => g.id === _activeGameId);
                 if (!game || _gameConfigs[game.id] === false) return;
                 const targetUrl = game.url || `spel${game.id}.html`;
@@ -1193,6 +1603,7 @@
                         body: JSON.stringify({ gameId: game.id })
                     });
                     if (!launchRes.ok) {
+                        showToast('Game is currently unavailable.', 'error');
                         return;
                     }
                     const launchData = await launchRes.json();
@@ -1208,21 +1619,18 @@
                 _bananaTrueFullscreenActive = false;
                 cancelEscHold();
 
-                if (exitChip) {
-                    exitChip.classList.remove('hidden');
-                }
-                if (exitChipLabel) {
-                    exitChipLabel.innerText = 'Exit (Hold ESC 5s)';
-                }
-
-                overlay.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
+                withObserverPaused(() => {
+                    if (exitChip) exitChip.classList.remove('hidden');
+                    if (exitChipLabel) exitChipLabel.textContent = 'Exit (Hold ESC 5s)';
+                    overlay.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                });
 
                 iframe.onload = function() {
                     if (!_isGameStageOpen) return;
                     try {
                         if (iframe.contentWindow && iframe.contentWindow.location && iframe.contentWindow.location.href === 'about:blank') {
-                            window.exitGameFullscreen();
+                            exitGameFullscreen();
                             return;
                         }
                     } catch (e) {}
@@ -1232,9 +1640,9 @@
                 iframe.src = game.url
                     ? targetUrl
                     : `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}launch=${encodeURIComponent(launchToken)}`;
-            };
+            }
 
-            window.exitGameFullscreen = function() {
+            function exitGameFullscreen() {
                 cancelEscHold();
                 if (!_isGameStageOpen && (!document.getElementById('game-fullscreen-overlay') || document.getElementById('game-fullscreen-overlay').classList.contains('hidden'))) {
                     return;
@@ -1250,15 +1658,95 @@
                     } catch (e) {}
                 }
 
-                const overlay = document.getElementById('game-fullscreen-overlay');
-                const iframe = document.getElementById('game-iframe');
-                if (iframe) {
-                    iframe.onload = null;
-                    iframe.src = 'about:blank';
+                withObserverPaused(() => {
+                    const overlay = document.getElementById('game-fullscreen-overlay');
+                    const iframe = document.getElementById('game-iframe');
+                    if (iframe) {
+                        iframe.onload = null;
+                        iframe.src = 'about:blank';
+                    }
+                    if (overlay) overlay.classList.add('hidden');
+                    document.body.style.overflow = '';
+                });
+            }
+
+            // ================= EVENT DELEGATION & LISTENERS =================
+            document.getElementById('home-logo-btn')?.addEventListener('click', goHome);
+            document.getElementById('auth-action-btn')?.addEventListener('click', handleAuthButton);
+            document.getElementById('auth-close-btn')?.addEventListener('click', closeAuthModal);
+            document.getElementById('auth-toggle-btn')?.addEventListener('click', toggleAuthMode);
+            document.getElementById('auth-form')?.addEventListener('submit', handleAuth);
+            document.getElementById('auth-section')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeAuthModal(); });
+            document.getElementById('login-popup')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeLoginPopup(); });
+            document.getElementById('login-popup-login-btn')?.addEventListener('click', () => { closeLoginPopup(); openAuthModal(); });
+            document.getElementById('login-popup-close-btn')?.addEventListener('click', closeLoginPopup);
+            document.getElementById('reviews-back-btn')?.addEventListener('click', reviewsBack);
+            document.getElementById('overlay-exit-chip')?.addEventListener('click', exitGameFullscreen);
+            document.getElementById('send-btn')?.addEventListener('click', postComment);
+
+            const commentInput = document.getElementById('comment-input');
+            if (commentInput) commentInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') postComment(); });
+
+            document.getElementById('game-sections')?.addEventListener('click', (e) => {
+                const actionBtn = e.target.closest('[data-action]');
+                if (actionBtn) {
+                    const action = actionBtn.dataset.action;
+                    if (action === 'vote-game') {
+                        e.stopPropagation();
+                        voteGame(actionBtn.dataset.gameId, actionBtn.dataset.vote);
+                        return;
+                    }
+                    if (action === 'toggle-game-status') {
+                        e.stopPropagation();
+                        toggleGameStatus(actionBtn.dataset.gameId);
+                        return;
+                    }
                 }
-                if (overlay) overlay.classList.add('hidden');
-                document.body.style.overflow = '';
-            };
+                const card = e.target.closest('.game-card[data-game-id]');
+                if (card) {
+                    const gameId = Number(card.dataset.gameId);
+                    if (_gameConfigs[gameId] !== false) {
+                        openGameView(gameId);
+                    }
+                }
+            });
+
+            document.getElementById('comments-list')?.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const action = btn.dataset.action;
+                if (action === 'verify-comment') handleVerify(btn.dataset.id, btn.dataset.verified === 'true');
+                else if (action === 'ban-user') handleBan(btn.dataset.userId);
+                else if (action === 'delete-comment') handleDelete(btn.dataset.id);
+            });
+
+            document.getElementById('game-player-box')?.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const action = btn.dataset.action;
+                if (action === 'vote-game') voteGame(btn.dataset.gameId, btn.dataset.vote);
+                else if (action === 'enter-fullscreen') enterGameFullscreen();
+                else if (action === 'go-home') goHome();
+                else if (action === 'open-game-reviews') openGameReviews(btn.dataset.gameId);
+            });
+
+            const reviewsContentEl = document.getElementById('reviews-content');
+            if (reviewsContentEl) {
+                reviewsContentEl.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-action]');
+                    if (!btn) return;
+                    const action = btn.dataset.action;
+                    if (action === 'open-game-reviews') openGameReviews(btn.dataset.gameId);
+                    else if (action === 'vote-review') voteReview(btn.dataset.id, btn.dataset.vote);
+                    else if (action === 'delete-review') deleteReview(btn.dataset.id);
+                    else if (action === 'open-auth-modal') openAuthModal();
+                    else if (action === 'set-draft-rating') setDraftRating(btn.dataset.star);
+                    else if (action === 'submit-review') submitReview();
+                });
+                reviewsContentEl.addEventListener('input', (e) => {
+                    if (e.target && e.target.id === 'review-text') onReviewInput(e.target);
+                });
+            }
 
             window.addEventListener('keydown', handleStageKeyDown, true);
             window.addEventListener('keyup', handleStageKeyUp, true);
@@ -1268,23 +1756,25 @@
                 if (_isGameStageOpen && _activeGameId === 19 && _bananaTrueFullscreenActive) {
                     const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
                     if (!fsEl) {
-                        window.exitGameFullscreen();
+                        exitGameFullscreen();
                     }
                 }
             });
 
             window.addEventListener('message', (event) => {
-                if (event && event.data && event.data.type === 'gamehub-exit-game') {
-                    window.exitGameFullscreen();
+                if (event && event.origin === window.location.origin && event.data && event.data.type === 'gamehub-exit-game') {
+                    exitGameFullscreen();
                 }
             });
-            // ================= END GAME PLAYER VIEW & FULLSCREEN =================
 
-            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !_isGameStageOpen) { window.closeLoginPopup(); closeAuthModal(); } });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !_isGameStageOpen) {
+                    closeLoginPopup();
+                    closeAuthModal();
+                }
+            });
 
-            const commentInput = document.getElementById('comment-input');
-            if (commentInput) commentInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.postComment(); });
-            
+            installDomIntegrityGuard();
             refreshIcons();
         })();
     </script>
