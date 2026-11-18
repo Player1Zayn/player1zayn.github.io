@@ -4828,8 +4828,8 @@
                     bx(g, .035, .08, .035, 0, .125, .38, M.dark); bx(g, .035, .08, .035, 0, .125, .5, M.dark);
                     bx(g, .045, .045, .16, 0, .165, .44, M.steel); bx(g, .022, .025, .03, 0, .19, .41, M.blue);
                     arm(g, .01, .165, .44, .14, .10, .58, { grip: 'topHandle', wristOffset: [0.014, 0.022, 0.028], tiltX: .12, tiltZ: .12, handOnly: true });
-                    // Left arm on front U-handle: lower arm most visible -> elbow joint cleanly before bottom edge -> straight-ish upper arm exiting downwards
-                    arm(g, -.008, .228, uZ, -.56, .085, .07, { isLeft: true, grip: 'uHandle', wristOffset: [-0.022, 0.026, 0.036], roll: 0.22, sx: -.82, sy: -.18, sz: .34 });
+                    // Left arm on front U-handle: lower arm most visible -> elbow joint before bottom edge -> level upper arm (same height as forearm) exiting bottom screen in same area
+                    arm(g, -.008, .228, uZ, -.56, .085, .07, { isLeft: true, grip: 'uHandle', wristOffset: [-0.022, 0.026, 0.036], roll: 0.22, sx: -.57, sy: .085, sz: .57 });
                 } },
             scatter: { name: 'M5 SCATTER BLASTER', desc: 'Devastating up close, weak at range.', dmg: 30, rate: 0.7, mag: 8, reload: 1.8, pellets: 7, spread: 0.09, color: 0xffaa00, size: 0.03, kick: 0.2, speed: 90, life: 0.7,
                 build(g) {
