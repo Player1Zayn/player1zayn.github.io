@@ -254,6 +254,9 @@
             <div id="profile-content"></div>
         </div>
 
+        <!-- Developer View (dynamically populated for verified developers only) -->
+        <div id="dev-view" class="hidden max-w-5xl mx-auto"></div>
+
     </main>
 
     <!-- Fullscreen / Full-Viewport Game Stage Overlay -->
@@ -359,6 +362,16 @@
             let _playtimeSession = null;
             let _playtimeInterval = null;
             let _playtimeFlushing = false;
+            let _devUsers = [];
+            let _devUsersLoading = false;
+            let _devUsersError = null;
+            let _devSearchQuery = '';
+            let _devRoleFilter = 'all'; // 'all' | 'players' | 'staff' | 'banned'
+            let _devResetTargetId = null;
+            let _devShowPassword = false;
+            let _devResetDraftPw = '';
+            let _devResetDraftConfirm = '';
+            let _devResetSubmitting = false;
 
             function withObserverPaused(fn) {
                 _suppressObserver = true;
@@ -497,11 +510,27 @@
                     if (modSlot) {
                         modSlot.innerHTML = '';
                         if (_isDeveloper || _isMod) {
+                            const wrap = document.createElement('div');
+                            wrap.className = 'flex items-center gap-2.5 flex-wrap justify-center';
+
                             const badge = document.createElement('div');
                             badge.id = 'mod-indicator';
                             badge.className = 'text-xs font-bold text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/50 animate-pulse';
                             badge.textContent = _isDeveloper ? 'System Developer Access' : 'System Edit Enable';
-                            modSlot.appendChild(badge);
+                            wrap.appendChild(badge);
+
+                            if (_isDeveloper) {
+                                const devBtn = document.createElement('button');
+                                devBtn.type = 'button';
+                                devBtn.id = 'dev-view-nav-btn';
+                                devBtn.dataset.action = 'open-dev-view';
+                                devBtn.className = 'inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/50 px-3 py-1 rounded-lg transition-colors cursor-pointer whitespace-nowrap';
+                                devBtn.innerHTML = '<i data-lucide="terminal" class="w-3.5 h-3.5"></i><span>Developer View</span>';
+                                devBtn.addEventListener('click', openDevView);
+                                wrap.appendChild(devBtn);
+                            }
+
+                            modSlot.appendChild(wrap);
                         }
                     }
 
@@ -516,6 +545,18 @@
                         if (existingControls) existingControls.remove();
                         if (existingEditBox) existingEditBox.remove();
                         if (displayEl) displayEl.classList.remove('hidden');
+                        const devView = document.getElementById('dev-view');
+                        if (devView) {
+                            const wasOpen = !devView.classList.contains('hidden');
+                            devView.classList.add('hidden');
+                            devView.innerHTML = '';
+                            if (wasOpen) {
+                                const home = document.getElementById('home-view');
+                                const wb = document.getElementById('welcome-bar');
+                                if (home) home.classList.remove('hidden');
+                                if (wb) wb.classList.remove('hidden');
+                            }
+                        }
                     } else if (devCard) {
                         if (!existingControls) {
                             const controls = document.createElement('div');
@@ -630,7 +671,14 @@
                             if (forgedControls) forgedControls.remove();
                             const forgedEdit = document.getElementById('dev-message-edit');
                             if (forgedEdit) forgedEdit.remove();
-                            document.querySelectorAll('[data-action="toggle-game-status"]').forEach((el) => el.remove());
+                            const forgedDevNav = document.getElementById('dev-view-nav-btn');
+                            if (forgedDevNav) forgedDevNav.remove();
+                            document.querySelectorAll('[data-action="toggle-game-status"], [data-action="open-dev-view"]').forEach((el) => el.remove());
+                            const devView = document.getElementById('dev-view');
+                            if (devView) {
+                                if (!devView.classList.contains('hidden')) devView.classList.add('hidden');
+                                if (devView.innerHTML !== '') devView.innerHTML = '';
+                            }
                         }
                         if (!_isMod && !_isDeveloper) {
                             document.querySelectorAll('[data-action="verify-comment"], [data-action="ban-user"], [data-action="delete-comment"], [data-action="toggle-flag-panel"]').forEach((el) => el.remove());
@@ -1129,19 +1177,28 @@
                 _viewedProfileBanned = false; _viewedProfileReviewCount = 0; _ownReviewCount = 0;
                 _viewedPlaytimeByGame = {}; _viewedPlaytimeLoaded = false; _viewedPlaytimeError = null;
                 _profilePanel = 'overview';
+                _devUsers = []; _devUsersLoading = false; _devUsersError = null;
+                _devSearchQuery = ''; _devRoleFilter = 'all';
                 clearAvatarDraft();
                 clearFlagDraft();
+                closeDevViewState();
                 if (_chatChannel) { _supabase.removeChannel(_chatChannel); _chatChannel = null; }
                 syncRoleUi();
                 updateWelcomeNameUi();
                 withObserverPaused(() => {
                     const pv = document.getElementById('profile-view');
+                    const dv = document.getElementById('dev-view');
                     const home = document.getElementById('home-view');
                     const rv = document.getElementById('reviews-view');
                     const gp = document.getElementById('game-player-view');
                     const wb = document.getElementById('welcome-bar');
-                    if (pv && !pv.classList.contains('hidden')) {
-                        pv.classList.add('hidden');
+                    const wasRestrictedOpen = (pv && !pv.classList.contains('hidden')) || (dv && !dv.classList.contains('hidden'));
+                    if (dv) {
+                        dv.classList.add('hidden');
+                        dv.innerHTML = '';
+                    }
+                    if (wasRestrictedOpen) {
+                        if (pv) pv.classList.add('hidden');
                         if (rv) rv.classList.add('hidden');
                         if (gp) gp.classList.add('hidden');
                         if (wb) wb.classList.remove('hidden');
@@ -1400,6 +1457,7 @@
                     clearAvatarDraft();
                     clearFlagDraft();
                 }
+                if (open) closeDevViewState();
                 if (wb) wb.classList.remove('hidden');
                 if (home) home.classList.toggle('hidden', open);
                 if (rv) rv.classList.toggle('hidden', !open);
@@ -1921,6 +1979,7 @@
                 _profilePanel = panel;
                 clearAvatarDraft();
                 clearFlagDraft();
+                closeDevViewState();
 
                 const home = document.getElementById('home-view');
                 const rv = document.getElementById('reviews-view');
@@ -1973,6 +2032,7 @@
                     _profileGamesFilter = 'played';
                     clearAvatarDraft();
                     clearFlagDraft();
+                    closeDevViewState();
 
                     const home = document.getElementById('home-view');
                     const rv = document.getElementById('reviews-view');
@@ -2816,6 +2876,496 @@
             }
             // ================= END PLAYTIME TRACKER & PLAYER PROFILE =================
 
+            // ================= DEVELOPER VIEW (DEVELOPERS ONLY) =================
+            function isDevViewOpen() {
+                const dv = document.getElementById('dev-view');
+                return !!dv && !dv.classList.contains('hidden');
+            }
+
+            function closeDevViewState() {
+                _devResetTargetId = null;
+                _devShowPassword = false;
+                _devResetDraftPw = '';
+                _devResetDraftConfirm = '';
+                _devResetSubmitting = false;
+                const dv = document.getElementById('dev-view');
+                if (dv) {
+                    withObserverPaused(() => {
+                        dv.classList.add('hidden');
+                        dv.innerHTML = '';
+                    });
+                }
+            }
+
+            function generateStrongPassword(length = 14) {
+                const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+                const lower = 'abcdefghijkmnopqrstuvwxyz';
+                const digits = '23456789';
+                const symbols = '!@#$%^&*-_';
+                const all = upper + lower + digits + symbols;
+                const randomIndex = (max) => {
+                    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+                        const arr = new Uint32Array(1);
+                        window.crypto.getRandomValues(arr);
+                        return arr[0] % max;
+                    }
+                    return Math.floor(Math.random() * max);
+                };
+                const chars = [
+                    upper[randomIndex(upper.length)],
+                    lower[randomIndex(lower.length)],
+                    digits[randomIndex(digits.length)],
+                    symbols[randomIndex(symbols.length)]
+                ];
+                while (chars.length < length) {
+                    chars.push(all[randomIndex(all.length)]);
+                }
+                for (let i = chars.length - 1; i > 0; i--) {
+                    const j = randomIndex(i + 1);
+                    const tmp = chars[i];
+                    chars[i] = chars[j];
+                    chars[j] = tmp;
+                }
+                return chars.join('');
+            }
+
+            function getFilteredDevUsers() {
+                const q = _devSearchQuery.trim().toLowerCase();
+                return _devUsers.filter((u) => {
+                    if (_devRoleFilter === 'players' && (u.is_developer || u.is_mod)) return false;
+                    if (_devRoleFilter === 'staff' && !(u.is_developer || u.is_mod)) return false;
+                    if (_devRoleFilter === 'banned' && !u.is_banned) return false;
+                    if (!q) return true;
+                    const uname = String(u.username || '').toLowerCase();
+                    const email = String(u.email || '').toLowerCase();
+                    return uname.includes(q) || email.includes(q);
+                });
+            }
+
+            async function openDevView() {
+                if (!_user) {
+                    showLoginPopup();
+                    return;
+                }
+                const roles = await verifyServerRoles();
+                if (!roles.isDeveloper) {
+                    closeDevViewState();
+                    showToast('Developer access required.', 'error');
+                    return;
+                }
+
+                exitGameFullscreen();
+                _activeGameId = null;
+                _viewedProfileUserId = null;
+                _profilePanel = 'overview';
+                clearAvatarDraft();
+                clearFlagDraft();
+                _devResetTargetId = null;
+                _devShowPassword = false;
+                _devResetDraftPw = '';
+                _devResetDraftConfirm = '';
+                _devResetSubmitting = false;
+
+                withObserverPaused(() => {
+                    const home = document.getElementById('home-view');
+                    const rv = document.getElementById('reviews-view');
+                    const gp = document.getElementById('game-player-view');
+                    const pv = document.getElementById('profile-view');
+                    const wb = document.getElementById('welcome-bar');
+                    const dv = document.getElementById('dev-view');
+                    if (home) home.classList.add('hidden');
+                    if (rv) rv.classList.add('hidden');
+                    if (gp) gp.classList.add('hidden');
+                    if (pv) pv.classList.add('hidden');
+                    if (wb) wb.classList.add('hidden');
+                    if (dv) dv.classList.remove('hidden');
+                });
+
+                renderDevView();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                await loadDevUsers();
+            }
+
+            async function loadDevUsers() {
+                if (!_supabase || !_user) return;
+                const roles = await verifyServerRoles();
+                if (!roles.isDeveloper) {
+                    closeDevViewState();
+                    return;
+                }
+
+                _devUsersLoading = true;
+                _devUsersError = null;
+                if (isDevViewOpen()) renderDevView();
+
+                try {
+                    const { data, error } = await _supabase.rpc('dev_list_users');
+                    if (error) {
+                        const msg = String(error.message || '');
+                        if (error.code === '42883' || msg.includes('dev_list_users') || msg.includes('Could not find the function')) {
+                            _devUsersError = 'Developer RPC not found in Supabase yet. Run supabase_hub_security_hardening.sql in Supabase SQL Editor first.';
+                        } else {
+                            _devUsersError = msg || 'Could not load user directory.';
+                        }
+                        _devUsers = [];
+                    } else {
+                        _devUsers = Array.isArray(data) ? data : [];
+                        _devUsersError = null;
+                    }
+                } catch (err) {
+                    _devUsersError = err && err.message ? err.message : 'Could not load user directory.';
+                    _devUsers = [];
+                } finally {
+                    _devUsersLoading = false;
+                    if (isDevViewOpen()) renderDevView();
+                }
+            }
+
+            function renderDevUserRowsHtml(filteredUsers) {
+                if (_devUsersLoading && _devUsers.length === 0) {
+                    return `<tr><td colspan="5" class="px-5 py-10 text-center text-sm text-slate-400">Loading accounts...</td></tr>`;
+                }
+                if (_devUsersError) {
+                    return `<tr><td colspan="5" class="px-5 py-10 text-center text-sm text-red-400">${escapeHtml(_devUsersError)}</td></tr>`;
+                }
+                if (!filteredUsers.length) {
+                    return `<tr><td colspan="5" class="px-5 py-10 text-center text-sm text-slate-500">No matching accounts found.</td></tr>`;
+                }
+
+                return filteredUsers.map((u) => {
+                    const safeUid = safeIdAttr(u.id);
+                    const rawName = u.username || 'Player';
+                    const safeName = escapeHtml(rawName);
+                    const safeEmail = escapeHtml(u.email || '—');
+                    const safeAvatar = sanitizeAvatarUrl(u.avatar_url);
+                    const isSelf = _user && u.id === _user.id;
+                    const isSelected = _devResetTargetId === u.id;
+                    const roleText = u.is_developer
+                        ? '<span class="text-amber-400 font-semibold">Developer</span>'
+                        : (u.is_mod ? '<span class="text-yellow-400 font-semibold">Moderator</span>' : '<span class="text-slate-300">Player</span>');
+                    const bannedTag = u.is_banned
+                        ? '<span class="text-red-400 text-[11px] font-mono uppercase ml-2">Banned</span>'
+                        : '';
+                    const joinedText = u.created_at ? escapeHtml(formatDate(u.created_at)) : '—';
+                    const lastLoginText = u.last_sign_in_at ? escapeHtml(formatDateTime(u.last_sign_in_at)) : 'Never';
+
+                    return `<tr class="border-t border-slate-800/90 transition-colors ${isSelected ? 'bg-amber-500/10' : 'hover:bg-slate-800/40'}">
+                        <td class="px-5 py-3.5">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <button type="button" data-action="dev-view-profile" data-user-id="${safeUid}" title="Inspect ${safeName}'s profile" class="w-9 h-9 rounded-full bg-slate-950 border border-slate-700 hover:border-blue-400 flex items-center justify-center shrink-0 overflow-hidden relative cursor-pointer transition-colors">
+                                    <span class="text-xs font-bold text-blue-400">${escapeHtml(rawName.charAt(0).toUpperCase())}</span>
+                                    ${safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="${safeName}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                </button>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <button type="button" data-action="dev-view-profile" data-user-id="${safeUid}" class="text-sm font-bold text-slate-100 hover:text-blue-400 hover:underline underline-offset-2 truncate text-left cursor-pointer transition-colors">${safeName}</button>
+                                        ${isSelf ? '<span class="text-[11px] font-mono text-blue-400 shrink-0">(You)</span>' : ''}
+                                    </div>
+                                    <div class="text-xs text-slate-400 font-mono truncate">${safeEmail}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3.5 text-xs whitespace-nowrap">${roleText}${bannedTag}</td>
+                        <td class="px-4 py-3.5 text-xs text-slate-400 font-mono tabular-nums whitespace-nowrap">${joinedText}</td>
+                        <td class="px-4 py-3.5 text-xs text-slate-400 font-mono tabular-nums whitespace-nowrap">${lastLoginText}</td>
+                        <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                            <button type="button" data-action="dev-select-reset" data-user-id="${safeUid}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${isSelected ? 'bg-amber-500 text-slate-950 border-amber-400' : 'bg-slate-800 hover:bg-amber-500/20 border-slate-600 hover:border-amber-500/60 text-slate-200 hover:text-amber-300'}">
+                                <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                                <span>${isSelected ? 'Selected' : 'Reset Password'}</span>
+                            </button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+
+            function updateDevUsersTableOnly() {
+                if (!_user || !_isDeveloper || !isDevViewOpen()) return;
+                const tbody = document.getElementById('dev-users-table-body');
+                const countEl = document.getElementById('dev-users-count');
+                const filtered = getFilteredDevUsers();
+                withObserverPaused(() => {
+                    if (tbody) {
+                        tbody.innerHTML = renderDevUserRowsHtml(filtered);
+                        tbody.querySelectorAll('img.avatar-img').forEach((imgEl) => {
+                            imgEl.addEventListener('error', () => imgEl.remove());
+                        });
+                    }
+                    if (countEl) {
+                        countEl.textContent = `${filtered.length} of ${_devUsers.length} account${_devUsers.length === 1 ? '' : 's'}`;
+                    }
+                });
+                refreshIcons();
+            }
+
+            function renderDevView() {
+                const container = document.getElementById('dev-view');
+                if (!container) return;
+                if (!_user || !_isDeveloper) {
+                    closeDevViewState();
+                    return;
+                }
+
+                const totalCount = _devUsers.length;
+                const devCount = _devUsers.filter((u) => u.is_developer).length;
+                const modCount = _devUsers.filter((u) => u.is_mod && !u.is_developer).length;
+                const bannedCount = _devUsers.filter((u) => u.is_banned).length;
+                const filteredUsers = getFilteredDevUsers();
+                const targetUser = _devResetTargetId ? _devUsers.find((u) => u.id === _devResetTargetId) : null;
+
+                let resetPanelHtml = '';
+                if (targetUser) {
+                    const tName = escapeHtml(targetUser.username || 'Player');
+                    const tEmail = escapeHtml(targetUser.email || '—');
+                    const tAvatar = sanitizeAvatarUrl(targetUser.avatar_url);
+                    const tInitial = escapeHtml(String(targetUser.username || 'P').charAt(0).toUpperCase());
+                    const tRoleLabel = targetUser.is_developer ? 'Developer' : (targetUser.is_mod ? 'Moderator' : 'Player');
+                    const isSelf = _user && targetUser.id === _user.id;
+                    const pwInputType = _devShowPassword ? 'text' : 'password';
+
+                    resetPanelHtml = `
+                        <section id="dev-reset-panel" class="bg-slate-900 border border-amber-500/50 rounded-xl p-6 mb-6">
+                            <div class="flex flex-wrap items-start justify-between gap-4 pb-5 mb-5 border-b border-slate-800">
+                                <div class="flex items-center gap-3.5 min-w-0">
+                                    <div class="w-12 h-12 rounded-full bg-slate-950 border border-amber-500/40 flex items-center justify-center shrink-0 overflow-hidden relative">
+                                        <span class="text-base font-bold text-amber-300">${tInitial}</span>
+                                        ${tAvatar ? `<img src="${escapeHtml(tAvatar)}" alt="${tName}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-0.5">
+                                            <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                                            Manual Password Reset
+                                        </div>
+                                        <div class="text-base font-bold text-white truncate">${tName} <span class="text-xs font-normal text-slate-400">&middot; ${escapeHtml(tRoleLabel)}</span></div>
+                                        <div class="text-xs text-slate-400 font-mono truncate">${tEmail}</div>
+                                    </div>
+                                </div>
+                                <button type="button" data-action="dev-cancel-reset" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" title="Close reset panel">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+
+                            <form id="dev-reset-password-form" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="dev-new-password" class="block text-xs font-bold text-slate-300 mb-1.5">New Password</label>
+                                        <div class="relative">
+                                            <input type="${pwInputType}" id="dev-new-password" required minlength="6" maxlength="128" autocomplete="new-password" value="${escapeHtml(_devResetDraftPw)}" placeholder="At least 6 characters" class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-lg pl-3 pr-10 py-2.5 text-sm text-white font-mono outline-none">
+                                            <button type="button" data-action="dev-toggle-pw-visibility" title="${_devShowPassword ? 'Hide password' : 'Show password'}" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 cursor-pointer">
+                                                <i data-lucide="${_devShowPassword ? 'eye-off' : 'eye'}" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="dev-confirm-password" class="block text-xs font-bold text-slate-300 mb-1.5">Confirm New Password</label>
+                                        <input type="${pwInputType}" id="dev-confirm-password" required minlength="6" maxlength="128" autocomplete="new-password" value="${escapeHtml(_devResetDraftConfirm)}" placeholder="Repeat new password" class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-lg px-3 py-2.5 text-sm text-white font-mono outline-none">
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <button type="button" data-action="dev-generate-password" class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer">
+                                            <i data-lucide="wand-2" class="w-3.5 h-3.5 text-amber-400"></i> Generate Password
+                                        </button>
+                                        <button type="button" data-action="dev-copy-password" class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer">
+                                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-slate-400">${isSelf ? 'You are resetting your own Developer account password.' : 'Active sessions for this player will be signed out immediately.'}</p>
+                                </div>
+
+                                <div id="dev-reset-error" class="hidden p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-xs"></div>
+
+                                <div class="flex flex-wrap items-center justify-end gap-3 pt-2 border-t border-slate-800">
+                                    <button type="button" data-action="dev-cancel-reset" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">Cancel</button>
+                                    <button type="submit" id="dev-reset-submit-btn" ${_devResetSubmitting ? 'disabled' : ''} class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold px-5 py-2 rounded-lg text-sm transition-colors cursor-pointer">
+                                        <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                                        <span>${_devResetSubmitting ? 'Resetting...' : 'Set New Password'}</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </section>
+                    `;
+                }
+
+                const filterTabs = [
+                    { key: 'all', label: 'All' },
+                    { key: 'players', label: 'Players' },
+                    { key: 'staff', label: 'Staff' },
+                    { key: 'banned', label: 'Banned' }
+                ].map((tab) => {
+                    const active = _devRoleFilter === tab.key;
+                    return `<button type="button" data-action="dev-filter-role" data-filter="${tab.key}" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${active ? 'bg-slate-700 text-white border border-slate-500' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'}">${tab.label}</button>`;
+                }).join('');
+
+                withObserverPaused(() => {
+                    container.innerHTML = `
+                        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <button type="button" data-action="dev-back-home" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Game Hub
+                                </button>
+                                <div class="min-w-0">
+                                    <h3 class="text-xl font-bold game-font text-amber-300 tracking-wider flex items-center gap-2">
+                                        <i data-lucide="terminal" class="w-5 h-5 text-amber-400 shrink-0"></i>
+                                        DEVELOPER VIEW
+                                    </h3>
+                                    <p class="text-xs text-slate-400">Developer-only account directory and manual password resets.</p>
+                                </div>
+                            </div>
+                            <button type="button" data-action="dev-refresh-users" ${_devUsersLoading ? 'disabled' : ''} class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                                <i data-lucide="refresh-cw" class="w-4 h-4 ${_devUsersLoading ? 'animate-spin' : ''}"></i>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
+                                <div class="text-xs text-slate-400 mb-1">Total Accounts</div>
+                                <div class="text-2xl font-bold text-white tabular-nums">${totalCount}</div>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
+                                <div class="text-xs text-slate-400 mb-1">Developers</div>
+                                <div class="text-2xl font-bold text-amber-400 tabular-nums">${devCount}</div>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
+                                <div class="text-xs text-slate-400 mb-1">Moderators</div>
+                                <div class="text-2xl font-bold text-yellow-400 tabular-nums">${modCount}</div>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
+                                <div class="text-xs text-slate-400 mb-1">Banned</div>
+                                <div class="text-2xl font-bold text-red-400 tabular-nums">${bannedCount}</div>
+                            </div>
+                        </div>
+
+                        ${resetPanelHtml}
+
+                        <section class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+                            <div class="p-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                                <div class="relative flex-1 min-w-[220px] max-w-md">
+                                    <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                                    <input type="search" id="dev-user-search" value="${escapeHtml(_devSearchQuery)}" placeholder="Search by username or email..." class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg pl-9 pr-3 py-2 text-sm text-white outline-none">
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    ${filterTabs}
+                                    <span id="dev-users-count" class="text-xs text-slate-400 font-mono tabular-nums ml-1">${filteredUsers.length} of ${totalCount} account${totalCount === 1 ? '' : 's'}</span>
+                                </div>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-950/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                            <th class="px-5 py-3">Account</th>
+                                            <th class="px-4 py-3">Role</th>
+                                            <th class="px-4 py-3">Joined</th>
+                                            <th class="px-4 py-3">Last Login</th>
+                                            <th class="px-5 py-3 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dev-users-table-body">
+                                        ${renderDevUserRowsHtml(filteredUsers)}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    `;
+
+                    container.querySelectorAll('img.avatar-img').forEach((imgEl) => {
+                        imgEl.addEventListener('error', () => imgEl.remove());
+                    });
+                });
+                refreshIcons();
+            }
+
+            async function handleDevResetPasswordSubmit(e) {
+                e.preventDefault();
+                if (_devResetSubmitting || !_supabase || !_user) return;
+
+                const roles = await verifyServerRoles();
+                if (!roles.isDeveloper) {
+                    closeDevViewState();
+                    showToast('Developer access required.', 'error');
+                    return;
+                }
+
+                const target = _devUsers.find((u) => u.id === _devResetTargetId);
+                if (!target) {
+                    showToast('Select an account first.', 'error');
+                    return;
+                }
+
+                const newEl = document.getElementById('dev-new-password');
+                const confirmEl = document.getElementById('dev-confirm-password');
+                const errEl = document.getElementById('dev-reset-error');
+                if (errEl) errEl.classList.add('hidden');
+
+                const newPassword = newEl ? newEl.value : '';
+                const confirmPassword = confirmEl ? confirmEl.value : '';
+
+                const showErr = (msg) => {
+                    if (errEl) {
+                        errEl.textContent = msg;
+                        errEl.classList.remove('hidden');
+                    }
+                };
+
+                if (newPassword.length < 6) {
+                    showErr('New password must be at least 6 characters.');
+                    return;
+                }
+                if (newPassword.length > 128) {
+                    showErr('New password must be 128 characters or fewer.');
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    showErr('Passwords do not match.');
+                    return;
+                }
+
+                const targetLabel = target.username || target.email || 'this user';
+                const confirmed = await showConfirm(`Reset password for "${targetLabel}"? They will need the new password to sign in.`);
+                if (!confirmed) return;
+
+                _devResetSubmitting = true;
+                const submitBtn = document.getElementById('dev-reset-submit-btn');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Resetting...';
+                }
+
+                try {
+                    const { data, error } = await _supabase.rpc('dev_reset_user_password', {
+                        p_target_user_id: target.id,
+                        p_new_password: newPassword
+                    });
+                    if (error) {
+                        const msg = String(error.message || '');
+                        if (error.code === '42883' || msg.includes('dev_reset_user_password') || msg.includes('Could not find the function')) {
+                            throw new Error('Developer password reset RPC is not installed yet. Run supabase_hub_security_hardening.sql in Supabase SQL Editor.');
+                        }
+                        throw error;
+                    }
+
+                    const updatedName = (data && data.username) ? data.username : targetLabel;
+                    _devResetTargetId = null;
+                    _devResetDraftPw = '';
+                    _devResetDraftConfirm = '';
+                    _devShowPassword = false;
+                    _devResetSubmitting = false;
+                    showToast(`Password reset for ${updatedName}.`, 'success');
+                    renderDevView();
+                } catch (err) {
+                    _devResetSubmitting = false;
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i data-lucide="shield-alert" class="w-4 h-4"></i><span>Set New Password</span>';
+                        refreshIcons();
+                    }
+                    showErr(err && err.message ? err.message : 'Could not reset password.');
+                }
+            }
+            // ================= END DEVELOPER VIEW =================
+
             // ================= GAME PLAYER VIEW & FULLSCREEN =================
             let _activeGameId = null;
             let _isGameStageOpen = false;
@@ -2973,6 +3523,7 @@
                 _profilePanel = 'overview';
                 clearAvatarDraft();
                 clearFlagDraft();
+                closeDevViewState();
 
                 const home = document.getElementById('home-view');
                 const rv = document.getElementById('reviews-view');
@@ -2996,6 +3547,7 @@
                 _profilePanel = 'overview';
                 clearAvatarDraft();
                 clearFlagDraft();
+                closeDevViewState();
                 const home = document.getElementById('home-view');
                 const rv = document.getElementById('reviews-view');
                 const gp = document.getElementById('game-player-view');
@@ -3161,6 +3713,93 @@
                     goHome();
                 }
             });
+            const devViewEl = document.getElementById('dev-view');
+            if (devViewEl) {
+                devViewEl.addEventListener('click', async (e) => {
+                    const btn = e.target.closest('[data-action]');
+                    if (!btn) return;
+                    const action = btn.dataset.action;
+                    if (action === 'dev-back-home') {
+                        goHome();
+                    } else if (action === 'dev-refresh-users') {
+                        await loadDevUsers();
+                    } else if (action === 'dev-filter-role') {
+                        const next = btn.dataset.filter;
+                        if (next === 'all' || next === 'players' || next === 'staff' || next === 'banned') {
+                            _devRoleFilter = next;
+                            renderDevView();
+                        }
+                    } else if (action === 'dev-view-profile') {
+                        openPlayerProfileView(btn.dataset.userId);
+                    } else if (action === 'dev-select-reset') {
+                        const uid = safeIdAttr(btn.dataset.userId);
+                        if (!uid) return;
+                        _devResetTargetId = _devResetTargetId === uid ? null : uid;
+                        _devResetDraftPw = '';
+                        _devResetDraftConfirm = '';
+                        _devShowPassword = false;
+                        renderDevView();
+                        if (_devResetTargetId) {
+                            const pwEl = document.getElementById('dev-new-password');
+                            if (pwEl) pwEl.focus();
+                            const panel = document.getElementById('dev-reset-panel');
+                            if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    } else if (action === 'dev-cancel-reset') {
+                        _devResetTargetId = null;
+                        _devResetDraftPw = '';
+                        _devResetDraftConfirm = '';
+                        _devShowPassword = false;
+                        renderDevView();
+                    } else if (action === 'dev-toggle-pw-visibility') {
+                        _devShowPassword = !_devShowPassword;
+                        const newEl = document.getElementById('dev-new-password');
+                        const confEl = document.getElementById('dev-confirm-password');
+                        if (newEl) newEl.type = _devShowPassword ? 'text' : 'password';
+                        if (confEl) confEl.type = _devShowPassword ? 'text' : 'password';
+                        btn.title = _devShowPassword ? 'Hide password' : 'Show password';
+                        withObserverPaused(() => {
+                            btn.innerHTML = `<i data-lucide="${_devShowPassword ? 'eye-off' : 'eye'}" class="w-4 h-4"></i>`;
+                        });
+                        refreshIcons();
+                    } else if (action === 'dev-generate-password') {
+                        const generated = generateStrongPassword(14);
+                        _devResetDraftPw = generated;
+                        _devResetDraftConfirm = generated;
+                        _devShowPassword = true;
+                        renderDevView();
+                    } else if (action === 'dev-copy-password') {
+                        const newEl = document.getElementById('dev-new-password');
+                        const val = newEl ? newEl.value : _devResetDraftPw;
+                        if (!val) {
+                            showToast('Enter or generate a password first.', 'info');
+                            return;
+                        }
+                        try {
+                            await navigator.clipboard.writeText(val);
+                            showToast('Password copied to clipboard.', 'success');
+                        } catch {
+                            showToast('Could not copy automatically — select and copy manually.', 'error');
+                        }
+                    }
+                });
+                devViewEl.addEventListener('input', (e) => {
+                    if (!e.target) return;
+                    if (e.target.id === 'dev-user-search') {
+                        _devSearchQuery = e.target.value;
+                        updateDevUsersTableOnly();
+                    } else if (e.target.id === 'dev-new-password') {
+                        _devResetDraftPw = e.target.value;
+                    } else if (e.target.id === 'dev-confirm-password') {
+                        _devResetDraftConfirm = e.target.value;
+                    }
+                });
+                devViewEl.addEventListener('submit', (e) => {
+                    if (e.target && e.target.id === 'dev-reset-password-form') {
+                        handleDevResetPasswordSubmit(e);
+                    }
+                });
+            }
             document.getElementById('auth-action-btn')?.addEventListener('click', handleAuthButton);
             document.getElementById('auth-close-btn')?.addEventListener('click', closeAuthModal);
             document.getElementById('auth-toggle-btn')?.addEventListener('click', toggleAuthMode);
