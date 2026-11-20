@@ -70,21 +70,21 @@
             <div class="text-center mb-8">
                 <i data-lucide="lock" class="w-12 h-12 text-blue-500 mx-auto mb-4"></i>
                 <h2 id="auth-title" class="text-3xl font-bold text-white mb-2">Login</h2>
-                <p id="auth-subtitle" class="text-slate-400">Welcome back! Please login to continue.</p>
+                <p id="auth-subtitle" class="text-slate-400">Welcome back! Sign in with your username and password.</p>
             </div>
 
             <form id="auth-form" class="space-y-4">
-                <div id="username-field" class="hidden">
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Username</label>
-                    <input type="text" id="auth-username" maxlength="30" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter username">
+                <div id="username-field">
+                    <label for="auth-username" class="block text-sm font-medium text-slate-300 mb-1">Username</label>
+                    <input type="text" id="auth-username" required minlength="2" maxlength="30" autocomplete="username" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter your username">
+                </div>
+                <div id="email-field" class="hidden">
+                    <label for="auth-email" class="block text-sm font-medium text-slate-300 mb-1">Email</label>
+                    <input type="email" id="auth-email" autocomplete="email" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="you@example.com">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Email</label>
-                    <input type="email" id="auth-email" required class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="name@company.com">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Password</label>
-                    <input type="password" id="auth-password" required class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••">
+                    <label for="auth-password" class="block text-sm font-medium text-slate-300 mb-1">Password</label>
+                    <input type="password" id="auth-password" required autocomplete="current-password" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••">
                 </div>
                 <button type="submit" id="auth-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-blue-500/20 active:scale-[0.98]">
                     Sign In
@@ -129,12 +129,20 @@
     <!-- Main Content -->
     <main id="main-content" class="flex-grow container mx-auto px-4 py-6">
         
-        <div id="welcome-bar" class="flex justify-between items-center mb-6">
-            <div class="text-left">
-                <h2 class="text-2xl md:text-3xl font-bold">Welcome, <span id="display-name" class="text-blue-400">Guest</span></h2>
-                <p class="text-slate-400 text-sm">Join the community and explore the latest games.</p>
+        <div id="welcome-bar" class="flex justify-between items-center mb-6 gap-4">
+            <div class="text-left min-w-0">
+                <h2 class="text-2xl md:text-3xl font-bold flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span>Welcome,</span>
+                    <button type="button" id="display-name-btn" disabled class="inline-flex items-center gap-2 text-blue-400 font-bold text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-md disabled:cursor-default">
+                        <span id="display-name">Guest</span>
+                        <span id="display-name-cue" class="hidden text-xs font-normal text-slate-400 items-center gap-1">
+                            <i data-lucide="user-circle" class="w-4 h-4 text-blue-400"></i>
+                        </span>
+                    </button>
+                </h2>
+                <p id="welcome-subtitle" class="text-slate-400 text-sm">Join the community and explore the latest games.</p>
             </div>
-            <button id="auth-action-btn" type="button" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+            <button id="auth-action-btn" type="button" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 whitespace-nowrap shrink-0">
                 <i data-lucide="log-in" class="w-4 h-4"></i> Login
             </button>
         </div>
@@ -225,6 +233,27 @@
             <div id="game-player-box" class="w-full max-w-2xl"></div>
         </div>
 
+        <!-- Player Profile View (authenticated users only, keeps Game Hub header on top) -->
+        <div id="profile-view" class="hidden max-w-5xl mx-auto">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="profile-back-btn" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Game Hub
+                    </button>
+                    <h3 class="text-xl font-bold game-font text-slate-200 tracking-wider">PLAYER PROFILE</h3>
+                </div>
+                <div id="profile-owner-actions" class="flex items-center gap-2">
+                    <button type="button" id="profile-edit-toggle-btn" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap shrink-0">
+                        <i data-lucide="pencil" class="w-4 h-4"></i> Edit Profile
+                    </button>
+                    <button type="button" id="profile-settings-toggle-btn" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0">
+                        <i data-lucide="settings" class="w-4 h-4"></i> Settings
+                    </button>
+                </div>
+            </div>
+            <div id="profile-content"></div>
+        </div>
+
     </main>
 
     <!-- Fullscreen / Full-Viewport Game Stage Overlay -->
@@ -301,6 +330,35 @@
             let _votesChannelStarted = false;
             let _suppressObserver = false;
             let _toastTimer = null;
+            let _playtimeByGame = {};
+            let _playtimeLoaded = false;
+            let _playtimeError = null;
+            let _profilePanel = 'overview'; // 'overview' | 'edit' | 'settings' | 'flag'
+            let _profileGamesFilter = 'played'; // 'played' | 'all'
+            let _avatarDraftFile = null;
+            let _avatarPreviewUrl = null;
+            let _avatarRemoveRequested = false;
+            let _editDraftUsername = null;
+            let _editDraftAvatarUrl = null;
+            let _viewedProfileUserId = null;
+            let _viewedProfile = null;
+            let _viewedProfileLoading = false;
+            let _viewedProfileError = null;
+            let _viewedProfileBanned = false;
+            let _viewedProfileReviewCount = 0;
+            let _ownReviewCount = 0;
+            let _viewedPlaytimeByGame = {};
+            let _viewedPlaytimeLoaded = false;
+            let _viewedPlaytimeError = null;
+            let _flagDraftUsername = null;
+            let _flagAvatarMode = 'keep'; // 'keep' | 'remove' | 'replace'
+            let _flagDraftAvatarUrl = '';
+            let _flagAvatarFile = null;
+            let _flagAvatarPreviewUrl = null;
+            let _accessToken = null;
+            let _playtimeSession = null;
+            let _playtimeInterval = null;
+            let _playtimeFlushing = false;
 
             function withObserverPaused(fn) {
                 _suppressObserver = true;
@@ -574,8 +632,10 @@
                             if (forgedEdit) forgedEdit.remove();
                             document.querySelectorAll('[data-action="toggle-game-status"]').forEach((el) => el.remove());
                         }
-                        if (!_isMod) {
-                            document.querySelectorAll('[data-action="verify-comment"], [data-action="ban-user"], [data-action="delete-comment"]').forEach((el) => el.remove());
+                        if (!_isMod && !_isDeveloper) {
+                            document.querySelectorAll('[data-action="verify-comment"], [data-action="ban-user"], [data-action="delete-comment"], [data-action="toggle-flag-panel"]').forEach((el) => el.remove());
+                            const forgedFlag = document.getElementById('profile-flag-panel');
+                            if (forgedFlag) forgedFlag.remove();
                         }
                         if (!_user || _isBanned) {
                             const input = document.getElementById('comment-input');
@@ -584,6 +644,18 @@
                             if (sendBtn && !sendBtn.disabled) {
                                 sendBtn.disabled = true;
                                 sendBtn.classList.add('opacity-50');
+                            }
+                        }
+                        if (!_user) {
+                            const profileView = document.getElementById('profile-view');
+                            if (profileView && !profileView.classList.contains('hidden')) {
+                                profileView.classList.add('hidden');
+                            }
+                        }
+                        if (_user && _viewedProfileUserId && _viewedProfileUserId !== _user.id) {
+                            const ownerActions = document.getElementById('profile-owner-actions');
+                            if (ownerActions && !ownerActions.classList.contains('hidden')) {
+                                ownerActions.classList.add('hidden');
                             }
                         }
                         if (!_isGameStageOpen) {
@@ -619,19 +691,57 @@
 
             async function initAuth() {
                 const { data: { session } } = await _supabase.auth.getSession();
+                _accessToken = session ? session.access_token : null;
                 if (session) await setupUserSession(session.user);
                 else await setupGuestView();
 
                 startVotesRealtime();
 
                 _supabase.auth.onAuthStateChange(async (event, session) => {
+                    _accessToken = session ? session.access_token : null;
                     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
                         await setupUserSession(session.user);
                     } else if (event === 'SIGNED_OUT') {
-                        _user = null; _profile = null; _isMod = false; _isDeveloper = false; _isBanned = false;
+                        _user = null; _profile = null; _isMod = false; _isDeveloper = false; _isBanned = false; _accessToken = null;
                         await setupGuestView();
                     }
                 });
+            }
+
+            function updateWelcomeNameUi() {
+                withObserverPaused(() => {
+                    const nameEl = document.getElementById('display-name');
+                    const nameBtn = document.getElementById('display-name-btn');
+                    const cueEl = document.getElementById('display-name-cue');
+                    const subEl = document.getElementById('welcome-subtitle');
+                    if (_user) {
+                        const displayName = (_profile && _profile.username) ? _profile.username : 'Player';
+                        if (nameEl) nameEl.textContent = displayName;
+                        if (nameBtn) {
+                            nameBtn.disabled = false;
+                            nameBtn.title = 'Open your Player Profile';
+                            nameBtn.className = 'inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 hover:underline underline-offset-4 cursor-pointer font-bold text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-md group';
+                        }
+                        if (cueEl) {
+                            cueEl.classList.remove('hidden');
+                            cueEl.classList.add('inline-flex', 'opacity-60', 'group-hover:opacity-100', 'transition-opacity');
+                        }
+                        if (subEl) subEl.textContent = 'Click your name to view your profile, avatar, settings, and game playtime.';
+                    } else {
+                        if (nameEl) nameEl.textContent = 'Guest';
+                        if (nameBtn) {
+                            nameBtn.disabled = true;
+                            nameBtn.removeAttribute('title');
+                            nameBtn.className = 'inline-flex items-center gap-2 text-blue-400 font-bold text-left focus:outline-none disabled:cursor-default';
+                        }
+                        if (cueEl) {
+                            cueEl.classList.add('hidden');
+                            cueEl.classList.remove('inline-flex');
+                        }
+                        if (subEl) subEl.textContent = 'Join the community and explore the latest games.';
+                    }
+                });
+                refreshIcons();
             }
 
             async function setupUserSession(user) {
@@ -639,6 +749,10 @@
                 await fetchProfile();
                 closeAuthModal();
                 updateAuthButton();
+                loadPlaytime().then(() => {
+                    refreshGameViewIfOpen();
+                    if (isProfileOpen() && isViewingOwnProfile()) renderProfileView();
+                });
                 refreshReviewsIfOpen();
                 await fetchSiteData();
                 startChat();
@@ -665,14 +779,13 @@
                     _profile = data;
                     _isMod = data.is_mod === true;
                     _isDeveloper = data.is_developer === true;
-
-                    const displayNameElem = document.getElementById('display-name');
-                    if (displayNameElem) displayNameElem.textContent = _profile.username || 'Player';
+                    updateWelcomeNameUi();
                     syncRoleUi();
                 } else {
                     _profile = null;
                     _isMod = false;
                     _isDeveloper = false;
+                    updateWelcomeNameUi();
                     syncRoleUi();
                 }
             }
@@ -844,21 +957,43 @@
                 const btn = document.getElementById('auth-btn');
                 const toggleText = document.getElementById('auth-toggle-text');
                 const toggleBtn = document.getElementById('auth-toggle-btn');
-                const usernameField = document.getElementById('username-field');
+                const emailField = document.getElementById('email-field');
+                const emailInput = document.getElementById('auth-email');
+                const usernameInput = document.getElementById('auth-username');
+                const passwordInput = document.getElementById('auth-password');
+                const errorDiv = document.getElementById('auth-error');
+                if (errorDiv) errorDiv.classList.add('hidden');
                 if (_isSignUp) {
                     if (title) title.textContent = "Create Account";
-                    if (subtitle) subtitle.textContent = "Join the hub to start playing.";
+                    if (subtitle) subtitle.textContent = "Join the hub with a username, email, and password.";
                     if (btn) btn.textContent = "Sign Up";
                     if (toggleText) toggleText.textContent = "Already have an account?";
                     if (toggleBtn) toggleBtn.textContent = "Login";
-                    if (usernameField) usernameField.classList.remove('hidden');
+                    if (emailField) emailField.classList.remove('hidden');
+                    if (emailInput) emailInput.required = true;
+                    if (usernameInput) usernameInput.placeholder = "Choose a username";
+                    if (passwordInput) {
+                        passwordInput.autocomplete = "new-password";
+                        passwordInput.minLength = 6;
+                        passwordInput.placeholder = "At least 6 characters";
+                    }
                 } else {
                     if (title) title.textContent = "Login";
-                    if (subtitle) subtitle.textContent = "Welcome back! Please login to continue.";
+                    if (subtitle) subtitle.textContent = "Welcome back! Sign in with your username and password.";
                     if (btn) btn.textContent = "Sign In";
                     if (toggleText) toggleText.textContent = "Don't have an account?";
                     if (toggleBtn) toggleBtn.textContent = "Create Account";
-                    if (usernameField) usernameField.classList.add('hidden');
+                    if (emailField) emailField.classList.add('hidden');
+                    if (emailInput) {
+                        emailInput.required = false;
+                        emailInput.value = '';
+                    }
+                    if (usernameInput) usernameInput.placeholder = "Enter your username";
+                    if (passwordInput) {
+                        passwordInput.autocomplete = "current-password";
+                        passwordInput.removeAttribute('minlength');
+                        passwordInput.placeholder = "••••••••";
+                    }
                 }
             }
 
@@ -876,20 +1011,67 @@
                 }
                 try {
                     if (_isSignUp) {
-                        if (!username || username.length < 2) throw new Error("Username must be at least 2 characters");
-                        const { error } = await _supabase.auth.signUp({ 
-                            email, 
-                            password, 
-                            options: { 
-                                data: { username: username, full_name: username } 
-                            } 
+                        if (!username || username.length < 2 || username.length > 30) {
+                            throw new Error("Username must be between 2 and 30 characters.");
+                        }
+                        if (!email) {
+                            throw new Error("Please enter a valid email address.");
+                        }
+                        if (password.length < 6) {
+                            throw new Error("Password must be at least 6 characters.");
+                        }
+                        const { data: existingUser } = await _supabase
+                            .from('profiles')
+                            .select('id')
+                            .ilike('username', username)
+                            .maybeSingle();
+                        if (existingUser) {
+                            throw new Error("That username is already taken. Please choose another one.");
+                        }
+
+                        const { data: signUpData, error } = await _supabase.auth.signUp({
+                            email,
+                            password,
+                            options: {
+                                data: { username: username, full_name: username }
+                            }
                         });
                         if (error) throw error;
-                        showToast("Account created! You can now login.", 'success');
-                        toggleAuthMode();
+                        if (signUpData && signUpData.session) {
+                            showToast("Account created! Welcome to Game Hub.", 'success');
+                        } else {
+                            showToast("Account created! You can now sign in with your username.", 'success');
+                            toggleAuthMode();
+                            const uInput = document.getElementById('auth-username');
+                            const pInput = document.getElementById('auth-password');
+                            if (uInput) uInput.value = username;
+                            if (pInput) { pInput.value = ''; pInput.focus(); }
+                        }
                     } else {
-                        const { error } = await _supabase.auth.signInWithPassword({ email, password });
-                        if (error) throw error;
+                        if (!username || !password) {
+                            throw new Error("Please enter both your username and password.");
+                        }
+                        const { data: resolvedEmail, error: lookupError } = await _supabase.rpc('resolve_login_email', {
+                            p_username: username,
+                            p_password: password
+                        });
+                        if (lookupError) {
+                            const msg = String(lookupError.message || '');
+                            if (lookupError.code === 'PGRST202' || lookupError.code === '42883' || msg.includes('resolve_login_email')) {
+                                throw new Error("Username login requires running the latest supabase_hub_security_hardening.sql in Supabase SQL Editor.");
+                            }
+                            throw new Error("Invalid username or password.");
+                        }
+                        if (!resolvedEmail || typeof resolvedEmail !== 'string') {
+                            throw new Error("Invalid username or password.");
+                        }
+                        const { error } = await _supabase.auth.signInWithPassword({ email: resolvedEmail, password });
+                        if (error) {
+                            if (error.message && error.message.toLowerCase().includes('confirm')) {
+                                throw error;
+                            }
+                            throw new Error("Invalid username or password.");
+                        }
                     }
                 } catch (err) {
                     if (errorDiv) {
@@ -907,8 +1089,8 @@
             function openAuthModal() {
                 const m = document.getElementById('auth-section');
                 if (m) m.classList.remove('hidden');
-                const em = document.getElementById('auth-email');
-                if (em) setTimeout(() => em.focus(), 50);
+                const u = document.getElementById('auth-username');
+                if (u) setTimeout(() => u.focus(), 50);
             }
             function closeAuthModal() {
                 const m = document.getElementById('auth-section');
@@ -940,12 +1122,31 @@
             async function handleSignOut() { await _supabase.auth.signOut(); }
 
             async function setupGuestView() {
+                stopPlaytimeTracking(false);
                 _user = null; _profile = null; _isMod = false; _isDeveloper = false; _isBanned = false; _myVotes = {};
+                _playtimeByGame = {}; _playtimeLoaded = false; _playtimeError = null;
+                _viewedProfileUserId = null; _viewedProfile = null; _viewedProfileLoading = false; _viewedProfileError = null;
+                _viewedProfileBanned = false; _viewedProfileReviewCount = 0; _ownReviewCount = 0;
+                _viewedPlaytimeByGame = {}; _viewedPlaytimeLoaded = false; _viewedPlaytimeError = null;
+                _profilePanel = 'overview';
+                clearAvatarDraft();
+                clearFlagDraft();
                 if (_chatChannel) { _supabase.removeChannel(_chatChannel); _chatChannel = null; }
                 syncRoleUi();
+                updateWelcomeNameUi();
                 withObserverPaused(() => {
-                    const nameEl = document.getElementById('display-name');
-                    if (nameEl) nameEl.textContent = 'Guest';
+                    const pv = document.getElementById('profile-view');
+                    const home = document.getElementById('home-view');
+                    const rv = document.getElementById('reviews-view');
+                    const gp = document.getElementById('game-player-view');
+                    const wb = document.getElementById('welcome-bar');
+                    if (pv && !pv.classList.contains('hidden')) {
+                        pv.classList.add('hidden');
+                        if (rv) rv.classList.add('hidden');
+                        if (gp) gp.classList.add('hidden');
+                        if (wb) wb.classList.remove('hidden');
+                        if (home) home.classList.remove('hidden');
+                    }
                     const dot = document.getElementById('status-dot');
                     if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-500';
                     const st = document.getElementById('chat-status');
@@ -1014,7 +1215,24 @@
                 if (_chatChannel) _supabase.removeChannel(_chatChannel);
                 _chatChannel = _supabase.channel('chat-room')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => renderChat())
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'banned_users' }, () => renderChat())
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'banned_users' }, () => {
+                        renderChat();
+                        if (isProfileOpen() && _viewedProfileUserId && !isViewingOwnProfile()) {
+                            openPlayerProfileView(_viewedProfileUserId, true);
+                        }
+                    })
+                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
+                        renderChat();
+                        const updatedId = payload && payload.new ? payload.new.id : null;
+                        if (_user && updatedId === _user.id) {
+                            fetchProfile().then(() => {
+                                if (isProfileOpen() && isViewingOwnProfile()) renderProfileView();
+                            });
+                        } else if (isProfileOpen() && _viewedProfileUserId && updatedId === _viewedProfileUserId) {
+                            _viewedProfile = payload.new;
+                            renderProfileView();
+                        }
+                    })
                     .subscribe();
             }
 
@@ -1054,16 +1272,29 @@
                         const timeStr = m.created_at ? escapeHtml(formatDateTime(m.created_at)) : '';
                         const safeMsgId = safeIdAttr(m.id);
                         const safeUid = safeIdAttr(m.user_id);
+                        const nameColorClass = m.is_mod
+                            ? 'text-yellow-500 hover:text-yellow-400'
+                            : (isMe ? 'text-blue-400 hover:text-blue-300' : 'text-purple-400 hover:text-purple-300');
                         const div = document.createElement('div');
                         div.className = `p-3 rounded-lg border transition-all flex gap-3 group relative ${userIsBanned ? 'bg-red-900/20 border-red-900/50' : 'bg-slate-800 border-slate-700'}`;
                         div.innerHTML = `
-                            <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 shrink-0 overflow-hidden">
-                                ${safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="" class="w-full h-full object-cover">` : `<span class="text-xs font-bold ${isMe ? 'text-blue-400' : 'text-purple-400'}">${escapeHtml(rawName.charAt(0).toUpperCase())}</span>`}
-                            </div>
+                            ${safeUid
+                                ? `<button type="button" data-action="view-player-profile" data-user-id="${safeUid}" title="View ${safeName}'s profile" class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 hover:border-blue-400 shrink-0 overflow-hidden relative cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+                                    <span class="text-xs font-bold ${isMe ? 'text-blue-400' : 'text-purple-400'}">${escapeHtml(rawName.charAt(0).toUpperCase())}</span>
+                                    ${safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="${safeName}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                </button>`
+                                : `<div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-700 shrink-0 overflow-hidden relative">
+                                    <span class="text-xs font-bold ${isMe ? 'text-blue-400' : 'text-purple-400'}">${escapeHtml(rawName.charAt(0).toUpperCase())}</span>
+                                    ${safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="${safeName}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                </div>`
+                            }
                             <div class="w-full min-w-0">
                                 <div class="flex items-center justify-between mb-1">
-                                    <span class="font-bold text-sm flex flex-wrap items-center gap-1 ${m.is_mod ? 'text-yellow-500' : (isMe ? 'text-blue-400' : 'text-purple-400')}">
-                                        ${safeName}
+                                    <span class="font-bold text-sm flex flex-wrap items-center gap-1">
+                                        ${safeUid
+                                            ? `<button type="button" data-action="view-player-profile" data-user-id="${safeUid}" title="View ${safeName}'s profile" class="font-bold text-sm hover:underline underline-offset-2 cursor-pointer text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded ${nameColorClass}">${safeName}</button>`
+                                            : `<span class="${nameColorClass}">${safeName}</span>`
+                                        }
                                         ${m.is_mod ? '<i data-lucide="shield-check" class="w-3.5 h-3.5 text-yellow-500"></i>' : ''}
                                         <span class="text-xs text-slate-500 ml-2 font-normal">${timeStr}</span>
                                         ${m.verified ? '<i data-lucide="check-circle" class="w-3.5 h-3.5 text-blue-400 ml-1"></i>' : ''}
@@ -1074,6 +1305,8 @@
                                 <p class="text-sm text-slate-300 break-words">${safeText}</p>
                             </div>
                         `;
+                        const imgEl = div.querySelector('img.avatar-img');
+                        if (imgEl) imgEl.addEventListener('error', () => imgEl.remove());
                         list.appendChild(div);
                     });
                 });
@@ -1157,8 +1390,16 @@
                 const home = document.getElementById('home-view');
                 const rv = document.getElementById('reviews-view');
                 const gp = document.getElementById('game-player-view');
+                const pv = document.getElementById('profile-view');
                 const wb = document.getElementById('welcome-bar');
                 if (open && gp) gp.classList.add('hidden');
+                if (open && pv) {
+                    pv.classList.add('hidden');
+                    _viewedProfileUserId = null;
+                    _profilePanel = 'overview';
+                    clearAvatarDraft();
+                    clearFlagDraft();
+                }
                 if (wb) wb.classList.remove('hidden');
                 if (home) home.classList.toggle('hidden', open);
                 if (rv) rv.classList.toggle('hidden', !open);
@@ -1252,12 +1493,24 @@
                 const likes = Number(r.likes) || 0, dislikes = Number(r.dislikes) || 0;
                 const rawName = r.username || 'User';
                 const nm = escapeHtml(rawName);
+                const safeAvatar = sanitizeAvatarUrl(r.avatar_url);
                 const rid = safeIdAttr(r.id);
+                const safeUid = safeIdAttr(r.user_id);
                 return `<div class="bg-slate-800 border ${mine ? 'border-blue-500/40' : 'border-slate-700'} rounded-xl p-5">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-xs font-bold ${mine ? 'text-blue-400' : 'text-purple-400'}">${escapeHtml(rawName.charAt(0).toUpperCase())}</div>
-                            <span class="font-bold text-sm ${r.is_mod ? 'text-yellow-500' : (mine ? 'text-blue-400' : 'text-purple-400')}">${nm}</span>
+                            ${safeUid
+                                ? `<button type="button" data-action="view-player-profile" data-user-id="${safeUid}" title="View ${nm}'s profile" class="w-8 h-8 rounded-full bg-slate-900 border border-slate-700 hover:border-blue-400 flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden relative cursor-pointer transition-colors ${mine ? 'text-blue-400' : 'text-purple-400'}">
+                                    <span>${escapeHtml(rawName.charAt(0).toUpperCase())}</span>
+                                    ${safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="${nm}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                </button>
+                                <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" title="View ${nm}'s profile" class="font-bold text-sm hover:underline underline-offset-2 cursor-pointer transition-colors ${r.is_mod ? 'text-yellow-500 hover:text-yellow-400' : (mine ? 'text-blue-400 hover:text-blue-300' : 'text-purple-400 hover:text-purple-300')}">${nm}</button>`
+                                : `<div class="w-8 h-8 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden relative ${mine ? 'text-blue-400' : 'text-purple-400'}">
+                                    <span>${escapeHtml(rawName.charAt(0).toUpperCase())}</span>
+                                    ${safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="${nm}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                </div>
+                                <span class="font-bold text-sm ${r.is_mod ? 'text-yellow-500' : (mine ? 'text-blue-400' : 'text-purple-400')}">${nm}</span>`
+                            }
                             <span class="text-xs text-slate-500">${escapeHtml(formatDate(r.created_at))}</span>
                         </div>
                         <span class="text-yellow-400 text-lg tracking-wide">${starsText(r.rating)}</span>
@@ -1320,6 +1573,9 @@
                         </div>
                         ${formHtml}
                         ${listHtml}`;
+                    box.querySelectorAll('img.avatar-img').forEach((imgEl) => {
+                        imgEl.addEventListener('error', () => imgEl.remove());
+                    });
                     const lbl = document.getElementById('reviews-back-label'); if (lbl) lbl.textContent = 'Back to all games';
                 });
                 refreshIcons();
@@ -1401,6 +1657,1164 @@
                 if (res.error) { showToast('Could not save vote: ' + res.error.message, 'error'); await loadGameReviews(_reviewsGameId); renderReviewDetail(); }
             }
             // ================= END GAME REVIEWS =================
+
+            // ================= PLAYTIME TRACKER & PLAYER PROFILE =================
+            function isProfileOpen() {
+                const pv = document.getElementById('profile-view');
+                return !!pv && !pv.classList.contains('hidden');
+            }
+
+            function formatPlaytime(totalSeconds) {
+                const secs = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+                if (secs === 0) return '0h 00m';
+                if (secs < 60) return `< 1m (${secs}s)`;
+                const totalMinutes = Math.floor(secs / 60);
+                const hours = Math.floor(totalMinutes / 60);
+                const mins = totalMinutes % 60;
+                return `${hours}h ${pad2(mins)}m`;
+            }
+
+            function getGamePlaytimeSeconds(gameId) {
+                const rec = _playtimeByGame[gameId];
+                const saved = rec ? Number(rec.total_seconds) || 0 : 0;
+                if (_playtimeSession && _playtimeSession.gameId === gameId) {
+                    const liveMs = _playtimeSession.carryMs + (_playtimeSession.activeSince !== null ? (performance.now() - _playtimeSession.activeSince) : 0);
+                    return saved + Math.floor(liveMs / 1000);
+                }
+                return saved;
+            }
+
+            async function loadPlaytime() {
+                if (!_supabase || !_user) {
+                    _playtimeByGame = {};
+                    _playtimeLoaded = false;
+                    _playtimeError = null;
+                    return;
+                }
+                const { data, error } = await _supabase
+                    .from('game_playtime')
+                    .select('game_id, total_seconds, last_played_at')
+                    .eq('user_id', _user.id);
+                if (error) {
+                    _playtimeError = error.message;
+                    _playtimeLoaded = true;
+                    return;
+                }
+                _playtimeError = null;
+                _playtimeByGame = {};
+                if (Array.isArray(data)) {
+                    data.forEach((row) => {
+                        _playtimeByGame[row.game_id] = {
+                            total_seconds: Number(row.total_seconds) || 0,
+                            last_played_at: row.last_played_at || null
+                        };
+                    });
+                }
+                _playtimeLoaded = true;
+            }
+
+            function startPlaytimeTracking(gameId) {
+                stopPlaytimeTracking(false);
+                if (!_user || !_supabase) return;
+                _playtimeSession = {
+                    gameId: Number(gameId),
+                    activeSince: document.visibilityState === 'visible' ? performance.now() : null,
+                    carryMs: 0
+                };
+                _playtimeInterval = setInterval(() => {
+                    flushPlaytime(false);
+                }, 30000);
+            }
+
+            async function flushPlaytime(useKeepalive = false) {
+                if (!_playtimeSession || !_user || !_supabase) return;
+                if (!useKeepalive && _playtimeFlushing) return;
+
+                const nowPerf = performance.now();
+                if (_playtimeSession.activeSince !== null) {
+                    _playtimeSession.carryMs += Math.max(0, nowPerf - _playtimeSession.activeSince);
+                    _playtimeSession.activeSince = (document.visibilityState === 'visible' && _isGameStageOpen) ? nowPerf : null;
+                }
+
+                const wholeSeconds = Math.floor(_playtimeSession.carryMs / 1000);
+                if (wholeSeconds < 1) return;
+
+                const sendSeconds = Math.min(wholeSeconds, 120);
+                const targetGameId = _playtimeSession.gameId;
+                _playtimeSession.carryMs -= sendSeconds * 1000;
+
+                if (useKeepalive) {
+                    if (_accessToken) {
+                        try {
+                            fetch(`${SUPABASE_CONFIG.url}/rest/v1/rpc/record_game_playtime`, {
+                                method: 'POST',
+                                keepalive: true,
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'apikey': SUPABASE_CONFIG.key,
+                                    'Authorization': `Bearer ${_accessToken}`
+                                },
+                                body: JSON.stringify({ p_game_id: targetGameId, p_delta_seconds: sendSeconds })
+                            }).catch(() => {});
+                        } catch {}
+                    }
+                    return;
+                }
+
+                _playtimeFlushing = true;
+                try {
+                    const { data, error } = await _supabase.rpc('record_game_playtime', {
+                        p_game_id: targetGameId,
+                        p_delta_seconds: sendSeconds
+                    });
+                    if (!error && typeof data === 'number') {
+                        _playtimeByGame[targetGameId] = {
+                            total_seconds: Number(data) || 0,
+                            last_played_at: new Date().toISOString()
+                        };
+                        if (isProfileOpen() && isViewingOwnProfile()) renderProfileView();
+                        refreshGameViewIfOpen();
+                    }
+                } catch {}
+                finally {
+                    _playtimeFlushing = false;
+                }
+            }
+
+            function stopPlaytimeTracking(shouldFlush = true) {
+                if (_playtimeInterval) {
+                    clearInterval(_playtimeInterval);
+                    _playtimeInterval = null;
+                }
+                if (shouldFlush && _playtimeSession) {
+                    const pending = _playtimeSession;
+                    const nowPerf = performance.now();
+                    if (pending.activeSince !== null) {
+                        pending.carryMs += Math.max(0, nowPerf - pending.activeSince);
+                        pending.activeSince = null;
+                    }
+                    const secs = Math.min(120, Math.floor(pending.carryMs / 1000));
+                    _playtimeSession = null;
+                    if (secs >= 1 && _user && _supabase) {
+                        _supabase.rpc('record_game_playtime', {
+                            p_game_id: pending.gameId,
+                            p_delta_seconds: secs
+                        }).then(({ data, error }) => {
+                            if (!error && typeof data === 'number') {
+                                _playtimeByGame[pending.gameId] = {
+                                    total_seconds: Number(data) || 0,
+                                    last_played_at: new Date().toISOString()
+                                };
+                                refreshGameViewIfOpen();
+                                if (isProfileOpen() && isViewingOwnProfile()) renderProfileView();
+                            }
+                        }).catch(() => {});
+                    }
+                } else {
+                    _playtimeSession = null;
+                }
+            }
+
+            function clearAvatarDraft(resetFields = true) {
+                if (_avatarPreviewUrl) {
+                    URL.revokeObjectURL(_avatarPreviewUrl);
+                    _avatarPreviewUrl = null;
+                }
+                _avatarDraftFile = null;
+                _avatarRemoveRequested = false;
+                if (resetFields) {
+                    _editDraftUsername = null;
+                    _editDraftAvatarUrl = null;
+                }
+            }
+
+            function prepareAvatarFile(file) {
+                return new Promise((resolve, reject) => {
+                    const allowed = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+                    if (!allowed.includes(file.type)) {
+                        reject(new Error('Please choose a PNG, JPG, WebP, or GIF image.'));
+                        return;
+                    }
+                    if (file.size > 2 * 1024 * 1024) {
+                        reject(new Error('Image must be smaller than 2 MB.'));
+                        return;
+                    }
+                    if (file.type === 'image/gif') {
+                        resolve({ blob: file, ext: 'gif', contentType: 'image/gif' });
+                        return;
+                    }
+                    const img = new Image();
+                    const objUrl = URL.createObjectURL(file);
+                    img.onload = () => {
+                        URL.revokeObjectURL(objUrl);
+                        const maxDim = 512;
+                        let w = img.naturalWidth || img.width;
+                        let h = img.naturalHeight || img.height;
+                        if (w > maxDim || h > maxDim) {
+                            const ratio = Math.min(maxDim / w, maxDim / h);
+                            w = Math.max(1, Math.round(w * ratio));
+                            h = Math.max(1, Math.round(h * ratio));
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            resolve({ blob: file, ext: file.type === 'image/png' ? 'png' : 'jpg', contentType: file.type });
+                            return;
+                        }
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const outType = file.type === 'image/png' ? 'image/png' : 'image/webp';
+                        const ext = outType === 'image/png' ? 'png' : 'webp';
+                        canvas.toBlob((blob) => {
+                            if (!blob) {
+                                resolve({ blob: file, ext: 'jpg', contentType: file.type });
+                                return;
+                            }
+                            resolve({ blob, ext, contentType: outType });
+                        }, outType, 0.88);
+                    };
+                    img.onerror = () => {
+                        URL.revokeObjectURL(objUrl);
+                        reject(new Error('Could not read that image file.'));
+                    };
+                    img.src = objUrl;
+                });
+            }
+
+            function isViewingOwnProfile() {
+                return !!_user && (!_viewedProfileUserId || _viewedProfileUserId === _user.id);
+            }
+
+            function canFlagViewedProfile() {
+                if (!_user || isViewingOwnProfile()) return false;
+                if (!(_isMod || _isDeveloper)) return false;
+                if (!_viewedProfile) return false;
+                if (_viewedProfile.is_developer && !_isDeveloper) return false;
+                return true;
+            }
+
+            function clearFlagDraft(resetFields = true) {
+                if (_flagAvatarPreviewUrl) {
+                    URL.revokeObjectURL(_flagAvatarPreviewUrl);
+                    _flagAvatarPreviewUrl = null;
+                }
+                _flagAvatarFile = null;
+                if (resetFields) {
+                    _flagDraftUsername = null;
+                    _flagAvatarMode = 'keep';
+                    _flagDraftAvatarUrl = '';
+                }
+            }
+
+            async function openProfileView(panel = 'overview') {
+                if (!_user) {
+                    showLoginPopup();
+                    return;
+                }
+                exitGameFullscreen();
+                _activeGameId = null;
+                _viewedProfileUserId = _user.id;
+                _viewedProfile = null;
+                _viewedProfileLoading = false;
+                _viewedProfileError = null;
+                _profilePanel = panel;
+                clearAvatarDraft();
+                clearFlagDraft();
+
+                const home = document.getElementById('home-view');
+                const rv = document.getElementById('reviews-view');
+                const gp = document.getElementById('game-player-view');
+                const pv = document.getElementById('profile-view');
+                const wb = document.getElementById('welcome-bar');
+                if (home) home.classList.add('hidden');
+                if (rv) rv.classList.add('hidden');
+                if (gp) gp.classList.add('hidden');
+                if (wb) wb.classList.add('hidden');
+                if (pv) pv.classList.remove('hidden');
+
+                renderProfileView();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                const [, , reviewRes] = await Promise.all([
+                    fetchProfile(),
+                    loadPlaytime(),
+                    _supabase.from('game_reviews').select('id', { count: 'exact', head: true }).eq('user_id', _user.id)
+                ]);
+                _ownReviewCount = (reviewRes && typeof reviewRes.count === 'number') ? reviewRes.count : 0;
+                if (isProfileOpen() && isViewingOwnProfile()) renderProfileView();
+            }
+
+            async function openPlayerProfileView(targetUserId, silentRefresh = false) {
+                if (!_user) {
+                    showLoginPopup();
+                    return;
+                }
+                const safeUid = safeIdAttr(targetUserId);
+                if (!safeUid) return;
+                if (safeUid === _user.id) {
+                    await openProfileView('overview');
+                    return;
+                }
+
+                exitGameFullscreen();
+                _activeGameId = null;
+                _viewedProfileUserId = safeUid;
+                if (!silentRefresh) {
+                    _viewedProfile = null;
+                    _viewedProfileLoading = true;
+                    _viewedProfileError = null;
+                    _viewedProfileBanned = false;
+                    _viewedProfileReviewCount = 0;
+                    _viewedPlaytimeByGame = {};
+                    _viewedPlaytimeLoaded = false;
+                    _viewedPlaytimeError = null;
+                    _profilePanel = 'overview';
+                    _profileGamesFilter = 'played';
+                    clearAvatarDraft();
+                    clearFlagDraft();
+
+                    const home = document.getElementById('home-view');
+                    const rv = document.getElementById('reviews-view');
+                    const gp = document.getElementById('game-player-view');
+                    const pv = document.getElementById('profile-view');
+                    const wb = document.getElementById('welcome-bar');
+                    if (home) home.classList.add('hidden');
+                    if (rv) rv.classList.add('hidden');
+                    if (gp) gp.classList.add('hidden');
+                    if (wb) wb.classList.add('hidden');
+                    if (pv) pv.classList.remove('hidden');
+
+                    renderProfileView();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+
+                try {
+                    const [profRes, playRes, banRes, revRes] = await Promise.all([
+                        _supabase.from('profiles').select('id, username, is_mod, is_developer, avatar_url, created_at, updated_at').eq('id', safeUid).maybeSingle(),
+                        _supabase.from('game_playtime').select('game_id, total_seconds, last_played_at').eq('user_id', safeUid),
+                        _supabase.from('banned_users').select('user_id').eq('user_id', safeUid).maybeSingle(),
+                        _supabase.from('game_reviews').select('id', { count: 'exact', head: true }).eq('user_id', safeUid)
+                    ]);
+
+                    if (_viewedProfileUserId !== safeUid) return;
+
+                    if (profRes.error) {
+                        _viewedProfileError = profRes.error.message;
+                        _viewedProfile = null;
+                    } else if (!profRes.data) {
+                        _viewedProfileError = 'Player profile not found.';
+                        _viewedProfile = null;
+                    } else {
+                        _viewedProfileError = null;
+                        _viewedProfile = profRes.data;
+                    }
+
+                    if (playRes.error) {
+                        _viewedPlaytimeError = playRes.error.message;
+                        _viewedPlaytimeByGame = {};
+                    } else {
+                        _viewedPlaytimeError = null;
+                        _viewedPlaytimeByGame = {};
+                        if (Array.isArray(playRes.data)) {
+                            playRes.data.forEach((row) => {
+                                _viewedPlaytimeByGame[row.game_id] = {
+                                    total_seconds: Number(row.total_seconds) || 0,
+                                    last_played_at: row.last_played_at || null
+                                };
+                            });
+                        }
+                    }
+                    _viewedPlaytimeLoaded = true;
+                    _viewedProfileBanned = !!(banRes && banRes.data);
+                    _viewedProfileReviewCount = (revRes && typeof revRes.count === 'number') ? revRes.count : 0;
+                } catch (err) {
+                    if (_viewedProfileUserId !== safeUid) return;
+                    _viewedProfileError = err && err.message ? err.message : 'Could not load player profile.';
+                    _viewedPlaytimeLoaded = true;
+                } finally {
+                    if (_viewedProfileUserId === safeUid) {
+                        _viewedProfileLoading = false;
+                        if (isProfileOpen()) renderProfileView();
+                    }
+                }
+            }
+
+            function updateProfileHeaderButtons() {
+                const ownerActions = document.getElementById('profile-owner-actions');
+                const editBtn = document.getElementById('profile-edit-toggle-btn');
+                const settingsBtn = document.getElementById('profile-settings-toggle-btn');
+                const isOwn = isViewingOwnProfile();
+                withObserverPaused(() => {
+                    if (ownerActions) ownerActions.classList.toggle('hidden', !isOwn);
+                    if (editBtn) {
+                        const active = isOwn && _profilePanel === 'edit';
+                        editBtn.className = active
+                            ? 'flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold ring-2 ring-blue-400/50 transition-colors whitespace-nowrap shrink-0'
+                            : 'flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap shrink-0';
+                    }
+                    if (settingsBtn) {
+                        const active = isOwn && _profilePanel === 'settings';
+                        settingsBtn.className = active
+                            ? 'flex items-center gap-2 bg-slate-700 border border-blue-500/70 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap shrink-0'
+                            : 'flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0';
+                    }
+                });
+            }
+
+            function renderProfileView() {
+                const box = document.getElementById('profile-content');
+                if (!box || !_user) return;
+                updateProfileHeaderButtons();
+
+                const isOwn = isViewingOwnProfile();
+                if (!isOwn && _viewedProfileLoading && !_viewedProfile) {
+                    withObserverPaused(() => {
+                        box.innerHTML = `<section class="bg-slate-900 border border-slate-700 rounded-xl p-10 text-center text-sm text-slate-400">Loading player profile...</section>`;
+                    });
+                    return;
+                }
+                if (!isOwn && (_viewedProfileError || !_viewedProfile)) {
+                    withObserverPaused(() => {
+                        box.innerHTML = `<section class="bg-slate-900 border border-slate-700 rounded-xl p-10 text-center">
+                            <p class="text-sm text-red-400 mb-4">${escapeHtml(_viewedProfileError || 'Player profile not found.')}</p>
+                            <button type="button" data-action="profile-browse-games" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold px-4 py-2 rounded-lg text-sm transition-colors">Back to Game Hub</button>
+                        </section>`;
+                    });
+                    return;
+                }
+
+                const targetProfile = isOwn ? _profile : _viewedProfile;
+                const username = (targetProfile && targetProfile.username) ? targetProfile.username : 'Player';
+                const currentAvatar = sanitizeAvatarUrl(targetProfile ? targetProfile.avatar_url : null);
+                const targetIsDev = isOwn ? _isDeveloper : !!(targetProfile && targetProfile.is_developer);
+                const targetIsMod = isOwn ? _isMod : !!(targetProfile && targetProfile.is_mod);
+                const targetIsBanned = isOwn ? _isBanned : _viewedProfileBanned;
+                const reviewCount = isOwn ? _ownReviewCount : _viewedProfileReviewCount;
+                const roleLabel = targetIsDev ? 'Developer' : (targetIsMod ? 'Moderator' : 'Player');
+                const joinedRaw = isOwn
+                    ? (_user.created_at || (targetProfile && targetProfile.created_at))
+                    : (targetProfile && targetProfile.created_at);
+                const joinedDate = joinedRaw ? formatDate(joinedRaw) : '';
+                const playtimeMap = isOwn ? _playtimeByGame : _viewedPlaytimeByGame;
+                const playtimeLoaded = isOwn ? _playtimeLoaded : _viewedPlaytimeLoaded;
+                const playtimeError = isOwn ? _playtimeError : _viewedPlaytimeError;
+
+                // Playtime metrics across catalog
+                let totalSecondsAll = 0;
+                let gamesPlayedCount = 0;
+                let topGame = null;
+                let topSeconds = 0;
+
+                const gameRows = gamesList.map((g) => {
+                    const rec = playtimeMap[g.id];
+                    const secs = isOwn ? getGamePlaytimeSeconds(g.id) : (rec ? Number(rec.total_seconds) || 0 : 0);
+                    totalSecondsAll += secs;
+                    if (secs > 0) gamesPlayedCount++;
+                    if (secs > topSeconds) {
+                        topSeconds = secs;
+                        topGame = g;
+                    }
+                    return {
+                        game: g,
+                        seconds: secs,
+                        lastPlayedAt: rec ? rec.last_played_at : null
+                    };
+                });
+
+                const sortedRows = [...gameRows].sort((a, b) => {
+                    if (b.seconds !== a.seconds) return b.seconds - a.seconds;
+                    return a.game.id - b.game.id;
+                });
+
+                const visibleRows = _profileGamesFilter === 'played'
+                    ? sortedRows.filter(r => r.seconds > 0)
+                    : sortedRows;
+
+                const draftUsernameVal = _editDraftUsername !== null ? _editDraftUsername : username;
+                const draftAvatarUrlVal = _avatarRemoveRequested
+                    ? ''
+                    : (_editDraftAvatarUrl !== null ? _editDraftAvatarUrl : (currentAvatar || ''));
+                const previewSrc = _avatarRemoveRequested
+                    ? null
+                    : (_avatarPreviewUrl || sanitizeAvatarUrl(draftAvatarUrlVal) || currentAvatar);
+
+                const showFlagBtn = canFlagViewedProfile();
+
+                let activePanelHtml = '';
+                if (isOwn && _profilePanel === 'edit') {
+                    activePanelHtml = `
+                        <section class="bg-slate-900 border border-slate-700 rounded-xl p-6 mb-8">
+                            <div class="flex items-center justify-between gap-4 pb-4 mb-6 border-b border-slate-800">
+                                <div>
+                                    <h4 class="text-lg font-bold text-white">Edit Profile</h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">Update your public username and chat profile picture.</p>
+                                </div>
+                                <button type="button" data-action="close-profile-panel" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 transition-colors">Close</button>
+                            </div>
+                            <form id="profile-edit-form" class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                                <div class="md:col-span-4 flex flex-col items-center text-center gap-4">
+                                    <div id="profile-edit-avatar-preview" class="w-28 h-28 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center overflow-hidden relative">
+                                        <span class="text-3xl font-bold text-blue-400">${escapeHtml((draftUsernameVal || username).charAt(0).toUpperCase())}</span>
+                                        ${previewSrc ? `<img src="${escapeHtml(previewSrc)}" alt="Avatar preview" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                    </div>
+                                    <div class="flex flex-wrap justify-center gap-2">
+                                        <label for="profile-avatar-file" class="cursor-pointer inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold px-3.5 py-2 rounded-lg transition-colors">
+                                            <i data-lucide="upload" class="w-3.5 h-3.5 text-blue-400"></i> Upload Photo
+                                        </label>
+                                        <input id="profile-avatar-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden">
+                                        ${previewSrc ? `<button type="button" data-action="remove-avatar" class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-red-950/60 border border-slate-700 hover:border-red-500/50 text-red-400 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Remove</button>` : ''}
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 leading-relaxed">PNG, JPG, WebP, or GIF up to 2 MB.<br>Uploaded directly to Supabase Storage.</p>
+                                </div>
+                                <div class="md:col-span-8 space-y-5">
+                                    <div>
+                                        <label for="profile-username-input" class="block text-xs font-semibold text-slate-300 mb-1.5">Username</label>
+                                        <input type="text" id="profile-username-input" required minlength="2" maxlength="30" value="${escapeHtml(draftUsernameVal)}" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Choose your display name">
+                                        <p class="text-[11px] text-slate-500 mt-1">2–30 characters. Shown in Game Hub, chat, and game reviews.</p>
+                                    </div>
+                                    <div>
+                                        <label for="profile-avatar-url-input" class="block text-xs font-semibold text-slate-300 mb-1.5">Or Image URL (optional)</label>
+                                        <input type="url" id="profile-avatar-url-input" value="${escapeHtml(draftAvatarUrlVal)}" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://example.com/avatar.png">
+                                        <p class="text-[11px] text-slate-500 mt-1">Uploading a photo above automatically fills and saves your avatar URL.</p>
+                                    </div>
+                                    <div id="profile-edit-error" class="hidden p-3 bg-red-500/10 border border-red-500/40 rounded-lg text-red-400 text-xs"></div>
+                                    <div class="flex flex-wrap items-center gap-3 pt-2">
+                                        <button type="submit" id="profile-save-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-colors">Save Changes</button>
+                                        <button type="button" data-action="close-profile-panel" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-medium px-4 py-2.5 rounded-lg text-sm transition-colors">Cancel</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </section>
+                    `;
+                } else if (isOwn && _profilePanel === 'settings') {
+                    activePanelHtml = `
+                        <section class="bg-slate-900 border border-slate-700 rounded-xl p-6 mb-8">
+                            <div class="flex items-center justify-between gap-4 pb-4 mb-6 border-b border-slate-800">
+                                <div>
+                                    <h4 class="text-lg font-bold text-white">Account Settings</h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">Manage your password and account security.</p>
+                                </div>
+                                <button type="button" data-action="close-profile-panel" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 transition-colors">Close</button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                                <div class="md:col-span-5 space-y-4">
+                                    <div>
+                                        <div class="text-xs text-slate-400 mb-1">Signed-in Email</div>
+                                        <div class="text-sm font-mono text-slate-200 break-all">${escapeHtml(_user.email || '')}</div>
+                                    </div>
+                                    <div class="pt-4 border-t border-slate-800">
+                                        <button type="button" data-action="profile-sign-out" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-red-950/60 border border-slate-700 hover:border-red-500/50 text-red-400 px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                                            <i data-lucide="log-out" class="w-4 h-4"></i> Sign Out
+                                        </button>
+                                    </div>
+                                </div>
+                                <form id="profile-password-form" class="md:col-span-7 space-y-4">
+                                    <h5 class="text-sm font-bold text-slate-200">Change Password</h5>
+                                    <div>
+                                        <label for="settings-current-password" class="block text-xs font-semibold text-slate-300 mb-1">Current Password</label>
+                                        <input type="password" id="settings-current-password" required autocomplete="current-password" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter your current password">
+                                    </div>
+                                    <div>
+                                        <label for="settings-new-password" class="block text-xs font-semibold text-slate-300 mb-1">New Password</label>
+                                        <input type="password" id="settings-new-password" required minlength="6" autocomplete="new-password" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="At least 6 characters">
+                                    </div>
+                                    <div>
+                                        <label for="settings-confirm-password" class="block text-xs font-semibold text-slate-300 mb-1">Confirm New Password</label>
+                                        <input type="password" id="settings-confirm-password" required minlength="6" autocomplete="new-password" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Repeat new password">
+                                    </div>
+                                    <div id="profile-password-error" class="hidden p-3 bg-red-500/10 border border-red-500/40 rounded-lg text-red-400 text-xs"></div>
+                                    <div class="pt-1">
+                                        <button type="submit" id="profile-password-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-colors">Update Password</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </section>
+                    `;
+                } else if (showFlagBtn && _profilePanel === 'flag') {
+                    const flagUsernameVal = _flagDraftUsername !== null ? _flagDraftUsername : username;
+                    const flagPreviewSrc = _flagAvatarMode === 'remove'
+                        ? null
+                        : (_flagAvatarMode === 'replace'
+                            ? (_flagAvatarPreviewUrl || sanitizeAvatarUrl(_flagDraftAvatarUrl) || currentAvatar)
+                            : currentAvatar);
+                    activePanelHtml = `
+                        <section id="profile-flag-panel" class="bg-slate-900 border border-amber-500/50 rounded-xl p-6 mb-8">
+                            <div class="flex items-center justify-between gap-4 pb-4 mb-6 border-b border-slate-800">
+                                <div>
+                                    <h4 class="text-lg font-bold text-amber-300 flex items-center gap-2">
+                                        <i data-lucide="flag" class="w-4 h-4"></i> Moderator Flag Action
+                                    </h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">Force-change ${escapeHtml(username)}'s username or profile picture.</p>
+                                </div>
+                                <button type="button" data-action="close-profile-panel" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 transition-colors">Close</button>
+                            </div>
+                            <form id="profile-flag-form" class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                                <div class="md:col-span-4 flex flex-col items-center text-center gap-4">
+                                    <div class="w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center overflow-hidden relative">
+                                        <span class="text-3xl font-bold text-purple-400">${escapeHtml((flagUsernameVal || username).charAt(0).toUpperCase())}</span>
+                                        ${flagPreviewSrc ? `<img src="${escapeHtml(flagPreviewSrc)}" alt="Avatar preview" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                    </div>
+                                    <div class="text-xs text-slate-400">
+                                        ${_flagAvatarMode === 'remove' ? 'Avatar will be removed' : (_flagAvatarMode === 'replace' ? 'Avatar will be replaced' : 'Keeping current avatar')}
+                                    </div>
+                                </div>
+                                <div class="md:col-span-8 space-y-5">
+                                    <div>
+                                        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                                            <label for="flag-username-input" class="block text-xs font-semibold text-slate-300">Force Username</label>
+                                            <button type="button" data-action="flag-generate-username" class="text-xs font-semibold text-amber-300 hover:text-amber-200 hover:underline transition-colors">Reset to Safe Name</button>
+                                        </div>
+                                        <input type="text" id="flag-username-input" required minlength="2" maxlength="30" value="${escapeHtml(flagUsernameVal)}" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-amber-500 outline-none" placeholder="Enter replacement username">
+                                        <p class="text-[11px] text-slate-500 mt-1">Leave unchanged to keep the current username, or enter a new 2–30 character name.</p>
+                                    </div>
+                                    <div>
+                                        <div class="block text-xs font-semibold text-slate-300 mb-2">Profile Picture Action</div>
+                                        <div class="inline-flex flex-wrap items-center gap-1 p-1 bg-slate-800 rounded-lg border border-slate-700">
+                                            <button type="button" data-action="flag-avatar-mode" data-mode="keep" class="px-3 py-1.5 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${_flagAvatarMode === 'keep' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}">Keep Current</button>
+                                            <button type="button" data-action="flag-avatar-mode" data-mode="remove" class="px-3 py-1.5 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${_flagAvatarMode === 'remove' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'}">Remove Photo</button>
+                                            <button type="button" data-action="flag-avatar-mode" data-mode="replace" class="px-3 py-1.5 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${_flagAvatarMode === 'replace' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'}">Replace Photo</button>
+                                        </div>
+                                        ${_flagAvatarMode === 'replace' ? `
+                                            <div class="mt-3 space-y-3">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <label for="flag-avatar-file" class="cursor-pointer inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold px-3.5 py-2 rounded-lg transition-colors">
+                                                        <i data-lucide="upload" class="w-3.5 h-3.5 text-amber-400"></i> Upload Replacement Photo
+                                                    </label>
+                                                    <input id="flag-avatar-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden">
+                                                    ${_flagAvatarFile ? `<span class="text-xs text-emerald-400">Photo ready to upload</span>` : ''}
+                                                </div>
+                                                <input type="url" id="flag-avatar-url-input" value="${escapeHtml(_flagDraftAvatarUrl)}" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3.5 py-2 text-sm text-white focus:ring-2 focus:ring-amber-500 outline-none" placeholder="Or paste replacement https:// image URL">
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                    <div id="profile-flag-error" class="hidden p-3 bg-red-500/10 border border-red-500/40 rounded-lg text-red-400 text-xs"></div>
+                                    <div class="flex flex-wrap items-center gap-3 pt-2">
+                                        <button type="submit" id="profile-flag-save-btn" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-colors">Apply Force Change</button>
+                                        <button type="button" data-action="close-profile-panel" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-medium px-4 py-2.5 rounded-lg text-sm transition-colors">Cancel</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </section>
+                    `;
+                }
+
+                let playtimeBodyHtml = '';
+                if (!playtimeLoaded) {
+                    playtimeBodyHtml = `<div class="py-10 text-center text-sm text-slate-400">Loading playtime history...</div>`;
+                } else if (playtimeError) {
+                    playtimeBodyHtml = `<div class="py-8 px-4 text-center text-sm text-red-400">Could not load playtime: ${escapeHtml(playtimeError)}<div class="text-xs text-slate-500 mt-1">Make sure you ran the updated Supabase SQL migration.</div></div>`;
+                } else if (visibleRows.length === 0) {
+                    playtimeBodyHtml = isOwn
+                        ? `
+                            <div class="py-12 px-4 text-center">
+                                <p class="text-sm text-slate-400 mb-4">No game time recorded yet. Open any game in fullscreen to start tracking your hours and minutes.</p>
+                                <button type="button" data-action="profile-browse-games" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors">Browse Games</button>
+                            </div>
+                        `
+                        : `
+                            <div class="py-12 px-4 text-center">
+                                <p class="text-sm text-slate-400">${escapeHtml(username)} hasn't recorded any game playtime yet.</p>
+                            </div>
+                        `;
+                } else {
+                    const maxRowSec = Math.max(1, topSeconds);
+                    playtimeBodyHtml = `
+                        <div class="divide-y divide-slate-800">
+                            ${visibleRows.map(({ game, seconds, lastPlayedAt }) => {
+                                const isOnline = _gameConfigs[game.id] !== false;
+                                const pct = seconds > 0 ? Math.max(3, Math.round((seconds / maxRowSec) * 100)) : 0;
+                                const lastLabel = lastPlayedAt ? `Last played ${formatDate(lastPlayedAt)}` : 'Not played yet';
+                                return `
+                                    <div class="py-3.5 px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors">
+                                        <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                                            <div class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                                                <i data-lucide="${escapeHtml(game.icon)}" class="w-5 h-5 text-slate-300"></i>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-bold text-sm text-slate-100 truncate">${escapeHtml(game.name)}</span>
+                                                    ${!isOnline ? `<span class="text-[11px] text-red-400 font-mono">Offline</span>` : ''}
+                                                </div>
+                                                <div class="text-xs text-slate-500 mt-0.5">${escapeHtml(lastLabel)}</div>
+                                                <div class="mt-2 h-1.5 w-full max-w-md bg-slate-800 rounded-full overflow-hidden">
+                                                    <div class="h-full bg-gradient-to-r ${game.color}" style="width: ${pct}%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between sm:justify-end gap-4 shrink-0">
+                                            <div class="text-right">
+                                                <div class="font-mono tabular-nums text-sm font-bold ${seconds > 0 ? 'text-white' : 'text-slate-500'}">${escapeHtml(formatPlaytime(seconds))}</div>
+                                            </div>
+                                            ${isOnline ? `<button type="button" data-action="profile-open-game" data-game-id="${game.id}" class="text-xs font-bold text-blue-400 hover:text-blue-300 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors whitespace-nowrap">Play</button>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+
+                withObserverPaused(() => {
+                    box.innerHTML = `
+                        <section class="bg-slate-900 border border-slate-700 rounded-xl p-6 md:p-8 mb-8">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                <div class="flex items-center gap-5 min-w-0">
+                                    <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center shrink-0 overflow-hidden relative">
+                                        <span class="text-3xl font-bold ${isOwn ? 'text-blue-400' : 'text-purple-400'}">${escapeHtml(username.charAt(0).toUpperCase())}</span>
+                                        ${currentAvatar ? `<img src="${escapeHtml(currentAvatar)}" alt="${escapeHtml(username)}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h2 class="text-2xl md:text-3xl font-bold game-font text-white truncate">${escapeHtml(username)}</h2>
+                                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400 mt-1.5">
+                                            <span class="${targetIsDev || targetIsMod ? 'text-yellow-400 font-semibold' : 'text-slate-300'}">${escapeHtml(roleLabel)}</span>
+                                            ${targetIsBanned ? `<span aria-hidden="true">&middot;</span><span class="text-red-400 font-semibold">Banned</span>` : ''}
+                                            ${joinedDate ? `<span aria-hidden="true">&middot;</span><span>Joined ${escapeHtml(joinedDate)}</span>` : ''}
+                                            <span aria-hidden="true">&middot;</span>
+                                            <span class="tabular-nums">${reviewCount} review${reviewCount === 1 ? '' : 's'}</span>
+                                            ${isOwn && _user.email ? `<span aria-hidden="true">&middot;</span><span class="truncate max-w-xs">${escapeHtml(_user.email)}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                ${showFlagBtn ? `
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <button type="button" data-action="toggle-flag-panel" title="Flag this profile to force-change username or profile picture" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-colors whitespace-nowrap shrink-0 ${_profilePanel === 'flag' ? 'bg-amber-600 border-amber-400 text-white' : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/50 text-amber-300'}">
+                                            <i data-lucide="flag" class="w-4 h-4"></i> Flag Profile
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-7 pt-6 border-t border-slate-800">
+                                <div>
+                                    <div class="text-xs text-slate-400 mb-1">Total Playtime</div>
+                                    <div class="text-2xl font-bold font-mono tabular-nums text-white">${escapeHtml(formatPlaytime(totalSecondsAll))}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-slate-400 mb-1">Games Played</div>
+                                    <div class="text-2xl font-bold font-mono tabular-nums text-white">${gamesPlayedCount} <span class="text-sm font-normal text-slate-500">/ ${gamesList.length}</span></div>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-xs text-slate-400 mb-1">Most Played Game</div>
+                                    <div class="text-base font-bold text-white truncate">${topGame ? escapeHtml(topGame.name) : 'None yet'}</div>
+                                    ${topGame ? `<div class="text-xs font-mono tabular-nums text-slate-400 mt-0.5">${escapeHtml(formatPlaytime(topSeconds))}</div>` : ''}
+                                </div>
+                            </div>
+                        </section>
+
+                        ${activePanelHtml}
+
+                        <section class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+                            <div class="px-5 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="text-base font-bold game-font text-slate-100 tracking-wide">GAME PLAYTIME</h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">${isOwn ? 'Time automatically counts while a game is open on your screen.' : `Total time ${escapeHtml(username)} has spent playing each game.`}</p>
+                                </div>
+                                <div class="flex items-center gap-1 p-1 bg-slate-800 rounded-lg border border-slate-700">
+                                    <button type="button" data-action="profile-filter-games" data-filter="played" class="px-3 py-1.5 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${_profileGamesFilter === 'played' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">Played (${gamesPlayedCount})</button>
+                                    <button type="button" data-action="profile-filter-games" data-filter="all" class="px-3 py-1.5 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${_profileGamesFilter === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">All Games (${gamesList.length})</button>
+                                </div>
+                            </div>
+                            ${playtimeBodyHtml}
+                        </section>
+                    `;
+
+                    box.querySelectorAll('img.avatar-img').forEach((imgEl) => {
+                        imgEl.addEventListener('error', () => imgEl.remove());
+                    });
+
+                    const editForm = document.getElementById('profile-edit-form');
+                    if (editForm) editForm.addEventListener('submit', saveProfileEdits);
+
+                    const avatarInput = document.getElementById('profile-avatar-file');
+                    if (avatarInput) avatarInput.addEventListener('change', handleAvatarFileChange);
+
+                    const usernameField = document.getElementById('profile-username-input');
+                    if (usernameField) {
+                        usernameField.addEventListener('input', () => {
+                            _editDraftUsername = usernameField.value;
+                        });
+                    }
+
+                    const urlInput = document.getElementById('profile-avatar-url-input');
+                    if (urlInput) {
+                        urlInput.addEventListener('input', () => {
+                            _editDraftAvatarUrl = urlInput.value;
+                            _avatarRemoveRequested = false;
+                            if (_avatarDraftFile) {
+                                clearAvatarDraft(false);
+                            }
+                        });
+                    }
+
+                    const pwForm = document.getElementById('profile-password-form');
+                    if (pwForm) pwForm.addEventListener('submit', handleChangePassword);
+
+                    const flagForm = document.getElementById('profile-flag-form');
+                    if (flagForm) flagForm.addEventListener('submit', submitFlagProfile);
+
+                    const flagUserInput = document.getElementById('flag-username-input');
+                    if (flagUserInput) {
+                        flagUserInput.addEventListener('input', () => {
+                            _flagDraftUsername = flagUserInput.value;
+                        });
+                    }
+
+                    const flagFileInput = document.getElementById('flag-avatar-file');
+                    if (flagFileInput) flagFileInput.addEventListener('change', handleFlagAvatarFileChange);
+
+                    const flagUrlInput = document.getElementById('flag-avatar-url-input');
+                    if (flagUrlInput) {
+                        flagUrlInput.addEventListener('input', () => {
+                            _flagDraftAvatarUrl = flagUrlInput.value;
+                            if (_flagAvatarFile) clearFlagDraft(false);
+                        });
+                    }
+                });
+                refreshIcons();
+            }
+
+            async function handleFlagAvatarFileChange(e) {
+                const file = e.target && e.target.files ? e.target.files[0] : null;
+                if (!file) return;
+                const errEl = document.getElementById('profile-flag-error');
+                if (errEl) errEl.classList.add('hidden');
+                try {
+                    const prepared = await prepareAvatarFile(file);
+                    clearFlagDraft(false);
+                    _flagAvatarFile = prepared;
+                    _flagAvatarPreviewUrl = URL.createObjectURL(prepared.blob);
+                    _flagAvatarMode = 'replace';
+                    renderProfileView();
+                } catch (err) {
+                    if (errEl) {
+                        errEl.textContent = err && err.message ? err.message : 'Invalid image selected.';
+                        errEl.classList.remove('hidden');
+                    }
+                    showToast(err && err.message ? err.message : 'Invalid image selected.', 'error');
+                }
+            }
+
+            async function submitFlagProfile(e) {
+                e.preventDefault();
+                if (!_user || !_supabase || !_viewedProfile || isViewingOwnProfile()) return;
+
+                const errEl = document.getElementById('profile-flag-error');
+                const saveBtn = document.getElementById('profile-flag-save-btn');
+                if (errEl) errEl.classList.add('hidden');
+
+                const roles = await verifyServerRoles();
+                if (!roles.isMod && !roles.isDeveloper) {
+                    showToast('Moderator access required.', 'error');
+                    _profilePanel = 'overview';
+                    renderProfileView();
+                    return;
+                }
+                if (_viewedProfile.is_developer && !roles.isDeveloper) {
+                    if (errEl) {
+                        errEl.textContent = 'Moderators cannot flag a Developer profile.';
+                        errEl.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                const usernameInput = document.getElementById('flag-username-input');
+                const urlInput = document.getElementById('flag-avatar-url-input');
+                const targetId = _viewedProfile.id;
+                const oldUsername = _viewedProfile.username || '';
+                const newUsername = (usernameInput ? usernameInput.value : oldUsername).trim();
+                const updateUsername = newUsername !== oldUsername;
+
+                if (updateUsername && (newUsername.length < 2 || newUsername.length > 30)) {
+                    if (errEl) {
+                        errEl.textContent = 'Username must be between 2 and 30 characters.';
+                        errEl.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                const updateAvatar = _flagAvatarMode === 'remove' || _flagAvatarMode === 'replace';
+                let nextAvatarUrl = null;
+
+                if (_flagAvatarMode === 'replace' && !_flagAvatarFile) {
+                    const rawUrl = (urlInput ? urlInput.value : _flagDraftAvatarUrl).trim();
+                    const safeUrl = sanitizeAvatarUrl(rawUrl);
+                    if (!safeUrl) {
+                        if (errEl) {
+                            errEl.textContent = 'Upload a replacement image or enter a valid https:// image URL.';
+                            errEl.classList.remove('hidden');
+                        }
+                        return;
+                    }
+                    nextAvatarUrl = safeUrl;
+                }
+
+                if (!updateUsername && !updateAvatar) {
+                    if (errEl) {
+                        errEl.textContent = 'Change the username or select a profile picture action first.';
+                        errEl.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Applying...';
+                }
+
+                try {
+                    if (_flagAvatarMode === 'replace' && _flagAvatarFile) {
+                        const filePath = `${targetId}/avatar.${_flagAvatarFile.ext}`;
+                        const { error: uploadError } = await _supabase.storage
+                            .from('avatars')
+                            .upload(filePath, _flagAvatarFile.blob, {
+                                upsert: true,
+                                contentType: _flagAvatarFile.contentType,
+                                cacheControl: '3600'
+                            });
+                        if (uploadError) {
+                            throw new Error(`Upload failed (${uploadError.message}). Make sure you ran the latest Supabase SQL migration, or paste an image URL.`);
+                        }
+                        const { data: pubData } = _supabase.storage.from('avatars').getPublicUrl(filePath);
+                        if (!pubData || !pubData.publicUrl) {
+                            throw new Error('Could not resolve uploaded avatar URL.');
+                        }
+                        nextAvatarUrl = `${pubData.publicUrl}?v=${Date.now()}`;
+                    }
+
+                    const { data: updated, error: rpcError } = await _supabase.rpc('mod_moderate_profile', {
+                        p_target_user_id: targetId,
+                        p_new_username: updateUsername ? newUsername : null,
+                        p_update_username: updateUsername,
+                        p_new_avatar_url: _flagAvatarMode === 'remove' ? null : nextAvatarUrl,
+                        p_update_avatar: updateAvatar
+                    });
+
+                    if (rpcError) {
+                        if (rpcError.code === '23505') {
+                            throw new Error('That username is already taken. Please pick another one.');
+                        }
+                        const msg = String(rpcError.message || '');
+                        if (rpcError.code === 'PGRST202' || rpcError.code === '42883' || msg.includes('mod_moderate_profile')) {
+                            throw new Error('Run the latest supabase_hub_security_hardening.sql in Supabase SQL Editor to enable Moderator Profile Flagging.');
+                        }
+                        throw rpcError;
+                    }
+
+                    if (updated && typeof updated === 'object') {
+                        _viewedProfile = updated;
+                    }
+                    clearFlagDraft(true);
+                    _profilePanel = 'overview';
+                    renderProfileView();
+                    renderChat();
+                    refreshReviewsIfOpen();
+                    showToast('Player profile updated by moderator.', 'success');
+                } catch (err) {
+                    if (errEl) {
+                        errEl.textContent = err && err.message ? err.message : 'Could not update player profile.';
+                        errEl.classList.remove('hidden');
+                    }
+                } finally {
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Apply Force Change';
+                    }
+                }
+            }
+
+            async function handleAvatarFileChange(e) {
+                const file = e.target && e.target.files ? e.target.files[0] : null;
+                if (!file) return;
+                const errEl = document.getElementById('profile-edit-error');
+                if (errEl) errEl.classList.add('hidden');
+                try {
+                    const prepared = await prepareAvatarFile(file);
+                    clearAvatarDraft(false);
+                    _avatarDraftFile = prepared;
+                    _avatarPreviewUrl = URL.createObjectURL(prepared.blob);
+                    _avatarRemoveRequested = false;
+                    renderProfileView();
+                } catch (err) {
+                    if (errEl) {
+                        errEl.textContent = err && err.message ? err.message : 'Invalid image selected.';
+                        errEl.classList.remove('hidden');
+                    }
+                    showToast(err && err.message ? err.message : 'Invalid image selected.', 'error');
+                }
+            }
+
+            async function saveProfileEdits(e) {
+                e.preventDefault();
+                if (!_user || !_supabase) return;
+
+                const usernameInput = document.getElementById('profile-username-input');
+                const urlInput = document.getElementById('profile-avatar-url-input');
+                const errEl = document.getElementById('profile-edit-error');
+                const saveBtn = document.getElementById('profile-save-btn');
+                if (errEl) errEl.classList.add('hidden');
+
+                const newUsername = (usernameInput ? usernameInput.value : '').trim();
+                if (newUsername.length < 2 || newUsername.length > 30) {
+                    if (errEl) {
+                        errEl.textContent = 'Username must be between 2 and 30 characters.';
+                        errEl.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                let nextAvatarUrl = _profile ? _profile.avatar_url : null;
+                if (_avatarRemoveRequested) {
+                    nextAvatarUrl = null;
+                } else if (_avatarDraftFile) {
+                    // Handled below via Supabase Storage upload
+                } else if (urlInput) {
+                    const rawUrl = urlInput.value.trim();
+                    if (!rawUrl) {
+                        nextAvatarUrl = null;
+                    } else {
+                        const safe = sanitizeAvatarUrl(rawUrl);
+                        if (!safe) {
+                            if (errEl) {
+                                errEl.textContent = 'Avatar URL must start with https:// or http://';
+                                errEl.classList.remove('hidden');
+                            }
+                            return;
+                        }
+                        nextAvatarUrl = safe;
+                    }
+                }
+
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Saving...';
+                }
+
+                try {
+                    if (_avatarDraftFile && !_avatarRemoveRequested) {
+                        const filePath = `${_user.id}/avatar.${_avatarDraftFile.ext}`;
+                        const { error: uploadError } = await _supabase.storage
+                            .from('avatars')
+                            .upload(filePath, _avatarDraftFile.blob, {
+                                upsert: true,
+                                contentType: _avatarDraftFile.contentType,
+                                cacheControl: '3600'
+                            });
+                        if (uploadError) {
+                            throw new Error(`Upload failed (${uploadError.message}). Make sure you ran the updated Supabase SQL migration to create the 'avatars' bucket, or paste an image URL below.`);
+                        }
+                        const { data: pubData } = _supabase.storage.from('avatars').getPublicUrl(filePath);
+                        if (!pubData || !pubData.publicUrl) {
+                            throw new Error('Could not resolve uploaded avatar URL.');
+                        }
+                        nextAvatarUrl = `${pubData.publicUrl}?v=${Date.now()}`;
+                    }
+
+                    const { data: updated, error: updateError } = await _supabase
+                        .from('profiles')
+                        .update({
+                            username: newUsername,
+                            avatar_url: nextAvatarUrl,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', _user.id)
+                        .select()
+                        .single();
+
+                    if (updateError) {
+                        if (updateError.code === '23505') {
+                            throw new Error('That username is already taken. Please pick another one.');
+                        }
+                        throw updateError;
+                    }
+
+                    _profile = updated;
+                    _supabase.auth.updateUser({ data: { username: newUsername, full_name: newUsername } }).catch(() => {});
+                    clearAvatarDraft(true);
+                    _profilePanel = 'overview';
+                    updateWelcomeNameUi();
+                    renderProfileView();
+                    renderChat();
+                    showToast('Profile updated!', 'success');
+                } catch (err) {
+                    if (errEl) {
+                        errEl.textContent = err && err.message ? err.message : 'Could not update profile.';
+                        errEl.classList.remove('hidden');
+                    }
+                } finally {
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Save Changes';
+                    }
+                }
+            }
+
+            async function handleChangePassword(e) {
+                e.preventDefault();
+                if (!_user || !_supabase) return;
+
+                const curEl = document.getElementById('settings-current-password');
+                const newEl = document.getElementById('settings-new-password');
+                const confEl = document.getElementById('settings-confirm-password');
+                const errEl = document.getElementById('profile-password-error');
+                const btn = document.getElementById('profile-password-btn');
+                if (errEl) errEl.classList.add('hidden');
+
+                const currentPassword = curEl ? curEl.value : '';
+                const newPassword = newEl ? newEl.value : '';
+                const confirmPassword = confEl ? confEl.value : '';
+
+                if (!currentPassword) {
+                    if (errEl) { errEl.textContent = 'Please enter your current password.'; errEl.classList.remove('hidden'); }
+                    return;
+                }
+                if (newPassword.length < 6) {
+                    if (errEl) { errEl.textContent = 'New password must be at least 6 characters.'; errEl.classList.remove('hidden'); }
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    if (errEl) { errEl.textContent = 'New passwords do not match.'; errEl.classList.remove('hidden'); }
+                    return;
+                }
+                if (newPassword === currentPassword) {
+                    if (errEl) { errEl.textContent = 'New password must be different from your current password.'; errEl.classList.remove('hidden'); }
+                    return;
+                }
+
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Updating...';
+                }
+
+                try {
+                    const { error: verifyError } = await _supabase.auth.signInWithPassword({
+                        email: _user.email,
+                        password: currentPassword
+                    });
+                    if (verifyError) {
+                        throw new Error('Current password is incorrect.');
+                    }
+
+                    const { error: pwError } = await _supabase.auth.updateUser({ password: newPassword });
+                    if (pwError) throw pwError;
+
+                    if (curEl) curEl.value = '';
+                    if (newEl) newEl.value = '';
+                    if (confEl) confEl.value = '';
+                    showToast('Password updated successfully!', 'success');
+                } catch (err) {
+                    if (errEl) {
+                        errEl.textContent = err && err.message ? err.message : 'Could not update password.';
+                        errEl.classList.remove('hidden');
+                    }
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Update Password';
+                    }
+                }
+            }
+            // ================= END PLAYTIME TRACKER & PLAYER PROFILE =================
 
             // ================= GAME PLAYER VIEW & FULLSCREEN =================
             let _activeGameId = null;
@@ -1511,7 +2925,7 @@
                                 <i data-lucide="${escapeHtml(game.icon)}" class="w-10 h-10 text-white"></i>
                             </div>
                             <h3 class="text-2xl md:text-3xl font-bold game-font text-white mb-2 break-words max-w-full">${escapeHtml(game.name)}</h3>
-                            <span class="text-xs text-slate-500 font-mono mb-4">ID: ${game.id}</span>
+                            <div class="text-xs text-slate-500 font-mono tabular-nums mb-4">ID: ${game.id}${_user ? ` &middot; Played: ${escapeHtml(formatPlaytime(getGamePlaytimeSeconds(game.id)))}` : ''}</div>
 
                             <div class="flex items-center gap-3 mb-6">
                                 <button type="button" data-action="vote-game" data-game-id="${game.id}" data-vote="1" title="Like" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-colors ${myVote === 1 ? 'text-green-400 border-green-500/60 bg-green-500/15' : 'text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500/50'}">
@@ -1555,13 +2969,19 @@
                 if (_gameConfigs[game.id] === false) return;
                 exitGameFullscreen();
                 _activeGameId = idNum;
+                _viewedProfileUserId = null;
+                _profilePanel = 'overview';
+                clearAvatarDraft();
+                clearFlagDraft();
 
                 const home = document.getElementById('home-view');
                 const rv = document.getElementById('reviews-view');
+                const pv = document.getElementById('profile-view');
                 const wb = document.getElementById('welcome-bar');
                 const gp = document.getElementById('game-player-view');
                 if (home) home.classList.add('hidden');
                 if (rv) rv.classList.add('hidden');
+                if (pv) pv.classList.add('hidden');
                 if (wb) wb.classList.add('hidden');
                 if (gp) gp.classList.remove('hidden');
 
@@ -1572,12 +2992,18 @@
             function goHome() {
                 exitGameFullscreen();
                 _activeGameId = null;
+                _viewedProfileUserId = null;
+                _profilePanel = 'overview';
+                clearAvatarDraft();
+                clearFlagDraft();
                 const home = document.getElementById('home-view');
                 const rv = document.getElementById('reviews-view');
                 const gp = document.getElementById('game-player-view');
+                const pv = document.getElementById('profile-view');
                 const wb = document.getElementById('welcome-bar');
                 if (gp) gp.classList.add('hidden');
                 if (rv) rv.classList.add('hidden');
+                if (pv) pv.classList.add('hidden');
                 if (wb) wb.classList.remove('hidden');
                 if (home) home.classList.remove('hidden');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1618,6 +3044,7 @@
                 _isGameStageOpen = true;
                 _bananaTrueFullscreenActive = false;
                 cancelEscHold();
+                startPlaytimeTracking(game.id);
 
                 withObserverPaused(() => {
                     if (exitChip) exitChip.classList.remove('hidden');
@@ -1644,6 +3071,7 @@
 
             function exitGameFullscreen() {
                 cancelEscHold();
+                stopPlaytimeTracking(true);
                 if (!_isGameStageOpen && (!document.getElementById('game-fullscreen-overlay') || document.getElementById('game-fullscreen-overlay').classList.contains('hidden'))) {
                     return;
                 }
@@ -1672,6 +3100,67 @@
 
             // ================= EVENT DELEGATION & LISTENERS =================
             document.getElementById('home-logo-btn')?.addEventListener('click', goHome);
+            document.getElementById('display-name-btn')?.addEventListener('click', () => {
+                if (_user) openProfileView('overview');
+            });
+            document.getElementById('profile-back-btn')?.addEventListener('click', goHome);
+            document.getElementById('profile-edit-toggle-btn')?.addEventListener('click', () => {
+                if (!_user || !isViewingOwnProfile()) return;
+                clearAvatarDraft();
+                _profilePanel = _profilePanel === 'edit' ? 'overview' : 'edit';
+                renderProfileView();
+            });
+            document.getElementById('profile-settings-toggle-btn')?.addEventListener('click', () => {
+                if (!_user || !isViewingOwnProfile()) return;
+                clearAvatarDraft();
+                _profilePanel = _profilePanel === 'settings' ? 'overview' : 'settings';
+                renderProfileView();
+            });
+            document.getElementById('profile-content')?.addEventListener('click', async (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const action = btn.dataset.action;
+                if (action === 'close-profile-panel') {
+                    clearAvatarDraft();
+                    clearFlagDraft();
+                    _profilePanel = 'overview';
+                    renderProfileView();
+                } else if (action === 'remove-avatar') {
+                    clearAvatarDraft(false);
+                    _avatarRemoveRequested = true;
+                    _editDraftAvatarUrl = '';
+                    renderProfileView();
+                } else if (action === 'toggle-flag-panel') {
+                    if (!canFlagViewedProfile()) return;
+                    const roles = await verifyServerRoles();
+                    if (!roles.isMod && !roles.isDeveloper) return;
+                    clearFlagDraft();
+                    _profilePanel = _profilePanel === 'flag' ? 'overview' : 'flag';
+                    renderProfileView();
+                } else if (action === 'flag-generate-username') {
+                    if (!canFlagViewedProfile()) return;
+                    const suffix = String(Math.floor(10000 + Math.random() * 90000));
+                    _flagDraftUsername = `Player_${suffix}`;
+                    renderProfileView();
+                } else if (action === 'flag-avatar-mode') {
+                    if (!canFlagViewedProfile()) return;
+                    const nextMode = btn.dataset.mode;
+                    if (nextMode === 'keep' || nextMode === 'remove' || nextMode === 'replace') {
+                        if (nextMode !== 'replace') clearFlagDraft(false);
+                        _flagAvatarMode = nextMode;
+                        renderProfileView();
+                    }
+                } else if (action === 'profile-sign-out') {
+                    handleSignOut();
+                } else if (action === 'profile-filter-games') {
+                    _profileGamesFilter = btn.dataset.filter === 'all' ? 'all' : 'played';
+                    renderProfileView();
+                } else if (action === 'profile-open-game') {
+                    openGameView(btn.dataset.gameId);
+                } else if (action === 'profile-browse-games') {
+                    goHome();
+                }
+            });
             document.getElementById('auth-action-btn')?.addEventListener('click', handleAuthButton);
             document.getElementById('auth-close-btn')?.addEventListener('click', closeAuthModal);
             document.getElementById('auth-toggle-btn')?.addEventListener('click', toggleAuthMode);
@@ -1715,7 +3204,8 @@
                 const btn = e.target.closest('[data-action]');
                 if (!btn) return;
                 const action = btn.dataset.action;
-                if (action === 'verify-comment') handleVerify(btn.dataset.id, btn.dataset.verified === 'true');
+                if (action === 'view-player-profile') openPlayerProfileView(btn.dataset.userId);
+                else if (action === 'verify-comment') handleVerify(btn.dataset.id, btn.dataset.verified === 'true');
                 else if (action === 'ban-user') handleBan(btn.dataset.userId);
                 else if (action === 'delete-comment') handleDelete(btn.dataset.id);
             });
@@ -1736,7 +3226,8 @@
                     const btn = e.target.closest('[data-action]');
                     if (!btn) return;
                     const action = btn.dataset.action;
-                    if (action === 'open-game-reviews') openGameReviews(btn.dataset.gameId);
+                    if (action === 'view-player-profile') openPlayerProfileView(btn.dataset.userId);
+                    else if (action === 'open-game-reviews') openGameReviews(btn.dataset.gameId);
                     else if (action === 'vote-review') voteReview(btn.dataset.id, btn.dataset.vote);
                     else if (action === 'delete-review') deleteReview(btn.dataset.id);
                     else if (action === 'open-auth-modal') openAuthModal();
@@ -1751,6 +3242,21 @@
             window.addEventListener('keydown', handleStageKeyDown, true);
             window.addEventListener('keyup', handleStageKeyUp, true);
             window.addEventListener('blur', cancelEscHold);
+
+            document.addEventListener('visibilitychange', () => {
+                if (!_playtimeSession || !_isGameStageOpen) return;
+                if (document.visibilityState === 'hidden') {
+                    flushPlaytime(true);
+                } else if (document.visibilityState === 'visible') {
+                    _playtimeSession.activeSince = performance.now();
+                }
+            });
+
+            window.addEventListener('pagehide', () => {
+                if (_playtimeSession && _isGameStageOpen) {
+                    flushPlaytime(true);
+                }
+            });
 
             document.addEventListener('fullscreenchange', () => {
                 if (_isGameStageOpen && _activeGameId === 19 && _bananaTrueFullscreenActive) {
