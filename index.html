@@ -140,7 +140,10 @@
                         </span>
                     </button>
                 </h2>
-                <p id="welcome-subtitle" class="text-slate-400 text-sm">Join the community and explore the latest games.</p>
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+                    <p id="welcome-subtitle" class="text-slate-400 text-sm">Join the community and explore the latest games.</p>
+                    <button type="button" id="welcome-friend-requests-btn" class="hidden text-xs font-semibold text-blue-400 hover:text-blue-300 hover:underline underline-offset-4 transition-colors cursor-pointer whitespace-nowrap"></button>
+                </div>
             </div>
             <button id="auth-action-btn" type="button" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 whitespace-nowrap shrink-0">
                 <i data-lucide="log-in" class="w-4 h-4"></i> Login
@@ -205,6 +208,25 @@
                     <h3 class="text-xl font-bold game-font text-slate-400 tracking-widest">GAMES HUB</h3>
                     <div class="h-px bg-slate-700 flex-grow"></div>
                 </div>
+
+                <!-- Search Games & Players -->
+                <div id="hub-search-bar" class="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div class="relative flex-1 min-w-0">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        <input type="search" id="hub-search-input" maxlength="80" autocomplete="off" placeholder="Search games by title or find players..." class="w-full bg-slate-900 border border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 rounded-xl pl-10 pr-9 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors">
+                        <button type="button" id="hub-search-clear-btn" aria-label="Clear search" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-md transition-colors cursor-pointer">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div id="hub-search-mode-group" class="inline-flex items-center gap-1 p-1 bg-slate-900 border border-slate-700 rounded-xl shrink-0 self-start sm:self-auto">
+                        <button type="button" data-search-mode="all" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0 bg-blue-600 text-white cursor-pointer">All</button>
+                        <button type="button" data-search-mode="games" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0 text-slate-400 hover:text-white cursor-pointer">Games</button>
+                        <button type="button" data-search-mode="players" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0 text-slate-400 hover:text-white cursor-pointer">Players</button>
+                    </div>
+                </div>
+
+                <!-- Player search results (mounted dynamically while searching players) -->
+                <div id="hub-player-search-results" class="hidden mb-8"></div>
 
                 <!-- Snabbnavigering mellan sektioner -->
                 <div id="section-nav" class="flex gap-2 mb-8 overflow-x-auto custom-scroll pb-2"></div>
@@ -372,6 +394,26 @@
             let _devResetDraftPw = '';
             let _devResetDraftConfirm = '';
             let _devResetSubmitting = false;
+            let _hubSearchQuery = '';
+            let _hubSearchMode = 'all'; // 'all' | 'games' | 'players'
+            let _hubPlayerResults = [];
+            let _hubPlayerLoading = false;
+            let _hubPlayerError = null;
+            let _hubPlayerSearchTimer = null;
+            let _hubPlayerSearchSeq = 0;
+            let _profileTab = 'playtime'; // 'playtime' | 'friends'
+            let _myFriendships = [];
+            let _myFriendProfilesById = {};
+            let _myFriendsLoaded = false;
+            let _myFriendsError = null;
+            let _viewedPublicFriends = [];
+            let _viewedFriendsLoaded = false;
+            let _viewedFriendsError = null;
+            let _friendsActivityByUserId = {};
+            let _socialChannel = null;
+            let _friendsActivityRefreshInterval = null;
+            let _friendActionBusy = false;
+            const LIVE_ACTIVITY_TTL_MS = 95000;
 
             function withObserverPaused(fn) {
                 _suppressObserver = true;
@@ -696,8 +738,12 @@
                         }
                         if (!_user) {
                             const profileView = document.getElementById('profile-view');
-                            if (profileView && !profileView.classList.contains('hidden')) {
+                            if (profileView && !profileView.classList.contains('hidden') && !_viewedProfileUserId) {
                                 profileView.classList.add('hidden');
+                            }
+                            const ownerActions = document.getElementById('profile-owner-actions');
+                            if (ownerActions && !ownerActions.classList.contains('hidden')) {
+                                ownerActions.classList.add('hidden');
                             }
                         }
                         if (_user && _viewedProfileUserId && _viewedProfileUserId !== _user.id) {
@@ -801,6 +847,8 @@
                     refreshGameViewIfOpen();
                     if (isProfileOpen() && isViewingOwnProfile()) renderProfileView();
                 });
+                loadMyFriendshipsAndActivity();
+                startSocialRealtime();
                 refreshReviewsIfOpen();
                 await fetchSiteData();
                 startChat();
@@ -946,14 +994,258 @@
                 return card;
             }
 
+            function escapeIlikePattern(raw) {
+                return String(raw || '').replace(/[\\%_]/g, (m) => `\\${m}`);
+            }
+
+            function updateHubSearchControlsUi() {
+                const clearBtn = document.getElementById('hub-search-clear-btn');
+                if (clearBtn) clearBtn.classList.toggle('hidden', !_hubSearchQuery.trim());
+                const modeGroup = document.getElementById('hub-search-mode-group');
+                if (modeGroup) {
+                    modeGroup.querySelectorAll('[data-search-mode]').forEach((btn) => {
+                        const active = btn.dataset.searchMode === _hubSearchMode;
+                        btn.className = active
+                            ? 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0 bg-blue-600 text-white cursor-pointer'
+                            : 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0 text-slate-400 hover:text-white cursor-pointer';
+                    });
+                }
+            }
+
+            function renderHubPlayerSearchResults() {
+                const box = document.getElementById('hub-player-search-results');
+                if (!box) return;
+                const q = _hubSearchQuery.trim();
+                const shouldShow = _hubSearchMode === 'players' || (_hubSearchMode === 'all' && q.length > 0);
+                if (!shouldShow) {
+                    withObserverPaused(() => {
+                        box.classList.add('hidden');
+                        box.innerHTML = '';
+                    });
+                    return;
+                }
+
+                let bodyHtml = '';
+                if (_hubPlayerLoading) {
+                    bodyHtml = `<div class="px-5 py-8 text-center text-sm text-slate-400">Searching players...</div>`;
+                } else if (_hubPlayerError) {
+                    bodyHtml = `<div class="px-5 py-8 text-center text-sm text-red-400">Could not search players: ${escapeHtml(_hubPlayerError)}</div>`;
+                } else if (_hubPlayerResults.length === 0) {
+                    bodyHtml = `<div class="px-5 py-8 text-center text-sm text-slate-500">${q ? `No players found matching "${escapeHtml(q)}".` : 'No players found yet.'}</div>`;
+                } else {
+                    bodyHtml = `<div class="divide-y divide-slate-800">${_hubPlayerResults.map((p) => {
+                        const safeUid = safeIdAttr(p.id);
+                        const rawName = p.username || 'Player';
+                        const safeName = escapeHtml(rawName);
+                        const safeAvatar = sanitizeAvatarUrl(p.avatar_url);
+                        const isMe = _user && p.id === _user.id;
+                        const roleLabel = p.is_developer ? 'Developer' : (p.is_mod ? 'Moderator' : 'Player');
+                        let relNote = '';
+                        if (isMe) {
+                            relNote = '<span class="text-blue-400 font-semibold">You</span>';
+                        } else if (_user) {
+                            const f = getFriendshipWith(p.id);
+                            if (f && f.status === 'accepted') {
+                                relNote = '<span class="text-emerald-400 font-semibold">Friend</span>';
+                            } else if (f && f.status === 'pending' && f.requester_id === _user.id) {
+                                relNote = '<span class="text-slate-400">Request sent</span>';
+                            } else if (f && f.status === 'pending' && f.addressee_id === _user.id) {
+                                relNote = '<span class="text-amber-300 font-semibold">Sent you a request</span>';
+                            }
+                        }
+                        const liveAct = (!isMe && _user && isAcceptedFriendWith(p.id)) ? getFreshActivityForUser(p.id) : null;
+                        const joinedText = p.created_at ? formatDate(p.created_at) : '';
+
+                        return `<div class="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors">
+                            <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                                <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="w-10 h-10 rounded-full bg-slate-950 border border-slate-700 hover:border-blue-400 flex items-center justify-center shrink-0 overflow-hidden relative cursor-pointer transition-colors">
+                                    <span class="text-sm font-bold ${isMe ? 'text-blue-400' : 'text-purple-400'}">${escapeHtml(rawName.charAt(0).toUpperCase())}</span>
+                                    ${safeAvatar ? `<img src="${escapeHtml(safeAvatar)}" alt="${safeName}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                </button>
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                        <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="text-sm font-bold text-slate-100 hover:text-blue-400 hover:underline underline-offset-2 truncate text-left cursor-pointer transition-colors">${safeName}</button>
+                                        ${relNote ? `<span class="text-xs text-slate-500" aria-hidden="true">&middot;</span><span class="text-xs">${relNote}</span>` : ''}
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-400 mt-0.5">
+                                        <span class="${p.is_developer || p.is_mod ? 'text-yellow-400 font-semibold' : ''}">${roleLabel}</span>
+                                        ${joinedText ? `<span aria-hidden="true">&middot;</span><span class="tabular-nums">Joined ${escapeHtml(joinedText)}</span>` : ''}
+                                        ${liveAct ? `<span aria-hidden="true">&middot;</span><span class="inline-flex items-center gap-1.5 text-emerald-400 font-medium"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Playing ${escapeHtml(liveAct.game.name)}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                                <i data-lucide="user" class="w-3.5 h-3.5 text-blue-400"></i>
+                                <span>View Profile</span>
+                            </button>
+                        </div>`;
+                    }).join('')}</div>`;
+                }
+
+                const headingText = q ? `Players matching "${escapeHtml(q)}"` : 'Community Players';
+                const countLabel = _hubPlayerLoading ? '' : `<span class="text-xs text-slate-400 font-mono tabular-nums">${_hubPlayerResults.length} found</span>`;
+
+                withObserverPaused(() => {
+                    box.classList.remove('hidden');
+                    box.innerHTML = `
+                        <section class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+                            <div class="px-5 py-3.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <i data-lucide="users" class="w-4 h-4 text-blue-400 shrink-0"></i>
+                                    <h4 class="text-sm font-bold game-font text-slate-200 tracking-wide truncate">${headingText}</h4>
+                                </div>
+                                ${countLabel}
+                            </div>
+                            ${bodyHtml}
+                        </section>
+                    `;
+                    box.querySelectorAll('img.avatar-img').forEach((imgEl) => {
+                        imgEl.addEventListener('error', () => imgEl.remove());
+                    });
+                });
+                refreshIcons();
+            }
+
+            async function runHubPlayerSearch() {
+                const q = _hubSearchQuery.trim();
+                const shouldQuery = _hubSearchMode === 'players' || (_hubSearchMode === 'all' && q.length > 0);
+                if (!shouldQuery || !_supabase) {
+                    _hubPlayerLoading = false;
+                    _hubPlayerError = null;
+                    _hubPlayerResults = [];
+                    renderHubPlayerSearchResults();
+                    return;
+                }
+
+                const seq = ++_hubPlayerSearchSeq;
+                _hubPlayerLoading = true;
+                _hubPlayerError = null;
+                renderHubPlayerSearchResults();
+
+                try {
+                    let query = _supabase
+                        .from('profiles')
+                        .select('id, username, avatar_url, is_mod, is_developer, created_at');
+                    if (q) {
+                        query = query.ilike('username', `%${escapeIlikePattern(q)}%`).order('username', { ascending: true });
+                    } else {
+                        query = query.order('created_at', { ascending: false });
+                    }
+                    const { data, error } = await query.limit(12);
+                    if (seq !== _hubPlayerSearchSeq) return;
+                    if (error) {
+                        _hubPlayerError = error.message;
+                        _hubPlayerResults = [];
+                    } else {
+                        _hubPlayerError = null;
+                        _hubPlayerResults = Array.isArray(data) ? data : [];
+                    }
+                } catch (err) {
+                    if (seq !== _hubPlayerSearchSeq) return;
+                    _hubPlayerError = err && err.message ? err.message : 'Could not search players.';
+                    _hubPlayerResults = [];
+                } finally {
+                    if (seq === _hubPlayerSearchSeq) {
+                        _hubPlayerLoading = false;
+                        renderHubPlayerSearchResults();
+                    }
+                }
+            }
+
+            function scheduleHubPlayerSearch(immediate = false) {
+                if (_hubPlayerSearchTimer) {
+                    clearTimeout(_hubPlayerSearchTimer);
+                    _hubPlayerSearchTimer = null;
+                }
+                const q = _hubSearchQuery.trim();
+                const shouldQuery = _hubSearchMode === 'players' || (_hubSearchMode === 'all' && q.length > 0);
+                if (!shouldQuery) {
+                    _hubPlayerSearchSeq++;
+                    _hubPlayerLoading = false;
+                    _hubPlayerError = null;
+                    _hubPlayerResults = [];
+                    renderHubPlayerSearchResults();
+                    return;
+                }
+                if (immediate) {
+                    runHubPlayerSearch();
+                } else {
+                    _hubPlayerSearchTimer = setTimeout(() => {
+                        _hubPlayerSearchTimer = null;
+                        runHubPlayerSearch();
+                    }, 220);
+                }
+            }
+
+            function setHubSearchMode(mode) {
+                if (mode !== 'all' && mode !== 'games' && mode !== 'players') return;
+                _hubSearchMode = mode;
+                updateHubSearchControlsUi();
+                renderGames();
+                scheduleHubPlayerSearch(true);
+            }
+
+            function clearHubSearch() {
+                _hubSearchQuery = '';
+                const input = document.getElementById('hub-search-input');
+                if (input) input.value = '';
+                if (_hubSearchMode === 'players') _hubSearchMode = 'all';
+                updateHubSearchControlsUi();
+                renderGames();
+                scheduleHubPlayerSearch(true);
+            }
+
             function renderGames() {
                 const root = document.getElementById('game-sections');
                 const nav = document.getElementById('section-nav');
                 if (!root) return;
 
+                const q = _hubSearchQuery.trim();
+                const qLower = q.toLowerCase();
+
                 withObserverPaused(() => {
                     root.innerHTML = '';
                     if (nav) nav.innerHTML = '';
+
+                    if (_hubSearchMode === 'players') {
+                        if (nav) nav.classList.add('hidden');
+                        root.classList.add('hidden');
+                        return;
+                    }
+
+                    root.classList.remove('hidden');
+
+                    if (qLower.length > 0) {
+                        if (nav) nav.classList.add('hidden');
+                        const matched = gamesList.filter((g) => g.name.toLowerCase().includes(qLower));
+                        const section = document.createElement('section');
+                        section.id = 'section-search-results';
+                        section.innerHTML = `
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <i data-lucide="gamepad-2" class="w-5 h-5 text-blue-400 shrink-0"></i>
+                                    <h4 class="text-lg font-bold game-font text-slate-200 tracking-wide truncate">GAMES MATCHING "${escapeHtml(q)}"</h4>
+                                    <span class="text-xs font-mono tabular-nums text-slate-400">${matched.length} result${matched.length === 1 ? '' : 's'}</span>
+                                </div>
+                                <button type="button" data-action="clear-hub-search" class="text-xs font-semibold text-blue-400 hover:text-blue-300 hover:underline underline-offset-2 cursor-pointer whitespace-nowrap">Clear search</button>
+                            </div>
+                            ${matched.length > 0
+                                ? '<div class="section-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6"></div>'
+                                : `<div class="bg-slate-900 border border-slate-700 rounded-xl p-10 text-center">
+                                    <p class="text-sm text-slate-400 mb-4">No games found with title matching "${escapeHtml(q)}".</p>
+                                    <button type="button" data-action="clear-hub-search" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold px-4 py-2 rounded-lg text-xs transition-colors cursor-pointer">Show All Games</button>
+                                </div>`
+                            }
+                        `;
+                        if (matched.length > 0) {
+                            const grid = section.querySelector('.section-grid');
+                            matched.forEach((game) => grid.appendChild(createGameCard(game)));
+                        }
+                        root.appendChild(section);
+                        return;
+                    }
+
+                    if (nav) nav.classList.remove('hidden');
 
                     gameSections.forEach(sec => {
                         const list = sec.ids
@@ -1167,16 +1459,24 @@
             }
 
             function handleAuthButton() { if (_user) handleSignOut(); else openAuthModal(); }
-            async function handleSignOut() { await _supabase.auth.signOut(); }
+            async function handleSignOut() {
+                if (_user) await updateCurrentGameActivity(null, false);
+                await _supabase.auth.signOut();
+            }
 
             async function setupGuestView() {
                 stopPlaytimeTracking(false);
+                stopSocialRealtime();
                 _user = null; _profile = null; _isMod = false; _isDeveloper = false; _isBanned = false; _myVotes = {};
                 _playtimeByGame = {}; _playtimeLoaded = false; _playtimeError = null;
                 _viewedProfileUserId = null; _viewedProfile = null; _viewedProfileLoading = false; _viewedProfileError = null;
                 _viewedProfileBanned = false; _viewedProfileReviewCount = 0; _ownReviewCount = 0;
                 _viewedPlaytimeByGame = {}; _viewedPlaytimeLoaded = false; _viewedPlaytimeError = null;
+                _myFriendships = []; _myFriendProfilesById = {}; _myFriendsLoaded = false; _myFriendsError = null;
+                _viewedPublicFriends = []; _viewedFriendsLoaded = false; _viewedFriendsError = null;
+                _friendsActivityByUserId = {}; _friendActionBusy = false;
                 _profilePanel = 'overview';
+                _profileTab = 'playtime';
                 _devUsers = []; _devUsersLoading = false; _devUsersError = null;
                 _devSearchQuery = ''; _devRoleFilter = 'all';
                 clearAvatarDraft();
@@ -1185,6 +1485,8 @@
                 if (_chatChannel) { _supabase.removeChannel(_chatChannel); _chatChannel = null; }
                 syncRoleUi();
                 updateWelcomeNameUi();
+                updateWelcomeFriendRequestsBadge();
+                renderHubPlayerSearchResults();
                 withObserverPaused(() => {
                     const pv = document.getElementById('profile-view');
                     const dv = document.getElementById('dev-view');
@@ -1774,13 +2076,18 @@
             function startPlaytimeTracking(gameId) {
                 stopPlaytimeTracking(false);
                 if (!_user || !_supabase) return;
+                const gid = Number(gameId);
                 _playtimeSession = {
-                    gameId: Number(gameId),
+                    gameId: gid,
                     activeSince: document.visibilityState === 'visible' ? performance.now() : null,
                     carryMs: 0
                 };
+                updateCurrentGameActivity(gid, false);
                 _playtimeInterval = setInterval(() => {
                     flushPlaytime(false);
+                    if (_isGameStageOpen && _playtimeSession) {
+                        updateCurrentGameActivity(_playtimeSession.gameId, false);
+                    }
                 }, 30000);
             }
 
@@ -1871,7 +2178,394 @@
                 } else {
                     _playtimeSession = null;
                 }
+                if (_user) {
+                    updateCurrentGameActivity(null, false);
+                }
             }
+
+            // ================= FRIENDS & FRIENDS-ONLY LIVE ACTIVITY =================
+            function getFriendshipWith(targetUserId) {
+                if (!_user || !targetUserId) return null;
+                return _myFriendships.find((f) =>
+                    (f.requester_id === _user.id && f.addressee_id === targetUserId) ||
+                    (f.addressee_id === _user.id && f.requester_id === targetUserId)
+                ) || null;
+            }
+
+            function isAcceptedFriendWith(targetUserId) {
+                const f = getFriendshipWith(targetUserId);
+                return !!f && f.status === 'accepted';
+            }
+
+            function getMyAcceptedFriends() {
+                if (!_user) return [];
+                return _myFriendships
+                    .filter((f) => f.status === 'accepted')
+                    .map((f) => {
+                        const otherId = f.requester_id === _user.id ? f.addressee_id : f.requester_id;
+                        const prof = _myFriendProfilesById[otherId] || { id: otherId, username: 'Player', avatar_url: null, is_mod: false, is_developer: false };
+                        return { friendship: f, profile: prof };
+                    });
+            }
+
+            function getMyIncomingRequests() {
+                if (!_user) return [];
+                return _myFriendships
+                    .filter((f) => f.status === 'pending' && f.addressee_id === _user.id)
+                    .map((f) => {
+                        const prof = _myFriendProfilesById[f.requester_id] || { id: f.requester_id, username: 'Player', avatar_url: null, is_mod: false, is_developer: false };
+                        return { friendship: f, profile: prof };
+                    });
+            }
+
+            function getMyOutgoingRequests() {
+                if (!_user) return [];
+                return _myFriendships
+                    .filter((f) => f.status === 'pending' && f.requester_id === _user.id)
+                    .map((f) => {
+                        const prof = _myFriendProfilesById[f.addressee_id] || { id: f.addressee_id, username: 'Player', avatar_url: null, is_mod: false, is_developer: false };
+                        return { friendship: f, profile: prof };
+                    });
+            }
+
+            function getFreshActivityForUser(userId) {
+                if (!_user || !userId) return null;
+                if (userId !== _user.id && !isAcceptedFriendWith(userId)) return null;
+                const rec = _friendsActivityByUserId[userId];
+                if (!rec || !rec.current_game_id || !rec.updated_at) return null;
+                const updatedMs = Date.parse(rec.updated_at);
+                if (Number.isNaN(updatedMs) || (Date.now() - updatedMs) > LIVE_ACTIVITY_TTL_MS) return null;
+                const game = gamesList.find((g) => g.id === Number(rec.current_game_id));
+                if (!game) return null;
+                return {
+                    game,
+                    startedAt: rec.started_at || rec.updated_at,
+                    updatedAt: rec.updated_at
+                };
+            }
+
+            function formatActivityElapsed(startedAtIso) {
+                const startMs = Date.parse(startedAtIso || '');
+                if (Number.isNaN(startMs)) return '';
+                const secs = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+                if (secs < 60) return 'Just started';
+                const mins = Math.floor(secs / 60);
+                if (mins < 60) return `${mins}m`;
+                const hrs = Math.floor(mins / 60);
+                return `${hrs}h ${pad2(mins % 60)}m`;
+            }
+
+            function updateWelcomeFriendRequestsBadge() {
+                const btn = document.getElementById('welcome-friend-requests-btn');
+                if (!btn) return;
+                const incoming = _user ? getMyIncomingRequests() : [];
+                withObserverPaused(() => {
+                    if (incoming.length > 0) {
+                        btn.textContent = `· ${incoming.length} pending friend request${incoming.length === 1 ? '' : 's'}`;
+                        btn.classList.remove('hidden');
+                    } else {
+                        btn.textContent = '';
+                        btn.classList.add('hidden');
+                    }
+                });
+            }
+
+            async function updateCurrentGameActivity(gameId, useKeepalive = false) {
+                if (!_user || !_supabase) return;
+                const payload = { p_game_id: gameId === null || gameId === undefined ? null : Number(gameId) };
+                if (useKeepalive) {
+                    if (_accessToken) {
+                        try {
+                            fetch(`${SUPABASE_CONFIG.url}/rest/v1/rpc/set_current_game_activity`, {
+                                method: 'POST',
+                                keepalive: true,
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'apikey': SUPABASE_CONFIG.key,
+                                    'Authorization': `Bearer ${_accessToken}`
+                                },
+                                body: JSON.stringify(payload)
+                            }).catch(() => {});
+                        } catch {}
+                    }
+                    return;
+                }
+                try {
+                    await _supabase.rpc('set_current_game_activity', payload);
+                } catch {}
+            }
+
+            async function loadFriendsActivityOnly() {
+                if (!_supabase || !_user) {
+                    _friendsActivityByUserId = {};
+                    return;
+                }
+                try {
+                    const { data, error } = await _supabase
+                        .from('user_activity')
+                        .select('user_id, current_game_id, started_at, updated_at');
+                    if (error) return;
+                    const map = {};
+                    if (Array.isArray(data)) {
+                        data.forEach((row) => {
+                            map[row.user_id] = row;
+                        });
+                    }
+                    _friendsActivityByUserId = map;
+                    if (isProfileOpen()) renderProfileView();
+                    renderHubPlayerSearchResults();
+                } catch {}
+            }
+
+            async function loadMyFriendshipsAndActivity() {
+                if (!_supabase || !_user) {
+                    _myFriendships = [];
+                    _myFriendProfilesById = {};
+                    _myFriendsLoaded = false;
+                    _myFriendsError = null;
+                    _friendsActivityByUserId = {};
+                    updateWelcomeFriendRequestsBadge();
+                    return;
+                }
+                try {
+                    const { data: rows, error } = await _supabase
+                        .from('friendships')
+                        .select('id, requester_id, addressee_id, status, created_at, updated_at')
+                        .or(`requester_id.eq.${_user.id},addressee_id.eq.${_user.id}`)
+                        .order('updated_at', { ascending: false });
+
+                    if (error) {
+                        const msg = String(error.message || '');
+                        _myFriendsError = (error.code === '42P01' || msg.includes('friendships'))
+                            ? 'Friends tables are not set up in Supabase yet. Run supabase_hub_security_hardening.sql in Supabase SQL Editor.'
+                            : msg;
+                        _myFriendships = [];
+                        _myFriendProfilesById = {};
+                        _myFriendsLoaded = true;
+                        updateWelcomeFriendRequestsBadge();
+                        if (isProfileOpen()) renderProfileView();
+                        return;
+                    }
+
+                    _myFriendsError = null;
+                    _myFriendships = Array.isArray(rows) ? rows : [];
+
+                    const otherIds = [...new Set(_myFriendships.map((r) => (
+                        r.requester_id === _user.id ? r.addressee_id : r.requester_id
+                    )).filter(Boolean))];
+
+                    const profMap = {};
+                    if (otherIds.length > 0) {
+                        const { data: profs } = await _supabase
+                            .from('profiles')
+                            .select('id, username, avatar_url, is_mod, is_developer, created_at')
+                            .in('id', otherIds);
+                        if (Array.isArray(profs)) {
+                            profs.forEach((p) => { profMap[p.id] = p; });
+                        }
+                    }
+                    _myFriendProfilesById = profMap;
+                    _myFriendsLoaded = true;
+                    updateWelcomeFriendRequestsBadge();
+
+                    await loadFriendsActivityOnly();
+                    if (isProfileOpen()) renderProfileView();
+                    renderHubPlayerSearchResults();
+                } catch (err) {
+                    _myFriendsError = err && err.message ? err.message : 'Could not load friends.';
+                    _myFriendsLoaded = true;
+                    if (isProfileOpen()) renderProfileView();
+                }
+            }
+
+            async function loadViewedPlayerFriends(targetUserId) {
+                const safeUid = safeIdAttr(targetUserId);
+                if (!_supabase || !safeUid) return;
+                try {
+                    const { data: rows, error } = await _supabase
+                        .from('friendships')
+                        .select('id, requester_id, addressee_id, status, created_at')
+                        .eq('status', 'accepted')
+                        .or(`requester_id.eq.${safeUid},addressee_id.eq.${safeUid}`);
+
+                    if (_viewedProfileUserId !== safeUid) return;
+                    if (error) {
+                        const msg = String(error.message || '');
+                        _viewedFriendsError = (error.code === '42P01' || msg.includes('friendships'))
+                            ? 'Friends tables are not set up in Supabase yet. Run supabase_hub_security_hardening.sql in Supabase SQL Editor.'
+                            : msg;
+                        _viewedPublicFriends = [];
+                        _viewedFriendsLoaded = true;
+                        if (isProfileOpen()) renderProfileView();
+                        return;
+                    }
+
+                    const friendIds = [...new Set((rows || []).map((r) => (
+                        r.requester_id === safeUid ? r.addressee_id : r.requester_id
+                    )).filter(Boolean))];
+
+                    let profiles = [];
+                    if (friendIds.length > 0) {
+                        const { data: profs } = await _supabase
+                            .from('profiles')
+                            .select('id, username, avatar_url, is_mod, is_developer, created_at')
+                            .in('id', friendIds);
+                        if (Array.isArray(profs)) {
+                            profiles = [...profs].sort((a, b) => String(a.username || '').localeCompare(String(b.username || '')));
+                        }
+                    }
+
+                    if (_viewedProfileUserId !== safeUid) return;
+                    _viewedFriendsError = null;
+                    _viewedPublicFriends = profiles;
+                    _viewedFriendsLoaded = true;
+                    if (isProfileOpen()) renderProfileView();
+                } catch (err) {
+                    if (_viewedProfileUserId !== safeUid) return;
+                    _viewedFriendsError = err && err.message ? err.message : 'Could not load friends.';
+                    _viewedPublicFriends = [];
+                    _viewedFriendsLoaded = true;
+                    if (isProfileOpen()) renderProfileView();
+                }
+            }
+
+            function startSocialRealtime() {
+                stopSocialRealtime();
+                if (!_supabase || !_user) return;
+                _socialChannel = _supabase.channel('social-room')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => {
+                        loadMyFriendshipsAndActivity();
+                        if (isProfileOpen() && _viewedProfileUserId && !isViewingOwnProfile()) {
+                            loadViewedPlayerFriends(_viewedProfileUserId);
+                        }
+                    })
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'user_activity' }, () => {
+                        loadFriendsActivityOnly();
+                    })
+                    .subscribe();
+
+                _friendsActivityRefreshInterval = setInterval(() => {
+                    if (_user && isProfileOpen()) {
+                        loadFriendsActivityOnly();
+                    }
+                }, 30000);
+            }
+
+            function stopSocialRealtime() {
+                if (_socialChannel && _supabase) {
+                    _supabase.removeChannel(_socialChannel);
+                    _socialChannel = null;
+                }
+                if (_friendsActivityRefreshInterval) {
+                    clearInterval(_friendsActivityRefreshInterval);
+                    _friendsActivityRefreshInterval = null;
+                }
+            }
+
+            async function sendFriendRequest(targetUserId) {
+                if (!_user) {
+                    showLoginPopup();
+                    return;
+                }
+                if (_friendActionBusy || !_supabase) return;
+                const safeUid = safeIdAttr(targetUserId);
+                if (!safeUid || safeUid === _user.id) return;
+
+                _friendActionBusy = true;
+                try {
+                    const { data, error } = await _supabase.rpc('send_friend_request', {
+                        p_target_user_id: safeUid
+                    });
+                    if (error) {
+                        const msg = String(error.message || '');
+                        if (error.code === '42883' || msg.includes('send_friend_request') || msg.includes('Could not find the function')) {
+                            showToast('Friends system not installed in Supabase yet. Run supabase_hub_security_hardening.sql.', 'error');
+                        } else {
+                            showToast('Could not send friend request: ' + msg, 'error');
+                        }
+                        return;
+                    }
+                    const action = data && data.action ? data.action : 'sent';
+                    if (action === 'auto_accepted') {
+                        showToast('Friend request accepted! You are now friends.', 'success');
+                    } else if (action === 'already_friends') {
+                        showToast('You are already friends with this player.', 'info');
+                    } else if (action === 'already_sent') {
+                        showToast('Friend request is already pending.', 'info');
+                    } else {
+                        showToast('Friend request sent!', 'success');
+                    }
+                    await loadMyFriendshipsAndActivity();
+                    if (_viewedProfileUserId && !isViewingOwnProfile()) {
+                        await loadViewedPlayerFriends(_viewedProfileUserId);
+                    }
+                } finally {
+                    _friendActionBusy = false;
+                    if (isProfileOpen()) renderProfileView();
+                }
+            }
+
+            async function acceptFriendRequest(friendshipId) {
+                if (!_user || !_supabase || _friendActionBusy) return;
+                const safeId = safeIdAttr(friendshipId);
+                if (!safeId) return;
+
+                _friendActionBusy = true;
+                try {
+                    const { error } = await _supabase
+                        .from('friendships')
+                        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+                        .eq('id', safeId)
+                        .eq('addressee_id', _user.id);
+                    if (error) {
+                        showToast('Could not accept request: ' + error.message, 'error');
+                        return;
+                    }
+                    showToast('Friend request accepted!', 'success');
+                    await loadMyFriendshipsAndActivity();
+                    if (_viewedProfileUserId && !isViewingOwnProfile()) {
+                        await loadViewedPlayerFriends(_viewedProfileUserId);
+                    }
+                } finally {
+                    _friendActionBusy = false;
+                    if (isProfileOpen()) renderProfileView();
+                }
+            }
+
+            async function removeFriendship(friendshipId, mode = 'unfriend', targetLabel = 'this player') {
+                if (!_user || !_supabase || _friendActionBusy) return;
+                const safeId = safeIdAttr(friendshipId);
+                if (!safeId) return;
+
+                if (mode === 'unfriend') {
+                    const ok = await showConfirm(`Remove ${targetLabel} from your friends list? You will no longer see what game they are currently playing.`);
+                    if (!ok) return;
+                }
+
+                _friendActionBusy = true;
+                try {
+                    const { error } = await _supabase
+                        .from('friendships')
+                        .delete()
+                        .eq('id', safeId);
+                    if (error) {
+                        showToast('Could not update friendship: ' + error.message, 'error');
+                        return;
+                    }
+                    if (mode === 'cancel') showToast('Friend request cancelled.', 'info');
+                    else if (mode === 'decline') showToast('Friend request declined.', 'info');
+                    else showToast(`Removed ${targetLabel} from your friends.`, 'info');
+
+                    await loadMyFriendshipsAndActivity();
+                    if (_viewedProfileUserId && !isViewingOwnProfile()) {
+                        await loadViewedPlayerFriends(_viewedProfileUserId);
+                    }
+                } finally {
+                    _friendActionBusy = false;
+                    if (isProfileOpen()) renderProfileView();
+                }
+            }
+            // ================= END FRIENDS & LIVE ACTIVITY =================
 
             function clearAvatarDraft(resetFields = true) {
                 if (_avatarPreviewUrl) {
@@ -1965,7 +2659,7 @@
                 }
             }
 
-            async function openProfileView(panel = 'overview') {
+            async function openProfileView(panel = 'overview', tab = 'playtime') {
                 if (!_user) {
                     showLoginPopup();
                     return;
@@ -1977,6 +2671,7 @@
                 _viewedProfileLoading = false;
                 _viewedProfileError = null;
                 _profilePanel = panel;
+                _profileTab = tab === 'friends' ? 'friends' : 'playtime';
                 clearAvatarDraft();
                 clearFlagDraft();
                 closeDevViewState();
@@ -1995,9 +2690,10 @@
                 renderProfileView();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                const [, , reviewRes] = await Promise.all([
+                const [, , , reviewRes] = await Promise.all([
                     fetchProfile(),
                     loadPlaytime(),
+                    loadMyFriendshipsAndActivity(),
                     _supabase.from('game_reviews').select('id', { count: 'exact', head: true }).eq('user_id', _user.id)
                 ]);
                 _ownReviewCount = (reviewRes && typeof reviewRes.count === 'number') ? reviewRes.count : 0;
@@ -2005,14 +2701,10 @@
             }
 
             async function openPlayerProfileView(targetUserId, silentRefresh = false) {
-                if (!_user) {
-                    showLoginPopup();
-                    return;
-                }
                 const safeUid = safeIdAttr(targetUserId);
                 if (!safeUid) return;
-                if (safeUid === _user.id) {
-                    await openProfileView('overview');
+                if (_user && safeUid === _user.id) {
+                    await openProfileView('overview', 'playtime');
                     return;
                 }
 
@@ -2028,7 +2720,11 @@
                     _viewedPlaytimeByGame = {};
                     _viewedPlaytimeLoaded = false;
                     _viewedPlaytimeError = null;
+                    _viewedPublicFriends = [];
+                    _viewedFriendsLoaded = false;
+                    _viewedFriendsError = null;
                     _profilePanel = 'overview';
+                    _profileTab = 'playtime';
                     _profileGamesFilter = 'played';
                     clearAvatarDraft();
                     clearFlagDraft();
@@ -2050,12 +2746,16 @@
                 }
 
                 try {
-                    const [profRes, playRes, banRes, revRes] = await Promise.all([
+                    const tasks = [
                         _supabase.from('profiles').select('id, username, is_mod, is_developer, avatar_url, created_at, updated_at').eq('id', safeUid).maybeSingle(),
                         _supabase.from('game_playtime').select('game_id, total_seconds, last_played_at').eq('user_id', safeUid),
                         _supabase.from('banned_users').select('user_id').eq('user_id', safeUid).maybeSingle(),
-                        _supabase.from('game_reviews').select('id', { count: 'exact', head: true }).eq('user_id', safeUid)
-                    ]);
+                        _supabase.from('game_reviews').select('id', { count: 'exact', head: true }).eq('user_id', safeUid),
+                        loadViewedPlayerFriends(safeUid)
+                    ];
+                    if (_user) tasks.push(loadMyFriendshipsAndActivity());
+
+                    const [profRes, playRes, banRes, revRes] = await Promise.all(tasks);
 
                     if (_viewedProfileUserId !== safeUid) return;
 
@@ -2124,7 +2824,8 @@
 
             function renderProfileView() {
                 const box = document.getElementById('profile-content');
-                if (!box || !_user) return;
+                if (!box) return;
+                if (!_user && !_viewedProfileUserId) return;
                 updateProfileHeaderButtons();
 
                 const isOwn = isViewingOwnProfile();
@@ -2415,9 +3116,325 @@
                     `;
                 }
 
+                // Friend relationship & Friends tab state
+                const targetId = isOwn ? (_user ? _user.id : null) : (_viewedProfile ? _viewedProfile.id : _viewedProfileUserId);
+                const myAcceptedFriends = isOwn ? getMyAcceptedFriends() : [];
+                const myIncomingRequests = isOwn ? getMyIncomingRequests() : [];
+                const myOutgoingRequests = isOwn ? getMyOutgoingRequests() : [];
+                const friendsCountDisplay = isOwn ? myAcceptedFriends.length : _viewedPublicFriends.length;
+
+                let friendHeaderActionHtml = '';
+                let viewedLiveActivityHtml = '';
+                if (!isOwn && targetId) {
+                    const safeTargetId = safeIdAttr(targetId);
+                    const safeTargetName = escapeHtml(username);
+                    if (!_user) {
+                        friendHeaderActionHtml = `
+                            <button type="button" data-action="friend-send" data-user-id="${safeTargetId}" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                                <i data-lucide="user-plus" class="w-4 h-4"></i> Add Friend
+                            </button>
+                        `;
+                    } else {
+                        const rel = getFriendshipWith(targetId);
+                        if (!rel) {
+                            friendHeaderActionHtml = `
+                                <button type="button" data-action="friend-send" data-user-id="${safeTargetId}" ${_friendActionBusy ? 'disabled' : ''} class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                                    <i data-lucide="user-plus" class="w-4 h-4"></i> Add Friend
+                                </button>
+                            `;
+                        } else if (rel.status === 'pending' && rel.requester_id === _user.id) {
+                            const safeRelId = safeIdAttr(rel.id);
+                            friendHeaderActionHtml = `
+                                <button type="button" data-action="friend-cancel" data-id="${safeRelId}" data-username="${safeTargetName}" ${_friendActionBusy ? 'disabled' : ''} title="Click to cancel friend request" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-600 text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                                    <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i> Request Sent &middot; Cancel
+                                </button>
+                            `;
+                        } else if (rel.status === 'pending' && rel.addressee_id === _user.id) {
+                            const safeRelId = safeIdAttr(rel.id);
+                            friendHeaderActionHtml = `
+                                <button type="button" data-action="friend-accept" data-id="${safeRelId}" ${_friendActionBusy ? 'disabled' : ''} class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                                    <i data-lucide="check" class="w-4 h-4"></i> Accept Friend
+                                </button>
+                                <button type="button" data-action="friend-decline" data-id="${safeRelId}" data-username="${safeTargetName}" ${_friendActionBusy ? 'disabled' : ''} class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-slate-300 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                                    Decline
+                                </button>
+                            `;
+                        } else if (rel.status === 'accepted') {
+                            const safeRelId = safeIdAttr(rel.id);
+                            friendHeaderActionHtml = `
+                                <button type="button" data-action="friend-remove" data-id="${safeRelId}" data-username="${safeTargetName}" ${_friendActionBusy ? 'disabled' : ''} title="Remove from friends list" class="inline-flex items-center gap-2 bg-emerald-500/15 hover:bg-red-950/60 disabled:opacity-50 border border-emerald-500/40 hover:border-red-500/50 text-emerald-300 hover:text-red-300 px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                                    <i data-lucide="user-check" class="w-4 h-4"></i> Friends &middot; Remove
+                                </button>
+                            `;
+                            const liveAct = getFreshActivityForUser(targetId);
+                            if (liveAct) {
+                                const elapsed = formatActivityElapsed(liveAct.startedAt);
+                                const online = _gameConfigs[liveAct.game.id] !== false;
+                                viewedLiveActivityHtml = `
+                                    <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+                                        <span class="inline-flex items-center gap-2 text-emerald-400 font-semibold">
+                                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                            Currently playing <span class="text-white font-bold">${escapeHtml(liveAct.game.name)}</span>
+                                        </span>
+                                        ${elapsed ? `<span class="text-slate-400 font-mono tabular-nums">${escapeHtml(elapsed)}</span>` : ''}
+                                        ${online ? `<button type="button" data-action="profile-open-game" data-game-id="${liveAct.game.id}" class="text-blue-400 hover:text-blue-300 font-semibold hover:underline underline-offset-2 cursor-pointer">Play game</button>` : ''}
+                                    </div>
+                                `;
+                            }
+                        }
+                    }
+                }
+
+                // Friends Tab Content
+                let friendsSectionHtml = '';
+                if (_profileTab === 'friends') {
+                    if (isOwn) {
+                        let ownFriendsContent = '';
+                        if (!_myFriendsLoaded) {
+                            ownFriendsContent = `<div class="py-10 text-center text-sm text-slate-400">Loading friends...</div>`;
+                        } else if (_myFriendsError) {
+                            ownFriendsContent = `<div class="py-8 px-5 text-center text-sm text-red-400">${escapeHtml(_myFriendsError)}</div>`;
+                        } else {
+                            let requestsHtml = '';
+                            if (myIncomingRequests.length > 0) {
+                                requestsHtml += `
+                                    <div class="border-b border-slate-800">
+                                        <div class="px-5 py-3 bg-slate-950/60 flex items-center justify-between gap-2">
+                                            <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Incoming Friend Requests</span>
+                                            <span class="text-xs font-mono tabular-nums text-slate-400">${myIncomingRequests.length}</span>
+                                        </div>
+                                        <div class="divide-y divide-slate-800">
+                                            ${myIncomingRequests.map(({ friendship, profile }) => {
+                                                const safeUid = safeIdAttr(profile.id);
+                                                const safeFid = safeIdAttr(friendship.id);
+                                                const pName = escapeHtml(profile.username || 'Player');
+                                                const pAvatar = sanitizeAvatarUrl(profile.avatar_url);
+                                                const pRole = profile.is_developer ? 'Developer' : (profile.is_mod ? 'Moderator' : 'Player');
+                                                return `
+                                                    <div class="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors">
+                                                        <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                                                            <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="w-10 h-10 rounded-full bg-slate-950 border border-slate-700 hover:border-blue-400 flex items-center justify-center shrink-0 overflow-hidden relative cursor-pointer">
+                                                                <span class="text-sm font-bold text-purple-400">${escapeHtml((profile.username || 'P').charAt(0).toUpperCase())}</span>
+                                                                ${pAvatar ? `<img src="${escapeHtml(pAvatar)}" alt="${pName}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                                            </button>
+                                                            <div class="min-w-0">
+                                                                <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="text-sm font-bold text-slate-100 hover:text-blue-400 hover:underline underline-offset-2 truncate text-left cursor-pointer">${pName}</button>
+                                                                <div class="text-xs text-slate-400 mt-0.5">${pRole}${friendship.created_at ? ` &middot; Requested ${escapeHtml(formatDate(friendship.created_at))}` : ''}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex items-center gap-2 shrink-0">
+                                                            <button type="button" data-action="friend-accept" data-id="${safeFid}" ${_friendActionBusy ? 'disabled' : ''} class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer">
+                                                                <i data-lucide="check" class="w-3.5 h-3.5"></i> Accept
+                                                            </button>
+                                                            <button type="button" data-action="friend-decline" data-id="${safeFid}" data-username="${pName}" ${_friendActionBusy ? 'disabled' : ''} class="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer">
+                                                                Decline
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+
+                            const sortedFriends = [...myAcceptedFriends].sort((a, b) => {
+                                const actA = getFreshActivityForUser(a.profile.id) ? 1 : 0;
+                                const actB = getFreshActivityForUser(b.profile.id) ? 1 : 0;
+                                if (actB !== actA) return actB - actA;
+                                return String(a.profile.username || '').localeCompare(String(b.profile.username || ''));
+                            });
+
+                            let friendsListHtml = '';
+                            if (sortedFriends.length === 0) {
+                                friendsListHtml = `
+                                    <div class="py-12 px-5 text-center">
+                                        <p class="text-sm text-slate-400 mb-4">You haven't added any friends yet. Search for players in Game Hub or click any name in chat to visit their profile and send a friend request.</p>
+                                        <button type="button" data-action="profile-find-players" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors cursor-pointer">Find Players</button>
+                                    </div>
+                                `;
+                            } else {
+                                friendsListHtml = `
+                                    <div class="divide-y divide-slate-800">
+                                        ${sortedFriends.map(({ friendship, profile }) => {
+                                            const safeUid = safeIdAttr(profile.id);
+                                            const safeFid = safeIdAttr(friendship.id);
+                                            const pName = escapeHtml(profile.username || 'Player');
+                                            const pAvatar = sanitizeAvatarUrl(profile.avatar_url);
+                                            const pRole = profile.is_developer ? 'Developer' : (profile.is_mod ? 'Moderator' : 'Player');
+                                            const liveAct = getFreshActivityForUser(profile.id);
+                                            const liveOnline = liveAct ? (_gameConfigs[liveAct.game.id] !== false) : false;
+                                            const elapsed = liveAct ? formatActivityElapsed(liveAct.startedAt) : '';
+
+                                            return `
+                                                <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors">
+                                                    <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                                                        <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="w-11 h-11 rounded-full bg-slate-950 border ${liveAct ? 'border-emerald-500/70' : 'border-slate-700'} hover:border-blue-400 flex items-center justify-center shrink-0 overflow-hidden relative cursor-pointer transition-colors">
+                                                            <span class="text-sm font-bold text-purple-400">${escapeHtml((profile.username || 'P').charAt(0).toUpperCase())}</span>
+                                                            ${pAvatar ? `<img src="${escapeHtml(pAvatar)}" alt="${pName}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                                        </button>
+                                                        <div class="min-w-0">
+                                                            <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                                                <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="text-sm font-bold text-slate-100 hover:text-blue-400 hover:underline underline-offset-2 truncate text-left cursor-pointer transition-colors">${pName}</button>
+                                                                <span class="text-xs text-slate-500" aria-hidden="true">&middot;</span>
+                                                                <span class="text-xs ${profile.is_developer || profile.is_mod ? 'text-yellow-400 font-semibold' : 'text-slate-400'}">${pRole}</span>
+                                                            </div>
+                                                            <div class="mt-1 text-xs">
+                                                                ${liveAct
+                                                                    ? `<span class="inline-flex flex-wrap items-center gap-1.5 text-emerald-400 font-medium">
+                                                                        <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                                                                        <span>Playing <strong class="text-white">${escapeHtml(liveAct.game.name)}</strong></span>
+                                                                        ${elapsed ? `<span class="text-slate-400 font-mono tabular-nums">&middot; ${escapeHtml(elapsed)}</span>` : ''}
+                                                                    </span>`
+                                                                    : `<span class="text-slate-500">Not currently in a game</span>`
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-center justify-end gap-2 shrink-0">
+                                                        ${liveAct && liveOnline ? `<button type="button" data-action="profile-open-game" data-game-id="${liveAct.game.id}" class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer"><i data-lucide="play" class="w-3.5 h-3.5"></i> Play</button>` : ''}
+                                                        <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer">Profile</button>
+                                                        <button type="button" data-action="friend-remove" data-id="${safeFid}" data-username="${pName}" title="Remove friend" class="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                `;
+                            }
+
+                            let outgoingHtml = '';
+                            if (myOutgoingRequests.length > 0) {
+                                outgoingHtml = `
+                                    <div class="border-t border-slate-800">
+                                        <div class="px-5 py-3 bg-slate-950/60 flex items-center justify-between gap-2">
+                                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Sent Requests</span>
+                                            <span class="text-xs font-mono tabular-nums text-slate-500">${myOutgoingRequests.length}</span>
+                                        </div>
+                                        <div class="divide-y divide-slate-800">
+                                            ${myOutgoingRequests.map(({ friendship, profile }) => {
+                                                const safeUid = safeIdAttr(profile.id);
+                                                const safeFid = safeIdAttr(friendship.id);
+                                                const pName = escapeHtml(profile.username || 'Player');
+                                                const pAvatar = sanitizeAvatarUrl(profile.avatar_url);
+                                                return `
+                                                    <div class="px-5 py-3 flex items-center justify-between gap-3 hover:bg-slate-800/30 transition-colors">
+                                                        <div class="flex items-center gap-3 min-w-0">
+                                                            <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="w-8 h-8 rounded-full bg-slate-950 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden relative cursor-pointer">
+                                                                <span class="text-xs font-bold text-slate-300">${escapeHtml((profile.username || 'P').charAt(0).toUpperCase())}</span>
+                                                                ${pAvatar ? `<img src="${escapeHtml(pAvatar)}" alt="${pName}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                                            </button>
+                                                            <div class="min-w-0">
+                                                                <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="text-sm font-semibold text-slate-200 hover:text-blue-400 hover:underline truncate cursor-pointer">${pName}</button>
+                                                                <div class="text-xs text-slate-500">Pending acceptance</div>
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" data-action="friend-cancel" data-id="${safeFid}" data-username="${pName}" ${_friendActionBusy ? 'disabled' : ''} class="text-xs text-slate-400 hover:text-red-400 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 transition-colors cursor-pointer">Cancel</button>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+
+                            ownFriendsContent = `${requestsHtml}${friendsListHtml}${outgoingHtml}`;
+                        }
+
+                        friendsSectionHtml = `
+                            <section class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+                                <div class="px-5 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <h4 class="text-base font-bold game-font text-slate-100 tracking-wide">FRIENDS</h4>
+                                        <p class="text-xs text-slate-400 mt-0.5">See what game your friends are playing right now. Live activity is only visible to accepted friends.</p>
+                                    </div>
+                                    <button type="button" data-action="profile-find-players" class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3.5 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                                        <i data-lucide="search" class="w-3.5 h-3.5 text-blue-400"></i> Find Players
+                                    </button>
+                                </div>
+                                ${ownFriendsContent}
+                            </section>
+                        `;
+                    } else {
+                        let publicFriendsBody = '';
+                        if (!_viewedFriendsLoaded) {
+                            publicFriendsBody = `<div class="py-10 text-center text-sm text-slate-400">Loading friends list...</div>`;
+                        } else if (_viewedFriendsError) {
+                            publicFriendsBody = `<div class="py-8 px-5 text-center text-sm text-red-400">${escapeHtml(_viewedFriendsError)}</div>`;
+                        } else if (_viewedPublicFriends.length === 0) {
+                            publicFriendsBody = `<div class="py-12 px-5 text-center text-sm text-slate-400">${escapeHtml(username)} hasn't added any friends yet.</div>`;
+                        } else {
+                            publicFriendsBody = `
+                                <div class="divide-y divide-slate-800">
+                                    ${_viewedPublicFriends.map((fp) => {
+                                        const safeUid = safeIdAttr(fp.id);
+                                        const pName = escapeHtml(fp.username || 'Player');
+                                        const pAvatar = sanitizeAvatarUrl(fp.avatar_url);
+                                        const pRole = fp.is_developer ? 'Developer' : (fp.is_mod ? 'Moderator' : 'Player');
+                                        const isMe = _user && fp.id === _user.id;
+                                        const isMutual = !isMe && _user && isAcceptedFriendWith(fp.id);
+                                        const mutualLiveAct = isMutual ? getFreshActivityForUser(fp.id) : null;
+                                        return `
+                                            <div class="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors">
+                                                <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                                                    <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="w-10 h-10 rounded-full bg-slate-950 border border-slate-700 hover:border-blue-400 flex items-center justify-center shrink-0 overflow-hidden relative cursor-pointer transition-colors">
+                                                        <span class="text-sm font-bold ${isMe ? 'text-blue-400' : 'text-purple-400'}">${escapeHtml((fp.username || 'P').charAt(0).toUpperCase())}</span>
+                                                        ${pAvatar ? `<img src="${escapeHtml(pAvatar)}" alt="${pName}" referrerpolicy="no-referrer" class="avatar-img absolute inset-0 w-full h-full object-cover">` : ''}
+                                                    </button>
+                                                    <div class="min-w-0">
+                                                        <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                                            <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="text-sm font-bold text-slate-100 hover:text-blue-400 hover:underline underline-offset-2 truncate text-left cursor-pointer transition-colors">${pName}</button>
+                                                            ${isMe ? '<span class="text-xs text-blue-400 font-semibold">(You)</span>' : (isMutual ? '<span class="text-xs text-emerald-400">Mutual friend</span>' : '')}
+                                                        </div>
+                                                        <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-400 mt-0.5">
+                                                            <span class="${fp.is_developer || fp.is_mod ? 'text-yellow-400 font-semibold' : ''}">${pRole}</span>
+                                                            ${mutualLiveAct ? `<span aria-hidden="true">&middot;</span><span class="inline-flex items-center gap-1.5 text-emerald-400 font-medium"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Playing ${escapeHtml(mutualLiveAct.game.name)}</span>` : ''}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button type="button" data-action="view-player-profile" data-user-id="${safeUid}" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer">View Profile</button>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            `;
+                        }
+
+                        friendsSectionHtml = `
+                            <section class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+                                <div class="px-5 py-4 border-b border-slate-800">
+                                    <h4 class="text-base font-bold game-font text-slate-100 tracking-wide">${escapeHtml(username.toUpperCase())}'S FRIENDS</h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">Friends lists are public. Live game activity is private to accepted friends.</p>
+                                </div>
+                                ${publicFriendsBody}
+                            </section>
+                        `;
+                    }
+                }
+
+                const playtimeSectionHtml = `
+                    <section class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+                        <div class="px-5 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h4 class="text-base font-bold game-font text-slate-100 tracking-wide">GAME PLAYTIME</h4>
+                                <p class="text-xs text-slate-400 mt-0.5">${isOwn ? 'Time automatically counts while a game is open on your screen.' : `Total time ${escapeHtml(username)} has spent playing each game.`}</p>
+                            </div>
+                            <div class="flex items-center gap-1 p-1 bg-slate-800 rounded-lg border border-slate-700">
+                                <button type="button" data-action="profile-filter-games" data-filter="played" class="px-3 py-1.5 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${_profileGamesFilter === 'played' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">Played (${gamesPlayedCount})</button>
+                                <button type="button" data-action="profile-filter-games" data-filter="all" class="px-3 py-1.5 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${_profileGamesFilter === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">All Games (${gamesList.length})</button>
+                            </div>
+                        </div>
+                        ${playtimeBodyHtml}
+                    </section>
+                `;
+
+                const friendsTabLabel = isOwn && myIncomingRequests.length > 0
+                    ? `Friends (${friendsCountDisplay}) · ${myIncomingRequests.length} request${myIncomingRequests.length === 1 ? '' : 's'}`
+                    : `Friends (${friendsCountDisplay})`;
+
                 withObserverPaused(() => {
                     box.innerHTML = `
-                        <section class="bg-slate-900 border border-slate-700 rounded-xl p-6 md:p-8 mb-8">
+                        <section class="bg-slate-900 border border-slate-700 rounded-xl p-6 md:p-8 mb-6">
                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                 <div class="flex items-center gap-5 min-w-0">
                                     <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center shrink-0 overflow-hidden relative">
@@ -2432,20 +3449,24 @@
                                             ${joinedDate ? `<span aria-hidden="true">&middot;</span><span>Joined ${escapeHtml(joinedDate)}</span>` : ''}
                                             <span aria-hidden="true">&middot;</span>
                                             <span class="tabular-nums">${reviewCount} review${reviewCount === 1 ? '' : 's'}</span>
-                                            ${isOwn && _user.email ? `<span aria-hidden="true">&middot;</span><span class="truncate max-w-xs">${escapeHtml(_user.email)}</span>` : ''}
+                                            ${isOwn && _user && _user.email ? `<span aria-hidden="true">&middot;</span><span class="truncate max-w-xs">${escapeHtml(_user.email)}</span>` : ''}
                                         </div>
+                                        ${viewedLiveActivityHtml}
                                     </div>
                                 </div>
-                                ${showFlagBtn ? `
-                                    <div class="flex items-center gap-2 shrink-0">
-                                        <button type="button" data-action="toggle-flag-panel" title="Flag this profile to force-change username or profile picture" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-colors whitespace-nowrap shrink-0 ${_profilePanel === 'flag' ? 'bg-amber-600 border-amber-400 text-white' : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/50 text-amber-300'}">
-                                            <i data-lucide="flag" class="w-4 h-4"></i> Flag Profile
-                                        </button>
+                                ${(!isOwn && (friendHeaderActionHtml || showFlagBtn)) ? `
+                                    <div class="flex flex-wrap items-center gap-2 shrink-0">
+                                        ${friendHeaderActionHtml}
+                                        ${showFlagBtn ? `
+                                            <button type="button" data-action="toggle-flag-panel" title="Flag this profile to force-change username or profile picture" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${_profilePanel === 'flag' ? 'bg-amber-600 border-amber-400 text-white' : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/50 text-amber-300'}">
+                                                <i data-lucide="flag" class="w-4 h-4"></i> Flag Profile
+                                            </button>
+                                        ` : ''}
                                     </div>
                                 ` : ''}
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-7 pt-6 border-t border-slate-800">
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-7 pt-6 border-t border-slate-800">
                                 <div>
                                     <div class="text-xs text-slate-400 mb-1">Total Playtime</div>
                                     <div class="text-2xl font-bold font-mono tabular-nums text-white">${escapeHtml(formatPlaytime(totalSecondsAll))}</div>
@@ -2459,24 +3480,25 @@
                                     <div class="text-base font-bold text-white truncate">${topGame ? escapeHtml(topGame.name) : 'None yet'}</div>
                                     ${topGame ? `<div class="text-xs font-mono tabular-nums text-slate-400 mt-0.5">${escapeHtml(formatPlaytime(topSeconds))}</div>` : ''}
                                 </div>
+                                <div>
+                                    <div class="text-xs text-slate-400 mb-1">Friends</div>
+                                    <button type="button" data-action="profile-switch-tab" data-tab="friends" class="text-2xl font-bold font-mono tabular-nums text-white hover:text-blue-400 transition-colors cursor-pointer text-left">${friendsCountDisplay}</button>
+                                </div>
                             </div>
                         </section>
 
                         ${activePanelHtml}
 
-                        <section class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
-                            <div class="px-5 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
-                                <div>
-                                    <h4 class="text-base font-bold game-font text-slate-100 tracking-wide">GAME PLAYTIME</h4>
-                                    <p class="text-xs text-slate-400 mt-0.5">${isOwn ? 'Time automatically counts while a game is open on your screen.' : `Total time ${escapeHtml(username)} has spent playing each game.`}</p>
-                                </div>
-                                <div class="flex items-center gap-1 p-1 bg-slate-800 rounded-lg border border-slate-700">
-                                    <button type="button" data-action="profile-filter-games" data-filter="played" class="px-3 py-1.5 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${_profileGamesFilter === 'played' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">Played (${gamesPlayedCount})</button>
-                                    <button type="button" data-action="profile-filter-games" data-filter="all" class="px-3 py-1.5 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${_profileGamesFilter === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">All Games (${gamesList.length})</button>
-                                </div>
-                            </div>
-                            ${playtimeBodyHtml}
-                        </section>
+                        <div class="flex items-center gap-1 p-1 bg-slate-900 border border-slate-700 rounded-xl w-fit mb-6">
+                            <button type="button" data-action="profile-switch-tab" data-tab="playtime" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${_profileTab === 'playtime' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">
+                                <i data-lucide="clock" class="w-3.5 h-3.5"></i> Game Playtime
+                            </button>
+                            <button type="button" data-action="profile-switch-tab" data-tab="friends" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${_profileTab === 'friends' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}">
+                                <i data-lucide="users" class="w-3.5 h-3.5"></i> ${escapeHtml(friendsTabLabel)}
+                            </button>
+                        </div>
+
+                        ${_profileTab === 'friends' ? friendsSectionHtml : playtimeSectionHtml}
                     `;
 
                     box.querySelectorAll('img.avatar-img').forEach((imgEl) => {
@@ -3653,8 +4675,44 @@
             // ================= EVENT DELEGATION & LISTENERS =================
             document.getElementById('home-logo-btn')?.addEventListener('click', goHome);
             document.getElementById('display-name-btn')?.addEventListener('click', () => {
-                if (_user) openProfileView('overview');
+                if (_user) openProfileView('overview', 'playtime');
             });
+            document.getElementById('welcome-friend-requests-btn')?.addEventListener('click', () => {
+                if (_user) openProfileView('overview', 'friends');
+            });
+
+            const hubSearchInput = document.getElementById('hub-search-input');
+            if (hubSearchInput) {
+                hubSearchInput.addEventListener('input', (e) => {
+                    _hubSearchQuery = e.target.value;
+                    updateHubSearchControlsUi();
+                    renderGames();
+                    scheduleHubPlayerSearch(false);
+                });
+                hubSearchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && _hubSearchQuery) {
+                        clearHubSearch();
+                    }
+                });
+            }
+            document.getElementById('hub-search-clear-btn')?.addEventListener('click', () => {
+                clearHubSearch();
+                const input = document.getElementById('hub-search-input');
+                if (input) input.focus();
+            });
+            document.getElementById('hub-search-mode-group')?.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-search-mode]');
+                if (!btn) return;
+                setHubSearchMode(btn.dataset.searchMode);
+            });
+            document.getElementById('hub-player-search-results')?.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                if (btn.dataset.action === 'view-player-profile') {
+                    openPlayerProfileView(btn.dataset.userId);
+                }
+            });
+
             document.getElementById('profile-back-btn')?.addEventListener('click', goHome);
             document.getElementById('profile-edit-toggle-btn')?.addEventListener('click', () => {
                 if (!_user || !isViewingOwnProfile()) return;
@@ -3704,6 +4762,17 @@
                     }
                 } else if (action === 'profile-sign-out') {
                     handleSignOut();
+                } else if (action === 'profile-switch-tab') {
+                    const nextTab = btn.dataset.tab === 'friends' ? 'friends' : 'playtime';
+                    _profileTab = nextTab;
+                    renderProfileView();
+                    if (nextTab === 'friends') {
+                        if (isViewingOwnProfile()) loadMyFriendshipsAndActivity();
+                        else if (_viewedProfileUserId) {
+                            loadViewedPlayerFriends(_viewedProfileUserId);
+                            if (_user) loadFriendsActivityOnly();
+                        }
+                    }
                 } else if (action === 'profile-filter-games') {
                     _profileGamesFilter = btn.dataset.filter === 'all' ? 'all' : 'played';
                     renderProfileView();
@@ -3711,6 +4780,23 @@
                     openGameView(btn.dataset.gameId);
                 } else if (action === 'profile-browse-games') {
                     goHome();
+                } else if (action === 'profile-find-players') {
+                    goHome();
+                    setHubSearchMode('players');
+                    const input = document.getElementById('hub-search-input');
+                    if (input) input.focus();
+                } else if (action === 'view-player-profile') {
+                    openPlayerProfileView(btn.dataset.userId);
+                } else if (action === 'friend-send') {
+                    await sendFriendRequest(btn.dataset.userId);
+                } else if (action === 'friend-accept') {
+                    await acceptFriendRequest(btn.dataset.id);
+                } else if (action === 'friend-decline') {
+                    await removeFriendship(btn.dataset.id, 'decline', btn.dataset.username || 'this player');
+                } else if (action === 'friend-cancel') {
+                    await removeFriendship(btn.dataset.id, 'cancel', btn.dataset.username || 'this player');
+                } else if (action === 'friend-remove') {
+                    await removeFriendship(btn.dataset.id, 'unfriend', btn.dataset.username || 'this player');
                 }
             });
             const devViewEl = document.getElementById('dev-view');
@@ -3819,6 +4905,10 @@
                 const actionBtn = e.target.closest('[data-action]');
                 if (actionBtn) {
                     const action = actionBtn.dataset.action;
+                    if (action === 'clear-hub-search') {
+                        clearHubSearch();
+                        return;
+                    }
                     if (action === 'vote-game') {
                         e.stopPropagation();
                         voteGame(actionBtn.dataset.gameId, actionBtn.dataset.vote);
@@ -3888,12 +4978,14 @@
                     flushPlaytime(true);
                 } else if (document.visibilityState === 'visible') {
                     _playtimeSession.activeSince = performance.now();
+                    updateCurrentGameActivity(_playtimeSession.gameId, false);
                 }
             });
 
             window.addEventListener('pagehide', () => {
                 if (_playtimeSession && _isGameStageOpen) {
                     flushPlaytime(true);
+                    updateCurrentGameActivity(null, true);
                 }
             });
 
